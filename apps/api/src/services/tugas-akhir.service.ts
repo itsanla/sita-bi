@@ -208,7 +208,9 @@ export class TugasAkhirService {
     );
 
     if (!isPembimbing) {
-      throw new Error('Hanya pembimbing yang dapat menyetujui judul tugas akhir ini.');
+      throw new Error(
+        'Hanya pembimbing yang dapat menyetujui judul tugas akhir ini.',
+      );
     }
 
     // Approve the tugas akhir
@@ -277,7 +279,9 @@ export class TugasAkhirService {
     );
 
     if (!isPembimbing) {
-      throw new Error('Hanya pembimbing yang dapat menolak judul tugas akhir ini.');
+      throw new Error(
+        'Hanya pembimbing yang dapat menolak judul tugas akhir ini.',
+      );
     }
 
     // Reject the tugas akhir

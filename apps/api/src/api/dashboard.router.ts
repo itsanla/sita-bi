@@ -49,8 +49,14 @@ router.get(
       return;
     }
 
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-    const activities = await dashboardService.getMahasiswaActivities(userId, limit);
+    const limit =
+      typeof req.query.limit === 'string' && req.query.limit.length > 0
+        ? parseInt(req.query.limit)
+        : 10;
+    const activities = await dashboardService.getMahasiswaActivities(
+      userId,
+      limit,
+    );
     response.status(200).json({ status: 'sukses', data: activities });
   }),
 );
@@ -73,7 +79,10 @@ router.get(
       return;
     }
 
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+    const limit =
+      typeof req.query.limit === 'string' && req.query.limit.length > 0
+        ? parseInt(req.query.limit)
+        : 5;
     const schedule = await dashboardService.getMahasiswaSchedule(userId, limit);
     response.status(200).json({ status: 'sukses', data: schedule });
   }),

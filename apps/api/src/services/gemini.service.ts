@@ -11,7 +11,7 @@ interface GeminiPart {
 
 interface GeminiContent {
   parts: GeminiPart[];
-  role?: 'user' | 'model';
+  role?: 'model' | 'user';
 }
 
 interface GeminiSystemInstruction {
@@ -261,7 +261,7 @@ CARA MENJAWAB:
   // Stream generate content with SSE and conversation history
   async *streamGenerateContentWithHistory(
     prompt: string,
-    history: Array<{ role: string; content: string }> = [],
+    history: { role: string; content: string }[] = [],
   ): AsyncGenerator<string, void, unknown> {
     if (this.apiKeys.length === 0) {
       throw new Error(
@@ -273,18 +273,18 @@ CARA MENJAWAB:
 
     // Build contents array with history
     const contents: GeminiContent[] = [];
-    
+
     // Add history messages - convert 'assistant' to 'model' for Gemini API
     // Only include messages that have content
     for (const msg of history) {
-      if (msg.content && msg.content.trim()) {
+      if (typeof msg.content === 'string' && msg.content.trim().length > 0) {
         contents.push({
           parts: [{ text: msg.content }],
           role: msg.role === 'user' ? 'user' : 'model',
         });
       }
     }
-    
+
     // Add current prompt as user message
     contents.push({
       parts: [{ text: prompt }],

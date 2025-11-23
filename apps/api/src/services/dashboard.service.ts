@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import { PrismaClient, StatusTugasAkhir, StatusBimbingan } from '@repo/db';
 
 interface DashboardStats {
@@ -24,7 +25,12 @@ interface DashboardStats {
 
 interface Activity {
   id: string;
-  type: 'bimbingan' | 'pengajuan' | 'approval' | 'rejection' | 'perubahan_status';
+  type:
+    | 'approval'
+    | 'bimbingan'
+    | 'pengajuan'
+    | 'perubahan_status'
+    | 'rejection';
   title: string;
   description: string;
   createdAt: Date;
@@ -38,7 +44,7 @@ interface Schedule {
   time: string;
   location: string;
   with: string;
-  status: 'upcoming' | 'today' | 'completed';
+  status: 'completed' | 'today' | 'upcoming';
 }
 
 export class DashboardService {
@@ -87,14 +93,20 @@ export class DashboardService {
     const tugasAkhirStats = {
       total: allTugasAkhir.length,
       disetujui: allTugasAkhir.filter(
-        (ta) => ta.status === StatusTugasAkhir.DISETUJUI || ta.status === StatusTugasAkhir.BIMBINGAN
+        (ta) =>
+          ta.status === StatusTugasAkhir.DISETUJUI ||
+          ta.status === StatusTugasAkhir.BIMBINGAN,
       ).length,
-      pending: allTugasAkhir.filter((ta) => ta.status === StatusTugasAkhir.DIAJUKAN).length,
-      ditolak: allTugasAkhir.filter((ta) => ta.status === StatusTugasAkhir.DITOLAK).length,
+      pending: allTugasAkhir.filter(
+        (ta) => ta.status === StatusTugasAkhir.DIAJUKAN,
+      ).length,
+      ditolak: allTugasAkhir.filter(
+        (ta) => ta.status === StatusTugasAkhir.DITOLAK,
+      ).length,
     };
 
     // Calculate bimbingan stats
-    const bimbinganList = mahasiswa.tugasAkhir?.bimbinganTa || [];
+    const bimbinganList = mahasiswa.tugasAkhir?.bimbinganTa ?? [];
     const selesaiBimbingan = bimbinganList.filter(
       (b) => b.status_bimbingan === StatusBimbingan.selesai,
     );
@@ -105,27 +117,41 @@ export class DashboardService {
     const bulanIni = selesaiBimbingan.filter((b) => {
       const bimbDate = new Date(b.created_at);
       return (
-        bimbDate.getMonth() === currentMonth && bimbDate.getFullYear() === currentYear
+        bimbDate.getMonth() === currentMonth &&
+        bimbDate.getFullYear() === currentYear
       );
     }).length;
 
     const bimbinganStats = {
       total: selesaiBimbingan.length,
       bulanIni,
-      rataRata: selesaiBimbingan.length > 0 ? Math.round(selesaiBimbingan.length / 4) : 0, // Assuming 4 months average
+      rataRata:
+        selesaiBimbingan.length > 0
+          ? Math.round(selesaiBimbingan.length / 4)
+          : 0, // Assuming 4 months average
     };
 
     // Get sidang info
     const pendaftaranSidang = mahasiswa.tugasAkhir?.pendaftaranSidang?.[0];
-    const jadwalSidang = pendaftaranSidang?.sidang?.jadwalSidang?.[0];
+
+    let sidangStatus = 'Belum Daftar';
+    let sidangTanggal = null;
+
+    if (pendaftaranSidang) {
+      sidangStatus =
+        pendaftaranSidang.status_verifikasi === 'disetujui'
+          ? 'Terdaftar'
+          : 'Menunggu Verifikasi';
+
+      if (pendaftaranSidang.sidang?.jadwalSidang?.[0]?.tanggal) {
+        sidangTanggal =
+          pendaftaranSidang.sidang.jadwalSidang[0].tanggal.toISOString();
+      }
+    }
 
     const sidangInfo = {
-      status: pendaftaranSidang
-        ? pendaftaranSidang.status_verifikasi === 'disetujui'
-          ? 'Terdaftar'
-          : 'Menunggu Verifikasi'
-        : 'Belum Daftar',
-      tanggal: jadwalSidang?.tanggal?.toISOString() || null,
+      status: sidangStatus,
+      tanggal: sidangTanggal,
     };
 
     // Calculate progress
@@ -142,7 +168,10 @@ export class DashboardService {
   /**
    * Get recent activities for mahasiswa
    */
-  async getMahasiswaActivities(userId: number, limit = 10): Promise<Activity[]> {
+  async getMahasiswaActivities(
+    userId: number,
+    limit = 10,
+  ): Promise<Activity[]> {
     const mahasiswa = await this.prisma.mahasiswa.findUnique({
       where: { user_id: userId },
     });
@@ -162,7 +191,7 @@ export class DashboardService {
       },
     });
 
-    if (tugasAkhir) {
+    if (tugasAkhir != null) {
       // Pengajuan
       if (tugasAkhir.tanggal_pengajuan) {
         activities.push({
@@ -175,7 +204,10 @@ export class DashboardService {
       }
 
       // Approval
-      if (tugasAkhir.status === StatusTugasAkhir.DISETUJUI && tugasAkhir.approver) {
+      if (
+        tugasAkhir.status === StatusTugasAkhir.DISETUJUI &&
+        tugasAkhir.approver != null
+      ) {
         activities.push({
           id: `ta-${tugasAkhir.id}-approval`,
           type: 'approval',
@@ -186,13 +218,16 @@ export class DashboardService {
       }
 
       // Rejection
-      if (tugasAkhir.status === StatusTugasAkhir.DITOLAK && tugasAkhir.rejecter) {
+      if (
+        tugasAkhir.status === StatusTugasAkhir.DITOLAK &&
+        tugasAkhir.rejecter != null
+      ) {
         activities.push({
           id: `ta-${tugasAkhir.id}-rejection`,
           type: 'rejection',
           title: 'Judul Ditolak',
           description:
-            tugasAkhir.alasan_penolakan || 'Judul ditolak, revisi diperlukan',
+            tugasAkhir.alasan_penolakan ?? 'Judul ditolak, revisi diperlukan',
           createdAt: tugasAkhir.updated_at,
         });
       }
@@ -230,7 +265,9 @@ export class DashboardService {
     });
 
     // Sort by date and limit
-    return activities.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, limit);
+    return activities
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limit);
   }
 
   /**
@@ -276,7 +313,7 @@ export class DashboardService {
     });
 
     bimbinganSchedule.forEach((b) => {
-      if (b.tanggal_bimbingan && b.jam_bimbingan) {
+      if (b.tanggal_bimbingan != null && b.jam_bimbingan != null) {
         const scheduleDate = new Date(b.tanggal_bimbingan);
         const isToday =
           scheduleDate.getFullYear() === today.getFullYear() &&
@@ -342,7 +379,9 @@ export class DashboardService {
     });
 
     // Sort by date
-    return schedules.sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, limit);
+    return schedules
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .slice(0, limit);
   }
 
   /**
@@ -369,14 +408,18 @@ export class DashboardService {
   /**
    * Calculate progress percentage based on status
    */
-  private calculateProgress(
-    status: StatusTugasAkhir | undefined,
-  ): { percentage: number; tahap: string } {
-    if (!status) {
+  private calculateProgress(status: StatusTugasAkhir | undefined): {
+    percentage: number;
+    tahap: string;
+  } {
+    if (status == null) {
       return { percentage: 0, tahap: 'Belum Mengajukan' };
     }
 
-    const progressMap: Record<StatusTugasAkhir, { percentage: number; tahap: string }> = {
+    const progressMap: Record<
+      StatusTugasAkhir,
+      { percentage: number; tahap: string }
+    > = {
       [StatusTugasAkhir.DRAFT]: { percentage: 10, tahap: 'Draft' },
       [StatusTugasAkhir.DIAJUKAN]: { percentage: 25, tahap: 'Pengajuan' },
       [StatusTugasAkhir.DISETUJUI]: { percentage: 40, tahap: 'Disetujui' },
@@ -387,13 +430,21 @@ export class DashboardService {
         tahap: 'Menunggu Pembatalan',
       },
       [StatusTugasAkhir.DIBATALKAN]: { percentage: 0, tahap: 'Dibatalkan' },
-      [StatusTugasAkhir.LULUS_TANPA_REVISI]: { percentage: 100, tahap: 'Lulus' },
-      [StatusTugasAkhir.LULUS_DENGAN_REVISI]: { percentage: 90, tahap: 'Lulus dengan Revisi' },
+      [StatusTugasAkhir.LULUS_TANPA_REVISI]: {
+        percentage: 100,
+        tahap: 'Lulus',
+      },
+      [StatusTugasAkhir.LULUS_DENGAN_REVISI]: {
+        percentage: 90,
+        tahap: 'Lulus dengan Revisi',
+      },
       [StatusTugasAkhir.SELESAI]: { percentage: 100, tahap: 'Selesai' },
       [StatusTugasAkhir.DITOLAK]: { percentage: 20, tahap: 'Ditolak' },
       [StatusTugasAkhir.GAGAL]: { percentage: 0, tahap: 'Gagal' },
     };
 
-    return progressMap[status] || { percentage: 0, tahap: 'Unknown' };
+    return status in progressMap
+      ? progressMap[status]
+      : { percentage: 0, tahap: 'Unknown' };
   }
 }

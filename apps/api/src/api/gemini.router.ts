@@ -77,9 +77,9 @@ router.post(
 router.post(
   '/chat/stream/public',
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { message, history } = req.body as { 
-      message?: unknown; 
-      history?: Array<{ role: string; content: string }> 
+    const { message, history } = req.body as {
+      message?: unknown;
+      history?: { role: string; content: string }[];
     };
 
     if (typeof message !== 'string' || message.length === 0) {
@@ -118,8 +118,8 @@ router.post(
 
       // Stream the response with history context
       for await (const chunk of geminiService.streamGenerateContentWithHistory(
-        message, 
-        history || []
+        message,
+        history ?? [],
       )) {
         res.write(
           `data: ${JSON.stringify({ type: 'chunk', text: chunk })}\n\n`,

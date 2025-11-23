@@ -289,11 +289,14 @@ router.patch(
       });
       return;
     }
-    const { alasan_penolakan } = req.body;
-    if (!alasan_penolakan) {
+    const { alasan_penolakan } = req.body as { alasan_penolakan?: unknown };
+    if (
+      typeof alasan_penolakan !== 'string' ||
+      alasan_penolakan.trim().length === 0
+    ) {
       response.status(400).json({
         status: 'gagal',
-        message: 'Alasan penolakan diperlukan',
+        message: 'Alasan penolakan diperlukan dan harus berupa string',
       });
       return;
     }
