@@ -11,11 +11,7 @@
     "start:backend": "pnpm --filter api start",
     "start:frontend": "pnpm --filter web start -- -p 3001",
     "start": "pnpm start:backend",
-    "start:prod": "pm2 start ecosystem.config.cjs",
-    "stop:prod": "pm2 stop all",
-    "restart:prod": "pm2 restart all",
-    "logs:prod": "pm2 logs",
-    "monit:prod": "pm2 monit",
+
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
     "lint": "turbo run lint",

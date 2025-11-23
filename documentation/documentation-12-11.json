@@ -620,29 +620,12 @@
       "pnpm build": "Build all apps and packages",
       "pnpm start": "Start backend production server",
       "pnpm start:frontend": "Start frontend production server on port 3001",
-      "pnpm start:prod": "Start with PM2",
       "pnpm dev:frontend": "Start only frontend dev server",
       "pnpm dev:backend": "Start only backend dev server",
       "pnpm check": "Run linting, formatting, and build checks",
       "pnpm lint": "Lint all projects",
       "pnpm format": "Format code with Prettier"
     }
-  },
-  "production_deployment": {
-    "process_manager": "PM2 (ecosystem.config.cjs)",
-    "commands": {
-      "start": "pnpm start:prod",
-      "stop": "pnpm stop:prod",
-      "restart": "pnpm restart:prod",
-      "logs": "pnpm logs:prod",
-      "monitor": "pnpm monit:prod"
-    },
-    "build_process": [
-      "1. Build database package: pnpm --filter @repo/db build",
-      "2. Build backend: pnpm --filter api build",
-      "3. Build frontend: pnpm --filter web build",
-      "4. Start with PM2: pnpm start:prod"
-    ]
   },
   "security_features": {
     "authentication": {
