@@ -4,7 +4,7 @@ This is a community-maintained example. If you experience a problem, please subm
 
 ## Using this example
 
-Run the following command:
+Run following command:
 
 ```bash
 npx create-turbo@latest -e with-nestjs
