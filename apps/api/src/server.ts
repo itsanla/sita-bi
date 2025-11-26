@@ -14,9 +14,8 @@ initSocket(httpServer);
 
 // Initialize Services
 if (process.env['NODE_ENV'] !== 'test') {
-  whatsappService.initialize().catch((err: unknown) => {
-    console.error('Failed to initialize WhatsApp service:', err);
-  });
+  // WhatsApp will be initialized manually via /api/whatsapp/qr
+  console.warn('💬 WhatsApp: Not initialized (visit /api/whatsapp/qr to setup)');
 
   const schedulerService = new SchedulerService();
   schedulerService.init();

@@ -34,6 +34,9 @@ export class WhatsAppService {
   private isReady = false;
   private qrCode: string | null = null;
   private readonly sessionDir: string;
+  private isInitializing = false;
+  private qrLoggedOnce = false;
+  private initTimeout: NodeJS.Timeout | null = null;
 
   constructor() {
     // Simpan session di directory dalam project, bukan di root system
@@ -55,13 +58,18 @@ export class WhatsAppService {
    * Initialize WhatsApp Client
    */
   async initialize(): Promise<void> {
+    if (this.isInitializing) {
+      console.warn('WhatsApp is already initializing...');
+      return;
+    }
+    
     if (this.client != null) {
-      console.warn('WhatsApp client already initialized');
+      console.warn('WhatsApp already initialized');
       return;
     }
 
-    console.warn('🚀 Initializing WhatsApp Web.js client...');
-    console.warn(`📁 Session directory: ${this.sessionDir}`);
+    this.isInitializing = true;
+    console.warn('🚀 Initializing WhatsApp...');
 
     this.client = new Client({
       authStrategy: new LocalAuth({
@@ -76,6 +84,7 @@ export class WhatsAppService {
           '--disable-accelerated-2d-canvas',
           '--no-first-run',
           '--no-zygote',
+          '--single-process',
           '--disable-gpu',
         ],
       },
@@ -83,37 +92,47 @@ export class WhatsAppService {
 
     // Event: QR Code received
     this.client.on('qr', (qr) => {
-      console.warn(
-        '📱 QR Code received! Scan this QR code with your WhatsApp:',
-      );
-      qrcode.generate(qr, { small: true });
       this.qrCode = qr;
-      console.warn(
-        '\n⚠️  QR Code juga tersedia di endpoint: GET /api/whatsapp/qr\n',
-      );
+      if (!this.qrLoggedOnce) {
+        console.warn('📱 QR Code generated. Access at: GET /api/whatsapp/qr');
+        this.qrLoggedOnce = true;
+        
+        // Auto-cancel after 5 minutes if not scanned
+        this.initTimeout = setTimeout(() => {
+          if (!this.isReady) {
+            console.warn('⏱️  WhatsApp QR timeout - canceling initialization');
+            void this.logout();
+          }
+        }, 5 * 60 * 1000);
+      }
     });
 
     // Event: Client is ready
     this.client.on('ready', () => {
-      console.warn('✅ WhatsApp Client is ready!');
+      console.warn('✅ WhatsApp connected');
       this.isReady = true;
       this.qrCode = null;
+      this.qrLoggedOnce = false;
+      if (this.initTimeout) {
+        clearTimeout(this.initTimeout);
+        this.initTimeout = null;
+      }
     });
 
     // Event: Authentication successful
     this.client.on('authenticated', () => {
-      console.warn('🔐 WhatsApp authenticated successfully!');
+      console.warn('🔐 WhatsApp authenticated');
     });
 
     // Event: Authentication failure
     this.client.on('auth_failure', (msg) => {
-      console.error('❌ WhatsApp authentication failed:', msg);
+      console.error('❌ WhatsApp auth failed:', msg);
       this.isReady = false;
     });
 
     // Event: Client disconnected
     this.client.on('disconnected', (reason) => {
-      console.warn('⚠️  WhatsApp client disconnected:', reason);
+      console.warn('⚠️  WhatsApp disconnected:', reason);
       this.isReady = false;
       this.client = null;
     });
@@ -121,9 +140,6 @@ export class WhatsAppService {
     // Event: Incoming message
     this.client.on('message', (msg: Message) => {
       void (async (): Promise<void> => {
-        console.warn(`📨 Received message from ${msg.from}: ${msg.body}`);
-
-        // Auto-reply untuk testing (optional)
         if (msg.body.toLowerCase() === 'ping') {
           await msg.reply('pong 🏓');
         }
@@ -131,7 +147,13 @@ export class WhatsAppService {
     });
 
     // Initialize the client
-    await this.client.initialize();
+    try {
+      await this.client.initialize();
+    } catch (error) {
+      this.isInitializing = false;
+      throw error;
+    }
+    this.isInitializing = false;
   }
 
   /**
@@ -150,7 +172,6 @@ export class WhatsAppService {
       const chatId = this.formatPhoneNumber(to);
 
       await this.client.sendMessage(chatId, message);
-      console.warn(`✅ Message sent to ${to}`);
       return true;
     } catch (error) {
       console.error('❌ Failed to send message:', error);
@@ -185,8 +206,6 @@ export class WhatsAppService {
       await this.client.sendMessage(chatId, media, {
         caption: caption ?? message,
       });
-
-      console.warn(`✅ Message with media sent to ${to}`);
       return true;
     } catch (error) {
       console.error('❌ Failed to send message with media:', error);
@@ -309,11 +328,13 @@ export class WhatsAppService {
     isReady: boolean;
     hasQR: boolean;
     qrCode: string | null;
+    isInitializing: boolean;
   } {
     return {
       isReady: this.isReady,
       hasQR: this.qrCode !== null,
       qrCode: this.qrCode,
+      isInitializing: this.isInitializing,
     };
   }
 
@@ -322,12 +343,27 @@ export class WhatsAppService {
    */
   async logout(): Promise<void> {
     if (this.client != null) {
-      await this.client.logout();
-      await this.client.destroy();
+      try {
+        await this.client.destroy();
+      } catch (err) {
+        // Ignore errors during cleanup
+      }
       this.client = null;
       this.isReady = false;
       this.qrCode = null;
-      console.warn('👋 WhatsApp client logged out');
+      this.isInitializing = false;
+      console.warn('👋 WhatsApp logged out');
+    }
+  }
+
+  /**
+   * Delete session directory
+   */
+  async deleteSession(): Promise<void> {
+    await this.logout();
+    if (fs.existsSync(this.sessionDir)) {
+      fs.rmSync(this.sessionDir, { recursive: true, force: true });
+      console.warn('🗑️  WhatsApp session deleted');
     }
   }
 

@@ -45,11 +45,11 @@ router.post(
 
       // Stream the response with word-by-word splitting
       for await (const chunk of geminiService.streamGenerateContent(message)) {
-        const words = chunk.split(/(?<=\s)/); // Split but keep spaces
-        for (const word of words) {
-          if (word.trim()) {
+        const parts = chunk.split(/(\s+)/); // Split but keep whitespace
+        for (const part of parts) {
+          if (part.length > 0) {
             res.write(
-              `data: ${JSON.stringify({ type: 'chunk', text: word })}\n\n`,
+              `data: ${JSON.stringify({ type: 'chunk', text: part })}\n\n`,
             );
           }
         }
@@ -99,25 +99,38 @@ router.post(
 
       logger.info('Starting public stream', { historyLength: history.length });
 
-      // Stream the response with history context word-by-word
-      for await (const chunk of geminiService.streamGenerateContentWithHistory(
-        message,
-        history,
-      )) {
-        const words = chunk.split(/(?<=\s)/); // Split but keep spaces
-        for (const word of words) {
-          if (word.trim()) {
-            res.write(
-              `data: ${JSON.stringify({ type: 'chunk', text: word })}\n\n`,
-            );
+      // Set timeout for the entire stream
+      const streamTimeout = setTimeout(() => {
+        logger.warn('Stream timeout - forcing close');
+        res.write(
+          `data: ${JSON.stringify({ type: 'error', error: 'Request timeout' })}\n\n`,
+        );
+        res.end();
+      }, 60000); // 60 seconds total timeout
+
+      try {
+        // Stream the response with history context word-by-word
+        for await (const chunk of geminiService.streamGenerateContentWithHistory(
+          message,
+          history,
+        )) {
+          const parts = chunk.split(/(\s+)/); // Split but keep whitespace
+          for (const part of parts) {
+            if (part.length > 0) {
+              res.write(
+                `data: ${JSON.stringify({ type: 'chunk', text: part })}\n\n`,
+              );
+            }
           }
         }
-      }
 
-      // Send completion message
-      res.write('data: {"type":"done"}\n\n');
-      logger.info('Public stream completed successfully');
-      res.end();
+        // Send completion message
+        res.write('data: {"type":"done"}\n\n');
+        logger.info('Public stream completed successfully');
+      } finally {
+        clearTimeout(streamTimeout);
+        res.end();
+      }
     } catch (error) {
       const errorMessage = (error as Error).message;
       let userFriendlyError = 'Maaf, terjadi kesalahan. Silakan coba lagi.';

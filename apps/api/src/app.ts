@@ -50,17 +50,28 @@ const uploadsPath = getUploadPath();
 // Serve static files from uploads directory (from monorepo root)
 app.use('/uploads', express.static(uploadsPath));
 
-// Initialize WhatsApp service on startup
-void (async (): Promise<void> => {
+console.warn('⚠️  WhatsApp not connected - Server running without WhatsApp');
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.warn('\n🛑 Shutting down gracefully...');
   try {
-    console.warn('🔄 Initializing WhatsApp service...');
-    await whatsappService.initialize();
-    console.warn('✅ WhatsApp service initialized');
-  } catch (error) {
-    console.error('❌ Failed to initialize WhatsApp service:', error);
-    console.warn('⚠️  Server will continue without WhatsApp functionality');
+    await whatsappService.logout();
+  } catch (err) {
+    console.error('Error during WhatsApp cleanup:', err);
   }
-})();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.warn('\n🛑 Shutting down gracefully...');
+  try {
+    await whatsappService.logout();
+  } catch (err) {
+    console.error('Error during WhatsApp cleanup:', err);
+  }
+  process.exit(0);
+});
 
 // Health check endpoint
 app.get('/health', (_req, res) => {

@@ -19,7 +19,11 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
     messages,
     input,
     isLoading,
+    mode,
+    setMode,
+    thinkingStatus,
     chatContainerRef,
+    textareaRef,
     setInput,
     handleSubmit,
     stop,
@@ -131,7 +135,7 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
           </div>
         ) : (
           /* Chat Interface */
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden border border-red-100 animate-scale-in">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden  animate-scale-in">
             {/* Header */}
             <div className="bg-gradient-to-r from-red-900 to-red-700 px-6 py-4 flex items-center justify-between shadow-lg">
               <div className="flex items-center gap-3">
@@ -210,18 +214,103 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                       <div
                         className={`max-w-2xl px-5 py-3 rounded-2xl shadow-md ${
                           msg.role === 'user'
-                            ? 'bg-gradient-to-br from-red-900 to-red-700 text-white'
+                            ? 'bg-gradient-to-br from-red-900 to-red-700'
                             : 'bg-white text-gray-800 border border-red-100'
                         }`}
                       >
                         <div
                           className={`prose prose-sm max-w-none ${
                             msg.role === 'user'
-                              ? 'prose-invert'
-                              : 'prose-headings:text-red-900 prose-headings:font-bold prose-p:text-gray-700 prose-p:leading-relaxed prose-strong:text-red-800 prose-strong:font-semibold prose-a:text-red-600 prose-a:no-underline hover:prose-a:underline prose-code:text-red-700 prose-code:bg-red-50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-ul:list-disc prose-ol:list-decimal prose-li:text-gray-700 prose-blockquote:border-l-red-500 prose-blockquote:text-gray-600'
+                              ? 'prose-invert text-white'
+                              : ''
                           }`}
                         >
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              h1: ({ children }) => (
+                                <h1 className={`text-2xl font-bold mb-3 mt-4 ${
+                                  msg.role === 'user' ? 'text-white' : 'text-red-900'
+                                }`}>
+                                  {children}
+                                </h1>
+                              ),
+                              h2: ({ children }) => (
+                                <h2 className={`text-xl font-bold mb-2 mt-3 ${
+                                  msg.role === 'user' ? 'text-white' : 'text-red-900'
+                                }`}>
+                                  {children}
+                                </h2>
+                              ),
+                              h3: ({ children }) => (
+                                <h3 className={`text-lg font-bold mb-2 mt-2 ${
+                                  msg.role === 'user' ? 'text-white' : 'text-red-800'
+                                }`}>
+                                  {children}
+                                </h3>
+                              ),
+                              p: ({ children }) => (
+                                <p className={`mb-2 leading-relaxed ${
+                                  msg.role === 'user' ? 'text-white' : 'text-gray-700'
+                                }`}>
+                                  {children}
+                                </p>
+                              ),
+                              strong: ({ children }) => (
+                                <strong className={`font-bold ${
+                                  msg.role === 'user' ? 'text-white' : 'text-red-800'
+                                }`}>
+                                  {children}
+                                </strong>
+                              ),
+                              em: ({ children }) => (
+                                <em className={`italic ${
+                                  msg.role === 'user' ? 'text-white' : 'text-gray-600'
+                                }`}>{children}</em>
+                              ),
+                              code: ({ children }) => (
+                                <code className={`px-1.5 py-0.5 rounded text-sm font-mono ${
+                                  msg.role === 'user' ? 'bg-red-800 text-white' : 'bg-red-50 text-red-700'
+                                }`}>
+                                  {children}
+                                </code>
+                              ),
+                              ul: ({ children }) => (
+                                <ul className="list-disc list-inside mb-2 space-y-1">
+                                  {children}
+                                </ul>
+                              ),
+                              ol: ({ children }) => (
+                                <ol className="list-decimal list-inside mb-2 space-y-1">
+                                  {children}
+                                </ol>
+                              ),
+                              li: ({ children }) => (
+                                <li className={`ml-2 ${
+                                  msg.role === 'user' ? 'text-white' : 'text-gray-700'
+                                }`}>{children}</li>
+                              ),
+                              a: ({ children, href }) => (
+                                <a
+                                  href={href}
+                                  className={`hover:underline ${
+                                    msg.role === 'user' ? 'text-white' : 'text-red-600'
+                                  }`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {children}
+                                </a>
+                              ),
+                              blockquote: ({ children }) => (
+                                <blockquote className={`border-l-4 pl-4 py-2 my-2 italic ${
+                                  msg.role === 'user' ? 'border-white text-white bg-red-800' : 'border-red-500 text-gray-700 bg-red-50'
+                                }`}>
+                                  {children}
+                                </blockquote>
+                              ),
+                            }}
+                          >
                             {msg.content || '...'}
                           </ReactMarkdown>
                         </div>
@@ -237,22 +326,29 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                   ))
                 )}
 
-                {isLoading ? (
+                {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && messages[messages.length - 1]?.content === '' ? (
                   <div className="flex justify-start animate-fade-in">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-900 to-red-700 flex items-center justify-center mr-3 flex-shrink-0 shadow-lg">
                       <MessageCircle className="w-5 h-5 text-white" />
                     </div>
                     <div className="bg-white border border-red-100 px-5 py-3 rounded-2xl shadow-md">
-                      <div className="flex gap-2">
-                        <div className="w-2 h-2 bg-red-900 rounded-full animate-bounce" />
-                        <div
-                          className="w-2 h-2 bg-red-900 rounded-full animate-bounce"
-                          style={{ animationDelay: '0.2s' }}
-                        />
-                        <div
-                          className="w-2 h-2 bg-red-900 rounded-full animate-bounce"
-                          style={{ animationDelay: '0.4s' }}
-                        />
+                      <div className="flex items-center gap-3">
+                        <div className="flex gap-2">
+                          <div className="w-2 h-2 bg-red-900 rounded-full animate-bounce" />
+                          <div
+                            className="w-2 h-2 bg-red-900 rounded-full animate-bounce"
+                            style={{ animationDelay: '0.2s' }}
+                          />
+                          <div
+                            className="w-2 h-2 bg-red-900 rounded-full animate-bounce"
+                            style={{ animationDelay: '0.4s' }}
+                          />
+                        </div>
+                        {thinkingStatus !== null && (
+                          <span className="text-xs text-gray-500 italic">
+                            {thinkingStatus === 'thinking' ? 'Berpikir Keras...' : 'Riset Mendalam...'}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -263,18 +359,35 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
             {/* Input Area */}
             <div className="bg-white border-t border-red-100 px-6 py-4 shadow-lg">
               <div className="flex items-center gap-3">
-                <input
+                <select
+                  value={mode}
+                  onChange={(e) => setMode(e.target.value as 'fast' | 'expert')}
+                  disabled={isLoading}
+                  className="px-3 py-3 border-2 border-red-100 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400 transition-all duration-200 text-gray-800 bg-white cursor-pointer"
+                >
+                  <option value="fast">⚡ Cepat</option>
+                  <option value="expert">🎓 Ahli</option>
+                </select>
+                <textarea
+                  ref={textareaRef}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    const newHeight = Math.max(48, Math.min(target.scrollHeight, window.innerHeight * 0.28));
+                    target.style.height = newHeight + 'px';
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
                       e.preventDefault();
                       handleSendClick();
                     }
                   }}
                   placeholder="Ketik pertanyaan Anda di sini..."
                   disabled={isLoading}
-                  className="flex-1 px-5 py-3 border-2 border-red-100 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400 transition-all duration-200 text-gray-800 placeholder-gray-400"
+                  rows={1}
+                  className="flex-1 px-5 py-3 border-2 border-red-100 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400 transition-all duration-200 text-gray-800 placeholder-gray-400 bg-white min-w-0 resize-none overflow-hidden"
                 />
                 {isLoading ? (
                   <button

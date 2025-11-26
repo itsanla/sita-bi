@@ -7,6 +7,29 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 const router: ExpressRouter = Router();
 
 /**
+ * POST /api/whatsapp/initialize
+ * Initialize WhatsApp client manually
+ */
+router.post(
+  '/initialize',
+  asyncHandler(async (_req: Request, res: Response): Promise<void> => {
+    try {
+      await whatsappService.initialize();
+      res.json({
+        success: true,
+        message: 'WhatsApp initialization started',
+        qrUrl: '/api/whatsapp/qr',
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to initialize',
+      });
+    }
+  }),
+);
+
+/**
  * GET /api/whatsapp/status
  * Get WhatsApp client status
  */
@@ -20,38 +43,140 @@ router.get('/status', authMiddleware, (_req: Request, res: Response): void => {
 
 /**
  * GET /api/whatsapp/qr
- * Get QR code for scanning
+ * Get QR code for scanning (HTML page)
  */
-router.get('/qr', authMiddleware, (_req: Request, res: Response): void => {
+router.get('/qr', asyncHandler(async (_req: Request, res: Response): Promise<void> => {
   const status = whatsappService.getStatus();
 
   if (status.isReady) {
-    res.json({
-      success: true,
-      message: 'WhatsApp is already connected',
-      data: { isReady: true },
-    });
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>WhatsApp Status</title>
+        <style>
+          body { font-family: Arial; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f0f0f0; }
+          .container { text-align: center; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+          .success { color: #25D366; font-size: 24px; margin-bottom: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="success">✅ WhatsApp Connected</div>
+          <p>Your WhatsApp is already connected and ready to use.</p>
+        </div>
+      </body>
+      </html>
+    `);
     return;
   }
 
-  if (!status.hasQR) {
-    res.json({
-      success: false,
-      message: 'QR code not yet generated. Please wait...',
-      data: { hasQR: false },
-    });
+  if (!status.hasQR && !status.isInitializing) {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>WhatsApp Setup</title>
+        <style>
+          body { font-family: Arial; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f0f0f0; }
+          .container { text-align: center; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; }
+          .warning { color: #ff9800; font-size: 24px; margin-bottom: 20px; }
+          .btn { background: #25D366; color: white; border: none; padding: 15px 30px; font-size: 16px; border-radius: 8px; cursor: pointer; margin-top: 20px; }
+          .btn:hover { background: #1fa855; }
+          .info { color: #666; margin: 20px 0; line-height: 1.6; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="warning">⚠️  WhatsApp Not Connected</div>
+          <div class="info">
+            <p>WhatsApp integration is not active.</p>
+            <p>Click the button below to generate QR code and connect your WhatsApp account.</p>
+          </div>
+          <button class="btn" onclick="generateQR()">📱 Generate QR Code</button>
+        </div>
+        <script>
+          function generateQR() {
+            fetch('/api/whatsapp/initialize', { 
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            })
+            .then(() => {
+              setTimeout(() => location.reload(), 1000);
+            });
+          }
+        </script>
+      </body>
+      </html>
+    `);
+    return;
+  }
+  
+  if (status.isInitializing) {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>WhatsApp Setup</title>
+        <style>
+          body { font-family: Arial; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f0f0f0; }
+          .container { text-align: center; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+          .warning { color: #ff9800; font-size: 24px; margin-bottom: 20px; }
+        </style>
+        <meta http-equiv="refresh" content="2">
+      </head>
+      <body>
+        <div class="container">
+          <div class="warning">⏳ Initializing WhatsApp...</div>
+          <p>Please wait while we generate the QR code.</p>
+        </div>
+      </body>
+      </html>
+    `);
     return;
   }
 
-  res.json({
-    success: true,
-    message: 'QR code available',
-    data: {
-      qrCode: status.qrCode,
-      hasQR: true,
-    },
-  });
-});
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>WhatsApp QR Code</title>
+      <style>
+        body { font-family: Arial; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f0f0f0; }
+        .container { text-align: center; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; }
+        h1 { color: #25D366; margin-bottom: 10px; }
+        .instructions { color: #666; margin: 20px 0; line-height: 1.6; }
+        #qrcode { margin: 20px 0; }
+      </style>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    </head>
+    <body>
+      <div class="container">
+        <h1>📱 Scan QR Code</h1>
+        <div class="instructions">
+          <p><strong>Steps to connect:</strong></p>
+          <ol style="text-align: left;">
+            <li>Open WhatsApp on your phone</li>
+            <li>Tap Menu or Settings</li>
+            <li>Tap Linked Devices</li>
+            <li>Tap Link a Device</li>
+            <li>Scan this QR code</li>
+          </ol>
+        </div>
+        <div id="qrcode"></div>
+      </div>
+      <script>
+        new QRCode(document.getElementById('qrcode'), {
+          text: ${JSON.stringify(status.qrCode)},
+          width: 300,
+          height: 300
+        });
+        setTimeout(() => location.reload(), 30000);
+      </script>
+    </body>
+    </html>
+  `);
+}));
 
 /**
  * POST /api/whatsapp/send
@@ -234,6 +359,29 @@ router.post(
       res.status(500).json({
         success: false,
         message: error instanceof Error ? error.message : 'Failed to logout',
+      });
+    }
+  }),
+);
+
+/**
+ * DELETE /api/whatsapp/session
+ * Delete WhatsApp session directory
+ */
+router.delete(
+  '/session',
+  authMiddleware,
+  asyncHandler(async (_req: Request, res: Response): Promise<void> => {
+    try {
+      await whatsappService.deleteSession();
+      res.json({
+        success: true,
+        message: 'WhatsApp session deleted successfully',
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to delete session',
       });
     }
   }),

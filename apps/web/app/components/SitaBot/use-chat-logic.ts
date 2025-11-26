@@ -15,9 +15,14 @@ export function useChatLogic() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [mode, setMode] = useState<'fast' | 'expert'>('fast');
+  const [thinkingStatus, setThinkingStatus] = useState<'thinking' | 'researching' | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const currentRequestIdRef = useRef<number>(0);
+  const thinkingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const researchingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load chat history from sessionStorage on mount
   useEffect(() => {
@@ -95,9 +100,33 @@ export function useChatLogic() {
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = '48px';
+    }
+    
     setIsLoading(true);
+    setThinkingStatus(null);
 
     setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+
+    // Expert mode: wait 3 seconds before sending
+    if (mode === 'expert') {
+      setThinkingStatus('researching');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+
+    // Set thinking status after 1 second
+    thinkingTimerRef.current = setTimeout(() => {
+      setThinkingStatus('thinking');
+    }, 1000);
+
+    // Set researching status after 3 seconds
+    researchingTimerRef.current = setTimeout(() => {
+      setThinkingStatus('researching');
+    }, 3000);
 
     // Cancel previous request if any
     if (abortControllerRef.current) {
@@ -151,6 +180,13 @@ export function useChatLogic() {
 
               // Handle different event types from backend
               if (parsed.type === 'chunk' && parsed.text) {
+                const decodedText = parsed.text
+                  .replace(/&quot;/g, '"')
+                  .replace(/&amp;/g, '&')
+                  .replace(/&lt;/g, '<')
+                  .replace(/&gt;/g, '>')
+                  .replace(/&#39;/g, "'");
+                
                 setMessages((prev) => {
                   if (prev.length === 0) return prev;
                   const allButLast = prev.slice(0, -1);
@@ -158,7 +194,7 @@ export function useChatLogic() {
                   if (!last || last.role !== 'assistant') return prev;
                   const updatedLast = {
                     ...last,
-                    content: last.content + parsed.text,
+                    content: last.content + decodedText,
                   };
                   return [...allButLast, updatedLast];
                 });
@@ -259,6 +295,9 @@ export function useChatLogic() {
       // Only clear loading if this is still the current request
       if (requestId === currentRequestIdRef.current) {
         setIsLoading(false);
+        setThinkingStatus(null);
+        if (thinkingTimerRef.current) clearTimeout(thinkingTimerRef.current);
+        if (researchingTimerRef.current) clearTimeout(researchingTimerRef.current);
         abortControllerRef.current = null;
       }
     }
@@ -275,7 +314,11 @@ export function useChatLogic() {
     messages,
     input,
     isLoading,
+    mode,
+    setMode,
+    thinkingStatus,
     chatContainerRef,
+    textareaRef,
     setInput,
     handleSubmit,
     stop,

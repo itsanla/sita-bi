@@ -89,18 +89,13 @@ export const createRateLimiter = (options: {
 setInterval(
   () => {
     const now = Date.now();
-    const keysToDelete: string[] = [];
 
     for (const key of store.keys()) {
       const entry = store.get(key);
       if (entry !== undefined && now > entry.resetTime) {
-        keysToDelete.push(key);
+        store.delete(key);
       }
     }
-
-    keysToDelete.forEach((key) => {
-      store.delete(key);
-    });
   },
   5 * 60 * 1000,
 );
