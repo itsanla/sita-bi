@@ -50,7 +50,7 @@ export class AuthService {
     });
 
     if (user == null) {
-      throw new HttpError(401, 'Email atau password salah.');
+      throw new HttpError(401, 'Akun tidak ditemukan. Silakan periksa email/NIM/NIDN Anda atau daftar terlebih dahulu.');
     }
 
     // Check lockout
@@ -71,7 +71,7 @@ export class AuthService {
       const attempts = Number(user.failed_login_attempts ?? 0) + 1;
       let lockoutUntil = user.lockout_until;
 
-      // Lock if attempts > 5
+      // Lock if attempts >= 5
       if (attempts >= 5) {
         lockoutUntil = new Date(new Date().getTime() + 15 * 60000); // Lock for 15 mins
       }
@@ -84,7 +84,11 @@ export class AuthService {
         },
       });
 
-      throw new HttpError(401, 'Email atau password salah.');
+      if (attempts >= 5) {
+        throw new HttpError(403, 'Akun Anda terkunci karena terlalu banyak percobaan gagal. Coba lagi dalam 15 menit.');
+      }
+
+      throw new HttpError(401, `Password salah. Percobaan ke-${attempts} dari 5.`);
     }
 
     // Reset failed attempts on success

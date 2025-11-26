@@ -16,19 +16,19 @@ const navLinks = {
     { href: '/admin/reports', label: 'Laporan', icon: FileText },
   ],
   kajur: [
-    { href: '/dashboard', label: 'Dashboard', icon: Home },
+    { href: '/dashboard/admin', label: 'Dashboard', icon: Home },
     { href: '/dashboard/admin/users', label: 'Manajemen User', icon: Users },
     { href: '/admin/penjadwalan-sidang', label: 'Jadwal Sidang', icon: Calendar },
     { href: '/dashboard/pengumuman', label: 'Pengumuman', icon: FileText },
   ],
   kaprodi_d3: [
-    { href: '/dashboard', label: 'Dashboard', icon: Home },
+    { href: '/dashboard/admin', label: 'Dashboard', icon: Home },
     { href: '/dashboard/admin/users', label: 'Manajemen User', icon: Users },
     { href: '/admin/penjadwalan-sidang', label: 'Jadwal Sidang', icon: Calendar },
     { href: '/dashboard/pengumuman', label: 'Pengumuman', icon: FileText },
   ],
   kaprodi_d4: [
-    { href: '/dashboard', label: 'Dashboard', icon: Home },
+    { href: '/dashboard/admin', label: 'Dashboard', icon: Home },
     { href: '/dashboard/admin/users', label: 'Manajemen User', icon: Users },
     { href: '/admin/penjadwalan-sidang', label: 'Jadwal Sidang', icon: Calendar },
     { href: '/dashboard/pengumuman', label: 'Pengumuman', icon: FileText },
@@ -78,7 +78,7 @@ export default function Sidebar() {
     <div className="hidden border-r bg-gray-100/40 lg:block dark:bg-gray-800/40">
       <div className="flex h-full max-h-screen flex-col gap-2">
         <div className="flex h-[60px] items-center border-b px-6">
-          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+          <Link href="#" className="flex items-center gap-2 font-semibold">
             <Settings className="h-6 w-6" />
             <span>SITA-BI</span>
           </Link>

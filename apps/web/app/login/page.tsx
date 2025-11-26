@@ -1,11 +1,9 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LogIn, Mail, Lock, Eye, EyeOff, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
-
-import { useAuth } from '../../context/AuthContext';
 
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState('');
@@ -13,8 +11,9 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
   const router = useRouter();
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,24 +36,25 @@ export default function LoginPage() {
 
       if (userId && user) {
         const token = String(userId);
-        await login(token);
+        localStorage.setItem('token', token);
 
         // Redirect based on role
         const userRole = user.roles[0]?.name;
 
-        if (userRole === 'dosen') {
+        if (userRole === 'kajur' || userRole === 'kaprodi_d3' || userRole === 'kaprodi_d4' || userRole === 'admin') {
+          router.push('/dashboard/admin');
+        } else if (userRole === 'dosen') {
           router.push('/dashboard/dosen');
         } else if (userRole === 'mahasiswa') {
           router.push('/dashboard/mahasiswa');
         } else {
-          router.push('/dashboard');
+          router.push('/dashboard/mahasiswa');
         }
       }
-    } catch (err) {
-      const error = err as Error;
-      console.error('Login error:', error);
-      setError(error.message);
-    } finally {
+    } catch (err: any) {
+      console.error('Login error:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Terjadi kesalahan saat login';
+      setError(errorMessage);
       setLoading(false);
     }
   };

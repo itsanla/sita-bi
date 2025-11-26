@@ -33,7 +33,17 @@ export default function ProtectedRoute({
     }
 
     if (allowedRoles && user && !canAccess(allowedRoles)) {
-      router.push('/dashboard');
+      // Redirect ke dashboard sesuai role
+      const userRole = user.roles?.[0]?.name;
+      if (userRole === 'kajur' || userRole === 'kaprodi_d3' || userRole === 'kaprodi_d4' || userRole === 'admin') {
+        router.push('/dashboard/admin');
+      } else if (userRole === 'dosen') {
+        router.push('/dashboard/dosen');
+      } else if (userRole === 'mahasiswa') {
+        router.push('/dashboard/mahasiswa');
+      } else {
+        router.push('/login');
+      }
     }
   }, [loading, isAuthenticated, user, allowedRoles, requireAuth, redirectTo, router, canAccess]);
 

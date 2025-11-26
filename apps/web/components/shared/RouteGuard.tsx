@@ -37,7 +37,16 @@ export function RouteGuard({
 
       const hasAccess = allowedRoles.includes(role);
       if (!hasAccess) {
-        router.push('/dashboard');
+        // Redirect ke dashboard sesuai role
+        if (role === 'kajur' || role === 'kaprodi_d3' || role === 'kaprodi_d4' || role === 'admin') {
+          router.push('/dashboard/admin');
+        } else if (role === 'dosen') {
+          router.push('/dashboard/dosen');
+        } else if (role === 'mahasiswa') {
+          router.push('/dashboard/mahasiswa');
+        } else {
+          router.push('/dashboard/mahasiswa');
+        }
       }
     }
   }, [user, loading, role, allowedRoles, requireAuth, redirectTo, router, isKajur]);

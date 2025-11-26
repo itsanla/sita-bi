@@ -3,7 +3,7 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import ProtectedRoute from '@/components/shared/ProtectedRoute';
+
 import DosenCapacityBadge from '@/components/shared/DosenCapacityBadge';
 import {
   Plus,
@@ -14,9 +14,10 @@ import {
   X,
   Lock,
   Unlock,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
-// --- Interfaces (Updated) ---
 interface User {
   id: number;
   name: string;
@@ -28,7 +29,6 @@ interface User {
   lockout_until?: string | null;
 }
 
-// --- Modal Component ---
 const UserModal = ({
   user,
   onClose,
@@ -43,6 +43,7 @@ const UserModal = ({
     name: user?.name || '',
     email: user?.email || '',
     password: '',
+    confirmPassword: '',
     phone_number: '',
     nim: user?.mahasiswa?.nim || '',
     nidn: user?.dosen?.nidn || '',
@@ -52,6 +53,8 @@ const UserModal = ({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const isEditing = user !== null;
 
   const handleChange = (
@@ -66,20 +69,28 @@ const UserModal = ({
     setIsSubmitting(true);
     setError('');
 
+    if (!isEditing && formData.password !== formData.confirmPassword) {
+      setError('Kata sandi dan konfirmasi kata sandi tidak cocok');
+      setIsSubmitting(false);
+      return;
+    }
+
     let endpoint = '';
     let body: Record<string, string | undefined> = {};
     const method = isEditing ? 'PATCH' : 'POST';
 
-    if (formData.role === 'dosen' || formData.role === 'kajur' || formData.role === 'kaprodi_d3' || formData.role === 'kaprodi_d4') {
+    if (formData.role === 'admin' || formData.role === 'dosen' || formData.role === 'kajur' || formData.role === 'kaprodi_d3' || formData.role === 'kaprodi_d4') {
       endpoint = isEditing ? `/users/dosen/${user!.id}` : '/users/dosen';
       body = {
         name: formData.name,
         email: formData.email,
         nidn: formData.nidn,
-        phone_number: formData.phone_number,
         prodi: formData.prodi,
       };
-      if (formData.password || !isEditing) {
+      if (formData.phone_number) {
+        body.phone_number = formData.phone_number;
+      }
+      if (!isEditing) {
         body.password = formData.password;
       }
       if (formData.roles.length > 0) {
@@ -91,11 +102,13 @@ const UserModal = ({
         name: formData.name,
         email: formData.email,
         nim: formData.nim,
-        phone_number: formData.phone_number,
         prodi: formData.prodi,
         kelas: formData.kelas,
       };
-      if (formData.password || !isEditing) {
+      if (formData.phone_number) {
+        body.phone_number = formData.phone_number;
+      }
+      if (!isEditing) {
         body.password = formData.password;
       }
     }
@@ -108,40 +121,36 @@ const UserModal = ({
       }
       toast.success(`User berhasil ${isEditing ? 'diupdate' : 'dibuat'}!`);
       onSave();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message || `Gagal ${isEditing ? 'update' : 'membuat'} user.`);
-      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || `Gagal ${isEditing ? 'update' : 'membuat'} user.`;
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-lg">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+      <div className="bg-white rounded-xl shadow-xl p-8 w-full max-w-lg transform transition-all animate-in zoom-in-95 duration-300">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">
-            {user ? 'Edit User' : 'Create New User'}
+            {user ? 'Edit User' : 'Tambah User Baru'}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-800"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-lg"
           >
             <X size={24} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error ? (
-            <div className="bg-red-100 text-red-700 p-3 rounded-md">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm">
               {error}
             </div>
-          ) : null}
+          )}
           <div>
-            <label
-              htmlFor="role"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
               Role
             </label>
             <select
@@ -150,21 +159,19 @@ const UserModal = ({
               value={formData.role}
               onChange={handleChange}
               disabled={isEditing}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm disabled:bg-gray-100"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent disabled:bg-gray-100 transition-all"
             >
-              <option value="mahasiswa">Mahasiswa</option>
-              <option value="dosen">Dosen</option>
+              <option value="admin">Admin</option>
               <option value="kajur">Kajur</option>
               <option value="kaprodi_d3">Kaprodi D3</option>
               <option value="kaprodi_d4">Kaprodi D4</option>
+              <option value="dosen">Dosen</option>
+              <option value="mahasiswa">Mahasiswa</option>
             </select>
           </div>
           <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Name
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              Nama
             </label>
             <input
               id="name"
@@ -173,14 +180,11 @@ const UserModal = ({
               value={formData.name}
               onChange={handleChange}
               required
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all"
             />
           </div>
           <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email
             </label>
             <input
@@ -190,29 +194,79 @@ const UserModal = ({
               value={formData.email}
               onChange={handleChange}
               required
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all"
             />
           </div>
+          {!isEditing && (
+            <>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Kata Sandi
+                </label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    {showPassword ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                  Konfirmasi Kata Sandi
+                </label>
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    {showConfirmPassword ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder={isEditing ? 'Leave blank to keep unchanged' : ''}
-              required={!isEditing}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-            />
-          </div>
-          <div>
-            <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-1">
               No. HP
             </label>
             <input
@@ -222,13 +276,13 @@ const UserModal = ({
               value={formData.phone_number}
               onChange={handleChange}
               placeholder="08xxxxxxxxxx"
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all"
             />
           </div>
           {formData.role === 'mahasiswa' && (
             <>
               <div>
-                <label htmlFor="nim" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="nim" className="block text-sm font-medium text-gray-700 mb-1">
                   NIM
                 </label>
                 <input
@@ -238,45 +292,52 @@ const UserModal = ({
                   value={formData.nim}
                   onChange={handleChange}
                   required
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all"
                 />
               </div>
-              <div>
-                <label htmlFor="prodi" className="block text-sm font-medium text-gray-700">
-                  Prodi
-                </label>
-                <select
-                  id="prodi"
-                  name="prodi"
-                  value={formData.prodi}
-                  onChange={handleChange}
-                  required
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-                >
-                  <option value="D3">D3</option>
-                  <option value="D4">D4</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="kelas" className="block text-sm font-medium text-gray-700">
-                  Kelas
-                </label>
-                <input
-                  id="kelas"
-                  name="kelas"
-                  type="text"
-                  value={formData.kelas}
-                  onChange={handleChange}
-                  required
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="prodi" className="block text-sm font-medium text-gray-700 mb-1">
+                    Prodi
+                  </label>
+                  <select
+                    id="prodi"
+                    name="prodi"
+                    value={formData.prodi}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all"
+                  >
+                    <option value="D3">D3</option>
+                    <option value="D4">D4</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="kelas" className="block text-sm font-medium text-gray-700 mb-1">
+                    Kelas
+                  </label>
+                  <select
+                    id="kelas"
+                    name="kelas"
+                    value={formData.kelas}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all"
+                  >
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                    <option value="E">E</option>
+                  </select>
+                </div>
               </div>
             </>
           )}
-          {(formData.role === 'dosen' || formData.role === 'kajur' || formData.role === 'kaprodi_d3' || formData.role === 'kaprodi_d4') && (
+          {(formData.role === 'admin' || formData.role === 'dosen' || formData.role === 'kajur' || formData.role === 'kaprodi_d3' || formData.role === 'kaprodi_d4') && (
             <>
               <div>
-                <label htmlFor="nidn" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="nidn" className="block text-sm font-medium text-gray-700 mb-1">
                   NIDN
                 </label>
                 <input
@@ -286,12 +347,12 @@ const UserModal = ({
                   value={formData.nidn}
                   onChange={handleChange}
                   required
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all"
                 />
               </div>
               {(formData.role === 'kaprodi_d3' || formData.role === 'kaprodi_d4') && (
                 <div>
-                  <label htmlFor="prodi" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="prodi" className="block text-sm font-medium text-gray-700 mb-1">
                     Prodi Scope
                   </label>
                   <select
@@ -300,7 +361,7 @@ const UserModal = ({
                     value={formData.prodi}
                     onChange={handleChange}
                     required
-                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all"
                   >
                     <option value="D3">D3</option>
                     <option value="D4">D4</option>
@@ -309,20 +370,20 @@ const UserModal = ({
               )}
             </>
           )}
-          <div className="flex justify-end pt-4 space-x-3">
+          <div className="flex justify-end pt-4 gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300"
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-medium transition-all duration-300"
             >
-              Cancel
+              Batal
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-900 disabled:bg-gray-400"
+              className="px-6 py-3 bg-maroon-700 text-white rounded-xl hover:bg-maroon-800 disabled:bg-gray-400 font-medium transition-all duration-300 shadow-md hover:shadow-lg"
             >
-              {isSubmitting ? 'Saving...' : 'Save'}
+              {isSubmitting ? 'Menyimpan...' : 'Simpan'}
             </button>
           </div>
         </form>
@@ -331,7 +392,6 @@ const UserModal = ({
   );
 };
 
-// --- Main Page Component ---
 export default function KelolaPenggunaPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -340,6 +400,18 @@ export default function KelolaPenggunaPage() {
   const [roleFilter, setRoleFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      const userData = JSON.parse(user);
+      setCurrentUserId(userData.id);
+    }
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -413,6 +485,35 @@ export default function KelolaPenggunaPage() {
     fetchData();
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedUsers.length === 0) return;
+    if (!confirm(`Apakah Anda yakin ingin menghapus ${selectedUsers.length} user?`)) return;
+    try {
+      await api.post('/users/bulk-delete', { ids: selectedUsers });
+      toast.success(`${selectedUsers.length} user berhasil dihapus`);
+      setSelectedUsers([]);
+      fetchData();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(`Error: ${err.message}`);
+      }
+    }
+  };
+
+  const toggleSelectUser = (id: number) => {
+    setSelectedUsers(prev => 
+      prev.includes(id) ? prev.filter(uid => uid !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedUsers.length === paginatedUsers.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(paginatedUsers.map(u => u.id));
+    }
+  };
+
   const filteredUsers = users.filter((user) => {
     const roleMatch =
       roleFilter === 'all' || user.roles.some((r) => r.name === roleFilter);
@@ -423,6 +524,14 @@ export default function KelolaPenggunaPage() {
       (user.dosen?.nidn && user.dosen.nidn.includes(searchQuery));
     return roleMatch && searchMatch;
   });
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, roleFilter]);
 
   const RoleBadge = ({ roles }: { roles: { name: string }[] }) => {
     const roleName = roles[0]?.name || 'unknown';
@@ -451,169 +560,261 @@ export default function KelolaPenggunaPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-10">
-        <Loader className="animate-spin text-maroon-700" size={32} />
-        <span className="ml-4 text-lg text-gray-600">Loading users...</span>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader className="animate-spin text-maroon-700 mx-auto mb-4" size={40} />
+          <span className="text-lg text-gray-600">Memuat data pengguna...</span>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md">
-        <p className="font-bold">Error</p>
+      <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-6 rounded-xl">
+        <p className="font-bold text-lg mb-2">Error</p>
         <p>{error}</p>
       </div>
     );
   }
 
   return (
-    <ProtectedRoute allowedRoles={['admin', 'kajur']}>
-      <div className="container mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Kelola Pengguna</h1>
-        <button
-          onClick={() => handleOpenModal(null)}
-          className="flex items-center bg-red-800 text-white px-4 py-2 rounded-lg hover:bg-red-900 transition-colors duration-200 shadow-sm"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Tambah Pengguna
-        </button>
-      </div>
-
-      <div className="mb-6 flex items-center gap-4">
-        <div className="relative w-full max-w-md">
-          <input
-            type="text"
-            placeholder="Cari nama, email, NIM/NIDN..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-800"
-          />
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-        </div>
-        <div className="relative">
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
+    <div className="container mx-auto px-6 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">Kelola Pengguna</h1>
+            <p className="text-gray-600">Manajemen akun dosen dan mahasiswa</p>
+          </div>
+          <button
+            onClick={() => handleOpenModal(null)}
+            className="flex items-center bg-maroon-700 text-white px-6 py-3 rounded-xl hover:bg-maroon-800 transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5"
           >
-            <option value="all">Semua Role</option>
-            <option value="admin">Admin</option>
-            <option value="kajur">Kajur</option>
-            <option value="kaprodi_d3">Kaprodi D3</option>
-            <option value="kaprodi_d4">Kaprodi D4</option>
-            <option value="dosen">Dosen</option>
-            <option value="mahasiswa">Mahasiswa</option>
-          </select>
+            <Plus className="w-5 h-5 mr-2" />
+            Tambah Pengguna
+          </button>
         </div>
-      </div>
 
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Nama
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                NIM/NIDN
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Prodi
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Kapasitas
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Role
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Aksi
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredUsers.map((user) => {
-              const isLocked =
-                user.lockout_until && new Date(user.lockout_until) > new Date();
-              return (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {user.name}
-                    </div>
-                    <div className="text-sm text-gray-500">{user.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.mahasiswa?.nim || user.dosen?.nidn || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.mahasiswa?.prodi || user.dosen?.prodi || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {user.dosen ? (
-                      <DosenCapacityBadge 
-                        current={user.dosen.assignedMahasiswa?.length || 0} 
-                        max={4} 
-                      />
-                    ) : '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {isLocked ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        <Lock className="w-3 h-3 mr-1" /> Terkunci
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        <Unlock className="w-3 h-3 mr-1" /> Aktif
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <RoleBadge roles={user.roles} />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    {isLocked ? (
-                      <button
-                        onClick={() => handleUnlock(user.id)}
-                        className="text-orange-600 hover:text-orange-900 mr-4"
-                        title="Buka Kunci Akun"
-                      >
-                        <Unlock className="w-5 h-5" />
-                      </button>
-                    ) : null}
-                    <button
-                      onClick={() => handleOpenModal(user)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
-                    >
-                      <Edit className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(user.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </td>
+        {selectedUsers.length > 0 && (
+          <div className="bg-maroon-50 border border-maroon-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+            <span className="text-maroon-800 font-medium">
+              {selectedUsers.length} user dipilih
+            </span>
+            <button
+              onClick={handleBulkDelete}
+              className="flex items-center bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Hapus Terpilih
+            </button>
+          </div>
+        )}
+
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Cari nama, email, NIM/NIDN..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all"
+              />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            </div>
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all bg-white"
+            >
+              <option value="all">Semua Role</option>
+              <option value="admin">Admin</option>
+              <option value="kajur">Kajur</option>
+              <option value="kaprodi_d3">Kaprodi D3</option>
+              <option value="kaprodi_d4">Kaprodi D4</option>
+              <option value="dosen">Dosen</option>
+              <option value="mahasiswa">Mahasiswa</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-4 text-left">
+                    <input
+                      type="checkbox"
+                      checked={selectedUsers.length === paginatedUsers.length && paginatedUsers.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 text-maroon-700 border-gray-300 rounded focus:ring-maroon-700"
+                    />
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Nama
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    NIM/NIDN
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Prodi
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Kapasitas
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Aksi
+                  </th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {paginatedUsers.map((user) => {
+                  const isLocked =
+                    user.lockout_until && new Date(user.lockout_until) > new Date();
+                  const isCurrentUser = currentUserId === user.id;
+                  const isAdmin = user.roles.some(r => r.name === 'admin');
+                  return (
+                    <tr key={user.id} className="hover:bg-gray-50 transition-colors duration-150">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.includes(user.id)}
+                          onChange={() => toggleSelectUser(user.id)}
+                          className="w-4 h-4 text-maroon-700 border-gray-300 rounded focus:ring-maroon-700"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {user.name}
+                        </div>
+                        <div className="text-sm text-gray-500">{user.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">
+                        {user.mahasiswa?.nim || user.dosen?.nidn || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {user.mahasiswa?.prodi || user.dosen?.prodi || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {user.dosen ? (
+                          <DosenCapacityBadge 
+                            current={user.dosen.assignedMahasiswa?.length || 0} 
+                            max={4} 
+                          />
+                        ) : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {isLocked ? (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                            <Lock className="w-3 h-3 mr-1" /> Terkunci
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                            <Unlock className="w-3 h-3 mr-1" /> Aktif
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <RoleBadge roles={user.roles} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end gap-2">
+                          {isLocked && (
+                            <button
+                              onClick={() => handleUnlock(user.id)}
+                              className="p-2 text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-lg transition-all duration-200"
+                              title="Buka Kunci Akun"
+                            >
+                              <Unlock className="w-5 h-5" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleOpenModal(user)}
+                            className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                            title="Edit"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(user.id)}
+                            disabled={isCurrentUser}
+                            className={`p-2 rounded-lg transition-all duration-200 ${
+                              isCurrentUser
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                            }`}
+                            title={isCurrentUser ? 'Tidak dapat menghapus akun sendiri' : 'Hapus'}
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
-      {isModalOpen ? (
-        <UserModal
-          user={editingUser}
-          onClose={handleCloseModal}
-          onSave={handleSave}
-        />
-      ) : null}
+          {filteredUsers.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">Tidak ada data pengguna</p>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Menampilkan {startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredUsers.length)} dari {filteredUsers.length} pengguna
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                        currentPage === page
+                          ? 'bg-maroon-700 text-white shadow-md'
+                          : 'border border-gray-300 hover:bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {isModalOpen && (
+          <UserModal
+            user={editingUser}
+            onClose={handleCloseModal}
+            onSave={handleSave}
+          />
+        )}
       </div>
-    </ProtectedRoute>
   );
 }

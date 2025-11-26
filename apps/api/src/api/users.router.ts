@@ -18,9 +18,31 @@ const usersService = new UsersService();
 // Apply JWT Auth and Roles Guard globally for this router
 router.use(asyncHandler(authMiddleware));
 
+// Bulk delete endpoint - MUST be FIRST before any /:id routes
+router.post(
+  '/bulk-delete',
+  authorizeRoles([Role.admin, Role.kajur]),
+  asyncHandler(async (req, res) => {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ status: 'gagal', message: 'IDs diperlukan' });
+      return;
+    }
+    const result = await usersService.bulkDeleteUsers(ids);
+    const message = result.failed.length > 0 
+      ? `${result.count} pengguna berhasil dihapus, ${result.failed.length} gagal (terkait dengan data lain).`
+      : `${result.count} pengguna berhasil dihapus.`;
+    res.status(200).json({ 
+      status: 'sukses', 
+      message,
+      data: result 
+    });
+  }),
+);
+
 router.post(
   '/dosen',
-  authorizeRoles([Role.admin]),
+  authorizeRoles([Role.admin, Role.kajur]),
   validate(createDosenSchema),
   asyncHandler(async (req, res) => {
     const newDosen = await usersService.createDosen(req.body);
@@ -30,7 +52,7 @@ router.post(
 
 router.post(
   '/mahasiswa',
-  authorizeRoles([Role.admin]),
+  authorizeRoles([Role.admin, Role.kajur]),
   validate(createMahasiswaSchema),
   asyncHandler(async (req, res) => {
     const newMahasiswa = await usersService.createMahasiswa(req.body);
@@ -77,7 +99,7 @@ router.get(
 
 router.get(
   '/mahasiswa',
-  authorizeRoles([Role.admin]),
+  authorizeRoles([Role.admin, Role.kajur]),
   asyncHandler(async (req, res) => {
     const page =
       req.query['page'] != null
@@ -94,7 +116,7 @@ router.get(
 
 router.patch(
   '/dosen/:id',
-  authorizeRoles([Role.admin]),
+  authorizeRoles([Role.admin, Role.kajur]),
   validate(updateDosenSchema),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
@@ -112,7 +134,7 @@ router.patch(
 
 router.patch(
   '/mahasiswa/:id',
-  authorizeRoles([Role.admin]),
+  authorizeRoles([Role.admin, Role.kajur]),
   validate(updateMahasiswaSchema),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
@@ -132,7 +154,7 @@ router.patch(
 
 router.delete(
   '/:id',
-  authorizeRoles([Role.admin]),
+  authorizeRoles([Role.admin, Role.kajur]),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     if (id == null) {
@@ -141,7 +163,8 @@ router.delete(
         .json({ status: 'gagal', message: 'ID Pengguna diperlukan' });
       return;
     }
-    await usersService.deleteUser(parseInt(id, 10));
+    const currentUserId = req.user?.id;
+    await usersService.deleteUser(parseInt(id, 10), currentUserId);
     res
       .status(200)
       .json({ status: 'sukses', message: 'Pengguna berhasil dihapus.' });
@@ -151,7 +174,7 @@ router.delete(
 // New endpoint for unlocking user
 router.post(
   '/:id/unlock',
-  authorizeRoles([Role.admin]),
+  authorizeRoles([Role.admin, Role.kajur]),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     if (id == null) {

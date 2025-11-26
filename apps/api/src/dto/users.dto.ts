@@ -30,10 +30,6 @@ export type CreateDosenDto = z.infer<typeof createDosenSchema>;
 export const updateDosenSchema = z.object({
   name: z.string().optional(),
   email: z.email().optional(),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters long')
-    .optional(),
   nidn: z.string().optional(),
   prodi: z.enum([Prodi.D3, Prodi.D4]).optional(),
   roles: z
@@ -67,10 +63,6 @@ export type CreateMahasiswaDto = z.infer<typeof createMahasiswaSchema>;
 export const updateMahasiswaSchema = z.object({
   name: z.string().optional(),
   email: z.email().optional(),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters long')
-    .optional(),
   nim: z.string().optional(),
   prodi: z.enum([Prodi.D3, Prodi.D4]).optional(),
   kelas: z.string().optional(),

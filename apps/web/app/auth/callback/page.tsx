@@ -14,7 +14,7 @@ function AuthCallback() {
     if (token) {
       // Save the token from the URL into a cookie
       Cookies.set('token', token, { expires: 1 });
-      // Redirect to the main dashboard
+      // Redirect to the main dashboard - akan di-redirect otomatis ke dashboard yang sesuai
       router.replace('/dashboard');
     } else {
       // If no token is found, redirect to login with an error

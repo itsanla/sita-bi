@@ -45,9 +45,10 @@ export const errorHandler = (
     });
   } else {
     // Handle generic errors
-    res.status(500).json({
+    const statusCode = (err as any).statusCode || 500;
+    res.status(statusCode).json({
       status: 'error',
-      message: 'Internal Server Error',
+      message: err.message || 'Internal Server Error',
     });
   }
 };

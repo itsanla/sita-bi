@@ -59,7 +59,10 @@ apiClient.interceptors.response.use(
     const message =
       (error.response.data as ApiResponse)?.message || error.message;
 
-    console.error(`[API Response] HTTP ${status}:`, message);
+    // Only log unexpected errors (not validation/conflict errors)
+    if (![400, 409, 422].includes(status)) {
+      console.error(`[API Response] HTTP ${status}:`, message);
+    }
 
     switch (status) {
       case 400:
@@ -67,8 +70,9 @@ apiClient.interceptors.response.use(
         break;
 
       case 401:
-        toast.error('Sesi Anda telah berakhir. Silakan login kembali.');
-        if (typeof window !== 'undefined') {
+        // Don't redirect on login page
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+          toast.error('Sesi Anda telah berakhir. Silakan login kembali.');
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           window.location.href = '/login';
@@ -84,7 +88,7 @@ apiClient.interceptors.response.use(
         break;
 
       case 409:
-        toast.error(`Konflik data: ${message}`);
+        // Don't show toast here, let the component handle it
         break;
 
       case 422:
@@ -96,7 +100,7 @@ apiClient.interceptors.response.use(
         break;
 
       case 500:
-        toast.error('Terjadi kesalahan di server. Tim kami telah diberitahu.');
+        // Don't show toast here, let the component handle it
         break;
 
       case 502:

@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import {
@@ -86,14 +88,14 @@ export default function AdminDashboardPage() {
             href="/dashboard/admin/pengumuman/create"
           />
           <QuickAccessLink
-            title="Validasi Tugas Akhir"
-            description="Tinjau dan setujui pengajuan tugas akhir mahasiswa."
-            href="/dashboard/admin/validasi-ta"
-          />
-          <QuickAccessLink
             title="Jadwalkan Sidang"
             description="Atur dan publikasikan jadwal sidang baru."
             href="/dashboard/admin/jadwal-sidang"
+          />
+          <QuickAccessLink
+            title="Kelola Penugasan"
+            description="Assign pembimbing dan penguji untuk mahasiswa."
+            href="/dashboard/admin/penugasan"
           />
         </div>
       </div>

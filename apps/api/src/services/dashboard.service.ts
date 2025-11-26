@@ -54,6 +54,58 @@ export class DashboardService {
   }
 
   /**
+   * Get progress data for mahasiswa
+   */
+  async getMahasiswaProgress(userId: number): Promise<{
+    statusTA: string;
+    bimbinganCount: number;
+    minBimbingan: number;
+    tanggalDisetujui?: string;
+  }> {
+    const mahasiswa = await this.prisma.mahasiswa.findUnique({
+      where: { user_id: userId },
+      include: {
+        tugasAkhir: {
+          include: {
+            bimbinganTa: true,
+          },
+        },
+      },
+    });
+
+    if (mahasiswa === null) {
+      throw new Error('Profil mahasiswa tidak ditemukan.');
+    }
+
+    const tugasAkhir = mahasiswa.tugasAkhir;
+    const statusTA = tugasAkhir?.status ?? 'BELUM_MENGAJUKAN';
+    
+    const bimbinganList = tugasAkhir?.bimbinganTa ?? [];
+    const bimbinganCount = bimbinganList.filter(
+      (b) => b.status_bimbingan === StatusBimbingan.selesai,
+    ).length;
+
+    const minBimbingan = 8; // Default minimum bimbingan
+
+    // Use updated_at when status changed to DISETUJUI or BIMBINGAN as approval date
+    let tanggalDisetujui: string | undefined;
+    if (tugasAkhir && (tugasAkhir.status === StatusTugasAkhir.DISETUJUI || tugasAkhir.status === StatusTugasAkhir.BIMBINGAN)) {
+      tanggalDisetujui = new Date(tugasAkhir.updated_at).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    }
+
+    return {
+      statusTA,
+      bimbinganCount,
+      minBimbingan,
+      ...(tanggalDisetujui && { tanggalDisetujui }),
+    };
+  }
+
+  /**
    * Get comprehensive dashboard statistics for mahasiswa
    */
   async getMahasiswaStats(userId: number): Promise<DashboardStats> {

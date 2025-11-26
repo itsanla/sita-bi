@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
-import RoleBasedDashboard from './components/RoleBasedDashboard';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 
 export default function DashboardPage() {
@@ -13,24 +12,30 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!loading && !user) {
       router.replace('/login');
+      return;
+    }
+
+    if (!loading && user && user.roles && user.roles.length > 0) {
+      const userRole = user.roles[0]?.name;
+      
+      // Redirect langsung ke dashboard sesuai role
+      if (userRole === 'kajur' || userRole === 'kaprodi_d3' || userRole === 'kaprodi_d4' || userRole === 'admin') {
+        router.replace('/dashboard/admin');
+      } else if (userRole === 'dosen') {
+        router.replace('/dashboard/dosen');
+      } else if (userRole === 'mahasiswa') {
+        router.replace('/dashboard/mahasiswa');
+      } else {
+        // Fallback untuk role yang tidak dikenali
+        router.replace('/dashboard/mahasiswa');
+      }
     }
   }, [user, loading, router]);
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
+  // Selalu tampilkan loading saat redirect
   return (
-    <div className="container mx-auto p-6">
-      <RoleBasedDashboard />
+    <div className="flex h-screen items-center justify-center">
+      <LoadingSpinner />
     </div>
   );
 }

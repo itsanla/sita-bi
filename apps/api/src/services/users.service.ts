@@ -37,12 +37,13 @@ export class UsersService {
   async createMahasiswa(dto: CreateMahasiswaDto): Promise<User> {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    return this.prisma.user.create({
+    try {
+      return await this.prisma.user.create({
       data: {
         name: dto.name,
         email: dto.email,
         password: hashedPassword,
-        phone_number: dto.phone_number ?? '', // Default empty string jika tidak ada
+        phone_number: dto.phone_number ?? null,
         roles: {
           connect: { name: Role.mahasiswa },
         },
@@ -58,6 +59,26 @@ export class UsersService {
         mahasiswa: true,
       },
     });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          const target = (error.meta?.target as string[]) || [];
+          const err: any = new Error();
+          err.statusCode = 409;
+          if (target.includes('email')) {
+            err.message = 'Email sudah digunakan oleh user lain';
+          } else if (target.includes('phone_number')) {
+            err.message = 'Nomor HP sudah digunakan oleh user lain';
+          } else if (target.includes('nim')) {
+            err.message = 'NIM sudah digunakan oleh mahasiswa lain';
+          } else {
+            err.message = 'Data sudah ada di sistem';
+          }
+          throw err;
+        }
+      }
+      throw error;
+    }
   }
 
   async createDosen(dto: CreateDosenDto): Promise<User> {
@@ -76,19 +97,20 @@ export class UsersService {
       });
     }
 
-    return this.prisma.user.create({
+    try {
+      return await this.prisma.user.create({
       data: {
         name: dto.name,
         email: dto.email,
         password: hashedPassword,
-        phone_number: dto.phone_number ?? '', // Default empty string jika tidak ada
+        phone_number: dto.phone_number ?? null,
         roles: {
           connect: rolesToConnect,
         },
         dosen: {
           create: {
             nidn: dto.nidn,
-            prodi: dto.prodi,
+            prodi: dto.prodi ?? null,
           },
         },
       },
@@ -97,6 +119,26 @@ export class UsersService {
         roles: true,
       },
     });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          const target = (error.meta?.target as string[]) || [];
+          const err: any = new Error();
+          err.statusCode = 409;
+          if (target.includes('email')) {
+            err.message = 'Email sudah digunakan oleh user lain';
+          } else if (target.includes('phone_number')) {
+            err.message = 'Nomor HP sudah digunakan oleh user lain';
+          } else if (target.includes('nidn')) {
+            err.message = 'NIDN sudah digunakan oleh dosen lain';
+          } else {
+            err.message = 'Data sudah ada di sistem';
+          }
+          throw err;
+        }
+      }
+      throw error;
+    }
   }
 
   async updateDosen(id: number, dto: UpdateDosenDto): Promise<User> {
@@ -104,8 +146,7 @@ export class UsersService {
 
     if (dto.name != null) userData.name = dto.name;
     if (dto.email != null) userData.email = dto.email;
-    if (dto.password != null)
-      userData.password = await bcrypt.hash(dto.password, 10);
+    // Password tidak bisa diubah oleh admin, hanya user sendiri yang bisa mengubah password
     if (dto.roles != null) {
       userData.roles = {
         set: dto.roles.map((roleName) => ({ name: roleName })),
@@ -133,8 +174,7 @@ export class UsersService {
 
     if (dto.name != null) userData.name = dto.name;
     if (dto.email != null) userData.email = dto.email;
-    if (dto.password != null)
-      userData.password = await bcrypt.hash(dto.password, 10);
+    // Password tidak bisa diubah oleh admin, hanya user sendiri yang bisa mengubah password
 
     if (dto.nim != null) mahasiswaData.nim = dto.nim;
     if (dto.prodi != null) mahasiswaData.prodi = dto.prodi;
@@ -299,11 +339,41 @@ export class UsersService {
     };
   }
 
-  async deleteUser(id: number): Promise<User> {
+  async deleteUser(id: number, currentUserId?: number): Promise<User> {
     const user = await this.findUserById(id);
     if (user === null) {
       throw new Error(`User with ID ${id} not found`);
     }
+
+    // Proteksi 1: Tidak bisa hapus diri sendiri
+    if (currentUserId && id === currentUserId) {
+      const err: any = new Error('Anda tidak dapat menghapus akun Anda sendiri');
+      err.statusCode = 403;
+      throw err;
+    }
+
+    // Proteksi 2: Cek apakah user adalah admin
+    const isAdmin = user.roles.some(role => role.name === 'admin');
+    if (isAdmin) {
+      // Hitung jumlah admin yang ada
+      const adminCount = await this.prisma.user.count({
+        where: {
+          roles: {
+            some: {
+              name: 'admin'
+            }
+          }
+        }
+      });
+
+      // Proteksi 3: Minimal harus ada 1 admin
+      if (adminCount <= 1) {
+        const err: any = new Error('Tidak dapat menghapus admin terakhir. Sistem harus memiliki minimal 1 admin.');
+        err.statusCode = 403;
+        throw err;
+      }
+    }
+
     try {
       return await this.prisma.user.delete({ where: { id } });
     } catch (e) {
@@ -325,5 +395,20 @@ export class UsersService {
       where: { id },
       data,
     });
+  }
+
+  async bulkDeleteUsers(ids: number[]): Promise<{ count: number; failed: number[] }> {
+    const results = { count: 0, failed: [] as number[] };
+    
+    for (const id of ids) {
+      try {
+        await this.prisma.user.delete({ where: { id } });
+        results.count++;
+      } catch (e) {
+        results.failed.push(id);
+      }
+    }
+    
+    return results;
   }
 }

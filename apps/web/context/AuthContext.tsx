@@ -73,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('token', _token);
     }
     await fetchUserProfile();
+    // Tidak melakukan redirect otomatis di sini, biarkan komponen login yang menangani
   };
 
   const logout = () => {

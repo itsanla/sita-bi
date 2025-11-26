@@ -91,6 +91,29 @@ router.get(
 );
 
 /**
+ * GET /api/dashboard/mahasiswa/progress
+ * Get progress data for logged-in mahasiswa
+ */
+router.get(
+  '/mahasiswa/progress',
+  asyncHandler(authMiddleware),
+  authorizeRoles([Role.mahasiswa]),
+  asyncHandler(async (req: Request, response: Response): Promise<void> => {
+    const userId = req.user?.id;
+    if (userId === undefined) {
+      response.status(401).json({
+        status: 'gagal',
+        message: 'Akses ditolak: ID pengguna tidak ditemukan.',
+      });
+      return;
+    }
+
+    const progress = await dashboardService.getMahasiswaProgress(userId);
+    response.status(200).json({ status: 'sukses', data: progress });
+  }),
+);
+
+/**
  * GET /api/dashboard/mahasiswa/system-stats
  * Get system-wide statistics (total dosen, mahasiswa, judul TA)
  */
