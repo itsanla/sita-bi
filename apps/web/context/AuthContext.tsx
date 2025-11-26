@@ -25,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasFetched, setHasFetched] = useState(false);
   const router = useRouter();
 
   const fetchUserProfile = useCallback(async () => {
@@ -37,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!token) {
       setLoading(false);
       setUser(null);
+      setHasFetched(true);
       return;
     }
 
@@ -49,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ...userData,
           nama: userData.name,
           nim: userData.mahasiswa?.nim,
-          nidn: userData.dosen?.nidn,
+          nip: userData.dosen?.nip,
         });
       } else {
         setUser(null);
@@ -61,12 +63,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('token');
     } finally {
       setLoading(false);
+      setHasFetched(true);
     }
   }, []);
 
   useEffect(() => {
-    fetchUserProfile();
-  }, [fetchUserProfile]);
+    if (!hasFetched) {
+      fetchUserProfile();
+    }
+  }, [fetchUserProfile, hasFetched]);
 
   const login = async (_token: string) => {
     if (typeof window !== 'undefined') {

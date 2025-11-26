@@ -5,7 +5,8 @@ import { useAuth } from '../../../context/AuthContext';
 
 export default function RoleBasedDashboard() {
   const { user } = useAuth();
-  const { isKajur, isKaprodi, isDosen, isMahasiswa, canAccessProdi } = useRBAC();
+  const { isKajur, isKaprodi, isDosen, isMahasiswa, canAccessProdi } =
+    useRBAC();
 
   if (!user) return null;
 
@@ -63,13 +64,14 @@ export default function RoleBasedDashboard() {
 
   if (isDosen) {
     const assignedCount = user.dosen?.assignedMahasiswa?.length || 0;
-    
+
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">Dashboard Dosen</h1>
         <div className="rounded-lg bg-blue-50 p-4">
           <p className="text-sm text-blue-800">
-            Anda membimbing <span className="font-bold">{assignedCount}</span> mahasiswa
+            Anda membimbing <span className="font-bold">{assignedCount}</span>{' '}
+            mahasiswa
           </p>
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

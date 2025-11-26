@@ -109,7 +109,7 @@ export class UsersService {
         },
         dosen: {
           create: {
-            nidn: dto.nidn,
+            nip: dto.nip,
             prodi: dto.prodi ?? null,
           },
         },
@@ -129,8 +129,8 @@ export class UsersService {
             err.message = 'Email sudah digunakan oleh user lain';
           } else if (target.includes('phone_number')) {
             err.message = 'Nomor HP sudah digunakan oleh user lain';
-          } else if (target.includes('nidn')) {
-            err.message = 'NIDN sudah digunakan oleh dosen lain';
+          } else if (target.includes('nip')) {
+            err.message = 'NIP sudah digunakan oleh dosen lain';
           } else {
             err.message = 'Data sudah ada di sistem';
           }
@@ -152,9 +152,9 @@ export class UsersService {
         set: dto.roles.map((roleName) => ({ name: roleName })),
       };
     }
-    if (dto.nidn != null || dto.prodi !== undefined) {
+    if (dto.nip != null || dto.prodi !== undefined) {
       const dosenUpdate: Prisma.DosenUpdateInput = {};
-      if (dto.nidn != null) dosenUpdate.nidn = dto.nidn;
+      if (dto.nip != null) dosenUpdate.nip = dto.nip;
       if (dto.prodi !== undefined) dosenUpdate.prodi = dto.prodi;
       userData.dosen = {
         update: dosenUpdate,
@@ -312,7 +312,7 @@ export class UsersService {
           email: true,
           dosen: {
             select: {
-              nidn: true,
+              nip: true,
             },
           },
           roles: {

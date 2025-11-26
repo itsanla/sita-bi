@@ -1,4 +1,9 @@
-import { Router } from 'express';
+import {
+  Router,
+  type Request,
+  type Response,
+  type NextFunction,
+} from 'express';
 import asyncHandler from 'express-async-handler';
 import { BimbinganService } from '../services/bimbingan.service';
 import { insecureAuthMiddleware } from '../middlewares/auth.middleware';
@@ -7,6 +12,7 @@ import { validateDosenTugasAkhirAccess } from '../middlewares/rbac.middleware';
 import { validate } from '../middlewares/validation.middleware';
 import { Role } from '@repo/types';
 import { createCatatanSchema, setJadwalSchema } from '../dto/bimbingan.dto';
+import { NotFoundError, BadRequestError } from '../errors/AppError';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -26,11 +32,44 @@ const storage = multer.diskStorage({
   },
   filename: (_req, file, cb) => {
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `${uniqueSuffix}-${file.originalname}`);
+    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    cb(null, `${uniqueSuffix}-${sanitizedName}`);
   },
 });
 
-const upload = multer({ storage: storage });
+const ALLOWED_FILE_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/jpeg',
+  'image/png',
+  'image/jpg',
+];
+
+const fileFilter = (
+  _req: Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback,
+): void => {
+  if (ALLOWED_FILE_TYPES.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(
+      new Error(
+        'Tipe file tidak diizinkan. Hanya PDF, DOC, DOCX, dan gambar yang diperbolehkan.',
+      ),
+    );
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+    files: 5, // Max 5 files
+  },
+});
 
 // Apply JWT Auth and Roles Guard globally for this router
 router.use(asyncHandler(insecureAuthMiddleware));
@@ -39,21 +78,17 @@ router.get(
   '/sebagai-dosen',
   asyncHandler(async (req, res): Promise<void> => {
     const dosenId = req.user?.dosen?.id;
-    if (dosenId === undefined) {
-      res.status(401).json({
-        status: 'gagal',
-        message: 'Akses ditolak: Pengguna tidak memiliki profil dosen.',
-      });
-      return;
+    if (!dosenId) {
+      throw new BadRequestError('Pengguna tidak memiliki profil dosen');
     }
-    const page =
-      req.query['page'] != null
-        ? parseInt(req.query['page'] as string)
-        : undefined;
-    const limit =
-      req.query['limit'] != null
-        ? parseInt(req.query['limit'] as string)
-        : undefined;
+
+    const page = req.query['page']
+      ? Math.max(1, parseInt(req.query['page'] as string, 10))
+      : 1;
+    const limit = req.query['limit']
+      ? Math.min(100, Math.max(1, parseInt(req.query['limit'] as string, 10)))
+      : 20;
+
     const bimbingan = await bimbinganService.getBimbinganForDosen(
       dosenId,
       page,
@@ -67,13 +102,10 @@ router.get(
   '/sebagai-mahasiswa',
   asyncHandler(async (req, res): Promise<void> => {
     const mahasiswaId = req.user?.mahasiswa?.id;
-    if (mahasiswaId === undefined) {
-      res.status(401).json({
-        status: 'gagal',
-        message: 'Akses ditolak: Pengguna tidak memiliki profil mahasiswa.',
-      });
-      return;
+    if (!mahasiswaId) {
+      throw new BadRequestError('Pengguna tidak memiliki profil mahasiswa');
     }
+
     const bimbingan =
       await bimbinganService.getBimbinganForMahasiswa(mahasiswaId);
     res.status(200).json({ status: 'sukses', data: bimbingan });
@@ -86,13 +118,10 @@ router.post(
   validate(createCatatanSchema),
   asyncHandler(async (req, res): Promise<void> => {
     const userId = req.user?.id;
-    if (userId === undefined) {
-      res.status(401).json({
-        status: 'gagal',
-        message: 'Akses ditolak: ID pengguna tidak ditemukan.',
-      });
-      return;
+    if (!userId) {
+      throw new BadRequestError('ID pengguna tidak ditemukan');
     }
+
     const { bimbingan_ta_id, catatan } = req.body;
     const newCatatan = await bimbinganService.createCatatan(
       bimbingan_ta_id,
@@ -106,40 +135,54 @@ router.post(
 router.post(
   '/sesi/:id/upload',
   authorizeRoles([Role.dosen, Role.mahasiswa]),
-  upload.array('files'), // Allow multiple files
+  (req: Request, res: Response, next: NextFunction): void => {
+    upload.array('files', 5)(req, res, (err): void => {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          res.status(400).json({
+            status: 'gagal',
+            message: 'Ukuran file terlalu besar. Maksimal 10MB per file.',
+          });
+          return;
+        }
+        if (err.code === 'LIMIT_FILE_COUNT') {
+          res.status(400).json({
+            status: 'gagal',
+            message: 'Terlalu banyak file. Maksimal 5 file.',
+          });
+          return;
+        }
+        res
+          .status(400)
+          .json({ status: 'gagal', message: `Upload error: ${err.message}` });
+        return;
+      }
+      if (err) {
+        res.status(400).json({ status: 'gagal', message: err.message });
+        return;
+      }
+      next();
+    });
+  },
   asyncHandler(async (req, res): Promise<void> => {
     const { id } = req.params;
-    if (id == null) {
-      res.status(400).json({ status: 'gagal', message: 'ID Sesi diperlukan' });
-      return;
-    }
-    const userId = req.user?.id;
-    if (userId === undefined) {
-      res.status(401).json({ status: 'gagal', message: 'User ID not found' });
-      return;
+    if (!id) {
+      throw new BadRequestError('ID Sesi diperlukan');
     }
 
     if (!req.files || (Array.isArray(req.files) && req.files.length === 0)) {
-      res.status(400).json({ status: 'gagal', message: 'No files uploaded' });
-      return;
+      throw new BadRequestError('Tidak ada file yang diupload');
     }
 
     const files = req.files as Express.Multer.File[];
-    // Process each file
-    const results = [];
-    for (const file of files) {
-      // You would typically move the file or get its path here
-      // And save it to the database
-      // For now, assuming bimbinganService has a method or we add one
-      // We'll just call a service method
-      const result = await bimbinganService.addLampiran(
-        parseInt(id, 10),
-        file.path, // Or relative path
-        file.originalname,
-        file.mimetype,
-      );
-      results.push(result);
-    }
+    const results = await bimbinganService.addMultipleLampiran(
+      parseInt(id, 10),
+      files.map((f) => ({
+        path: f.path,
+        name: f.originalname,
+        type: f.mimetype,
+      })),
+    );
 
     res.status(201).json({ status: 'sukses', data: results });
   }),
@@ -150,14 +193,8 @@ router.post(
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const { id } = req.params;
-    if (id == null) {
-      res.status(400).json({ status: 'gagal', message: 'ID Sesi diperlukan' });
-      return;
-    }
-    const dosenId = req.user?.dosen?.id;
-    if (dosenId === undefined) {
-      res.status(401).json({ status: 'gagal', message: 'Not a dosen' });
-      return;
+    if (!id) {
+      throw new BadRequestError('ID Sesi diperlukan');
     }
 
     const result = await bimbinganService.konfirmasiBimbingan(parseInt(id, 10));
@@ -172,20 +209,15 @@ router.post(
   validate(setJadwalSchema),
   asyncHandler(async (req, res): Promise<void> => {
     const { tugasAkhirId } = req.params;
-    if (tugasAkhirId == null) {
-      res
-        .status(400)
-        .json({ status: 'gagal', message: 'ID Tugas Akhir diperlukan' });
-      return;
+    if (!tugasAkhirId) {
+      throw new BadRequestError('ID Tugas Akhir diperlukan');
     }
+
     const dosenId = req.user?.dosen?.id;
-    if (dosenId === undefined) {
-      res.status(401).json({
-        status: 'gagal',
-        message: 'Akses ditolak: Pengguna tidak memiliki profil dosen.',
-      });
-      return;
+    if (!dosenId) {
+      throw new BadRequestError('Pengguna tidak memiliki profil dosen');
     }
+
     const { tanggal_bimbingan, jam_bimbingan } = req.body;
     const jadwal = await bimbinganService.setJadwal(
       parseInt(tugasAkhirId, 10),
@@ -202,32 +234,22 @@ router.post(
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const { id } = req.params;
-    if (id == null) {
-      res.status(400).json({ status: 'gagal', message: 'ID Sesi diperlukan' });
-      return;
+    if (!id) {
+      throw new BadRequestError('ID Sesi diperlukan');
     }
+
     const dosenId = req.user?.dosen?.id;
-    if (dosenId === undefined) {
-      res.status(401).json({
-        status: 'gagal',
-        message: 'Akses ditolak: Pengguna tidak memiliki profil dosen.',
-      });
-      return;
+    if (!dosenId) {
+      throw new BadRequestError('Pengguna tidak memiliki profil dosen');
     }
+
     const result = await bimbinganService.cancelBimbingan(
       parseInt(id, 10),
       dosenId,
     );
-    if (result === null) {
-      res.status(404).json({
-        status: 'gagal',
-        message: 'Sesi bimbingan tidak ditemukan atau tidak diizinkan.',
-      });
-      return;
-    }
     res.status(200).json({
       status: 'sukses',
-      message: 'Sesi bimbingan dibatalkan.',
+      message: 'Sesi bimbingan dibatalkan',
       data: result,
     });
   }),
@@ -238,32 +260,22 @@ router.post(
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const { id } = req.params;
-    if (id == null) {
-      res.status(400).json({ status: 'gagal', message: 'ID Sesi diperlukan' });
-      return;
+    if (!id) {
+      throw new BadRequestError('ID Sesi diperlukan');
     }
+
     const dosenId = req.user?.dosen?.id;
-    if (dosenId === undefined) {
-      res.status(401).json({
-        status: 'gagal',
-        message: 'Akses ditolak: Pengguna tidak memiliki profil dosen.',
-      });
-      return;
+    if (!dosenId) {
+      throw new BadRequestError('Pengguna tidak memiliki profil dosen');
     }
+
     const result = await bimbinganService.selesaikanSesi(
       parseInt(id, 10),
       dosenId,
     );
-    if (result === null) {
-      res.status(404).json({
-        status: 'gagal',
-        message: 'Sesi bimbingan tidak ditemukan atau tidak diizinkan.',
-      });
-      return;
-    }
     res.status(200).json({
       status: 'sukses',
-      message: 'Sesi bimbingan telah diselesaikan.',
+      message: 'Sesi bimbingan telah diselesaikan',
       data: result,
     });
   }),
@@ -275,25 +287,18 @@ router.get(
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const dosenId = req.user?.dosen?.id;
-    if (dosenId === undefined) {
-      res.status(401).json({
-        status: 'gagal',
-        message: 'Akses ditolak: Pengguna tidak memiliki profil dosen.',
-      });
-      return;
+    if (!dosenId) {
+      throw new BadRequestError('Pengguna tidak memiliki profil dosen');
     }
+
     const { tanggal, jam } = req.query;
     if (
       typeof tanggal !== 'string' ||
-      tanggal.length === 0 ||
+      !tanggal ||
       typeof jam !== 'string' ||
-      jam.length === 0
+      !jam
     ) {
-      res.status(400).json({
-        status: 'gagal',
-        message: 'Parameter tanggal dan jam diperlukan',
-      });
-      return;
+      throw new BadRequestError('Parameter tanggal dan jam diperlukan');
     }
 
     const hasConflict = await bimbinganService.detectScheduleConflicts(
@@ -310,20 +315,13 @@ router.get(
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const dosenId = req.user?.dosen?.id;
-    if (dosenId === undefined) {
-      res.status(401).json({
-        status: 'gagal',
-        message: 'Akses ditolak: Pengguna tidak memiliki profil dosen.',
-      });
-      return;
+    if (!dosenId) {
+      throw new BadRequestError('Pengguna tidak memiliki profil dosen');
     }
+
     const { tanggal } = req.query;
-    if (typeof tanggal !== 'string' || tanggal.length === 0) {
-      res.status(400).json({
-        status: 'gagal',
-        message: 'Parameter tanggal diperlukan',
-      });
-      return;
+    if (typeof tanggal !== 'string' || !tanggal) {
+      throw new BadRequestError('Parameter tanggal diperlukan');
     }
 
     const slots = await bimbinganService.suggestAvailableSlots(

@@ -8,7 +8,7 @@ interface DosenCapacity {
   userId: number;
   name: string;
   email: string;
-  nidn: string;
+  nip: string;
   prodi: string | null;
   capacity: {
     current: number;

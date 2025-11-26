@@ -35,6 +35,7 @@ async function main() {
   ]);
 
   const hashedPassword = await bcrypt.hash('password123', 10);
+  const emailVerifiedAt = new Date();
 
   // Create Admin
   console.log('👨💼 Creating admin...');
@@ -44,6 +45,7 @@ async function main() {
       email: 'admin@pnp.ac.id',
       phone_number: '081234567890',
       password: hashedPassword,
+      email_verified_at: emailVerifiedAt,
       roles: { connect: { name: 'admin' } },
     },
   });
@@ -56,10 +58,11 @@ async function main() {
       email: 'kajur@pnp.ac.id',
       phone_number: '081234567891',
       password: hashedPassword,
+      email_verified_at: emailVerifiedAt,
       roles: { connect: [{ name: 'kajur' }, { name: 'dosen' }] },
       dosen: {
         create: {
-          nidn: '0001018801',
+          nip: '0001018801',
           prodi: Prodi.D4,
           kuota_bimbingan: 4,
         },
@@ -75,10 +78,11 @@ async function main() {
       email: 'kaprodi.d3@pnp.ac.id',
       phone_number: '081234567892',
       password: hashedPassword,
+      email_verified_at: emailVerifiedAt,
       roles: { connect: [{ name: 'kaprodi_d3' }, { name: 'dosen' }] },
       dosen: {
         create: {
-          nidn: '0002028802',
+          nip: '0002028802',
           prodi: Prodi.D3,
           kuota_bimbingan: 4,
         },
@@ -94,10 +98,11 @@ async function main() {
       email: 'kaprodi.d4@pnp.ac.id',
       phone_number: '081234567893',
       password: hashedPassword,
+      email_verified_at: emailVerifiedAt,
       roles: { connect: [{ name: 'kaprodi_d4' }, { name: 'dosen' }] },
       dosen: {
         create: {
-          nidn: '0003038803',
+          nip: '0003038803',
           prodi: Prodi.D4,
           kuota_bimbingan: 4,
         },
@@ -105,19 +110,34 @@ async function main() {
     },
   });
 
-  // Create Dosen (10 dosen)
+  // Create Dosen (25 dosen)
   console.log('👨🏫 Creating dosen...');
   const dosenData = [
-    { name: 'Rina Wati, S.Kom, M.T', email: 'rina.wati@pnp.ac.id', nidn: '0010018901', prodi: Prodi.D4 },
-    { name: 'Agus Setiawan, S.T, M.Kom', email: 'agus.setiawan@pnp.ac.id', nidn: '0011028902', prodi: Prodi.D4 },
-    { name: 'Dewi Lestari, S.Kom, M.Sc', email: 'dewi.lestari@pnp.ac.id', nidn: '0012038903', prodi: Prodi.D3 },
-    { name: 'Hendra Wijaya, S.T, M.T', email: 'hendra.wijaya@pnp.ac.id', nidn: '0013048904', prodi: Prodi.D3 },
-    { name: 'Fitri Handayani, S.Kom, M.Kom', email: 'fitri.handayani@pnp.ac.id', nidn: '0014058905', prodi: Prodi.D4 },
-    { name: 'Rudi Hartono, S.T, M.Eng', email: 'rudi.hartono@pnp.ac.id', nidn: '0015068906', prodi: Prodi.D4 },
-    { name: 'Sari Indah, S.Kom, M.T', email: 'sari.indah@pnp.ac.id', nidn: '0016078907', prodi: Prodi.D3 },
-    { name: 'Bambang Susilo, S.T, M.Kom', email: 'bambang.susilo@pnp.ac.id', nidn: '0017088908', prodi: Prodi.D3 },
-    { name: 'Lina Marlina, S.Kom, M.Sc', email: 'lina.marlina@pnp.ac.id', nidn: '0018098909', prodi: Prodi.D4 },
-    { name: 'Dedi Kurniawan, S.T, M.T', email: 'dedi.kurniawan@pnp.ac.id', nidn: '0019108910', prodi: Prodi.D4 },
+    { name: 'Dra. Rina Anggraini, M.Pd', email: 'rina.anggraini@pnp.ac.id', nip: '196903071993032001', prodi: Prodi.D4 },
+    { name: 'Dra. Martini, M.Pd.', email: 'martini@pnp.ac.id', nip: '196403061991032001', prodi: Prodi.D3 },
+    { name: 'Dra. Kotrini, M.Pd', email: 'kotrini@pnp.ac.id', nip: '196509031990032001', prodi: Prodi.D4 },
+    { name: 'Dony Marzuki, S.S., M.Ed., Ph.D', email: 'dony.marzuki@pnp.ac.id', nip: '197503282005011001', prodi: Prodi.D3 },
+    { name: 'Sariani, SS., MA Appl Ling', email: 'sariani@pnp.ac.id', nip: '197604232006042001', prodi: Prodi.D4 },
+    { name: 'Dr. Difiani Apriyanti, SS., M.Pd', email: 'difiani.apriyanti@pnp.ac.id', nip: '198104032006042003', prodi: Prodi.D3 },
+    { name: 'Hasbi, SS.,M.Ed.M', email: 'hasbi@pnp.ac.id', nip: '197404121999031003', prodi: Prodi.D4 },
+    { name: 'Sumira, S.Pd., M.Pd', email: 'sumira@pnp.ac.id', nip: '197804012009122003', prodi: Prodi.D3 },
+    { name: 'Desi Yulastri, M.EIL', email: 'desi.yulastri@pnp.ac.id', nip: '198012112010122002', prodi: Prodi.D4 },
+    { name: 'Witri Handayani, SS., M.Pd', email: 'witri.handayani@pnp.ac.id', nip: '198112302010122004', prodi: Prodi.D3 },
+    { name: 'Silvia Djonnaidi, SS., M.Hum', email: 'silvia.djonnaidi@pnp.ac.id', nip: '198311252015042002', prodi: Prodi.D4 },
+    { name: 'Nini Wahyuni, S.Pd., M.Pd', email: 'nini.wahyuni@pnp.ac.id', nip: '198501242014042001', prodi: Prodi.D3 },
+    { name: 'Dr. Yohannes Telaumbanua, S.Hum.,M.Pd', email: 'yohannes.telaumbanua@pnp.ac.id', nip: '197808062009121001', prodi: Prodi.D4 },
+    { name: 'Titin Ritmi,, SS, M.Hum', email: 'titin.ritmi@pnp.ac.id', nip: '197108052003122002', prodi: Prodi.D3 },
+    { name: 'Hendro Saptopramono, SS, M.Ed', email: 'hendro.saptopramono@pnp.ac.id', nip: '197509022000121001', prodi: Prodi.D4 },
+    { name: 'Dr. Sabriandi Erdian, S.S., M.Hum', email: 'sabriandi.erdian@pnp.ac.id', nip: '197905142010121002', prodi: Prodi.D3 },
+    { name: 'Mutia El Khairat, SS., M.Hum', email: 'mutia.elkhairat@pnp.ac.id', nip: '198707012014042002', prodi: Prodi.D4 },
+    { name: 'Astuti Pratiwi Rahmadhani, S.Pd., M.Pd..', email: 'astuti.pratiwi@pnp.ac.id', nip: '198904092019032012', prodi: Prodi.D3 },
+    { name: 'Fithratul Miladiyenti, S.S., M.Hum.', email: 'fithratul.miladiyenti@pnp.ac.id', nip: '198809262019032019', prodi: Prodi.D4 },
+    { name: 'Gilang Surendra, S.IP., M.I.Kom.', email: 'gilang.surendra@pnp.ac.id', nip: '199310132022031012', prodi: Prodi.D3 },
+    { name: 'Yaningsih, S.S., M.Hum.', email: 'yaningsih@pnp.ac.id', nip: '197301072002122001', prodi: Prodi.D4 },
+    { name: 'Novi Fitria, S.S., M.Pd.', email: 'novi.fitria@pnp.ac.id', nip: '198111112008122003', prodi: Prodi.D3 },
+    { name: 'Melyanda Agustin Chairina, S.S., M.Hum.', email: 'melyanda.agustin@pnp.ac.id', nip: '198908052024062001', prodi: Prodi.D4 },
+    { name: 'Tia Kharina Elvonny, S.Pd., M.Hum.', email: 'tia.kharina@pnp.ac.id', nip: '199103162024062003', prodi: Prodi.D3 },
+    { name: 'Gema Febriansyah, M.Hum', email: 'gema.febriansyah@pnp.ac.id', nip: '199302072024061001', prodi: Prodi.D4 },
   ];
 
   const dosenUsers: any[] = [];
@@ -129,10 +149,11 @@ async function main() {
         email: data.email,
         phone_number: `0812345678${idx + 10}`,
         password: hashedPassword,
+        email_verified_at: emailVerifiedAt,
         roles: { connect: { name: 'dosen' } },
         dosen: {
           create: {
-            nidn: data.nidn,
+            nip: data.nip,
             prodi: data.prodi,
             kuota_bimbingan: 4,
           },
@@ -177,6 +198,7 @@ async function main() {
         email: `${data.nim}@student.pnp.ac.id`,
         phone_number: `08567890${String(idx).padStart(4, '0')}`,
         password: hashedPassword,
+        email_verified_at: emailVerifiedAt,
         roles: { connect: { name: 'mahasiswa' } },
         mahasiswa: {
           create: {
@@ -303,11 +325,8 @@ async function main() {
   // Create Ruangan
   console.log('🏢 Creating ruangan...');
   const ruanganData = [
-    { nama: 'Ruang Sidang 1', lokasi: 'Gedung A Lantai 3', kapasitas: 30 },
-    { nama: 'Ruang Sidang 2', lokasi: 'Gedung A Lantai 3', kapasitas: 25 },
-    { nama: 'Ruang Sidang 3', lokasi: 'Gedung B Lantai 2', kapasitas: 20 },
-    { nama: 'Lab Komputer 1', lokasi: 'Gedung C Lantai 1', kapasitas: 40 },
-    { nama: 'Aula Utama', lokasi: 'Gedung Utama', kapasitas: 100 },
+    { nama: 'A', lokasi: 'Gedung A Lantai 3', kapasitas: 30 },
+    { nama: 'B', lokasi: 'Gedung A Lantai 3', kapasitas: 30 },
   ];
 
   const ruanganList: any[] = [];
@@ -365,14 +384,14 @@ async function main() {
   console.log('- Tugas Akhir: 15 (5 DISETUJUI, 5 BIMBINGAN, 5 DRAFT)');
   console.log('- Tawaran Topik: 10');
   console.log('- Pengumuman: 8');
-  console.log('- Ruangan: 5');
+  console.log('- Ruangan: 2 (A & B)');
   console.log('- Sidang Terjadwal: 3');
   console.log('\n🔑 Login Credentials (password: password123):');
   console.log('- Admin: admin@pnp.ac.id');
   console.log('- Kajur: kajur@pnp.ac.id');
   console.log('- Kaprodi D3: kaprodi.d3@pnp.ac.id');
   console.log('- Kaprodi D4: kaprodi.d4@pnp.ac.id');
-  console.log('- Dosen: rina.wati@pnp.ac.id (dan 9 dosen lainnya)');
+  console.log('- Dosen: rina.anggraini@pnp.ac.id (dan 24 dosen lainnya)');
   console.log('- Mahasiswa: 2101010001@student.pnp.ac.id (dan 19 mahasiswa lainnya)');
 }
 

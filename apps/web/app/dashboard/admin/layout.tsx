@@ -13,9 +13,15 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const isAdmin = useMemo(() => {
-    return user?.roles?.some(
-      (role) => role.name === 'admin' || role.name === 'kajur' || role.name === 'kaprodi_d3' || role.name === 'kaprodi_d4'
-    ) || false;
+    return (
+      user?.roles?.some(
+        (role) =>
+          role.name === 'admin' ||
+          role.name === 'kajur' ||
+          role.name === 'kaprodi_d3' ||
+          role.name === 'kaprodi_d4',
+      ) || false
+    );
   }, [user]);
 
   useEffect(() => {

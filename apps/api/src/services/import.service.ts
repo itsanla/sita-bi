@@ -90,11 +90,11 @@ export class ImportService {
       const rowNum = index + 1;
       const errorList = [];
 
-      const nidn = record.nidn ?? '';
+      const nip = record.nip ?? '';
       const nama = record.nama ?? '';
       const email = record.email ?? '';
 
-      if (nidn.length === 0) errorList.push('NIDN is required');
+      if (nip.length === 0) errorList.push('NIP is required');
       if (nama.length === 0) errorList.push('Nama is required');
       if (email.length === 0) errorList.push('Email is required');
 
@@ -105,12 +105,12 @@ export class ImportService {
         if (existingUser !== null)
           errorList.push(`Email ${email} already exists`);
       }
-      if (nidn.length > 0) {
+      if (nip.length > 0) {
         const existingDosen = await this.prisma.dosen.findUnique({
-          where: { nidn },
+          where: { nip },
         });
         if (existingDosen !== null)
-          errorList.push(`NIDN ${nidn} already exists`);
+          errorList.push(`NIP ${nip} already exists`);
       }
 
       if (errorList.length > 0) {
@@ -218,7 +218,7 @@ export class ImportService {
 
           const nama = record.nama ?? '';
           const email = record.email ?? '';
-          const nidn = record.nidn ?? '';
+          const nip = record.nip ?? '';
           const prodiStr = record.prodi ?? '';
 
           const user = await tx.user.create({
@@ -236,7 +236,7 @@ export class ImportService {
           await tx.dosen.create({
             data: {
               user_id: user.id,
-              nidn,
+              nip,
               prodi:
                 prodiStr.length > 0 ? (prodiStr.toUpperCase() as Prodi) : null,
             },

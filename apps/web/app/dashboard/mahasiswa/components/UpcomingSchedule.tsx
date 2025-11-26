@@ -1,42 +1,20 @@
 'use client';
 
-import { useState } from 'react';
 import { Calendar, Clock, MapPin, User } from 'lucide-react';
-
-interface ScheduleItem {
-  id: string;
-  title: string;
-  type: 'bimbingan' | 'sidang';
-  date: string;
-  time: string;
-  location: string;
-  with: string;
-  status: 'upcoming' | 'today' | 'completed';
-}
+import { DashboardCardSkeleton } from '@/components/Suspense/LoadingFallback';
+import EmptyState from '@/components/shared/EmptyState';
+import { useDashboardSchedule } from '@/hooks/useDashboardData';
 
 export default function UpcomingSchedule() {
-  const [schedules] = useState<ScheduleItem[]>([
-    {
-      id: '1',
-      title: 'Bimbingan BAB IV',
-      type: 'bimbingan',
-      date: '2024-11-20',
-      time: '10:00 - 11:00',
-      location: 'Ruang Dosen 301',
-      with: 'Dr. Ahmad Santoso',
-      status: 'today',
-    },
-    {
-      id: '2',
-      title: 'Sidang Proposal',
-      type: 'sidang',
-      date: '2024-11-25',
-      time: '13:00 - 14:30',
-      location: 'Ruang Sidang A',
-      with: 'Tim Penguji',
-      status: 'upcoming',
-    },
-  ]);
+  const { data: schedules, isLoading, isError } = useDashboardSchedule(5);
+
+  if (isLoading) {
+    return <DashboardCardSkeleton />;
+  }
+
+  if (isError || !schedules) {
+    return <EmptyState message="Gagal memuat jadwal. Coba lagi nanti." />;
+  }
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -83,7 +61,7 @@ export default function UpcomingSchedule() {
       </div>
 
       <div className="space-y-4">
-        {schedules.map((schedule, index) => {
+        {schedules.map((schedule: any, index: number) => {
           const colors = getTypeColor(schedule.type);
           return (
             <div

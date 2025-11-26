@@ -1,40 +1,35 @@
 import { Router, type Request, type Response } from 'express';
 import { geminiService } from '../services/gemini.service';
 import { authenticate } from '../middlewares/auth.middleware';
+import { validateRequest } from '../middlewares/validation.middleware';
+import { createRateLimiter } from '../middlewares/rate-limit.middleware';
+import { ChatRequestSchema, ChatStreamRequestSchema } from '../dto/gemini.dto';
 import asyncHandler from 'express-async-handler';
+import { logger } from '../utils/logger';
 
 const router: Router = Router();
+
+// Rate limiters
+const publicRateLimit = createRateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  maxRequests: 10,
+  message: 'Terlalu banyak permintaan. Silakan coba lagi nanti.',
+});
+
+const authRateLimit = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 30,
+  message: 'Terlalu banyak permintaan. Silakan coba lagi nanti.',
+});
 
 // Chat endpoint with streaming - protected with authentication
 router.post(
   '/chat/stream',
   authenticate,
+  authRateLimit,
+  validateRequest(ChatRequestSchema),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { message } = req.body as { message?: unknown };
-
-    if (typeof message !== 'string' || message.length === 0) {
-      res.status(400).json({
-        success: false,
-        error: 'Message is required and must be a string',
-      });
-      return;
-    }
-
-    if (message.trim().length === 0) {
-      res.status(400).json({
-        success: false,
-        error: 'Message cannot be empty',
-      });
-      return;
-    }
-
-    if (message.length > 10000) {
-      res.status(400).json({
-        success: false,
-        error: 'Message is too long. Maximum 10000 characters',
-      });
-      return;
-    }
+    const { message } = req.body as { message: string };
 
     try {
       // Set headers for SSE
@@ -46,15 +41,23 @@ router.post(
       // Send initial connected message
       res.write('data: {"type":"connected"}\n\n');
 
-      // Stream the response
+      logger.info('Starting authenticated stream', { userId: req.user?.id });
+
+      // Stream the response with word-by-word splitting
       for await (const chunk of geminiService.streamGenerateContent(message)) {
-        res.write(
-          `data: ${JSON.stringify({ type: 'chunk', text: chunk })}\n\n`,
-        );
+        const words = chunk.split(/(?<=\s)/); // Split but keep spaces
+        for (const word of words) {
+          if (word.trim()) {
+            res.write(
+              `data: ${JSON.stringify({ type: 'chunk', text: word })}\n\n`,
+            );
+          }
+        }
       }
 
       // Send completion message
       res.write('data: {"type":"done"}\n\n');
+      logger.info('Stream completed successfully', { userId: req.user?.id });
       res.end();
     } catch (error) {
       const errorMessage = (error as Error).message;
@@ -76,35 +79,13 @@ router.post(
 // Public streaming endpoint
 router.post(
   '/chat/stream/public',
+  publicRateLimit,
+  validateRequest(ChatStreamRequestSchema),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { message, history } = req.body as {
-      message?: unknown;
-      history?: { role: string; content: string }[];
+      message: string;
+      history: { role: string; content: string }[];
     };
-
-    if (typeof message !== 'string' || message.length === 0) {
-      res.status(400).json({
-        success: false,
-        error: 'Message is required and must be a string',
-      });
-      return;
-    }
-
-    if (message.trim().length === 0) {
-      res.status(400).json({
-        success: false,
-        error: 'Message cannot be empty',
-      });
-      return;
-    }
-
-    if (message.length > 10000) {
-      res.status(400).json({
-        success: false,
-        error: 'Message is too long. Maximum 10000 characters',
-      });
-      return;
-    }
 
     try {
       // Set headers for SSE
@@ -116,30 +97,42 @@ router.post(
       // Send initial connected message
       res.write('data: {"type":"connected"}\n\n');
 
-      // Stream the response with history context
+      logger.info('Starting public stream', { historyLength: history.length });
+
+      // Stream the response with history context word-by-word
       for await (const chunk of geminiService.streamGenerateContentWithHistory(
         message,
-        history ?? [],
+        history,
       )) {
-        res.write(
-          `data: ${JSON.stringify({ type: 'chunk', text: chunk })}\n\n`,
-        );
+        const words = chunk.split(/(?<=\s)/); // Split but keep spaces
+        for (const word of words) {
+          if (word.trim()) {
+            res.write(
+              `data: ${JSON.stringify({ type: 'chunk', text: word })}\n\n`,
+            );
+          }
+        }
       }
 
       // Send completion message
       res.write('data: {"type":"done"}\n\n');
+      logger.info('Public stream completed successfully');
       res.end();
     } catch (error) {
-      console.error('Gemini streaming error:', error);
       const errorMessage = (error as Error).message;
       let userFriendlyError = 'Maaf, terjadi kesalahan. Silakan coba lagi.';
 
       if (errorMessage.includes('Anda sudah mencapai limit')) {
-        userFriendlyError = 'Maaf, layanan sedang sibuk. Silakan coba beberapa saat lagi.';
+        userFriendlyError =
+          'Maaf, layanan sedang sibuk. Silakan coba beberapa saat lagi.';
       } else if (errorMessage.includes('API keys')) {
         userFriendlyError = 'Layanan chatbot sedang dalam pemeliharaan.';
-      } else if (errorMessage.includes('Network') || errorMessage.includes('ECONNREFUSED')) {
-        userFriendlyError = 'Tidak dapat terhubung ke layanan AI. Periksa koneksi internet Anda.';
+      } else if (
+        errorMessage.includes('Network') ||
+        errorMessage.includes('ECONNREFUSED')
+      ) {
+        userFriendlyError =
+          'Tidak dapat terhubung ke layanan AI. Periksa koneksi internet Anda.';
       }
 
       res.write(
@@ -154,32 +147,10 @@ router.post(
 router.post(
   '/chat',
   authenticate,
+  authRateLimit,
+  validateRequest(ChatRequestSchema),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { message } = req.body as { message?: unknown };
-
-    if (typeof message !== 'string' || message.length === 0) {
-      res.status(400).json({
-        success: false,
-        error: 'Message is required and must be a string',
-      });
-      return;
-    }
-
-    if (message.trim().length === 0) {
-      res.status(400).json({
-        success: false,
-        error: 'Message cannot be empty',
-      });
-      return;
-    }
-
-    if (message.length > 10000) {
-      res.status(400).json({
-        success: false,
-        error: 'Message is too long. Maximum 10000 characters',
-      });
-      return;
-    }
+    const { message } = req.body as { message: string };
 
     try {
       const response = await geminiService.chat(message);
@@ -207,7 +178,6 @@ router.post(
       res.status(500).json({
         success: false,
         error: 'Failed to generate response',
-        details: errorMessage,
       });
     }
   }),
@@ -216,32 +186,10 @@ router.post(
 // Public endpoint for testing (no auth required)
 router.post(
   '/chat/public',
+  publicRateLimit,
+  validateRequest(ChatRequestSchema),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { message } = req.body as { message?: unknown };
-
-    if (typeof message !== 'string' || message.length === 0) {
-      res.status(400).json({
-        success: false,
-        error: 'Message is required and must be a string',
-      });
-      return;
-    }
-
-    if (message.trim().length === 0) {
-      res.status(400).json({
-        success: false,
-        error: 'Message cannot be empty',
-      });
-      return;
-    }
-
-    if (message.length > 10000) {
-      res.status(400).json({
-        success: false,
-        error: 'Message is too long. Maximum 10000 characters',
-      });
-      return;
-    }
+    const { message } = req.body as { message: string };
 
     try {
       const response = await geminiService.chat(message);
@@ -267,7 +215,6 @@ router.post(
       res.status(500).json({
         success: false,
         error: 'Failed to generate response',
-        details: errorMessage,
       });
     }
   }),

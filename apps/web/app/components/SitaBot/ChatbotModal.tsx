@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MessageCircle, Send, X, Sparkles } from 'lucide-react';
@@ -26,6 +26,11 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
     clearHistory,
   } = useChatLogic();
 
+  const handleClose = useCallback(() => {
+    clearHistory();
+    onClose();
+  }, [clearHistory, onClose]);
+
   useEffect(() => {
     if (isOpen) {
       setShowIntro(true);
@@ -41,17 +46,28 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
     return undefined;
   }, [isOpen]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // ESC to close
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, handleClose]);
+
   if (!isOpen) return null;
 
   const handleSendClick = () => {
+    if (!input.trim() || isLoading) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fakeEvent: any = { preventDefault: () => {} };
-    handleSubmit(fakeEvent);
-  };
-
-  const handleClose = () => {
-    clearHistory();
-    onClose();
+    void handleSubmit(fakeEvent);
   };
 
   return (

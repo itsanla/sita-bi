@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import request from '@/lib/api';
 import { useAuth } from '../../../../context/AuthContext';
+import { useUploadLampiran } from '@/hooks/useBimbingan';
 import {
   Send,
   Calendar,
@@ -11,7 +12,7 @@ import {
   FileText,
   Clock,
   Upload,
-  User as UserIcon, // Import User icon as UserIcon
+  User as UserIcon,
 } from 'lucide-react';
 
 // --- Interfaces ---
@@ -74,7 +75,7 @@ interface DosenAvailable {
   id: number;
   name: string;
   email: string;
-  nidn: string;
+  nip: string;
 }
 
 interface PengajuanBimbingan {
@@ -96,7 +97,7 @@ export default function BimbinganPage() {
   const [pengajuan, setPengajuan] = useState<PengajuanBimbingan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [uploading, setUploading] = useState(false);
+  const uploadMutation = useUploadLampiran();
 
   const fetchData = async () => {
     try {
@@ -200,38 +201,15 @@ export default function BimbinganPage() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const formData = new FormData();
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (file) {
-        formData.append('files', file);
-      }
-    }
-
-    setUploading(true);
-    try {
-      // Use direct fetch or request with formData support
-      const token = localStorage.getItem('token'); // Assuming token is in localStorage
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api'}/bimbingan/sesi/${bimbinganId}/upload`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
+    uploadMutation.mutate(
+      { bimbinganId, files },
+      {
+        onSuccess: () => {
+          fetchData();
+          e.target.value = '';
         },
-      );
-
-      if (!res.ok) throw new Error('Upload failed');
-
-      alert('Files uploaded successfully');
-      fetchData();
-    } catch (err) {
-      alert('Upload failed: ' + (err as Error).message);
-    } finally {
-      setUploading(false);
-    }
+      },
+    );
   };
 
   if (loading) return <div className="text-center p-8">Loading...</div>;
@@ -383,14 +361,18 @@ export default function BimbinganPage() {
                       {/* Upload Button */}
                       <div className="mt-2">
                         <label
-                          className={`cursor-pointer inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          className={`cursor-pointer inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors ${uploadMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <Upload size={12} />
-                          {uploading ? 'Uploading...' : 'Upload File'}
+                          {uploadMutation.isPending
+                            ? 'Uploading...'
+                            : 'Upload File'}
                           <input
                             type="file"
+                            multiple
+                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                             className="hidden"
-                            disabled={uploading}
+                            disabled={uploadMutation.isPending}
                             onChange={(e) => handleUpload(e, bimbingan.id)}
                           />
                         </label>
@@ -420,10 +402,9 @@ export default function BimbinganPage() {
                                 )}
                               </span>
                             </div>
-                            <div
-                              className="text-gray-600 mt-1 prose prose-sm max-w-none"
-                              dangerouslySetInnerHTML={{ __html: note.catatan }}
-                            />
+                            <p className="text-gray-600 mt-1 whitespace-pre-wrap">
+                              {note.catatan}
+                            </p>
                           </div>
                         ))
                       ) : (

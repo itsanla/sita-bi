@@ -11,26 +11,42 @@ const navLinks = {
   admin: [
     { href: '/dashboard/admin', label: 'Dashboard', icon: Home },
     { href: '/dashboard/admin/users', label: 'Manajemen User', icon: Users },
-    { href: '/admin/penjadwalan-sidang', label: 'Jadwal Sidang', icon: Calendar },
+    {
+      href: '/admin/penjadwalan-sidang',
+      label: 'Jadwal Sidang',
+      icon: Calendar,
+    },
     { href: '/admin/import', label: 'Import Data', icon: Book },
     { href: '/admin/reports', label: 'Laporan', icon: FileText },
   ],
   kajur: [
     { href: '/dashboard/admin', label: 'Dashboard', icon: Home },
     { href: '/dashboard/admin/users', label: 'Manajemen User', icon: Users },
-    { href: '/admin/penjadwalan-sidang', label: 'Jadwal Sidang', icon: Calendar },
+    {
+      href: '/admin/penjadwalan-sidang',
+      label: 'Jadwal Sidang',
+      icon: Calendar,
+    },
     { href: '/dashboard/pengumuman', label: 'Pengumuman', icon: FileText },
   ],
   kaprodi_d3: [
     { href: '/dashboard/admin', label: 'Dashboard', icon: Home },
     { href: '/dashboard/admin/users', label: 'Manajemen User', icon: Users },
-    { href: '/admin/penjadwalan-sidang', label: 'Jadwal Sidang', icon: Calendar },
+    {
+      href: '/admin/penjadwalan-sidang',
+      label: 'Jadwal Sidang',
+      icon: Calendar,
+    },
     { href: '/dashboard/pengumuman', label: 'Pengumuman', icon: FileText },
   ],
   kaprodi_d4: [
     { href: '/dashboard/admin', label: 'Dashboard', icon: Home },
     { href: '/dashboard/admin/users', label: 'Manajemen User', icon: Users },
-    { href: '/admin/penjadwalan-sidang', label: 'Jadwal Sidang', icon: Calendar },
+    {
+      href: '/admin/penjadwalan-sidang',
+      label: 'Jadwal Sidang',
+      icon: Calendar,
+    },
     { href: '/dashboard/pengumuman', label: 'Pengumuman', icon: FileText },
   ],
   dosen: [
@@ -41,8 +57,16 @@ const navLinks = {
   mahasiswa: [
     { href: '/dashboard/mahasiswa', label: 'Dashboard', icon: Home },
     { href: '/dashboard/mahasiswa/ta', label: 'Tugas Akhir', icon: Book },
-    { href: '/dashboard/mahasiswa/bimbingan', label: 'Bimbingan', icon: Calendar },
-    { href: '/dashboard/mahasiswa/sidang', label: 'Pendaftaran Sidang', icon: FileText },
+    {
+      href: '/dashboard/mahasiswa/bimbingan',
+      label: 'Bimbingan',
+      icon: Calendar,
+    },
+    {
+      href: '/dashboard/mahasiswa/sidang',
+      label: 'Pendaftaran Sidang',
+      icon: FileText,
+    },
   ],
 };
 

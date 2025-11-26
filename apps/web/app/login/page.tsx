@@ -38,18 +38,18 @@ export default function LoginPage() {
         const token = String(userId);
         localStorage.setItem('token', token);
 
-        // Redirect based on role
+        // Redirect based on role with hard reload
         const userRole = user.roles[0]?.name;
+        let redirectUrl = '/dashboard/mahasiswa';
 
         if (userRole === 'kajur' || userRole === 'kaprodi_d3' || userRole === 'kaprodi_d4' || userRole === 'admin') {
-          router.push('/dashboard/admin');
+          redirectUrl = '/dashboard/admin';
         } else if (userRole === 'dosen') {
-          router.push('/dashboard/dosen');
-        } else if (userRole === 'mahasiswa') {
-          router.push('/dashboard/mahasiswa');
-        } else {
-          router.push('/dashboard/mahasiswa');
+          redirectUrl = '/dashboard/dosen';
         }
+
+        // Use window.location for hard reload to reset AuthContext
+        window.location.href = redirectUrl;
       }
     } catch (err: any) {
       console.error('Login error:', err);

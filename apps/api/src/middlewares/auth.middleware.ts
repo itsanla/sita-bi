@@ -69,7 +69,7 @@ export const authMiddleware = async (
         user.dosen != null
           ? {
               id: user.dosen.id,
-              nidn: user.dosen.nidn,
+              nip: user.dosen.nip,
               prodi: user.dosen.prodi,
             }
           : null,

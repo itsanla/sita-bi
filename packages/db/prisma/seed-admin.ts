@@ -85,7 +85,7 @@ async function main() {
         },
         dosen: {
           create: {
-            nidn: '1234567890', // Placeholder NIDN
+            nip: '1234567890', // Placeholder NIP
           },
         },
       },

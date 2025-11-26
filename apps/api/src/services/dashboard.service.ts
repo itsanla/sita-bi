@@ -1,4 +1,5 @@
 import { PrismaClient, StatusTugasAkhir, StatusBimbingan } from '@repo/db';
+import { DashboardRepository } from '../repositories/dashboard.repository';
 
 interface DashboardStats {
   tugasAkhir: {
@@ -48,9 +49,11 @@ interface Schedule {
 
 export class DashboardService {
   private prisma: PrismaClient;
+  private repository: DashboardRepository;
 
   constructor() {
     this.prisma = new PrismaClient();
+    this.repository = new DashboardRepository(this.prisma);
   }
 
   /**
@@ -62,16 +65,7 @@ export class DashboardService {
     minBimbingan: number;
     tanggalDisetujui?: string;
   }> {
-    const mahasiswa = await this.prisma.mahasiswa.findUnique({
-      where: { user_id: userId },
-      include: {
-        tugasAkhir: {
-          include: {
-            bimbinganTa: true,
-          },
-        },
-      },
-    });
+    const mahasiswa = await this.repository.getMahasiswaWithTugasAkhir(userId);
 
     if (mahasiswa === null) {
       throw new Error('Profil mahasiswa tidak ditemukan.');
@@ -79,7 +73,7 @@ export class DashboardService {
 
     const tugasAkhir = mahasiswa.tugasAkhir;
     const statusTA = tugasAkhir?.status ?? 'BELUM_MENGAJUKAN';
-    
+
     const bimbinganList = tugasAkhir?.bimbinganTa ?? [];
     const bimbinganCount = bimbinganList.filter(
       (b) => b.status_bimbingan === StatusBimbingan.selesai,
@@ -89,12 +83,19 @@ export class DashboardService {
 
     // Use updated_at when status changed to DISETUJUI or BIMBINGAN as approval date
     let tanggalDisetujui: string | undefined;
-    if (tugasAkhir && (tugasAkhir.status === StatusTugasAkhir.DISETUJUI || tugasAkhir.status === StatusTugasAkhir.BIMBINGAN)) {
-      tanggalDisetujui = new Date(tugasAkhir.updated_at).toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
+    if (
+      tugasAkhir &&
+      (tugasAkhir.status === StatusTugasAkhir.DISETUJUI ||
+        tugasAkhir.status === StatusTugasAkhir.BIMBINGAN)
+    ) {
+      tanggalDisetujui = new Date(tugasAkhir.updated_at).toLocaleDateString(
+        'id-ID',
+        {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        },
+      );
     }
 
     return {
@@ -110,36 +111,14 @@ export class DashboardService {
    */
   async getMahasiswaStats(userId: number): Promise<DashboardStats> {
     // Get mahasiswa profile
-    const mahasiswa = await this.prisma.mahasiswa.findUnique({
-      where: { user_id: userId },
-      include: {
-        tugasAkhir: {
-          include: {
-            bimbinganTa: true,
-            pendaftaranSidang: {
-              include: {
-                sidang: {
-                  include: {
-                    jadwalSidang: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
+    const mahasiswa = await this.repository.getMahasiswaWithTugasAkhir(userId);
 
     if (mahasiswa === null) {
       throw new Error('Profil mahasiswa tidak ditemukan.');
     }
 
     // Calculate Tugas Akhir stats for ALL mahasiswa in the system
-    const allTugasAkhir = await this.prisma.tugasAkhir.findMany({
-      select: {
-        status: true,
-      },
-    });
+    const allTugasAkhir = await this.repository.getAllTugasAkhir();
 
     const tugasAkhirStats = {
       total: allTugasAkhir.length,
@@ -188,15 +167,15 @@ export class DashboardService {
     let sidangStatus = 'Belum Daftar';
     let sidangTanggal = null;
 
-    if (pendaftaranSidang !== undefined) {
+    if (pendaftaranSidang) {
       sidangStatus =
         pendaftaranSidang.status_verifikasi === 'disetujui'
           ? 'Terdaftar'
           : 'Menunggu Verifikasi';
 
-      if (pendaftaranSidang.sidang?.jadwalSidang?.[0]?.tanggal !== undefined) {
-        sidangTanggal =
-          pendaftaranSidang.sidang.jadwalSidang[0].tanggal.toISOString();
+      const jadwalSidang = pendaftaranSidang.sidang?.jadwalSidang?.[0];
+      if (jadwalSidang?.tanggal) {
+        sidangTanggal = jadwalSidang.tanggal.toISOString();
       }
     }
 
@@ -234,13 +213,9 @@ export class DashboardService {
     const activities: Activity[] = [];
 
     // Get Tugas Akhir activities
-    const tugasAkhir = await this.prisma.tugasAkhir.findFirst({
-      where: { mahasiswa_id: mahasiswa.id },
-      include: {
-        approver: true,
-        rejecter: true,
-      },
-    });
+    const tugasAkhir = await this.repository.getTugasAkhirByMahasiswaId(
+      mahasiswa.id,
+    );
 
     if (tugasAkhir !== null) {
       // Pengajuan
@@ -283,25 +258,10 @@ export class DashboardService {
     }
 
     // Get bimbingan activities
-    const bimbingan = await this.prisma.bimbinganTA.findMany({
-      where: {
-        tugasAkhir: {
-          mahasiswa_id: mahasiswa.id,
-        },
-        status_bimbingan: StatusBimbingan.selesai,
-      },
-      include: {
-        dosen: {
-          include: {
-            user: true,
-          },
-        },
-      },
-      orderBy: {
-        created_at: 'desc',
-      },
-      take: 5,
-    });
+    const bimbingan = await this.repository.getBimbinganByMahasiswaId(
+      mahasiswa.id,
+      5,
+    );
 
     bimbingan.forEach((b) => {
       activities.push({
@@ -336,30 +296,12 @@ export class DashboardService {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     // Get bimbingan schedule
-    const bimbinganSchedule = await this.prisma.bimbinganTA.findMany({
-      where: {
-        tugasAkhir: {
-          mahasiswa_id: mahasiswa.id,
-        },
-        status_bimbingan: {
-          in: [StatusBimbingan.dijadwalkan, StatusBimbingan.diajukan],
-        },
-        tanggal_bimbingan: {
-          gte: today,
-        },
-      },
-      include: {
-        dosen: {
-          include: {
-            user: true,
-          },
-        },
-      },
-      orderBy: {
-        tanggal_bimbingan: 'asc',
-      },
-      take: limit,
-    });
+    const bimbinganSchedule =
+      await this.repository.getBimbinganScheduleByMahasiswaId(
+        mahasiswa.id,
+        today,
+        limit,
+      );
 
     bimbinganSchedule.forEach((b) => {
       if (b.tanggal_bimbingan != null && b.jam_bimbingan != null) {
@@ -383,30 +325,11 @@ export class DashboardService {
     });
 
     // Get sidang schedule
-    const sidangSchedule = await this.prisma.jadwalSidang.findMany({
-      where: {
-        sidang: {
-          tugasAkhir: {
-            mahasiswa_id: mahasiswa.id,
-          },
-        },
-        tanggal: {
-          gte: today,
-        },
-      },
-      include: {
-        sidang: {
-          include: {
-            tugasAkhir: true,
-          },
-        },
-        ruangan: true,
-      },
-      orderBy: {
-        tanggal: 'asc',
-      },
-      take: limit,
-    });
+    const sidangSchedule = await this.repository.getSidangScheduleByMahasiswaId(
+      mahasiswa.id,
+      today,
+      limit,
+    );
 
     sidangSchedule.forEach((s) => {
       const scheduleDate = new Date(s.tanggal);
@@ -441,11 +364,8 @@ export class DashboardService {
     totalMahasiswa: number;
     totalJudulTA: number;
   }> {
-    const [totalDosen, totalMahasiswa, totalJudulTA] = await Promise.all([
-      this.prisma.dosen.count(),
-      this.prisma.mahasiswa.count(),
-      this.prisma.tugasAkhir.count(),
-    ]);
+    const [totalDosen, totalMahasiswa, totalJudulTA] =
+      await this.repository.getSystemCounts();
 
     return {
       totalDosen,

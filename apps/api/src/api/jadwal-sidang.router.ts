@@ -1,34 +1,25 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { JadwalSidangService } from '../services/jadwal-sidang.service';
-import {
-  insecureAuthMiddleware,
-  authMiddleware,
-} from '../middlewares/auth.middleware';
+import { authMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
 import { Role } from '@repo/types';
-import { createJadwalSchema } from '../dto/jadwal-sidang.dto';
+import { createJadwalSchema, paginationSchema } from '../dto/jadwal-sidang.dto';
+import { HttpError } from '../middlewares/error.middleware';
 
 const router: Router = Router();
 const jadwalSidangService = new JadwalSidangService();
 
 router.get(
   '/',
-  asyncHandler(insecureAuthMiddleware),
+  asyncHandler(authMiddleware),
   authorizeRoles([Role.admin]),
   asyncHandler(async (req, res): Promise<void> => {
-    const page =
-      req.query['page'] != null
-        ? parseInt(req.query['page'] as string)
-        : undefined;
-    const limit =
-      req.query['limit'] != null
-        ? parseInt(req.query['limit'] as string)
-        : undefined;
+    const validated = paginationSchema.parse(req.query);
     const registrations = await jadwalSidangService.getApprovedRegistrations(
-      page,
-      limit,
+      validated.page,
+      validated.limit,
     );
     res.status(200).json({ status: 'sukses', data: registrations });
   }),
@@ -36,11 +27,14 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(authMiddleware), // Must be authenticated to get userId
+  asyncHandler(authMiddleware),
   authorizeRoles([Role.admin]),
   validate(createJadwalSchema),
   asyncHandler(async (req, res): Promise<void> => {
     const userId = req.user?.id;
+    if (!userId) {
+      throw new HttpError(401, 'User ID not found');
+    }
     const newJadwal = await jadwalSidangService.createJadwal(req.body, userId);
     res.status(201).json({ status: 'sukses', data: newJadwal });
   }),
@@ -74,25 +68,17 @@ router.get(
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const dosenId = req.user?.dosen?.id;
-    if (dosenId === undefined) {
-      res.status(401).json({
-        status: 'gagal',
-        message: 'Akses ditolak: Pengguna tidak memiliki profil dosen.',
-      });
-      return;
+    if (!dosenId) {
+      throw new HttpError(
+        403,
+        'Akses ditolak: Pengguna tidak memiliki profil dosen.',
+      );
     }
-    const page =
-      req.query['page'] != null
-        ? parseInt(req.query['page'] as string)
-        : undefined;
-    const limit =
-      req.query['limit'] != null
-        ? parseInt(req.query['limit'] as string)
-        : undefined;
+    const validated = paginationSchema.parse(req.query);
     const sidang = await jadwalSidangService.getSidangForPenguji(
       dosenId,
-      page,
-      limit,
+      validated.page,
+      validated.limit,
     );
     res.status(200).json({ status: 'sukses', data: sidang });
   }),
@@ -104,12 +90,11 @@ router.get(
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req, res): Promise<void> => {
     const mahasiswaId = req.user?.mahasiswa?.id;
-    if (mahasiswaId === undefined) {
-      res.status(401).json({
-        status: 'gagal',
-        message: 'Akses ditolak: Pengguna tidak memiliki profil mahasiswa.',
-      });
-      return;
+    if (!mahasiswaId) {
+      throw new HttpError(
+        403,
+        'Akses ditolak: Pengguna tidak memiliki profil mahasiswa.',
+      );
     }
     const sidang = await jadwalSidangService.getSidangForMahasiswa(mahasiswaId);
     res.status(200).json({ status: 'sukses', data: sidang });

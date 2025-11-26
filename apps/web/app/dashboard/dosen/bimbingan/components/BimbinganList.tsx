@@ -1,34 +1,24 @@
-// apps/web/app/dashboard/dosen/bimbingan/components/BimbinganList.tsx
 'use client';
 
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/api';
+import { useBimbinganDosen } from '@/hooks/useBimbingan';
 import BimbinganCard from './BimbinganCard';
 import { TugasAkhir } from '../types';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import EmptyState from '@/components/shared/EmptyState';
 
 export default function BimbinganList() {
-  const {
-    data: bimbinganList,
-    isLoading,
-    isError,
-  } = useQuery<TugasAkhir[]>({
-    queryKey: ['dosenBimbinganList'],
-    queryFn: async () => {
-      const response = await api.get('/bimbingan/sebagai-dosen');
-      return response.data.data;
-    },
-  });
+  const { data, isLoading, isError } = useBimbinganDosen();
 
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
-  if (isError || !bimbinganList) {
+  if (isError || !data?.data) {
     return <EmptyState message="Gagal memuat daftar bimbingan." />;
   }
+
+  const bimbinganList = data.data as unknown as TugasAkhir[];
 
   if (bimbinganList.length === 0) {
     return (

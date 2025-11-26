@@ -1,21 +1,31 @@
 import type { Request, Response, NextFunction } from 'express';
-import type { z } from 'zod';
+import type { ZodSchema } from 'zod';
 import { ZodError } from 'zod';
 
-export const validate =
-  (schema: z.ZodType) =>
-  (req: Request, res: Response, next: NextFunction): void => {
+export const validate = (schema: ZodSchema) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
-      schema.parse(req.body);
+      const validated = schema.parse(req.body);
+      req.body = validated;
       next();
-    } catch (error: unknown) {
+    } catch (error) {
       if (error instanceof ZodError) {
         res.status(400).json({
-          status: 'fail',
-          errors: error.issues,
+          status: 'gagal',
+          message: 'Validasi gagal',
+          errors: error.issues.map((e) => ({
+            field: e.path.join('.'),
+            message: e.message,
+          })),
         });
         return;
       }
-      next(error);
+      res.status(400).json({
+        status: 'gagal',
+        message: 'Data request tidak valid',
+      });
     }
   };
+};
+
+export const validateRequest = validate;

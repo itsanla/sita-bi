@@ -1,76 +1,76 @@
-import { PrismaClient } from '@repo/db';
 import type { StatistikDto } from '../dto/laporan.dto';
 import { PeranDosen } from '@repo/db';
+import prisma from '../config/database';
 
 export class LaporanService {
-  private prisma: PrismaClient;
-
-  constructor() {
-    this.prisma = new PrismaClient();
-  }
+  private prisma = prisma;
 
   async getStatistik(): Promise<StatistikDto> {
-    const mahasiswaPerProdi = await this.prisma.mahasiswa.groupBy({
-      by: ['prodi'],
-      _count: { prodi: true },
-    });
+    try {
+      const [
+        mahasiswaPerProdi,
+        sidangStatistik,
+        bimbinganPerDosen,
+        dokumenStatistik,
+        pengujiData,
+      ] = await Promise.all([
+        this.prisma.mahasiswa.groupBy({
+          by: ['prodi'],
+          _count: { prodi: true },
+        }),
+        this.prisma.sidang.groupBy({
+          by: ['jenis_sidang', 'status_hasil'],
+          _count: { _all: true },
+        }),
+        this.prisma.bimbinganTA.groupBy({
+          by: ['dosen_id'],
+          _count: { _all: true },
+        }),
+        this.prisma.dokumenTa.groupBy({
+          by: ['tipe_dokumen', 'status_validasi'],
+          _count: { _all: true },
+        }),
+        this.prisma.peranDosenTa.findMany({
+          where: {
+            peran: {
+              in: [
+                PeranDosen.penguji1,
+                PeranDosen.penguji2,
+                PeranDosen.penguji3,
+                PeranDosen.penguji4,
+              ],
+            },
+          },
+          select: { dosen_id: true },
+        }),
+      ]);
 
-    // mahasiswaPerAngkatan dihapus karena field angkatan sudah tidak dipakai
-
-    const sidangStatistik = await this.prisma.sidang.groupBy({
-      by: ['jenis_sidang', 'status_hasil'],
-      _count: { _all: true },
-    });
-
-    const bimbinganPerDosen = await this.prisma.bimbinganTA.groupBy({
-      by: ['dosen_id'],
-      _count: { _all: true },
-    });
-
-    const dokumenStatistik = await this.prisma.dokumenTa.groupBy({
-      by: ['tipe_dokumen', 'status_validasi'],
-      _count: { _all: true },
-    });
-
-    // Manual aggregation for pengujiStat to avoid circular reference error
-    const pengujiData = await this.prisma.peranDosenTa.findMany({
-      where: {
-        peran: {
-          in: [
-            PeranDosen.penguji1,
-            PeranDosen.penguji2,
-            PeranDosen.penguji3,
-            PeranDosen.penguji4,
-          ],
+      const pengujiStatCounts = pengujiData.reduce<Record<number, number>>(
+        (acc, curr) => {
+          acc[curr.dosen_id] = (acc[curr.dosen_id] ?? 0) + 1;
+          return acc;
         },
-      },
-      select: { dosen_id: true },
-    });
+        {},
+      );
 
-    const pengujiStatCounts = pengujiData.reduce<Record<number, number>>(
-      (acc, curr) => {
-        const dosenId = Number(curr.dosen_id);
-        const currentCount = Number(acc[dosenId] ?? 0);
-        acc[dosenId] = currentCount + 1;
-        return acc;
-      },
-      {},
-    );
+      const pengujiStat = Object.entries(pengujiStatCounts).map(
+        ([dosen_id, count]) => ({
+          dosen_id: Number(dosen_id),
+          _count: { _all: count },
+        }),
+      );
 
-    const pengujiStat = Object.entries(pengujiStatCounts).map(
-      ([dosen_id, count]) => ({
-        dosen_id: parseInt(dosen_id, 10),
-        _count: { _all: count },
-      }),
-    );
-
-    return {
-      mahasiswaPerProdi,
-      mahasiswaPerAngkatan: [], // Empty array karena angkatan sudah tidak dipakai
-      sidangStatistik,
-      bimbinganPerDosen,
-      dokumenStatistik,
-      pengujiStat,
-    };
+      return {
+        mahasiswaPerProdi,
+        mahasiswaPerAngkatan: [],
+        sidangStatistik,
+        bimbinganPerDosen,
+        dokumenStatistik,
+        pengujiStat,
+      };
+    } catch (error) {
+      console.error('[LaporanService] Error fetching statistik:', error);
+      throw new Error('Gagal mengambil data statistik');
+    }
   }
 }

@@ -9,7 +9,7 @@ declare global {
         role: Role;
         dosen?: {
           id: number;
-          nidn: string;
+          nip: string;
           prodi?: 'D3' | 'D4' | null;
         } | null;
         mahasiswa?: {

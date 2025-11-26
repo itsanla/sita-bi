@@ -1,11 +1,17 @@
 import { PrismaClient } from '@repo/db';
 
-/**
- * Prisma client with query logging extension
- */
-const prisma = new PrismaClient();
+// Singleton pattern untuk Prisma Client
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
-// eslint-disable-next-line no-console
-console.log('✅ Prisma client initialized');
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log:
+      process.env['NODE_ENV'] === 'development' ? ['error', 'warn'] : ['error'],
+  });
+
+if (process.env['NODE_ENV'] !== 'production') globalForPrisma.prisma = prisma;
 
 export default prisma;

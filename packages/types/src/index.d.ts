@@ -8,7 +8,7 @@ export declare enum Role {
 }
 export interface DosenProfile {
     id: number;
-    nidn: string;
+    nip: string;
 }
 export interface MahasiswaProfile {
     id: number;

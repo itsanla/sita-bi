@@ -221,7 +221,7 @@ model Mahasiswa {
 model Dosen {
   id              Int      @id @default(autoincrement())
   user_id         Int      @unique
-  nidn            String   @unique
+  nip             String   @unique
   prodi           Prodi? // Menandakan homebase atau scope wewenang (untuk Kaprodi)
   kuota_bimbingan Int      @default(4)
   created_at      DateTime @default(now())

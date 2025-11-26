@@ -8,7 +8,6 @@ import Image from 'next/image';
 import {
   Home,
   Users,
-  ClipboardList,
   FileText,
   Calendar,
   Megaphone,
@@ -28,7 +27,11 @@ const navItems = [
   { href: '/dashboard/admin', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/dashboard/admin/users', icon: Users, label: 'Manajemen User' },
   { href: '/dashboard/admin/penugasan', icon: BookUser, label: 'Penugasan' },
-  { href: '/dashboard/admin/kelola-sidang', icon: Calendar, label: 'Kelola Sidang' },
+  {
+    href: '/dashboard/admin/kelola-sidang',
+    icon: Calendar,
+    label: 'Kelola Sidang',
+  },
   { href: '/dashboard/admin/pengumuman', icon: Megaphone, label: 'Pengumuman' },
   { href: '/dashboard/admin/import', icon: Upload, label: 'Import Data' },
   { href: '/dashboard/admin/reports', icon: FileText, label: 'Laporan' },

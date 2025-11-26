@@ -5,9 +5,11 @@ import request from '@/lib/api';
 import { Search, UserPlus, Loader, Info, X, AlertCircle } from 'lucide-react';
 import { useDosenCapacity } from '@/hooks/useDosenCapacity';
 import DosenCapacityBadge from '@/components/shared/DosenCapacityBadge';
-import { validatePembimbingSelection, validatePengujiSelection } from '@/lib/rbac-utils';
+import {
+  validatePembimbingSelection,
+  validatePengujiSelection,
+} from '@/lib/rbac-utils';
 import { toast } from 'sonner';
-
 
 // --- Interfaces ---
 interface TugasAkhir {
@@ -57,7 +59,7 @@ function PenugasanPageContent() {
         request<{ data: { data: TugasAkhir[] } }>('/penugasan/unassigned'),
         request<{ data: DosenLoad[] }>('/penugasan/dosen-load'),
       ]);
-      
+
       // Handle TA response
       if (taRes.data?.data?.data && Array.isArray(taRes.data.data.data)) {
         setUnassignedTAs(taRes.data.data.data);
@@ -66,7 +68,7 @@ function PenugasanPageContent() {
       } else {
         setUnassignedTAs([]);
       }
-      
+
       // Handle dosen response
       if (dosenRes.data?.data && Array.isArray(dosenRes.data.data)) {
         setDosenLoad(dosenRes.data.data);
@@ -105,7 +107,9 @@ function PenugasanPageContent() {
   const handleAssignSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedTA || !dosen1Id) {
-      toast.error(`Pilih minimal ${assignType === 'pembimbing' ? 'Pembimbing' : 'Penguji'} 1`);
+      toast.error(
+        `Pilih minimal ${assignType === 'pembimbing' ? 'Pembimbing' : 'Penguji'} 1`,
+      );
       return;
     }
 
@@ -118,18 +122,20 @@ function PenugasanPageContent() {
         toast.error(validation.error);
         return;
       }
-      
+
       // Check kuota 4 mahasiswa per dosen
-      const dosen1 = dosenLoad.find(d => d.id === d1);
+      const dosen1 = dosenLoad.find((d) => d.id === d1);
       if (dosen1 && dosen1.bimbinganLoad >= 4) {
         toast.error('Pembimbing 1 sudah membimbing 4 mahasiswa (kuota penuh)');
         return;
       }
-      
+
       if (d2) {
-        const dosen2 = dosenLoad.find(d => d.id === d2);
+        const dosen2 = dosenLoad.find((d) => d.id === d2);
         if (dosen2 && dosen2.bimbinganLoad >= 4) {
-          toast.error('Pembimbing 2 sudah membimbing 4 mahasiswa (kuota penuh)');
+          toast.error(
+            'Pembimbing 2 sudah membimbing 4 mahasiswa (kuota penuh)',
+          );
           return;
         }
       }
@@ -143,7 +149,8 @@ function PenugasanPageContent() {
 
     setIsSubmitting(true);
     try {
-      const endpoint = assignType === 'pembimbing' ? 'assign' : 'assign-penguji';
+      const endpoint =
+        assignType === 'pembimbing' ? 'assign' : 'assign-penguji';
       const body: Record<string, number | undefined> = {};
       if (assignType === 'pembimbing') {
         body.pembimbing1Id = d1;
@@ -157,19 +164,19 @@ function PenugasanPageContent() {
         method: 'POST',
         data: body,
       });
-      
+
       const dosenNames = [];
       if (d1) {
-        const dosen1Name = dosenLoad.find(d => d.id === d1)?.name;
+        const dosen1Name = dosenLoad.find((d) => d.id === d1)?.name;
         if (dosen1Name) dosenNames.push(dosen1Name);
       }
       if (d2) {
-        const dosen2Name = dosenLoad.find(d => d.id === d2)?.name;
+        const dosen2Name = dosenLoad.find((d) => d.id === d2)?.name;
         if (dosen2Name) dosenNames.push(dosen2Name);
       }
-      
+
       toast.success(
-        `${assignType === 'pembimbing' ? 'Pembimbing' : 'Penguji'} berhasil ditugaskan: ${dosenNames.join(' & ')}`
+        `${assignType === 'pembimbing' ? 'Pembimbing' : 'Penguji'} berhasil ditugaskan: ${dosenNames.join(' & ')}`,
       );
       handleCloseModal();
       await fetchData();
@@ -253,13 +260,12 @@ function PenugasanPageContent() {
                       {ta.mahasiswa.user.name}
                     </div>
                     <div className="text-xs text-gray-500">
-                      NIM: {ta.mahasiswa.nim || '-'} | Prodi: {ta.mahasiswa.prodi || '-'}
+                      NIM: {ta.mahasiswa.nim || '-'} | Prodi:{' '}
+                      {ta.mahasiswa.prodi || '-'}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm text-gray-700">
-                      {ta.judul}
-                    </div>
+                    <div className="text-sm text-gray-700">{ta.judul}</div>
                   </td>
                   <td className="px-6 py-4 text-right text-sm font-medium">
                     <button
@@ -323,10 +329,18 @@ function PenugasanPageContent() {
               <div>
                 <p className="font-semibold mb-1">Aturan Penugasan:</p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Setiap dosen maksimal membimbing <strong>4 mahasiswa</strong></li>
-                  <li>Setiap mahasiswa memiliki <strong>2 pembimbing</strong></li>
+                  <li>
+                    Setiap dosen maksimal membimbing{' '}
+                    <strong>4 mahasiswa</strong>
+                  </li>
+                  <li>
+                    Setiap mahasiswa memiliki <strong>2 pembimbing</strong>
+                  </li>
                   <li>Format: Nama Dosen - Bimbingan: X/4 | Penguji: Y</li>
-                  <li>Dosen dengan status <strong>(PENUH)</strong> tidak dapat dipilih</li>
+                  <li>
+                    Dosen dengan status <strong>(PENUH)</strong> tidak dapat
+                    dipilih
+                  </li>
                 </ul>
               </div>
             </div>
@@ -353,9 +367,12 @@ function PenugasanPageContent() {
                 </select>
                 {dosen1Id ? (
                   <div className="mt-2">
-                    <DosenCapacityBadge 
-                      current={dosenLoad.find(d => d.id === Number(dosen1Id))?.bimbinganLoad || 0} 
-                      max={4} 
+                    <DosenCapacityBadge
+                      current={
+                        dosenLoad.find((d) => d.id === Number(dosen1Id))
+                          ?.bimbinganLoad || 0
+                      }
+                      max={4}
                     />
                   </div>
                 ) : null}
@@ -376,13 +393,18 @@ function PenugasanPageContent() {
                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-red-800 focus:border-red-800 sm:text-sm rounded-md"
                 >
                   <option value="">-- Tidak Ada --</option>
-                  {dosenLoad.filter(d => d.id !== Number(dosen1Id)).map(renderDosenOption)}
+                  {dosenLoad
+                    .filter((d) => d.id !== Number(dosen1Id))
+                    .map(renderDosenOption)}
                 </select>
                 {dosen2Id ? (
                   <div className="mt-2">
-                    <DosenCapacityBadge 
-                      current={dosenLoad.find(d => d.id === Number(dosen2Id))?.bimbinganLoad || 0} 
-                      max={4} 
+                    <DosenCapacityBadge
+                      current={
+                        dosenLoad.find((d) => d.id === Number(dosen2Id))
+                          ?.bimbinganLoad || 0
+                      }
+                      max={4}
                     />
                   </div>
                 ) : null}

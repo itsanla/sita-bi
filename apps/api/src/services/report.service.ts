@@ -1,4 +1,4 @@
-import { PrismaClient } from '@repo/db';
+import prisma from '../config/database';
 
 interface DashboardStats {
   totalStudents: number;
@@ -14,63 +14,66 @@ interface LecturerRoleWorkload {
 interface LecturerWorkload {
   dosen_id: number;
   name: string;
-  nidn: string;
+  nip: string;
   roles: LecturerRoleWorkload[];
 }
 
 export class ReportService {
-  private prisma: PrismaClient;
-
-  constructor() {
-    this.prisma = new PrismaClient();
-  }
+  private prisma = prisma;
 
   async getDashboardStats(): Promise<DashboardStats> {
-    const [totalStudents, totalLecturers, activeTAs] = await Promise.all([
-      this.prisma.mahasiswa.count(),
-      this.prisma.dosen.count(),
-      this.prisma.tugasAkhir.count({
-        where: {
-          status: {
-            notIn: ['SELESAI', 'GAGAL', 'DIBATALKAN', 'DITOLAK'],
+    try {
+      const [totalStudents, totalLecturers, activeTAs] = await Promise.all([
+        this.prisma.mahasiswa.count(),
+        this.prisma.dosen.count(),
+        this.prisma.tugasAkhir.count({
+          where: {
+            status: {
+              notIn: ['SELESAI', 'GAGAL', 'DIBATALKAN', 'DITOLAK'],
+            },
           },
-        },
-      }),
-    ]);
+        }),
+      ]);
 
-    return {
-      totalStudents,
-      totalLecturers,
-      activeTAs,
-    };
+      return {
+        totalStudents,
+        totalLecturers,
+        activeTAs,
+      };
+    } catch (error) {
+      console.error('[ReportService] Error fetching dashboard stats:', error);
+      throw new Error('Gagal mengambil statistik dashboard');
+    }
   }
 
   async getLecturerWorkload(): Promise<LecturerWorkload[]> {
-    // Count workloads based on peranDosenTa
-    const workloads = await this.prisma.peranDosenTa.groupBy({
-      by: ['dosen_id', 'peran'],
-      _count: {
-        tugas_akhir_id: true,
-      },
-    });
+    try {
+      const [workloads, lecturers] = await Promise.all([
+        this.prisma.peranDosenTa.groupBy({
+          by: ['dosen_id', 'peran'],
+          _count: {
+            tugas_akhir_id: true,
+          },
+        }),
+        this.prisma.dosen.findMany({
+          include: { user: true },
+        }),
+      ]);
 
-    const lecturers = await this.prisma.dosen.findMany({
-      include: { user: true },
-    });
-
-    const result = lecturers.map((dosen) => {
-      const theirWorkload = workloads.filter((w) => w.dosen_id === dosen.id);
-      return {
+      return lecturers.map((dosen) => ({
         dosen_id: dosen.id,
         name: dosen.user.name,
-        nidn: dosen.nidn,
-        roles: theirWorkload.map((w) => ({
-          role: w.peran,
-          count: w._count.tugas_akhir_id,
-        })),
-      };
-    });
-
-    return result;
+        nip: dosen.nip,
+        roles: workloads
+          .filter((w) => w.dosen_id === dosen.id)
+          .map((w) => ({
+            role: w.peran,
+            count: w._count.tugas_akhir_id,
+          })),
+      }));
+    } catch (error) {
+      console.error('[ReportService] Error fetching lecturer workload:', error);
+      throw new Error('Gagal mengambil data beban kerja dosen');
+    }
   }
 }

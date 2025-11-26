@@ -1,11 +1,10 @@
 // apps/web/app/dashboard/mahasiswa/components/ProgressTimeline.tsx
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/api';
 import { CheckCircle2, Circle, Clock, AlertTriangle } from 'lucide-react';
 import { DashboardCardSkeleton } from '@/components/Suspense/LoadingFallback';
 import EmptyState from '@/components/shared/EmptyState';
+import { useDashboardProgress } from '@/hooks/useDashboardData';
 
 interface TimelineItem {
   title: string;
@@ -15,26 +14,8 @@ interface TimelineItem {
   isError?: boolean;
 }
 
-interface ProgressData {
-  statusTA: string;
-  bimbinganCount: number;
-  minBimbingan: number;
-  tanggalDisetujui?: string;
-}
-
 export default function ProgressTimeline() {
-  const {
-    data: progress,
-    isLoading,
-    isError,
-  } = useQuery<ProgressData>({
-    queryKey: ['mahasiswaProgress'],
-    queryFn: async () => {
-      const response = await api.get('/dashboard/mahasiswa/progress');
-      return response.data.data;
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  const { data: progress, isLoading, isError } = useDashboardProgress();
 
   if (isLoading) {
     return <DashboardCardSkeleton />;

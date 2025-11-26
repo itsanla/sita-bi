@@ -10,7 +10,7 @@ interface ProfileUpdateData extends Record<string, unknown> {
     nim: string;
   };
   dosen?: {
-    nidn: string;
+    nip: string;
   };
 }
 
@@ -20,7 +20,7 @@ export default function ProfilePage() {
   // State for form fields
   const [name, setName] = useState('');
   const [nim, setNim] = useState('');
-  const [nidn, setNidn] = useState('');
+  const [nip, setNidn] = useState('');
 
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,8 +33,8 @@ export default function ProfilePage() {
       if (user.nim) {
         setNim(user.nim);
       }
-      if (user.nidn) {
-        setNidn(user.nidn);
+      if (user.nip) {
+        setNidn(user.nip);
       }
     }
   }, [user]);
@@ -49,8 +49,8 @@ export default function ProfilePage() {
     if (user?.nim) {
       profileData.mahasiswa = { nim };
     }
-    if (user?.nidn) {
-      profileData.dosen = { nidn };
+    if (user?.nip) {
+      profileData.dosen = { nip };
     }
 
     try {
@@ -142,17 +142,17 @@ export default function ProfilePage() {
             {!!isDosen && (
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  NIDN
+                  NIP
                 </label>
                 {isEditing ? (
                   <input
                     type="text"
-                    value={nidn}
+                    value={nip}
                     onChange={(e) => setNidn(e.target.value)}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                   />
                 ) : (
-                  <p className="mt-1 text-lg">{user.nidn}</p>
+                  <p className="mt-1 text-lg">{user.nip}</p>
                 )}
               </div>
             )}

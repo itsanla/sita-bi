@@ -8,7 +8,7 @@ export const createDosenSchema = z.object({
   name: z.string().min(1, 'Name cannot be empty'),
   email: z.email(),
   password: z.string().min(8, 'Password must be at least 8 characters long'),
-  nidn: z.string().min(1, 'NIDN cannot be empty'),
+  nip: z.string().min(1, 'NIP cannot be empty'),
   phone_number: z.string().optional(),
   prodi: z.enum([Prodi.D3, Prodi.D4]).optional(),
   roles: z
@@ -30,7 +30,7 @@ export type CreateDosenDto = z.infer<typeof createDosenSchema>;
 export const updateDosenSchema = z.object({
   name: z.string().optional(),
   email: z.email().optional(),
-  nidn: z.string().optional(),
+  nip: z.string().optional(),
   prodi: z.enum([Prodi.D3, Prodi.D4]).optional(),
   roles: z
     .array(z.enum([Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4, Role.dosen]))

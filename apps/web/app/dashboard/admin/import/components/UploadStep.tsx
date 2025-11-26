@@ -36,7 +36,7 @@ export default function UploadStep({
     const content =
       importType === 'mahasiswa'
         ? 'nim,nama,email,prodi,kelas\n'
-        : 'nidn,nama,email,prodi\n';
+        : 'nip,nama,email,prodi\n';
     const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');

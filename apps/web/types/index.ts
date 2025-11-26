@@ -11,7 +11,7 @@ export interface User {
   photo?: string | null;
   roles: { id: number; name: RoleName }[];
   nim?: string; // From mahasiswa
-  nidn?: string; // From dosen
+  nip?: string; // From dosen
   mahasiswa?: {
     id: number;
     nim: string;
@@ -20,7 +20,7 @@ export interface User {
   } | null;
   dosen?: {
     id: number;
-    nidn: string;
+    nip: string;
     prodi?: string | null;
     kuota_bimbingan: number;
     assignedMahasiswa?: {

@@ -1,32 +1,13 @@
 // apps/web/app/dashboard/mahasiswa/components/DashboardStats.tsx
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/api';
 import { BookOpen, MessagesSquare, Calendar, Award } from 'lucide-react';
 import { DashboardCardSkeleton } from '@/components/Suspense/LoadingFallback';
 import EmptyState from '@/components/shared/EmptyState';
-
-interface StatsData {
-  tugasAkhir: { total: number; disetujui: number };
-  bimbingan: { total: number; bulanIni: number };
-  sidang: { status: string; tanggal: string | null };
-  progress: { percentage: number; tahap: string };
-}
+import { useDashboardStats } from '@/hooks/useDashboardData';
 
 export default function DashboardStats() {
-  const {
-    data: stats,
-    isLoading,
-    isError,
-  } = useQuery<StatsData>({
-    queryKey: ['mahasiswaDashboardStats'],
-    queryFn: async () => {
-      const response = await api.get('/dashboard/mahasiswa/stats');
-      return response.data.data;
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  const { data: stats, isLoading, isError } = useDashboardStats();
 
   if (isLoading) {
     return (

@@ -44,7 +44,7 @@ router.get(
           userId: dosen.user.id,
           name: dosen.user.name,
           email: dosen.user.email,
-          nidn: dosen.nidn,
+          nip: dosen.nip,
           prodi: dosen.prodi,
           capacity: { current, max, available, percentage },
         };

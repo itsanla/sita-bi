@@ -2,8 +2,13 @@ import { Router, type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
+import { validate } from '../middlewares/validation.middleware';
 import { Role } from '@repo/types';
 import { DashboardService } from '../services/dashboard.service';
+import {
+  getMahasiswaActivitiesQuerySchema,
+  getMahasiswaScheduleQuerySchema,
+} from '../dto/dashboard.dto';
 
 const router: Router = Router();
 const dashboardService = new DashboardService();
@@ -39,6 +44,7 @@ router.get(
   '/mahasiswa/activities',
   asyncHandler(authMiddleware),
   authorizeRoles([Role.mahasiswa]),
+  validate(getMahasiswaActivitiesQuerySchema),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     const userId = req.user?.id;
     if (userId === undefined) {
@@ -49,11 +55,9 @@ router.get(
       return;
     }
 
-    const queryLimit = req.query['limit'];
-    const limit =
-      typeof queryLimit === 'string' && queryLimit.length > 0
-        ? parseInt(queryLimit)
-        : 10;
+    const limit = req.query['limit']
+      ? parseInt(req.query['limit'] as string, 10)
+      : 10;
     const activities = await dashboardService.getMahasiswaActivities(
       userId,
       limit,
@@ -70,6 +74,7 @@ router.get(
   '/mahasiswa/schedule',
   asyncHandler(authMiddleware),
   authorizeRoles([Role.mahasiswa]),
+  validate(getMahasiswaScheduleQuerySchema),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     const userId = req.user?.id;
     if (userId === undefined) {
@@ -80,11 +85,9 @@ router.get(
       return;
     }
 
-    const queryLimit = req.query['limit'];
-    const limit =
-      typeof queryLimit === 'string' && queryLimit.length > 0
-        ? parseInt(queryLimit)
-        : 5;
+    const limit = req.query['limit']
+      ? parseInt(req.query['limit'] as string, 10)
+      : 5;
     const schedule = await dashboardService.getMahasiswaSchedule(userId, limit);
     response.status(200).json({ status: 'sukses', data: schedule });
   }),

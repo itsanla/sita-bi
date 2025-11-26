@@ -33,7 +33,7 @@ export function PengujiSelector({ value, onChange }: PengujiSelectorProps) {
   const filteredDosen = capacities.map(c => ({
     id: c.dosenId,
     name: c.name,
-    nidn: c.nidn,
+    nip: c.nip,
   }));
 
   const selectedIds = [value.penguji1Id, value.penguji2Id, value.penguji3Id].filter(Boolean);
@@ -52,7 +52,7 @@ export function PengujiSelector({ value, onChange }: PengujiSelectorProps) {
           <option value="">Pilih Penguji 1</option>
           {filteredDosen.map((dosen) => (
             <option key={dosen.id} value={dosen.id}>
-              {dosen.name} ({dosen.nidn})
+              {dosen.name} ({dosen.nip})
             </option>
           ))}
         </select>
@@ -70,7 +70,7 @@ export function PengujiSelector({ value, onChange }: PengujiSelectorProps) {
             .filter(d => !selectedIds.includes(d.id))
             .map((dosen) => (
               <option key={dosen.id} value={dosen.id}>
-                {dosen.name} ({dosen.nidn})
+                {dosen.name} ({dosen.nip})
               </option>
             ))}
         </select>
@@ -88,7 +88,7 @@ export function PengujiSelector({ value, onChange }: PengujiSelectorProps) {
             .filter(d => !selectedIds.includes(d.id))
             .map((dosen) => (
               <option key={dosen.id} value={dosen.id}>
-                {dosen.name} ({dosen.nidn})
+                {dosen.name} ({dosen.nip})
               </option>
             ))}
         </select>

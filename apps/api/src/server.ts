@@ -13,7 +13,7 @@ const httpServer = createServer(app);
 initSocket(httpServer);
 
 // Initialize Services
-if (process.env.NODE_ENV !== 'test') {
+if (process.env['NODE_ENV'] !== 'test') {
   whatsappService.initialize().catch((err: unknown) => {
     console.error('Failed to initialize WhatsApp service:', err);
   });

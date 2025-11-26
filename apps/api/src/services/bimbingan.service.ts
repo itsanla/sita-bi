@@ -1,9 +1,28 @@
 import type { Prisma } from '@repo/db';
-import { PrismaClient, StatusTugasAkhir } from '@repo/db';
+import { PrismaClient, StatusBimbingan } from '@repo/db';
+import { BimbinganRepository } from '../repositories/bimbingan.repository';
+import {
+  NotFoundError,
+  UnauthorizedError,
+  ConflictError,
+} from '../errors/AppError';
 
-// Interface untuk return types
 interface BimbinganForDosen {
-  data: unknown[];
+  data: Array<{
+    id: number;
+    judul: string;
+    status: string;
+    mahasiswa: {
+      id: number;
+      user: { id: number; name: string; email: string };
+    };
+    bimbinganTa: Array<{
+      id: number;
+      status_bimbingan: string;
+      tanggal_bimbingan: Date | null;
+      jam_bimbingan: string | null;
+    }>;
+  }>;
   page: number;
   limit: number;
   total: number;
@@ -14,35 +33,51 @@ interface TugasAkhirWithBimbingan {
   id: number;
   mahasiswa_id: number;
   status: string;
-  peranDosenTa: unknown[];
-  bimbinganTa: unknown[];
+  peranDosenTa: Array<{
+    id: number;
+    peran: string;
+    dosen: { id: number; user: { name: string } };
+  }>;
+  bimbinganTa: Array<{
+    id: number;
+    status_bimbingan: string;
+    tanggal_bimbingan: Date | null;
+    jam_bimbingan: string | null;
+    catatan: unknown[];
+    lampiran: unknown[];
+    historyPerubahan: unknown[];
+  }>;
   pendaftaranSidang: unknown[];
 }
 
 export class BimbinganService {
+  private repository: BimbinganRepository;
   private prisma: PrismaClient;
 
   constructor() {
     this.prisma = new PrismaClient();
+    this.repository = new BimbinganRepository(this.prisma);
   }
 
   private async logActivity(
-    userId: number, // Can be null if system?
+    userId: number,
     action: string,
     url?: string,
     method?: string,
   ): Promise<void> {
     try {
-      await this.prisma.log.create({
-        data: {
-          user_id: userId,
-          action,
-          url: url ?? null, // Fix undefined
-          method: method ?? null, // Fix undefined
-          ip_address: '127.0.0.1', // Placeholder
-          user_agent: 'System', // Placeholder
-        },
-      });
+      const logData: {
+        user_id: number;
+        action: string;
+        url?: string;
+        method?: string;
+      } = {
+        user_id: userId,
+        action,
+      };
+      if (url) logData.url = url;
+      if (method) logData.method = method;
+      await this.repository.createLog(logData);
     } catch (error) {
       console.error('Failed to create log:', error);
     }
@@ -51,78 +86,31 @@ export class BimbinganService {
   async getBimbinganForDosen(
     dosenId: number,
     page = 1,
-    limit = 50,
+    limit = 20,
   ): Promise<BimbinganForDosen> {
-    const whereClause: Prisma.TugasAkhirWhereInput = {
-      peranDosenTa: {
-        some: {
-          dosen_id: dosenId,
-          peran: { in: ['pembimbing1', 'pembimbing2'] },
-        },
-      },
-      NOT: {
-        status: {
-          in: [
-            StatusTugasAkhir.DIBATALKAN,
-            StatusTugasAkhir.LULUS_DENGAN_REVISI,
-            StatusTugasAkhir.LULUS_TANPA_REVISI,
-            StatusTugasAkhir.SELESAI,
-            StatusTugasAkhir.DITOLAK,
-          ],
-        },
-      },
-    };
+    const validPage = Math.max(1, page);
+    const validLimit = Math.min(100, Math.max(1, limit));
 
-    const total = await this.prisma.tugasAkhir.count({ where: whereClause });
-    const data = await this.prisma.tugasAkhir.findMany({
-      where: whereClause,
-      include: {
-        mahasiswa: { include: { user: true } },
-        bimbinganTa: { orderBy: { created_at: 'desc' } },
-      },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const { data, total } = await this.repository.findTugasAkhirForDosen(
+      dosenId,
+      validPage,
+      validLimit,
+    );
 
     return {
       data,
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: validPage,
+      limit: validLimit,
+      totalPages: Math.ceil(total / validLimit),
     };
   }
 
   async getBimbinganForMahasiswa(
     mahasiswaId: number,
   ): Promise<TugasAkhirWithBimbingan | null> {
-    const tugasAkhir = await this.prisma.tugasAkhir.findFirst({
-      where: {
-        mahasiswa_id: mahasiswaId,
-        NOT: {
-          status: {
-            in: [
-              StatusTugasAkhir.DIBATALKAN,
-              StatusTugasAkhir.LULUS_DENGAN_REVISI,
-              StatusTugasAkhir.LULUS_TANPA_REVISI,
-              StatusTugasAkhir.SELESAI,
-              StatusTugasAkhir.DITOLAK,
-            ],
-          },
-        },
-      },
-      include: {
-        peranDosenTa: { include: { dosen: { include: { user: true } } } },
-        bimbinganTa: {
-          include: {
-            catatan: { include: { author: true } },
-            historyPerubahan: true,
-          },
-          orderBy: { created_at: 'desc' },
-        },
-        pendaftaranSidang: { orderBy: { created_at: 'desc' } },
-      },
-    });
+    const tugasAkhir =
+      await this.repository.findTugasAkhirForMahasiswa(mahasiswaId);
 
     if (tugasAkhir === null) {
       return null;
@@ -136,20 +124,10 @@ export class BimbinganService {
     authorId: number,
     catatan: string,
   ): Promise<unknown> {
-    const bimbingan = await this.prisma.bimbinganTA.findUnique({
-      where: { id: bimbinganTaId },
-      include: {
-        tugasAkhir: {
-          include: {
-            mahasiswa: { include: { user: true } },
-            peranDosenTa: true,
-          },
-        },
-      },
-    });
+    const bimbingan = await this.repository.findBimbinganById(bimbinganTaId);
 
-    if (bimbingan === null) {
-      throw new Error('Bimbingan session not found');
+    if (!bimbingan) {
+      throw new NotFoundError('Sesi bimbingan tidak ditemukan');
     }
 
     const isMahasiswa = bimbingan.tugasAkhir.mahasiswa.user.id === authorId;
@@ -161,25 +139,22 @@ export class BimbinganService {
       (p) => p.dosen_id === bimbingan.dosen_id,
     );
 
-    if (!(isMahasiswa || isPembimbing)) {
-      throw new Error(
-        'You are not authorized to add a catatan to this bimbingan session.',
+    if (!isMahasiswa && !isPembimbing) {
+      throw new UnauthorizedError(
+        'Anda tidak memiliki akses untuk menambahkan catatan pada sesi bimbingan ini',
       );
     }
 
-    const newCatatan = await this.prisma.catatanBimbingan.create({
-      data: {
-        bimbingan_ta_id: bimbinganTaId,
-        author_id: authorId,
-        catatan: catatan,
-        author_type: 'user',
-      },
-    });
+    const sanitizedCatatan = catatan.trim();
+    const newCatatan = await this.repository.createCatatan(
+      bimbinganTaId,
+      authorId,
+      sanitizedCatatan,
+    );
 
-    // Log
     await this.logActivity(
       authorId,
-      `Menambahkan catatan pada bimbingan ID ${bimbinganTaId}: "${catatan.substring(0, 50)}..."`,
+      `Menambahkan catatan pada bimbingan ID ${bimbinganTaId}: "${sanitizedCatatan.substring(0, 50)}..."`,
     );
 
     return newCatatan;
@@ -194,16 +169,13 @@ export class BimbinganService {
     const startTime = this.timeStringToMinutes(jam);
     const endTime = startTime + durationMinutes;
 
-    const bimbinganConflicts = await this.prisma.bimbinganTA.findMany({
-      where: {
-        dosen_id: dosenId,
-        tanggal_bimbingan: tanggal,
-        status_bimbingan: 'dijadwalkan',
-      },
-    });
+    const [bimbinganConflicts, sidangConflicts] = await Promise.all([
+      this.repository.findBimbinganConflicts(dosenId, tanggal),
+      this.repository.findSidangConflicts(dosenId, tanggal),
+    ]);
 
     for (const bimbingan of bimbinganConflicts) {
-      if (bimbingan.jam_bimbingan != null) {
+      if (bimbingan.jam_bimbingan) {
         const bStart = this.timeStringToMinutes(bimbingan.jam_bimbingan);
         const bEnd = bStart + 60;
         if (this.isOverlap(startTime, endTime, bStart, bEnd)) {
@@ -211,21 +183,6 @@ export class BimbinganService {
         }
       }
     }
-
-    const sidangConflicts = await this.prisma.jadwalSidang.findMany({
-      where: {
-        tanggal: tanggal,
-        sidang: {
-          tugasAkhir: {
-            peranDosenTa: {
-              some: {
-                dosen_id: dosenId,
-              },
-            },
-          },
-        },
-      },
-    });
 
     for (const jadwal of sidangConflicts) {
       const jStart = this.timeStringToMinutes(jadwal.waktu_mulai);
@@ -249,41 +206,25 @@ export class BimbinganService {
 
     const busyIntervals: { start: number; end: number }[] = [];
 
-    const bimbingan = await this.prisma.bimbinganTA.findMany({
-      where: {
-        dosen_id: dosenId,
-        tanggal_bimbingan: tanggal,
-        status_bimbingan: 'dijadwalkan',
-      },
-    });
+    const [bimbingan, sidangs] = await Promise.all([
+      this.repository.findBimbinganConflicts(dosenId, tanggal),
+      this.repository.findSidangConflicts(dosenId, tanggal),
+    ]);
 
     for (const b of bimbingan) {
-      if (b.jam_bimbingan != null) {
+      if (b.jam_bimbingan) {
         const start = this.timeStringToMinutes(b.jam_bimbingan);
         busyIntervals.push({ start, end: start + 60 });
       }
     }
 
-    const sidangs = await this.prisma.jadwalSidang.findMany({
-      where: {
-        tanggal: tanggal,
-        sidang: {
-          tugasAkhir: {
-            peranDosenTa: {
-              some: {
-                dosen_id: dosenId,
-              },
-            },
-          },
-        },
-      },
-    });
-
     for (const s of sidangs) {
-      busyIntervals.push({
-        start: this.timeStringToMinutes(s.waktu_mulai),
-        end: this.timeStringToMinutes(s.waktu_selesai),
-      });
+      if (s.waktu_mulai && s.waktu_selesai) {
+        busyIntervals.push({
+          start: this.timeStringToMinutes(s.waktu_mulai),
+          end: this.timeStringToMinutes(s.waktu_selesai),
+        });
+      }
     }
 
     busyIntervals.sort((a, b) => a.start - b.start);
@@ -318,12 +259,12 @@ export class BimbinganService {
   }
 
   private timeStringToMinutes(time: string): number {
-    if (typeof time !== 'string') {
+    if (typeof time !== 'string' || !time) {
       return 0;
     }
     const parts = time.split(':');
-    const hours = parseInt(parts[0], 10);
-    const minutes = parseInt(parts[1], 10);
+    const hours = parseInt(parts[0] ?? '0', 10);
+    const minutes = parseInt(parts[1] ?? '0', 10);
 
     const h = Number.isNaN(hours) ? 0 : hours;
     const m = Number.isNaN(minutes) ? 0 : minutes;
@@ -353,32 +294,23 @@ export class BimbinganService {
     tanggal: string,
     jam: string,
   ): Promise<unknown> {
-    // Use user_id for logging, but we only have dosenId (which is Dosen ID, not User ID)
-    // We need to fetch user_id from dosen
-    const dosen = await this.prisma.dosen.findUnique({
-      where: { id: dosenId },
-    });
-
-    const userId = dosen?.user_id ?? 0;
+    const dosen = await this.repository.findDosenByUserId(dosenId);
+    if (!dosen) {
+      throw new NotFoundError('Dosen tidak ditemukan');
+    }
+    const userId = dosen.user_id;
 
     return this.prisma
       .$transaction(async (tx: Prisma.TransactionClient) => {
-        const peranDosen = await tx.peranDosenTa.findFirst({
-          where: { tugas_akhir_id: tugasAkhirId, dosen_id: dosenId },
-          include: {
-            tugasAkhir: {
-              include: {
-                mahasiswa: true,
-              },
-            },
-          },
-        });
+        const peranDosen = await this.repository.findPeranDosenTa(
+          tugasAkhirId,
+          dosenId,
+        );
 
-        if (
-          peranDosen?.peran == null ||
-          peranDosen.peran.startsWith('pembimbing') === false
-        ) {
-          throw new Error('You are not a supervisor for this final project.');
+        if (!peranDosen?.peran || !peranDosen.peran.startsWith('pembimbing')) {
+          throw new UnauthorizedError(
+            'Anda bukan pembimbing untuk tugas akhir ini',
+          );
         }
 
         const tanggalDate = new Date(tanggal);
@@ -394,11 +326,11 @@ export class BimbinganService {
         });
 
         for (const c of conflicts) {
-          if (c.jam_bimbingan != null) {
+          if (c.jam_bimbingan) {
             const cStart = this.timeStringToMinutes(c.jam_bimbingan);
             const cEnd = cStart + 60;
             if (cStart < endTime && startTime < cEnd) {
-              throw new Error(
+              throw new ConflictError(
                 `Jadwal konflik dengan bimbingan lain pada jam ${c.jam_bimbingan}`,
               );
             }
@@ -421,12 +353,14 @@ export class BimbinganService {
         });
 
         for (const s of sidangConflicts) {
-          const sStart = this.timeStringToMinutes(s.waktu_mulai);
-          const sEnd = this.timeStringToMinutes(s.waktu_selesai);
-          if (sStart < endTime && startTime < sEnd) {
-            throw new Error(
-              `Jadwal konflik dengan sidang pada jam ${s.waktu_mulai} - ${s.waktu_selesai}`,
-            );
+          if (s.waktu_mulai && s.waktu_selesai) {
+            const sStart = this.timeStringToMinutes(s.waktu_mulai);
+            const sEnd = this.timeStringToMinutes(s.waktu_selesai);
+            if (sStart < endTime && startTime < sEnd) {
+              throw new ConflictError(
+                `Jadwal konflik dengan sidang pada jam ${s.waktu_mulai} - ${s.waktu_selesai}`,
+              );
+            }
           }
         }
 
@@ -464,13 +398,14 @@ export class BimbinganService {
         const mahasiswa = await tx.mahasiswa.findUnique({
           where: { user_id: mahasiswaUserId },
         });
-        if (mahasiswa === null) throw new Error('Mahasiswa not found');
+        if (!mahasiswa) throw new NotFoundError('Mahasiswa tidak ditemukan');
 
         const bimbingan = await tx.bimbinganTA.findUnique({
           where: { id: bimbinganId },
         });
 
-        if (bimbingan === null) throw new Error('Bimbingan not found');
+        if (!bimbingan)
+          throw new NotFoundError('Sesi bimbingan tidak ditemukan');
 
         await tx.historyPerubahanJadwal.create({
           data: {
@@ -507,57 +442,60 @@ export class BimbinganService {
     bimbinganId: number,
     dosenId: number,
   ): Promise<unknown> {
-    // Get user_id from dosenId
-    const dosen = await this.prisma.dosen.findUnique({
-      where: { id: dosenId },
-    });
-    const userId = dosen?.user_id ?? 0;
+    const dosen = await this.repository.findDosenByUserId(dosenId);
+    if (!dosen) {
+      throw new NotFoundError('Dosen tidak ditemukan');
+    }
+    const userId = dosen.user_id;
 
-    return this.prisma
-      .$transaction(async (tx: Prisma.TransactionClient) => {
-        const bimbingan = await tx.bimbinganTA.findFirst({});
-        if (bimbingan === null) {
-          throw new Error(
-            'Supervision session not found or you are not authorized to modify it.',
-          );
-        }
+    const bimbingan = await this.repository.findBimbinganByIdAndDosen(
+      bimbinganId,
+      dosenId,
+    );
 
-        return tx.bimbinganTA.update({
-          where: { id: bimbinganId },
-          data: { status_bimbingan: 'dibatalkan' },
-        });
-      })
-      .then(async (res) => {
-        await this.logActivity(
-          userId,
-          `Membatalkan sesi bimbingan ID ${bimbinganId}`,
-        );
-        return res;
-      });
+    if (!bimbingan) {
+      throw new NotFoundError(
+        'Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses',
+      );
+    }
+
+    const result = await this.repository.updateBimbinganStatus(
+      bimbinganId,
+      'dibatalkan',
+    );
+
+    await this.logActivity(
+      userId,
+      `Membatalkan sesi bimbingan ID ${bimbinganId}`,
+    );
+
+    return result;
   }
 
   async selesaikanSesi(bimbinganId: number, dosenId: number): Promise<unknown> {
-    // Get user_id from dosenId
-    const dosen = await this.prisma.dosen.findUnique({
-      where: { id: dosenId },
-    });
-    const userId = dosen?.user_id ?? 0;
+    const dosen = await this.repository.findDosenByUserId(dosenId);
+    if (!dosen) {
+      throw new NotFoundError('Dosen tidak ditemukan');
+    }
+    const userId = dosen.user_id;
 
     return this.prisma
       .$transaction(async (tx: Prisma.TransactionClient) => {
-        const bimbingan = await tx.bimbinganTA.findFirst({
-          where: { id: bimbinganId, dosen_id: dosenId },
-          include: { tugasAkhir: true },
-        });
+        const bimbingan = await this.repository.findBimbinganByIdAndDosen(
+          bimbinganId,
+          dosenId,
+        );
 
-        if (bimbingan === null) {
-          throw new Error(
-            'Supervision session not found or you are not authorized to modify it.',
+        if (!bimbingan) {
+          throw new NotFoundError(
+            'Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses',
           );
         }
 
         if (bimbingan.status_bimbingan !== 'dijadwalkan') {
-          throw new Error('Only a "dijadwalkan" session can be completed.');
+          throw new ConflictError(
+            'Hanya sesi dengan status "dijadwalkan" yang dapat diselesaikan',
+          );
         }
 
         const updatedBimbingan = await tx.bimbinganTA.update({
@@ -624,34 +562,48 @@ export class BimbinganService {
     fileName: string,
     fileType: string,
   ): Promise<unknown> {
-    return this.prisma.bimbinganLampiran.create({
-      data: {
-        bimbingan_ta_id: bimbinganTaId,
-        file_path: filePath,
-        file_name: fileName,
-        file_type: fileType,
-      },
+    const bimbingan = await this.repository.findBimbinganById(bimbinganTaId);
+    if (!bimbingan) {
+      throw new NotFoundError('Sesi bimbingan tidak ditemukan');
+    }
+
+    return this.repository.createLampiran({
+      bimbingan_ta_id: bimbinganTaId,
+      file_path: filePath,
+      file_name: fileName,
+      file_type: fileType,
     });
   }
 
-  async konfirmasiBimbingan(bimbinganTaId: number): Promise<unknown> {
-    const bimbingan = await this.prisma.bimbinganTA.findUnique({
-      where: { id: bimbinganTaId },
-    });
-
-    if (bimbingan === null) {
-      throw new Error('Bimbingan not found');
+  async addMultipleLampiran(
+    bimbinganTaId: number,
+    files: Array<{ path: string; name: string; type: string }>,
+  ): Promise<unknown[]> {
+    const bimbingan = await this.repository.findBimbinganById(bimbinganTaId);
+    if (!bimbingan) {
+      throw new NotFoundError('Sesi bimbingan tidak ditemukan');
     }
 
-    // Logic to ensure only the assigned dosen can confirm is checked in controller/router via authorizeRoles or check there.
-    // Ideally we pass dosenId here to verify ownership if not already done.
+    const results = [];
+    for (const file of files) {
+      const result = await this.repository.createLampiran({
+        bimbingan_ta_id: bimbinganTaId,
+        file_path: file.path,
+        file_name: file.name,
+        file_type: file.type,
+      });
+      results.push(result);
+    }
+    return results;
+  }
 
-    return this.prisma.bimbinganTA.update({
-      where: { id: bimbinganTaId },
-      data: {
-        is_konfirmasi: true,
-        konfirmasi_at: new Date(),
-      },
-    });
+  async konfirmasiBimbingan(bimbinganTaId: number): Promise<unknown> {
+    const bimbingan = await this.repository.findBimbinganById(bimbinganTaId);
+
+    if (bimbingan === null) {
+      throw new NotFoundError('Bimbingan not found');
+    }
+
+    return this.repository.konfirmasiBimbingan(bimbinganTaId);
   }
 }

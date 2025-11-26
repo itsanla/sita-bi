@@ -39,7 +39,7 @@ export class AuthService {
         OR: [
           { email: identifier },
           { mahasiswa: { nim: identifier } },
-          { dosen: { nidn: identifier } },
+          { dosen: { nip: identifier } },
         ],
       },
       include: {
@@ -50,7 +50,7 @@ export class AuthService {
     });
 
     if (user == null) {
-      throw new HttpError(401, 'Akun tidak ditemukan. Silakan periksa email/NIM/NIDN Anda atau daftar terlebih dahulu.');
+      throw new HttpError(401, 'Akun tidak ditemukan. Silakan periksa email/NIM/NIP Anda atau daftar terlebih dahulu.');
     }
 
     // Check lockout
@@ -62,6 +62,17 @@ export class AuthService {
         403,
         `Akun Anda terkunci karena terlalu banyak percobaan gagal. Coba lagi dalam ${timeLeft} menit.`,
       );
+    }
+
+    // Reset lockout if expired
+    if (user.lockout_until != null && user.lockout_until <= new Date()) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failed_login_attempts: 0,
+          lockout_until: null,
+        },
+      });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);

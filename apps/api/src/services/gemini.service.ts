@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { ENHANCED_SYSTEM_PROMPT } from './gemini-prompt';
+import { logger } from '../utils/logger';
 
 dotenv.config();
 
@@ -45,6 +46,8 @@ class GeminiService {
     'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
   private readonly streamBaseUrl =
     'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent';
+  private readonly requestTimeout = 30000; // 30 seconds
+  private readonly streamTimeout = 60000; // 60 seconds for streaming
   private readonly documentationPath = path.join(
     process.cwd(),
     '..',
@@ -61,6 +64,9 @@ class GeminiService {
     'model',
     'information.json',
   );
+  private systemPromptCache: string | null = null;
+  private systemPromptCacheTime = 0;
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor() {
     this.loadApiKeys();
@@ -76,15 +82,24 @@ class GeminiService {
     }
 
     if (this.apiKeys.length === 0) {
-      console.warn(
-        '⚠️  No valid Gemini API keys found. Please configure GEMINI_API_KEY_1 to GEMINI_API_KEY_10 in .env file',
+      logger.warn(
+        'No valid Gemini API keys found. Please configure GEMINI_API_KEY_1 to GEMINI_API_KEY_10 in .env file',
       );
     } else {
-      console.warn(`✅ Loaded ${this.apiKeys.length} Gemini API key(s)`);
+      logger.info(`Loaded ${this.apiKeys.length} Gemini API key(s)`);
     }
   }
 
   private getSystemPrompt(): string {
+    // Return cached prompt if still valid
+    const now = Date.now();
+    if (
+      this.systemPromptCache !== null &&
+      now - this.systemPromptCacheTime < this.CACHE_TTL
+    ) {
+      return this.systemPromptCache;
+    }
+
     try {
       // Read documentation.json
       const documentationData = fs.existsSync(this.documentationPath)
@@ -118,10 +133,20 @@ ${JSON.stringify(informationData, null, 2)}
 
       systemPrompt += ENHANCED_SYSTEM_PROMPT;
 
+      // Cache the prompt
+      this.systemPromptCache = systemPrompt;
+      this.systemPromptCacheTime = now;
+
       return systemPrompt;
     } catch (error) {
-      console.error('Error loading system prompt data:', error);
-      return `Kamu adalah SITABI (Sistem Informasi Tugas Akhir Bahasa Inggris), asisten AI yang membantu mahasiswa jurusan Bahasa Inggris dalam mengelola dan menyelesaikan tugas akhir mereka. Kamu ramah, profesional, dan selalu siap membantu mahasiswa dengan pertanyaan seputar sistem informasi tugas akhir, panduan penulisan, jadwal bimbingan, dan informasi akademik terkait.`;
+      logger.error('Error loading system prompt data', error);
+      const fallback = `Kamu adalah SITABI (Sistem Informasi Tugas Akhir Bahasa Inggris), asisten AI yang membantu mahasiswa jurusan Bahasa Inggris dalam mengelola dan menyelesaikan tugas akhir mereka. Kamu ramah, profesional, dan selalu siap membantu mahasiswa dengan pertanyaan seputar sistem informasi tugas akhir, panduan penulisan, jadwal bimbingan, dan informasi akademik terkait.`;
+
+      // Cache fallback too
+      this.systemPromptCache = fallback;
+      this.systemPromptCacheTime = now;
+
+      return fallback;
     }
   }
 
@@ -153,6 +178,7 @@ ${JSON.stringify(informationData, null, 2)}
           'Content-Type': 'application/json',
           'X-goog-api-key': apiKey,
         },
+        timeout: this.requestTimeout,
       },
     );
 
@@ -199,9 +225,12 @@ ${JSON.stringify(informationData, null, 2)}
     const axiosError = error as AxiosError;
     if (axiosError.response?.status === 403) {
       const errorMessage = JSON.stringify(
-        axiosError.response?.data ?? '',
+        axiosError.response.data ?? '',
       ).toLowerCase();
-      return errorMessage.includes('leaked') || errorMessage.includes('permission_denied');
+      return (
+        errorMessage.includes('leaked') ||
+        errorMessage.includes('permission_denied')
+      );
     }
     return false;
   }
@@ -224,24 +253,22 @@ ${JSON.stringify(informationData, null, 2)}
 
       const keyNumber = this.currentKeyIndex + 1;
 
-      console.warn(`🔄 Attempting request with API key #${keyNumber}`);
+      logger.debug(`Attempting request with API key #${keyNumber}`);
 
       try {
         const result = await this.callGeminiApi(prompt, apiKey);
-        console.warn(`✅ Success with API key #${keyNumber}`);
+        logger.info(`Success with API key #${keyNumber}`);
         return result;
       } catch (error) {
         attemptedKeys.add(this.currentKeyIndex);
-        console.warn(
-          `⚠️  API key #${keyNumber} failed:`,
-          (error as Error).message,
-        );
-        this.currentKeyIndex =
-          (this.currentKeyIndex + 1) % this.apiKeys.length;
+        logger.warn(`API key #${keyNumber} failed`, {
+          error: (error as Error).message,
+        });
+        this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
       }
     }
 
-    console.error('❌ All Gemini API keys have been tried and failed');
+    logger.error('All Gemini API keys have been tried and failed');
     throw new Error(
       'Layanan chatbot tidak tersedia saat ini. Silakan hubungi administrator.',
     );
@@ -300,10 +327,8 @@ ${JSON.stringify(informationData, null, 2)}
       }
 
       const keyNumber = this.currentKeyIndex + 1;
-      console.warn(
-        `🔄 Attempting streaming request with API key #${keyNumber}`,
-      );
-      console.warn(`📝 Sending ${contents.length} messages to Gemini API`);
+      logger.debug(`Attempting streaming request with API key #${keyNumber}`);
+      logger.debug(`Sending ${contents.length} messages to Gemini API`);
 
       try {
         const response = await axios.post<ReadableStream>(
@@ -317,14 +342,26 @@ ${JSON.stringify(informationData, null, 2)}
               'Content-Type': 'application/json',
             },
             responseType: 'stream',
+            timeout: this.streamTimeout,
           },
         );
 
         const stream = response.data;
         let buffer = '';
+        let lastChunkTime = Date.now();
+        const CHUNK_TIMEOUT = 30000; // 30s between chunks
 
-        // Process stream chunks
+        // Process stream chunks with timeout
         for await (const chunk of stream as unknown as AsyncIterable<Buffer>) {
+          // Check for chunk timeout
+          if (Date.now() - lastChunkTime > CHUNK_TIMEOUT) {
+            logger.warn(
+              `Stream timeout - no chunks received for ${CHUNK_TIMEOUT}ms`,
+            );
+            throw new Error('Stream timeout');
+          }
+          lastChunkTime = Date.now();
+
           buffer += chunk.toString();
           const lines = buffer.split('\n');
           buffer = lines.pop() ?? '';
@@ -333,18 +370,15 @@ ${JSON.stringify(informationData, null, 2)}
             if (line.startsWith('data: ')) {
               const data = line.slice(6).trim();
               if (data === '[DONE]') {
-                console.warn(
-                  `✅ Streaming completed with API key #${keyNumber}`,
-                );
+                logger.info(`Streaming completed with API key #${keyNumber}`);
                 return;
               }
 
               try {
                 const parsed = JSON.parse(data) as GeminiResponse;
-                if (
-                  parsed.candidates?.[0]?.content.parts[0]?.text !== undefined
-                ) {
-                  yield parsed.candidates[0].content.parts[0].text;
+                const text = parsed.candidates?.[0]?.content.parts[0]?.text;
+                if (text !== undefined) {
+                  yield text;
                 }
               } catch {
                 // Skip invalid JSON
@@ -354,20 +388,18 @@ ${JSON.stringify(informationData, null, 2)}
           }
         }
 
-        console.warn(`✅ Streaming success with API key #${keyNumber}`);
+        logger.info(`Streaming success with API key #${keyNumber}`);
         return;
       } catch (error) {
         attemptedKeys.add(this.currentKeyIndex);
-        console.warn(
-          `⚠️  API key #${keyNumber} failed:`,
-          (error as Error).message,
-        );
-        this.currentKeyIndex =
-          (this.currentKeyIndex + 1) % this.apiKeys.length;
+        logger.warn(`API key #${keyNumber} failed`, {
+          error: (error as Error).message,
+        });
+        this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
       }
     }
 
-    console.error('❌ All Gemini API keys have been tried and failed');
+    logger.error('All Gemini API keys have been tried and failed');
     throw new Error(
       'Layanan chatbot tidak tersedia saat ini. Silakan hubungi administrator.',
     );
@@ -393,9 +425,7 @@ ${JSON.stringify(informationData, null, 2)}
       }
 
       const keyNumber = this.currentKeyIndex + 1;
-      console.warn(
-        `🔄 Attempting streaming request with API key #${keyNumber}`,
-      );
+      logger.debug(`Attempting streaming request with API key #${keyNumber}`);
 
       try {
         const response = await axios.post<ReadableStream>(
@@ -419,14 +449,26 @@ ${JSON.stringify(informationData, null, 2)}
               'Content-Type': 'application/json',
             },
             responseType: 'stream',
+            timeout: this.streamTimeout,
           },
         );
 
         const stream = response.data;
         let buffer = '';
+        let lastChunkTime = Date.now();
+        const CHUNK_TIMEOUT = 30000; // 30s between chunks
 
-        // Process stream chunks
+        // Process stream chunks with timeout
         for await (const chunk of stream as unknown as AsyncIterable<Buffer>) {
+          // Check for chunk timeout
+          if (Date.now() - lastChunkTime > CHUNK_TIMEOUT) {
+            logger.warn(
+              `Stream timeout - no chunks received for ${CHUNK_TIMEOUT}ms`,
+            );
+            throw new Error('Stream timeout');
+          }
+          lastChunkTime = Date.now();
+
           buffer += chunk.toString();
           const lines = buffer.split('\n');
           buffer = lines.pop() ?? '';
@@ -435,18 +477,15 @@ ${JSON.stringify(informationData, null, 2)}
             if (line.startsWith('data: ')) {
               const data = line.slice(6).trim();
               if (data === '[DONE]') {
-                console.warn(
-                  `✅ Streaming completed with API key #${keyNumber}`,
-                );
+                logger.info(`Streaming completed with API key #${keyNumber}`);
                 return;
               }
 
               try {
                 const parsed = JSON.parse(data) as GeminiResponse;
-                if (
-                  parsed.candidates?.[0]?.content.parts[0]?.text !== undefined
-                ) {
-                  yield parsed.candidates[0].content.parts[0].text;
+                const text = parsed.candidates?.[0]?.content.parts[0]?.text;
+                if (text !== undefined) {
+                  yield text;
                 }
               } catch {
                 // Skip invalid JSON
@@ -456,20 +495,18 @@ ${JSON.stringify(informationData, null, 2)}
           }
         }
 
-        console.warn(`✅ Streaming success with API key #${keyNumber}`);
+        logger.info(`Streaming success with API key #${keyNumber}`);
         return;
       } catch (error) {
         attemptedKeys.add(this.currentKeyIndex);
-        console.warn(
-          `⚠️  API key #${keyNumber} failed:`,
-          (error as Error).message,
-        );
-        this.currentKeyIndex =
-          (this.currentKeyIndex + 1) % this.apiKeys.length;
+        logger.warn(`API key #${keyNumber} failed`, {
+          error: (error as Error).message,
+        });
+        this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
       }
     }
 
-    console.error('❌ All Gemini API keys have been tried and failed');
+    logger.error('All Gemini API keys have been tried and failed');
     throw new Error(
       'Layanan chatbot tidak tersedia saat ini. Silakan hubungi administrator.',
     );
@@ -491,7 +528,7 @@ ${JSON.stringify(informationData, null, 2)}
   // Reset to first API key (useful for testing or manual reset)
   resetToFirstKey(): void {
     this.currentKeyIndex = 0;
-    console.warn('🔄 Reset to first API key');
+    logger.info('Reset to first API key');
   }
 }
 

@@ -9,13 +9,10 @@ import type {
   Dosen,
   Prisma,
 } from '@repo/db';
-import {
-  PrismaClient,
-  PeranDosen,
-  StatusPersetujuan,
-  StatusVerifikasi,
-} from '@repo/db';
+import { PeranDosen, StatusPersetujuan, StatusVerifikasi } from '@repo/db';
 import type { CreateJadwalDto } from '../dto/jadwal-sidang.dto';
+import { prisma } from '../config/prisma';
+import { HttpError } from '../middlewares/error.middleware';
 
 // Type alias for the complex include structure to help TS
 type SidangWithRelations = Sidang & {
@@ -31,11 +28,7 @@ type JadwalWithRelations = JadwalSidang & {
 };
 
 export class JadwalSidangService {
-  private prisma: PrismaClient;
-
-  constructor() {
-    this.prisma = new PrismaClient();
-  }
+  private prisma = prisma;
 
   async getApprovedRegistrations(
     page = 1,
@@ -220,7 +213,7 @@ export class JadwalSidangService {
     });
 
     if (sidang === null) {
-      throw new Error(`Sidang with ID ${sidangId} not found`);
+      throw new HttpError(404, `Sidang with ID ${sidangId} not found`);
     }
 
     const pembimbingIds = sidang.tugasAkhir.peranDosenTa
@@ -267,7 +260,7 @@ export class JadwalSidangService {
       });
 
       if (sidang === null) {
-        throw new Error(`Sidang with ID ${sidangId} not found`);
+        throw new HttpError(404, `Sidang with ID ${sidangId} not found`);
       }
 
       // Get existing advisors
@@ -292,7 +285,10 @@ export class JadwalSidangService {
       );
 
       if (conflictCheck.hasConflict) {
-        throw new Error(`Konflik Jadwal: ${conflictCheck.messages.join(' ')}`);
+        throw new HttpError(
+          409,
+          `Konflik Jadwal: ${conflictCheck.messages.join(' ')}`,
+        );
       }
 
       // 3. Create Jadwal

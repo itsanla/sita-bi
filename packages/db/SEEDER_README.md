@@ -24,40 +24,55 @@ Seeder ini menyediakan data testing yang komprehensif untuk sistem SITA-BI, menc
 - **Email**: `kajur@pnp.ac.id`
 - **Password**: `password123`
 - **Role**: Kajur + Dosen
-- **NIDN**: 0001018801
+- **NIP**: 0001018801
 - **Prodi**: D4
 
 #### Kaprodi D3 (1)
 - **Email**: `kaprodi.d3@pnp.ac.id`
 - **Password**: `password123`
 - **Role**: Kaprodi D3 + Dosen
-- **NIDN**: 0002028802
+- **NIP**: 0002028802
 - **Prodi**: D3
 
 #### Kaprodi D4 (1)
 - **Email**: `kaprodi.d4@pnp.ac.id`
 - **Password**: `password123`
 - **Role**: Kaprodi D4 + Dosen
-- **NIDN**: 0003038803
+- **NIP**: 0003038803
 - **Prodi**: D4
 
-#### Dosen (10)
+#### Dosen (25)
 - **Email Pattern**: `{nama}@pnp.ac.id`
 - **Password**: `password123`
 - **Kuota Bimbingan**: 4 mahasiswa per dosen
-- **Distribusi**: 5 dosen D3, 5 dosen D4
+- **Distribusi**: Data real dari mitra dengan NIP resmi
 
-**Daftar Dosen:**
-1. rina.wati@pnp.ac.id (D4)
-2. agus.setiawan@pnp.ac.id (D4)
-3. dewi.lestari@pnp.ac.id (D3)
-4. hendra.wijaya@pnp.ac.id (D3)
-5. fitri.handayani@pnp.ac.id (D4)
-6. rudi.hartono@pnp.ac.id (D4)
-7. sari.indah@pnp.ac.id (D3)
-8. bambang.susilo@pnp.ac.id (D3)
-9. lina.marlina@pnp.ac.id (D4)
-10. dedi.kurniawan@pnp.ac.id (D4)
+**Daftar Dosen (25 orang):**
+1. rina.anggraini@pnp.ac.id - Dra. Rina Anggraini, M.Pd (D4)
+2. martini@pnp.ac.id - Dra. Martini, M.Pd. (D3)
+3. kotrini@pnp.ac.id - Dra. Kotrini, M.Pd (D4)
+4. dony.marzuki@pnp.ac.id - Dony Marzuki, S.S., M.Ed., Ph.D (D3)
+5. sariani@pnp.ac.id - Sariani, SS., MA Appl Ling (D4)
+6. difiani.apriyanti@pnp.ac.id - Dr. Difiani Apriyanti, SS., M.Pd (D3)
+7. hasbi@pnp.ac.id - Hasbi, SS.,M.Ed.M (D4)
+8. sumira@pnp.ac.id - Sumira, S.Pd., M.Pd (D3)
+9. desi.yulastri@pnp.ac.id - Desi Yulastri, M.EIL (D4)
+10. witri.handayani@pnp.ac.id - Witri Handayani, SS., M.Pd (D3)
+11. silvia.djonnaidi@pnp.ac.id - Silvia Djonnaidi, SS., M.Hum (D4)
+12. nini.wahyuni@pnp.ac.id - Nini Wahyuni, S.Pd., M.Pd (D3)
+13. yohannes.telaumbanua@pnp.ac.id - Dr. Yohannes Telaumbanua, S.Hum.,M.Pd (D4)
+14. titin.ritmi@pnp.ac.id - Titin Ritmi,, SS, M.Hum (D3)
+15. hendro.saptopramono@pnp.ac.id - Hendro Saptopramono, SS, M.Ed (D4)
+16. sabriandi.erdian@pnp.ac.id - Dr. Sabriandi Erdian, S.S., M.Hum (D3)
+17. mutia.elkhairat@pnp.ac.id - Mutia El Khairat, SS., M.Hum (D4)
+18. astuti.pratiwi@pnp.ac.id - Astuti Pratiwi Rahmadhani, S.Pd., M.Pd.. (D3)
+19. fithratul.miladiyenti@pnp.ac.id - Fithratul Miladiyenti, S.S., M.Hum. (D4)
+20. gilang.surendra@pnp.ac.id - Gilang Surendra, S.IP., M.I.Kom. (D3)
+21. yaningsih@pnp.ac.id - Yaningsih, S.S., M.Hum. (D4)
+22. novi.fitria@pnp.ac.id - Novi Fitria, S.S., M.Pd. (D3)
+23. melyanda.agustin@pnp.ac.id - Melyanda Agustin Chairina, S.S., M.Hum. (D4)
+24. tia.kharina@pnp.ac.id - Tia Kharina Elvonny, S.Pd., M.Hum. (D3)
+25. gema.febriansyah@pnp.ac.id - Gema Febriansyah, M.Hum (D4)
 
 #### Mahasiswa (20)
 - **Email Pattern**: `{nim}@student.pnp.ac.id`
@@ -103,10 +118,9 @@ Seeder ini menyediakan data testing yang komprehensif untuk sistem SITA-BI, menc
 - **Status**: Semua published
 - **Use Case**: Testing notifikasi dan pengumuman sistem
 
-### 6. **Ruangan** (5)
-- Ruang Sidang 1, 2, 3 (kapasitas 20-30)
-- Lab Komputer 1 (kapasitas 40)
-- Aula Utama (kapasitas 100)
+### 6. **Ruangan** (2)
+- Ruangan A (kapasitas 30)
+- Ruangan B (kapasitas 30)
 - **Use Case**: Penjadwalan sidang
 
 ### 7. **Sidang & Jadwal** (3)
@@ -162,11 +176,11 @@ pnpm --filter @repo/db db:seed
 ## 📊 Data Statistics
 
 ```
-Total Users: 34
+Total Users: 49
 ├── Admin: 1
 ├── Kajur: 1 (+ role dosen)
 ├── Kaprodi: 2 (+ role dosen)
-├── Dosen: 10
+├── Dosen: 25
 └── Mahasiswa: 20
 
 Total Tugas Akhir: 15
@@ -183,15 +197,15 @@ Pengumuman: 8
 ├── Dosen: 1
 └── All Users: 2
 
-Ruangan: 5
-└── Kapasitas 20-100 orang
+Ruangan: 2 (A & B)
+└── Kapasitas 30 orang
 
 Sidang Terjadwal: 3
 └── Dengan jadwal dan ruangan
 
 Pembimbing Assignments: 10
 ├── 5 TA × 2 pembimbing = 10 assignments
-└── Distributed across 10 dosen
+└── Distributed across 25 dosen
 ```
 
 ## 🔐 Default Credentials
@@ -204,7 +218,7 @@ Admin:       admin@pnp.ac.id
 Kajur:       kajur@pnp.ac.id
 Kaprodi D3:  kaprodi.d3@pnp.ac.id
 Kaprodi D4:  kaprodi.d4@pnp.ac.id
-Dosen:       rina.wati@pnp.ac.id
+Dosen:       rina.anggraini@pnp.ac.id
 Mahasiswa:   2101010001@student.pnp.ac.id
 ```
 
