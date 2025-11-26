@@ -130,17 +130,21 @@ router.post(
       res.write('data: {"type":"done"}\n\n');
       res.end();
     } catch (error) {
+      console.error('Gemini streaming error:', error);
       const errorMessage = (error as Error).message;
+      let userFriendlyError = 'Maaf, terjadi kesalahan. Silakan coba lagi.';
 
       if (errorMessage.includes('Anda sudah mencapai limit')) {
-        res.write(
-          `data: ${JSON.stringify({ type: 'error', error: errorMessage })}\n\n`,
-        );
-      } else {
-        res.write(
-          `data: ${JSON.stringify({ type: 'error', error: 'Failed to generate response' })}\n\n`,
-        );
+        userFriendlyError = 'Maaf, layanan sedang sibuk. Silakan coba beberapa saat lagi.';
+      } else if (errorMessage.includes('API keys')) {
+        userFriendlyError = 'Layanan chatbot sedang dalam pemeliharaan.';
+      } else if (errorMessage.includes('Network') || errorMessage.includes('ECONNREFUSED')) {
+        userFriendlyError = 'Tidak dapat terhubung ke layanan AI. Periksa koneksi internet Anda.';
       }
+
+      res.write(
+        `data: ${JSON.stringify({ type: 'error', error: userFriendlyError })}\n\n`,
+      );
       res.end();
     }
   }),

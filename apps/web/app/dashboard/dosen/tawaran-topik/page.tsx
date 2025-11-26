@@ -49,7 +49,7 @@ function CreateTopikForm({ onTopicCreated }: { onTopicCreated: () => void }) {
     try {
       await request('/tawaran-topik', {
         method: 'POST',
-        body: { judul_topik: judul, deskripsi, kuota: Number(kuota) },
+        data: { judul_topik: judul, deskripsi, kuota: Number(kuota) },
       });
       alert('Topic created successfully!');
       setJudul('');
@@ -148,8 +148,12 @@ export default function TawaranTopikPage() {
         request<{ data: TawaranTopik[] }>('/tawaran-topik'),
         request<{ data: Application[] }>('/tawaran-topik/applications'),
       ]);
-      setTopics(topicsRes.data);
-      setApplications(appsRes.data);
+      if (Array.isArray(topicsRes.data)) {
+        setTopics(topicsRes.data);
+      }
+      if (Array.isArray(appsRes.data)) {
+        setApplications(appsRes.data);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch data');
     } finally {

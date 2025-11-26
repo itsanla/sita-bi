@@ -26,7 +26,7 @@ export default function SubmittedTitlesTable() {
   // Reset to page 1 when search changes
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, []);
 
   if (loading) {
     return <TableSkeleton />;
@@ -36,7 +36,7 @@ export default function SubmittedTitlesTable() {
     <div className="relative overflow-hidden bg-gradient-to-br from-white to-slate-50/50 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
       {/* Decorative elements */}
       <div className="absolute top-0 right-0 w-48 h-48 bg-slate-500/5 rounded-full blur-3xl -mr-24 -mt-24"></div>
-      
+
       <div className="relative p-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
@@ -54,7 +54,8 @@ export default function SubmittedTitlesTable() {
                 Semua Judul yang Diajukan
               </h2>
               <p className="text-gray-600 text-sm leading-normal">
-                Database lengkap berisi {allTitles.length} judul tugas akhir yang telah diajukan mahasiswa
+                Database lengkap berisi {allTitles.length} judul tugas akhir
+                yang telah diajukan mahasiswa
               </p>
             </div>
           </div>
@@ -89,16 +90,26 @@ export default function SubmittedTitlesTable() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-3 focus:ring-maroon-900/10 focus:border-maroon-900 hover:border-gray-300 transition-all duration-300 text-sm text-gray-800 placeholder-gray-400"
             />
-            {searchQuery && (
+            {searchQuery ? (
               <button
                 onClick={() => setSearchQuery('')}
                 className="absolute right-4 top-1/2 -translate-y-1/2 bg-gray-100 hover:bg-gray-200 p-1.5 rounded-lg transition-colors duration-200 group/clear"
               >
-                <svg className="h-4 w-4 text-gray-500 group-hover/clear:text-gray-700 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="h-4 w-4 text-gray-500 group-hover/clear:text-gray-700 transition-colors"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -125,8 +136,8 @@ export default function SubmittedTitlesTable() {
               <tbody className="divide-y divide-gray-100">
                 {currentItems.length > 0 ? (
                   currentItems.map((title, index) => (
-                    <tr 
-                      key={index} 
+                    <tr
+                      key={index}
                       className="group hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-transparent transition-all duration-300"
                     >
                       <td className="px-4 py-3 whitespace-nowrap">
@@ -153,13 +164,14 @@ export default function SubmittedTitlesTable() {
                         </div>
                         <div className="max-w-md">
                           <p className="text-gray-800 font-bold text-base mb-1">
-                            {searchQuery ? 'Tidak Ada Hasil Pencarian' : 'Belum Ada Data'}
+                            {searchQuery
+                              ? 'Tidak Ada Hasil Pencarian'
+                              : 'Belum Ada Data'}
                           </p>
                           <p className="text-gray-600 text-sm leading-normal">
-                            {searchQuery 
+                            {searchQuery
                               ? `Tidak ditemukan judul yang cocok dengan kata kunci "${searchQuery}". Coba gunakan kata kunci lain.`
-                              : 'Belum ada judul tugas akhir yang terdaftar dalam database sistem.'
-                            }
+                              : 'Belum ada judul tugas akhir yang terdaftar dalam database sistem.'}
                           </p>
                         </div>
                       </div>
@@ -181,14 +193,25 @@ export default function SubmittedTitlesTable() {
               </div>
               <div>
                 <p className="text-xs text-gray-600">
-                  Menampilkan <span className="font-bold text-maroon-900">{startIndex + 1}</span> - <span className="font-bold text-maroon-900">{Math.min(endIndex, filteredTitles.length)}</span>
+                  Menampilkan{' '}
+                  <span className="font-bold text-maroon-900">
+                    {startIndex + 1}
+                  </span>{' '}
+                  -{' '}
+                  <span className="font-bold text-maroon-900">
+                    {Math.min(endIndex, filteredTitles.length)}
+                  </span>
                 </p>
                 <p className="text-xs text-gray-500">
-                  dari total <span className="font-semibold text-gray-700">{filteredTitles.length}</span> judul
+                  dari total{' '}
+                  <span className="font-semibold text-gray-700">
+                    {filteredTitles.length}
+                  </span>{' '}
+                  judul
                 </p>
               </div>
             </div>
-            
+
             {/* Pagination Controls */}
             <div className="flex items-center gap-1">
               {/* Previous Button */}
@@ -200,47 +223,55 @@ export default function SubmittedTitlesTable() {
                 <div className="absolute inset-0 bg-maroon-900/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <ChevronLeft className="relative h-4 w-4 text-gray-600 group-hover:text-maroon-900 transition-colors duration-300" />
               </button>
-              
+
               {/* Page Numbers */}
               <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                  // Show first page, last page, current page, and pages around current
-                  const showPage = page === 1 || 
-                                   page === totalPages || 
-                                   (page >= currentPage - 1 && page <= currentPage + 1);
-                  
-                  const showEllipsis = (page === currentPage - 2 && currentPage > 3) ||
-                                       (page === currentPage + 2 && currentPage < totalPages - 2);
-                  
-                  if (!showPage && !showEllipsis) return null;
-                  
-                  if (showEllipsis) {
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => {
+                    // Show first page, last page, current page, and pages around current
+                    const showPage =
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1);
+
+                    const showEllipsis =
+                      (page === currentPage - 2 && currentPage > 3) ||
+                      (page === currentPage + 2 &&
+                        currentPage < totalPages - 2);
+
+                    if (!showPage && !showEllipsis) return null;
+
+                    if (showEllipsis) {
+                      return (
+                        <div
+                          key={page}
+                          className="px-2 py-2 text-gray-400 text-sm font-medium"
+                        >
+                          ...
+                        </div>
+                      );
+                    }
+
                     return (
-                      <div key={page} className="px-2 py-2 text-gray-400 text-sm font-medium">
-                        ...
-                      </div>
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`relative min-w-[40px] px-3 py-2 rounded-lg font-semibold text-sm transition-all duration-300 overflow-hidden ${
+                          currentPage === page
+                            ? 'bg-gradient-to-br from-maroon-900 to-maroon-800 text-white shadow-md scale-105'
+                            : 'border border-gray-300 text-gray-700 hover:border-maroon-900 hover:bg-maroon-50 hover:text-maroon-900 hover:scale-105'
+                        }`}
+                      >
+                        {currentPage === page && (
+                          <div className="absolute inset-0 bg-gradient-to-br from-maroon-800 to-maroon-900 opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+                        )}
+                        <span className="relative">{page}</span>
+                      </button>
                     );
-                  }
-                  
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`relative min-w-[40px] px-3 py-2 rounded-lg font-semibold text-sm transition-all duration-300 overflow-hidden ${
-                        currentPage === page
-                          ? 'bg-gradient-to-br from-maroon-900 to-maroon-800 text-white shadow-md scale-105'
-                          : 'border border-gray-300 text-gray-700 hover:border-maroon-900 hover:bg-maroon-50 hover:text-maroon-900 hover:scale-105'
-                      }`}
-                    >
-                      {currentPage === page && (
-                        <div className="absolute inset-0 bg-gradient-to-br from-maroon-800 to-maroon-900 opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-                      )}
-                      <span className="relative">{page}</span>
-                    </button>
-                  );
-                })}
+                  },
+                )}
               </div>
-              
+
               {/* Next Button */}
               <button
                 onClick={() => setCurrentPage(currentPage + 1)}

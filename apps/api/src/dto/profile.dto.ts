@@ -6,6 +6,7 @@ export const updateProfileSchema = z.object({
     .string()
     .min(8, 'Password must be at least 8 characters long')
     .optional(),
+  photo: z.string().optional(),
 });
 
 export type UpdateProfileDto = z.infer<typeof updateProfileSchema>;

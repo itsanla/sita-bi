@@ -1,8 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, FileCheck, AlertTriangle, CheckCircle, Sparkles, Send } from 'lucide-react';
-import Button from '@/app/components/ui/Button';
+import {
+  Search,
+  FileCheck,
+  AlertTriangle,
+  CheckCircle,
+  Sparkles,
+  Send,
+} from 'lucide-react';
+// import Button from '@/app/components/ui/Button'; // Removed unused import
 import { useSimilarityCheck, useSubmitTitle } from '@/hooks/useTugasAkhir';
 
 interface SimilarityFormProps {
@@ -53,7 +60,7 @@ export default function SimilarityForm({
       {/* Decorative Elements */}
       <div className="absolute top-0 right-0 w-48 h-48 bg-[#123053]/5 rounded-full blur-3xl -mr-24 -mt-24 group-hover:bg-[#123053]/10 transition-colors duration-500"></div>
       <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#123053]/5 rounded-full blur-3xl -ml-16 -mb-16 group-hover:bg-[#123053]/10 transition-colors duration-500"></div>
-      
+
       <div className="relative p-6">
         {/* Header */}
         <div className="flex items-start gap-3 mb-6">
@@ -70,7 +77,8 @@ export default function SimilarityForm({
               Ajukan Judul Sendiri
             </h2>
             <p className="text-gray-600 text-sm leading-normal">
-              Masukkan judul tugas akhir Anda dan sistem akan memeriksa kemiripan dengan judul yang sudah ada
+              Masukkan judul tugas akhir Anda dan sistem akan memeriksa
+              kemiripan dengan judul yang sudah ada
             </p>
           </div>
         </div>
@@ -100,12 +108,22 @@ export default function SimilarityForm({
             </div>
             <div className="flex items-start gap-2 p-2.5 bg-[#123053]/5 rounded-lg border border-[#123053]/20">
               <div className="flex-shrink-0 mt-0.5">
-                <svg className="h-3.5 w-3.5 text-[#123053]" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                <svg
+                  className="h-3.5 w-3.5 text-[#123053]"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <p className="text-xs text-[#123053] leading-normal">
-                <span className="font-semibold">Tips:</span> Pastikan judul Anda jelas, spesifik, dan menggambarkan fokus penelitian. Hindari judul yang terlalu umum atau terlalu panjang.
+                <span className="font-semibold">Tips:</span> Pastikan judul Anda
+                jelas, spesifik, dan menggambarkan fokus penelitian. Hindari
+                judul yang terlalu umum atau terlalu panjang.
               </p>
             </div>
           </div>
@@ -116,10 +134,16 @@ export default function SimilarityForm({
             disabled={isChecking || !judulMandiri.trim()}
             className="group/btn relative w-full bg-gradient-to-r from-[#123053] to-[#0d1f36] text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden text-sm"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0d1f36] to-[#081423] opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-0d1f36] to-[#081423] opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
             <div className="relative flex items-center justify-center gap-2">
-              <Search className={`h-4 w-4 ${isChecking ? 'animate-spin' : 'group-hover/btn:scale-110 transition-transform duration-300'}`} />
-              <span>{isChecking ? 'Memeriksa Kemiripan...' : 'Periksa Kemiripan Judul'}</span>
+              <Search
+                className={`h-4 w-4 ${isChecking ? 'animate-spin' : 'group-hover/btn:scale-110 transition-transform duration-300'}`}
+              />
+              <span>
+                {isChecking
+                  ? 'Memeriksa Kemiripan...'
+                  : 'Periksa Kemiripan Judul'}
+              </span>
             </div>
           </button>
         </form>
@@ -139,10 +163,13 @@ export default function SimilarityForm({
               <h3 className="text-base font-bold text-gray-800">
                 Hasil Pemeriksaan Kemiripan
               </h3>
-              <p className="text-xs text-gray-600">Ditemukan {similarityResults.length} judul dengan tingkat kemiripan</p>
+              <p className="text-xs text-gray-600">
+                Ditemukan {similarityResults.length} judul dengan tingkat
+                kemiripan
+              </p>
             </div>
           </div>
-          
+
           {similarityResults.length > 0 ? (
             <div className="space-y-2">
               {similarityResults.map((result, idx) => (
@@ -151,48 +178,56 @@ export default function SimilarityForm({
                   className="group/result relative overflow-hidden bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-300"
                 >
                   {/* Colored left border based on similarity */}
-                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-                    result.similarity >= 80
-                      ? 'bg-gradient-to-b from-red-500 to-red-600'
-                      : result.similarity >= 50
-                        ? 'bg-gradient-to-b from-amber-500 to-amber-600'
-                        : 'bg-gradient-to-b from-green-500 to-green-600'
-                  }`}></div>
-                  
+                  <div
+                    className={`absolute left-0 top-0 bottom-0 w-1 ${
+                      result.similarity >= 80
+                        ? 'bg-gradient-to-b from-red-500 to-red-600'
+                        : result.similarity >= 50
+                          ? 'bg-gradient-to-b from-amber-500 to-amber-600'
+                          : 'bg-gradient-to-b from-green-500 to-green-600'
+                    }`}
+                  ></div>
+
                   <div className="flex items-center gap-3 p-3 pl-4">
                     {/* Number Badge */}
                     <div className="flex-shrink-0">
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-semibold shadow-sm group-hover/result:scale-105 transition-transform duration-300 ${
-                        result.similarity >= 80
-                          ? 'bg-red-100 text-red-700'
-                          : result.similarity >= 50
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-green-100 text-green-700'
-                      }`}>
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-semibold shadow-sm group-hover/result:scale-105 transition-transform duration-300 ${
+                          result.similarity >= 80
+                            ? 'bg-red-100 text-red-700'
+                            : result.similarity >= 50
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-green-100 text-green-700'
+                        }`}
+                      >
                         {idx + 1}
                       </div>
                     </div>
-                    
+
                     {/* Title */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 leading-normal line-clamp-2 group-hover/result:text-gray-900">
                         {result.judul}
                       </p>
                     </div>
-                    
+
                     {/* Similarity Badge */}
                     <div className="flex-shrink-0">
                       <div className="flex flex-col items-end gap-0.5">
-                        <div className={`px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm group-hover/result:scale-105 transition-transform duration-300 ${
-                          result.similarity >= 80
-                            ? 'bg-gradient-to-r from-red-500 to-red-600 text-white'
-                            : result.similarity >= 50
-                              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white'
-                              : 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                        }`}>
+                        <div
+                          className={`px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm group-hover/result:scale-105 transition-transform duration-300 ${
+                            result.similarity >= 80
+                              ? 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+                              : result.similarity >= 50
+                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white'
+                                : 'bg-gradient-to-r from-green-500 to-green-600 text-white'
+                          }`}
+                        >
                           {result.similarity}%
                         </div>
-                        <span className="text-xs font-medium text-gray-500">Kemiripan</span>
+                        <span className="text-xs font-medium text-gray-500">
+                          Kemiripan
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -212,9 +247,12 @@ export default function SimilarityForm({
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-green-900 text-base mb-1">Kabar Baik!</h4>
+                  <h4 className="font-bold text-green-900 text-base mb-1">
+                    Kabar Baik!
+                  </h4>
                   <p className="text-green-800 text-sm leading-normal">
-                    Tidak ditemukan kemiripan signifikan dengan judul yang sudah ada. Judul Anda unik dan siap untuk diajukan ke sistem.
+                    Tidak ditemukan kemiripan signifikan dengan judul yang sudah
+                    ada. Judul Anda unik dan siap untuk diajukan ke sistem.
                   </p>
                 </div>
               </div>
@@ -235,13 +273,20 @@ export default function SimilarityForm({
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-red-900 text-base mb-2">Pengajuan Diblokir</h4>
+                  <h4 className="font-bold text-red-900 text-base mb-2">
+                    Pengajuan Diblokir
+                  </h4>
                   <div className="space-y-1.5">
                     <p className="text-red-800 text-sm leading-normal">
-                      Judul Anda memiliki tingkat kemiripan <span className="font-bold bg-red-200 px-2 py-0.5 rounded">80% atau lebih</span> dengan judul yang sudah ada dalam sistem.
+                      Judul Anda memiliki tingkat kemiripan{' '}
+                      <span className="font-bold bg-red-200 px-2 py-0.5 rounded">
+                        80% atau lebih
+                      </span>{' '}
+                      dengan judul yang sudah ada dalam sistem.
                     </p>
                     <p className="text-red-700 text-xs leading-normal">
-                      Silakan revisi judul Anda agar lebih unik dan original. Pastikan judul mencerminkan keunikan penelitian Anda.
+                      Silakan revisi judul Anda agar lebih unik dan original.
+                      Pastikan judul mencerminkan keunikan penelitian Anda.
                     </p>
                   </div>
                 </div>
@@ -258,8 +303,14 @@ export default function SimilarityForm({
             >
               <div className="absolute inset-0 bg-gradient-to-r from-green-700 to-emerald-700 opacity-0 group-hover/submit:opacity-100 transition-opacity duration-300"></div>
               <div className="relative flex items-center justify-center gap-2">
-                <Send className={`h-4 w-4 ${submitting ? 'animate-bounce' : 'group-hover/submit:translate-x-1 transition-transform duration-300'}`} />
-                <span>{submitting ? 'Mengirim Pengajuan...' : 'Ajukan Judul untuk Persetujuan'}</span>
+                <Send
+                  className={`h-4 w-4 ${submitting ? 'animate-bounce' : 'group-hover/submit:translate-x-1 transition-transform duration-300'}`}
+                />
+                <span>
+                  {submitting
+                    ? 'Mengirim Pengajuan...'
+                    : 'Ajukan Judul untuk Persetujuan'}
+                </span>
               </div>
               {!submitting && (
                 <div className="absolute inset-0 -z-10">

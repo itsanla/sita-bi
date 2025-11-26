@@ -23,7 +23,7 @@ function VerifyComponent() {
       try {
         await request<{ message: string }>('/auth/verify-email', {
           method: 'POST',
-          body: { token },
+          data: { token },
         });
         setStatus('Success!');
         setError(''); // Clear any previous errors

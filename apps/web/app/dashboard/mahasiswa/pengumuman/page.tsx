@@ -52,7 +52,9 @@ const PengumumanPage = () => {
         const response = await request<{ data: Pengumuman[] }>(
           '/pengumuman/mahasiswa',
         );
-        setPengumuman(response.data);
+        if (Array.isArray(response.data)) {
+          setPengumuman(response.data);
+        }
       } catch (err) {
         setError('Gagal memuat pengumuman.');
         console.error(err);

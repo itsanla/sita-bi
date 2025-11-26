@@ -1,94 +1,69 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import request from '@/lib/api'; // Use named import request
 import Link from 'next/link';
-import request from '@/lib/api';
-import { Plus, Edit, Trash2, Loader, Info } from 'lucide-react';
 
-// --- Interfaces ---
-interface Announcement {
+type Pengumuman = {
   id: number;
   judul: string;
-  audiens: string;
+  isi: string;
   tanggal_dibuat: string;
-  pembuat: {
-    name: string;
-  };
-}
+  scheduled_at: string | null;
+  is_published: boolean;
+  audiens: string;
+  pembuat: { name: string };
+  _count: { pembaca: number };
+};
 
-// --- Main Page Component ---
-export default function KelolaPengumumanPage() {
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+export default function AdminPengumumanPage() {
+  const [pengumuman, setPengumuman] = useState<Pengumuman[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
-  const fetchData = async () => {
+  useEffect(() => {
+    fetchPengumuman();
+  }, []);
+
+  const fetchPengumuman = async () => {
     try {
-      setLoading(true);
-      setError('');
-      const response = await request<{ data: { data: Announcement[] } }>(
-        '/pengumuman/all',
+      const response = await request<{ data: { data: Pengumuman[] } }>(
+        '/pengumuman/all?limit=100',
       );
-      setAnnouncements(response.data.data || []);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message || 'Failed to fetch announcements');
+      if (Array.isArray(response.data?.data)) {
+        setPengumuman(response.data.data);
       }
+    } catch (_err) {
+      console.error(_err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this announcement?')) return;
+    if (!confirm('Hapus pengumuman ini?')) return;
     try {
       await request(`/pengumuman/${id}`, { method: 'DELETE' });
-      alert('Announcement deleted successfully');
-      fetchData(); // Refresh the list
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        alert(`Error: ${err.message}`);
-      }
+      fetchPengumuman();
+    } catch {
+      alert('Gagal menghapus');
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-10">
-        <Loader className="animate-spin text-maroon-700" size={32} />
-        <span className="ml-4 text-lg text-gray-600">
-          Loading announcements...
-        </span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md">
-        <p className="font-bold">Error</p>
-        <p>{error}</p>
-      </div>
-    );
-  }
+  if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="container mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Kelola Pengumuman</h1>
-        <Link href="/dashboard/admin/pengumuman/create">
-          <button className="flex items-center bg-red-800 text-white px-4 py-2 rounded-lg hover:bg-red-900 transition-colors duration-200 shadow-sm">
-            <Plus className="w-5 h-5 mr-2" />
-            Tambah Pengumuman
-          </button>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Manajemen Pengumuman</h1>
+        <Link
+          href="/dashboard/admin/pengumuman/create"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Buat Pengumuman
         </Link>
       </div>
 
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+      <div className="overflow-x-auto bg-white shadow rounded-lg">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -99,55 +74,53 @@ export default function KelolaPengumumanPage() {
                 Audiens
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tanggal
+                Status
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Jadwal
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Pembaca
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Aksi
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {announcements.length > 0 ? (
-              announcements.map((announcement) => (
-                <tr key={announcement.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {announcement.judul}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      by {announcement.pembuat.name}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 capitalize">
-                    {announcement.audiens.replace(/_/g, ' ')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(announcement.tanggal_dibuat).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
-                    <Link
-                      href={`/dashboard/admin/pengumuman/edit/${announcement.id}`}
-                      className="text-indigo-600 hover:text-indigo-900"
-                    >
-                      <Edit className="w-5 h-5 inline" />
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(announcement.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <Trash2 className="w-5 h-5 inline" />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4} className="text-center py-10 text-gray-500">
-                  <Info size={32} className="mx-auto mb-2" />
-                  Tidak ada pengumuman yang ditemukan.
+            {pengumuman.map((p) => (
+              <tr key={p.id}>
+                <td className="px-6 py-4 whitespace-nowrap font-medium">
+                  {p.judul}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap capitalize">
+                  {p.audiens.replace('_', ' ')}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${p.is_published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
+                  >
+                    {p.is_published ? 'Published' : 'Draft'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {p.scheduled_at
+                    ? new Date(p.scheduled_at).toLocaleString('id-ID')
+                    : '-'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {p._count?.pembaca || 0}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button
+                    onClick={() => handleDelete(p.id)}
+                    className="text-red-600 hover:text-red-900 ml-4"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
-            )}
+            ))}
           </tbody>
         </table>
       </div>

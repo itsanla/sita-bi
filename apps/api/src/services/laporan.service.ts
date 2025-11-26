@@ -49,8 +49,9 @@ export class LaporanService {
 
     const pengujiStatCounts = pengujiData.reduce<Record<number, number>>(
       (acc, curr) => {
-        const dosenId = curr.dosen_id;
-        acc[dosenId] = (acc[dosenId] ?? 0) + 1;
+        const dosenId = Number(curr.dosen_id);
+        const currentCount = Number(acc[dosenId] ?? 0);
+        acc[dosenId] = currentCount + 1;
         return acc;
       },
       {},
@@ -58,7 +59,7 @@ export class LaporanService {
 
     const pengujiStat = Object.entries(pengujiStatCounts).map(
       ([dosen_id, count]) => ({
-        dosen_id: parseInt(dosen_id),
+        dosen_id: parseInt(dosen_id, 10),
         _count: { _all: count },
       }),
     );

@@ -45,7 +45,7 @@ const LinkModal = ({
     try {
       await request(endpoint, {
         method,
-        body: JSON.stringify(formData),
+        data: formData,
       });
       alert(`Link successfully ${isEditing ? 'updated' : 'created'}!`);
       onSave();
@@ -144,7 +144,9 @@ export default function KelolaTautanPage() {
     try {
       setLoading(true);
       const response = await request<{ data: { data: Link[] } }>('/links');
-      setLinks(response.data.data || []);
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        setLinks(response.data.data);
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message || 'Failed to fetch links');

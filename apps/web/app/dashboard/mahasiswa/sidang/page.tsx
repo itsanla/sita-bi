@@ -118,7 +118,7 @@ function RegistrationForm({
       // Use test upload endpoint instead of the authenticated one
       await request('/upload-test/sidang', {
         method: 'POST',
-        body: formData,
+        data: formData,
       });
 
       alert('Registration successful! Please wait for approval.');
@@ -235,13 +235,13 @@ export default function PendaftaranSidangPage() {
       const taResponse = await request<{ data: TugasAkhir | null }>(
         '/bimbingan/sebagai-mahasiswa',
       );
-      setTugasAkhir(taResponse.data);
-      if (taResponse.data) {
+      setTugasAkhir(taResponse.data?.data || null);
+      if (taResponse.data?.data) {
         try {
           const regResponse = await request<{ data: PendaftaranSidang | null }>(
             '/pendaftaran-sidang/my-registration',
           );
-          setPendaftaran(regResponse.data);
+          setPendaftaran(regResponse.data?.data || null);
         } catch {
           setPendaftaran(null);
         }

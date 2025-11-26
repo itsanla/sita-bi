@@ -31,7 +31,9 @@ export default function SidangApprovalsPage() {
       const data = await request<{ data: Registration[] }>(
         '/pendaftaran-sidang/pending-approvals',
       );
-      setRegistrations(data.data);
+      if (Array.isArray(data.data)) {
+        setRegistrations(data.data);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch data');
     } finally {
@@ -65,7 +67,7 @@ export default function SidangApprovalsPage() {
     try {
       await request(`/pendaftaran-sidang/${id}/reject`, {
         method: 'POST',
-        body: { catatan: reason },
+        data: { catatan: reason },
       });
       alert('Registration rejected!');
       fetchData(); // Refresh list

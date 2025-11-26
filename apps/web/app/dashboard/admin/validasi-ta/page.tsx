@@ -30,7 +30,9 @@ export default function ValidasiTAPage() {
       const response = await request<{ data: { data: Submission[] } }>(
         '/tugas-akhir/validasi',
       );
-      setSubmissions(response.data.data || []);
+      if (Array.isArray(response.data?.data)) {
+        setSubmissions(response.data.data);
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message || 'Failed to fetch submissions');
@@ -63,7 +65,7 @@ export default function ValidasiTAPage() {
     try {
       await request(`/tugas-akhir/${id}/reject`, {
         method: 'PATCH',
-        body: JSON.stringify({ alasan_penolakan: reason }),
+        data: { alasan_penolakan: reason },
       });
       alert('Submission rejected!');
       fetchData();

@@ -42,6 +42,76 @@ export class PendaftaranSidangService {
     this.prisma = new PrismaClient();
   }
 
+  async checkEligibility(mahasiswaId: number): Promise<{
+    isEligible: boolean;
+    reason: string[];
+    details: {
+      tugasAkhirApproved: boolean;
+      bimbinganCount: number;
+      minBimbingan: number;
+    };
+  }> {
+    const tugasAkhir = await this.prisma.tugasAkhir.findFirst({
+      where: { mahasiswa_id: mahasiswaId },
+      include: {
+        peranDosenTa: true,
+      },
+    });
+
+    const reasons: string[] = [];
+    let isEligible = true;
+
+    if (tugasAkhir === null) {
+      return {
+        isEligible: false,
+        reason: ['Tugas Akhir tidak ditemukan'],
+        details: {
+          tugasAkhirApproved: false,
+          bimbinganCount: 0,
+          minBimbingan: 9,
+        },
+      };
+    }
+
+    if (tugasAkhir.status !== 'DISETUJUI') {
+      isEligible = false;
+      reasons.push(
+        'Dokumen Tugas Akhir belum disetujui pembimbing (Status TA harus DISETUJUI)',
+      );
+    }
+
+    // Get Pembimbing IDs
+    const pembimbingIds = tugasAkhir.peranDosenTa
+      .filter((p) => p.peran === 'pembimbing1' || p.peran === 'pembimbing2')
+      .map((p) => p.dosen_id);
+
+    // Count confirmed bimbingan
+    const bimbinganCount = await this.prisma.bimbinganTA.count({
+      where: {
+        tugas_akhir_id: tugasAkhir.id,
+        is_konfirmasi: true,
+        dosen_id: { in: pembimbingIds },
+      },
+    });
+
+    if (bimbinganCount < 9) {
+      isEligible = false;
+      reasons.push(
+        `Bimbingan terkonfirmasi baru ${bimbinganCount}/9 sesi (Minimal 9)`,
+      );
+    }
+
+    return {
+      isEligible,
+      reason: reasons,
+      details: {
+        tugasAkhirApproved: tugasAkhir.status === 'DISETUJUI',
+        bimbinganCount,
+        minBimbingan: 9,
+      },
+    };
+  }
+
   async registerForSidang(
     mahasiswaId: number,
     files:
@@ -49,6 +119,14 @@ export class PendaftaranSidangService {
       | Record<string, Express.Multer.File[]>
       | undefined,
   ): Promise<PendaftaranSidang> {
+    // Validate eligibility
+    const eligibility = await this.checkEligibility(mahasiswaId);
+    if (!eligibility.isEligible) {
+      throw new Error(
+        `Tidak memenuhi syarat sidang: ${eligibility.reason.join(', ')}`,
+      );
+    }
+
     return this.prisma.$transaction(async (tx) => {
       try {
         const tugasAkhir = await tx.tugasAkhir.findFirst({

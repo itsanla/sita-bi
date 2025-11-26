@@ -1,58 +1,140 @@
-import React from 'react';
-import { FileText, FileSpreadsheet } from 'lucide-react';
+'use client';
 
-const reportTypes = [
-  {
-    title: 'Laporan Kemajuan Mahasiswa',
-    description:
-      'Unduh rekapitulasi kemajuan tugas akhir semua mahasiswa aktif.',
-  },
-  {
-    title: 'Laporan Penilaian Sidang',
-    description:
-      'Unduh rekapitulasi hasil penilaian sidang dalam periode tertentu.',
-  },
-  {
-    title: 'Laporan Kinerja Dosen Pembimbing',
-    description:
-      'Unduh statistik jumlah bimbingan dan tingkat kelulusan per dosen.',
-  },
-  {
-    title: 'Laporan Pendaftaran Sidang',
-    description: 'Unduh daftar mahasiswa yang telah mendaftar sidang.',
-  },
-];
+import { useState, useEffect } from 'react';
+
+interface Stats {
+  totalStudents: number;
+  totalLecturers: number;
+  activeTAs: number;
+}
+
+interface Workload {
+  dosen_id: number;
+  name: string;
+  roles: { role: string; count: number }[];
+}
 
 export default function LaporanPage() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [workload, setWorkload] = useState<Workload[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = { Authorization: `Bearer ${token}` };
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+        const [statsRes, workloadRes] = await Promise.all([
+          fetch(`${apiUrl}/api/reports/dashboard`, { headers }),
+          fetch(`${apiUrl}/api/reports/workload`, { headers }),
+        ]);
+
+        const statsData = await statsRes.json();
+        const workloadData = await workloadRes.json();
+
+        if (statsData.status === 'success')
+          if (Array.isArray(statsData.data)) {
+            setStats(statsData.data);
+          }
+        if (workloadData.status === 'success')
+          if (Array.isArray(workloadData.data)) {
+            setWorkload(workloadData.data);
+          }
+      } catch (error) {
+        console.error('Error fetching reports:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) return <div className="p-6">Loading reports...</div>;
+
   return (
-    <div className="container mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold text-maroon-800">Pusat Laporan</h1>
+    <div className="p-6 space-y-8">
+      <h1 className="text-3xl font-bold">System Reports</h1>
+
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-blue-50 p-6 rounded-lg shadow-sm border border-blue-100">
+          <h3 className="text-lg font-semibold text-blue-700">
+            Total Students
+          </h3>
+          <p className="text-3xl font-bold text-blue-900">
+            {stats?.totalStudents}
+          </p>
+        </div>
+        <div className="bg-green-50 p-6 rounded-lg shadow-sm border border-green-100">
+          <h3 className="text-lg font-semibold text-green-700">
+            Total Lecturers
+          </h3>
+          <p className="text-3xl font-bold text-green-900">
+            {stats?.totalLecturers}
+          </p>
+        </div>
+        <div className="bg-purple-50 p-6 rounded-lg shadow-sm border border-purple-100">
+          <h3 className="text-lg font-semibold text-purple-700">
+            Active Final Projects
+          </h3>
+          <p className="text-3xl font-bold text-purple-900">
+            {stats?.activeTAs}
+          </p>
+        </div>
       </div>
 
-      <p className="text-gray-600 mb-10">
-        Pilih dan unduh laporan yang Anda butuhkan dalam format PDF atau Excel.
-      </p>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {reportTypes.map((report, index) => (
-          <div key={index} className="bg-white shadow-md rounded-lg p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-3">
-              {report.title}
-            </h2>
-            <p className="text-gray-600 mb-6 h-12">{report.description}</p>
-            <div className="flex items-center space-x-4">
-              <button className="flex items-center bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200">
-                <FileText className="w-5 h-5 mr-2" />
-                Unduh PDF
-              </button>
-              <button className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200">
-                <FileSpreadsheet className="w-5 h-5 mr-2" />
-                Unduh Excel
-              </button>
-            </div>
-          </div>
-        ))}
+      {/* Workload Table */}
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold">Lecturer Workload</h2>
+        </div>
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Lecturer
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Roles Breakdown
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Total Mentored
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {workload.map((dosen) => {
+              const total = dosen.roles.reduce(
+                (acc, curr) => acc + curr.count,
+                0,
+              );
+              return (
+                <tr key={dosen.dosen_id}>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                    {dosen.name}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {dosen.roles.map((r) => (
+                      <span
+                        key={r.role}
+                        className="inline-block bg-gray-100 rounded px-2 py-1 text-xs mr-2 mb-1"
+                      >
+                        {r.role}: {r.count}
+                      </span>
+                    ))}
+                  </td>
+                  <td className="px-6 py-4 text-sm font-bold text-gray-900">
+                    {total}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );

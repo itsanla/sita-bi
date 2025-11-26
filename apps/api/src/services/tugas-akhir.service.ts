@@ -1,4 +1,4 @@
-import type { TugasAkhir } from '@repo/db';
+import type { TugasAkhir } from '@repo/db'; // Import type explicitly
 import { PrismaClient, StatusTugasAkhir } from '@repo/db';
 import type { CreateTugasAkhirDto } from '../dto/tugas-akhir.dto';
 import { calculateSimilarities } from '../utils/similarity';
@@ -13,10 +13,31 @@ export class SimilarityError extends Error {
 
 export class TugasAkhirService {
   private prisma: PrismaClient;
-  // private readonly SIMILARITY_THRESHOLD = 80; // Unused for now // 80%
 
   constructor() {
     this.prisma = new PrismaClient();
+  }
+
+  private async logActivity(
+    userId: number,
+    action: string,
+    url?: string,
+    method?: string,
+  ): Promise<void> {
+    try {
+      await this.prisma.log.create({
+        data: {
+          user_id: userId,
+          action,
+          url: url ?? null,
+          method: method ?? null,
+          ip_address: '127.0.0.1', // Placeholder
+          user_agent: 'System', // Placeholder
+        },
+      });
+    } catch (error) {
+      console.error('Failed to create log:', error);
+    }
   }
 
   async checkSimilarity(
@@ -67,7 +88,7 @@ export class TugasAkhirService {
       throw new Error(`Judul "${dto.judul}" sudah pernah diajukan.`);
     }
 
-    return this.prisma.tugasAkhir.create({
+    const newTa = await this.prisma.tugasAkhir.create({
       data: {
         judul: dto.judul,
         mahasiswa_id: mahasiswa.id,
@@ -75,6 +96,13 @@ export class TugasAkhirService {
         tanggal_pengajuan: new Date(),
       },
     });
+
+    await this.logActivity(
+      userId,
+      `Mengajukan judul Tugas Akhir: "${dto.judul}"`,
+    );
+
+    return newTa;
   }
 
   async findMyTugasAkhir(userId: number): Promise<TugasAkhir | null> {
@@ -86,7 +114,7 @@ export class TugasAkhirService {
       throw new Error('Profil mahasiswa tidak ditemukan.');
     }
 
-    return this.prisma.tugasAkhir.findFirst({
+    const result = await this.prisma.tugasAkhir.findFirst({
       where: {
         mahasiswa_id: mahasiswa.id,
         NOT: {
@@ -124,6 +152,8 @@ export class TugasAkhirService {
         tanggal_pengajuan: 'desc',
       },
     });
+
+    return result;
   }
 
   async deleteMyTa(userId: number): Promise<TugasAkhir> {
@@ -132,7 +162,7 @@ export class TugasAkhirService {
       include: { tugasAkhir: true },
     });
 
-    if (mahasiswa?.tugasAkhir == null) {
+    if (mahasiswa === null || mahasiswa.tugasAkhir === undefined) {
       throw new Error('Tugas Akhir not found for this student.');
     }
 
@@ -147,9 +177,16 @@ export class TugasAkhirService {
       );
     }
 
-    return this.prisma.tugasAkhir.delete({
+    const deleted = await this.prisma.tugasAkhir.delete({
       where: { id: tugasAkhir.id },
     });
+
+    await this.logActivity(
+      userId,
+      `Menghapus pengajuan Tugas Akhir: "${tugasAkhir.judul}"`,
+    );
+
+    return deleted;
   }
 
   async findAllTitles(): Promise<{ judul: string }[]> {
@@ -163,12 +200,7 @@ export class TugasAkhirService {
     });
   }
 
-  /**
-   * Approve tugas akhir by pembimbing
-   * Only pembimbing can approve their student's TA
-   */
   async approve(tugasAkhirId: number, approverId: number): Promise<TugasAkhir> {
-    // Check if tugas akhir exists
     const tugasAkhir = await this.prisma.tugasAkhir.findUnique({
       where: { id: tugasAkhirId },
       include: {
@@ -180,41 +212,37 @@ export class TugasAkhirService {
       },
     });
 
-    if (!tugasAkhir) {
+    if (tugasAkhir === null) {
       throw new Error('Tugas Akhir tidak ditemukan.');
     }
 
-    // Check if already approved or not in DIAJUKAN status
     if (tugasAkhir.status !== StatusTugasAkhir.DIAJUKAN) {
       throw new Error(
         `Tugas Akhir dengan status "${tugasAkhir.status}" tidak dapat disetujui.`,
       );
     }
 
-    // Get dosen from approver userId
     const dosen = await this.prisma.dosen.findUnique({
       where: { user_id: approverId },
     });
 
-    if (!dosen) {
+    if (dosen === null) {
       throw new Error('Profil dosen tidak ditemukan.');
     }
 
-    // Check if this dosen is pembimbing1 or pembimbing2
     const isPembimbing = tugasAkhir.peranDosenTa.some(
       (peran) =>
         peran.dosen_id === dosen.id &&
         (peran.peran === 'pembimbing1' || peran.peran === 'pembimbing2'),
     );
 
-    if (!isPembimbing) {
+    if (isPembimbing === false) {
       throw new Error(
         'Hanya pembimbing yang dapat menyetujui judul tugas akhir ini.',
       );
     }
 
-    // Approve the tugas akhir
-    return this.prisma.tugasAkhir.update({
+    const approved = await this.prisma.tugasAkhir.update({
       where: { id: tugasAkhirId },
       data: {
         status: StatusTugasAkhir.DISETUJUI,
@@ -229,17 +257,20 @@ export class TugasAkhirService {
         approver: true,
       },
     });
+
+    await this.logActivity(
+      approverId,
+      `Menyetujui Tugas Akhir mahasiswa ${approved.mahasiswa.nim}: "${approved.judul}"`,
+    );
+
+    return approved;
   }
 
-  /**
-   * Reject tugas akhir by pembimbing
-   */
   async reject(
     tugasAkhirId: number,
     rejecterId: number,
     alasanPenolakan: string,
   ): Promise<TugasAkhir> {
-    // Check if tugas akhir exists
     const tugasAkhir = await this.prisma.tugasAkhir.findUnique({
       where: { id: tugasAkhirId },
       include: {
@@ -251,41 +282,37 @@ export class TugasAkhirService {
       },
     });
 
-    if (!tugasAkhir) {
+    if (tugasAkhir === null) {
       throw new Error('Tugas Akhir tidak ditemukan.');
     }
 
-    // Check if in DIAJUKAN status
     if (tugasAkhir.status !== StatusTugasAkhir.DIAJUKAN) {
       throw new Error(
         `Tugas Akhir dengan status "${tugasAkhir.status}" tidak dapat ditolak.`,
       );
     }
 
-    // Get dosen from rejecter userId
     const dosen = await this.prisma.dosen.findUnique({
       where: { user_id: rejecterId },
     });
 
-    if (!dosen) {
+    if (dosen === null) {
       throw new Error('Profil dosen tidak ditemukan.');
     }
 
-    // Check if this dosen is pembimbing
     const isPembimbing = tugasAkhir.peranDosenTa.some(
       (peran) =>
         peran.dosen_id === dosen.id &&
         (peran.peran === 'pembimbing1' || peran.peran === 'pembimbing2'),
     );
 
-    if (!isPembimbing) {
+    if (isPembimbing === false) {
       throw new Error(
         'Hanya pembimbing yang dapat menolak judul tugas akhir ini.',
       );
     }
 
-    // Reject the tugas akhir
-    return this.prisma.tugasAkhir.update({
+    const rejected = await this.prisma.tugasAkhir.update({
       where: { id: tugasAkhirId },
       data: {
         status: StatusTugasAkhir.DITOLAK,
@@ -301,17 +328,21 @@ export class TugasAkhirService {
         rejecter: true,
       },
     });
+
+    await this.logActivity(
+      rejecterId,
+      `Menolak Tugas Akhir mahasiswa ${rejected.mahasiswa.nim}: "${rejected.judul}"`,
+    );
+
+    return rejected;
   }
 
-  /**
-   * Get all pending tugas akhir for dosen to approve/reject
-   */
   async getPendingForDosen(dosenId: number): Promise<TugasAkhir[]> {
     const dosen = await this.prisma.dosen.findUnique({
       where: { user_id: dosenId },
     });
 
-    if (!dosen) {
+    if (dosen === null) {
       throw new Error('Profil dosen tidak ditemukan.');
     }
 
@@ -348,5 +379,4 @@ export class TugasAkhirService {
       },
     });
   }
-  // NOTE: The old `cekKemiripan` method is now removed.
 }

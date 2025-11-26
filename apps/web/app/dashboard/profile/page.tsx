@@ -8,7 +8,6 @@ interface ProfileUpdateData extends Record<string, unknown> {
   name: string;
   mahasiswa?: {
     nim: string;
-    angkatan: string;
   };
   dosen?: {
     nidn: string;
@@ -21,7 +20,6 @@ export default function ProfilePage() {
   // State for form fields
   const [name, setName] = useState('');
   const [nim, setNim] = useState('');
-  const [angkatan, setAngkatan] = useState('');
   const [nidn, setNidn] = useState('');
 
   const [isEditing, setIsEditing] = useState(false);
@@ -31,13 +29,12 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user) {
-      setName(user.name);
-      if (user.mahasiswa) {
-        setNim(user.mahasiswa.nim);
-        setAngkatan(user.mahasiswa.angkatan);
+      setName(user.nama);
+      if (user.nim) {
+        setNim(user.nim);
       }
-      if (user.dosen) {
-        setNidn(user.dosen.nidn);
+      if (user.nidn) {
+        setNidn(user.nidn);
       }
     }
   }, [user]);
@@ -49,15 +46,15 @@ export default function ProfilePage() {
     setSuccess(null);
 
     const profileData: ProfileUpdateData = { name };
-    if (user?.mahasiswa) {
-      profileData.mahasiswa = { nim, angkatan };
+    if (user?.nim) {
+      profileData.mahasiswa = { nim };
     }
-    if (user?.dosen) {
+    if (user?.nidn) {
       profileData.dosen = { nidn };
     }
 
     try {
-      await api('/profile', { method: 'PATCH', body: profileData });
+      await api('/profile', { method: 'PATCH', data: profileData });
       setSuccess(
         'Profil berhasil diperbarui. Data akan ter-refresh pada login berikutnya.',
       );
@@ -114,7 +111,7 @@ export default function ProfilePage() {
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                 />
               ) : (
-                <p className="mt-1 text-lg">{user.name}</p>
+                <p className="mt-1 text-lg">{user.nama}</p>
               )}
             </div>
             <div>
@@ -137,22 +134,7 @@ export default function ProfilePage() {
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                     />
                   ) : (
-                    <p className="mt-1 text-lg">{user.mahasiswa?.nim}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Angkatan
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={angkatan}
-                      onChange={(e) => setAngkatan(e.target.value)}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                    />
-                  ) : (
-                    <p className="mt-1 text-lg">{user.mahasiswa?.angkatan}</p>
+                    <p className="mt-1 text-lg">{user.nim}</p>
                   )}
                 </div>
               </>
@@ -170,7 +152,7 @@ export default function ProfilePage() {
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                   />
                 ) : (
-                  <p className="mt-1 text-lg">{user.dosen?.nidn}</p>
+                  <p className="mt-1 text-lg">{user.nidn}</p>
                 )}
               </div>
             )}

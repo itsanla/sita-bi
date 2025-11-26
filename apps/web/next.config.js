@@ -32,6 +32,7 @@ const nextConfig = {
   },
   reactStrictMode: true,
   compiler: {
+    // eslint-disable-next-line no-undef
     removeConsole: process.env.NODE_ENV === 'production',
   },
   experimental: {

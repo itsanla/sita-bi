@@ -6,6 +6,8 @@ import {
   loginSchema,
   registerSchema,
   verifyEmailSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from '../dto/auth.dto';
 import { authMiddleware } from '../middlewares/auth.middleware';
 
@@ -16,7 +18,18 @@ router.post(
   '/login',
   validate(loginSchema),
   asyncHandler(async (req, res) => {
-    const result = await authService.login(req.body);
+    const sanitizedMeta: { ip?: string; userAgent?: string } = {};
+
+    if (req.ip != null && req.ip !== '') {
+      sanitizedMeta.ip = req.ip;
+    }
+
+    const userAgent = req.headers['user-agent'];
+    if (typeof userAgent === 'string' && userAgent !== '') {
+      sanitizedMeta.userAgent = userAgent;
+    }
+
+    const result = await authService.login(req.body, sanitizedMeta);
     res.status(200).json({ status: 'sukses', data: result });
   }),
 );
@@ -42,6 +55,40 @@ router.post(
       status: 'sukses',
       message: 'Email berhasil diverifikasi. Silakan login.',
     });
+  }),
+);
+
+router.post(
+  '/forgot-password',
+  validate(forgotPasswordSchema),
+  asyncHandler(async (req, res) => {
+    await authService.forgotPassword(req.body);
+    res.status(200).json({
+      status: 'sukses',
+      message: 'Jika email terdaftar, link reset password telah dikirim.',
+    });
+  }),
+);
+
+router.post(
+  '/reset-password',
+  validate(resetPasswordSchema),
+  asyncHandler(async (req, res) => {
+    await authService.resetPassword(req.body);
+    res.status(200).json({
+      status: 'sukses',
+      message: 'Password berhasil diubah. Silakan login.',
+    });
+  }),
+);
+
+// Get current user profile
+router.get(
+  '/me',
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const user = await authService.getCurrentUser(req.user!.id);
+    res.status(200).json({ status: 'sukses', data: user });
   }),
 );
 

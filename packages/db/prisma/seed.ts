@@ -1,4 +1,10 @@
-import { PrismaClient, AudiensPengumuman, Prisma, Prodi, StatusTugasAkhir } from '@prisma/client';
+import {
+  PrismaClient,
+  AudiensPengumuman,
+  Prisma,
+  Prodi,
+  StatusTugasAkhir,
+} from '@prisma/client';
 import { faker } from '@faker-js/faker';
 import * as bcrypt from 'bcrypt';
 
@@ -108,7 +114,9 @@ async function main() {
   console.log('50 Dosen seeded successfully.');
 
   console.log('Start seeding 500 Mahasiswa...');
-  const mahasiswaRole = await prisma.role.findUnique({ where: { name: 'mahasiswa' } });
+  const mahasiswaRole = await prisma.role.findUnique({
+    where: { name: 'mahasiswa' },
+  });
   if (!mahasiswaRole) {
     console.error('Mahasiswa role not found. Please ensure roles are seeded.');
     return;
@@ -120,7 +128,10 @@ async function main() {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
     const name = `${firstName} ${lastName}`;
-    const email = faker.internet.email({ firstName, lastName }).toLowerCase().replace('@', `.${i+50}@`);
+    const email = faker.internet
+      .email({ firstName, lastName })
+      .toLowerCase()
+      .replace('@', `.${i + 50}@`);
     const password = 'password123';
     const hashedPassword = await bcrypt.hash(password, 10);
     const nim = `M${faker.string.numeric(8)}${i}`;
@@ -146,8 +157,13 @@ async function main() {
     try {
       await prisma.mahasiswa.create({ data: mahasiswaData });
     } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-        console.warn(`Skipping duplicate entry for mahasiswa: ${mahasiswaData.user.create.email}`);
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        console.warn(
+          `Skipping duplicate entry for mahasiswa: ${mahasiswaData.user.create.email}`,
+        );
       } else {
         console.error(`Error seeding mahasiswa: ${(e as Error).message}`);
         throw e;
@@ -163,7 +179,9 @@ async function main() {
   });
 
   if (mahasiswaWithoutTA.length === 0) {
-    console.warn('No mahasiswa found without a Tugas Akhir. Skipping Tugas Akhir seeding.');
+    console.warn(
+      'No mahasiswa found without a Tugas Akhir. Skipping Tugas Akhir seeding.',
+    );
   } else {
     const tugasAkhirToSeed = [];
     for (const mahasiswa of mahasiswaWithoutTA) {
@@ -176,7 +194,9 @@ async function main() {
       });
     }
     await prisma.tugasAkhir.createMany({ data: tugasAkhirToSeed });
-    console.log(`${mahasiswaWithoutTA.length} Tugas Akhir seeded successfully.`);
+    console.log(
+      `${mahasiswaWithoutTA.length} Tugas Akhir seeded successfully.`,
+    );
   }
 
   console.log('Start seeding 500 Tawaran Topik...');

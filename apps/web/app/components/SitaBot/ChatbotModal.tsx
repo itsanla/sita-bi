@@ -31,19 +31,21 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
       setShowIntro(true);
       setModalVisible(false);
       setTimeout(() => setModalVisible(true), 50);
-      
+
       const timer = setTimeout(() => {
         setShowIntro(false);
       }, 2500);
-      
+
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleSendClick = () => {
-    const fakeEvent = { preventDefault: () => {} };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fakeEvent: any = { preventDefault: () => {} };
     handleSubmit(fakeEvent);
   };
 
@@ -55,31 +57,41 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
   return (
     <>
       {/* Backdrop Overlay - covers everything including header */}
-      <div 
+      <div
         className={`fixed inset-0 bg-black transition-opacity duration-500 z-[998] ${modalVisible ? 'opacity-60' : 'opacity-0'}`}
         onClick={handleClose}
       />
 
       {/* Modal Container - above backdrop */}
-      <div className={`fixed inset-0 flex items-center justify-center z-[999] p-4 transition-all duration-500 ${modalVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-        
+      <div
+        className={`fixed inset-0 flex items-center justify-center z-[999] p-4 transition-all duration-500 ${modalVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+      >
         {showIntro ? (
           /* Premium Intro Animation */
           <div className="relative">
             {/* Glow Effect Layers */}
             <div className="absolute inset-0 -m-32">
               <div className="absolute inset-0 bg-gradient-radial from-red-400/30 via-red-500/20 to-transparent blur-3xl animate-pulse-slow" />
-              <div className="absolute inset-0 bg-gradient-radial from-white/20 via-transparent to-transparent blur-2xl animate-spin-slow" style={{ animationDuration: '8s' }} />
+              <div
+                className="absolute inset-0 bg-gradient-radial from-white/20 via-transparent to-transparent blur-2xl animate-spin-slow"
+                style={{ animationDuration: '8s' }}
+              />
             </div>
-            
+
             {/* Sparkle Effects */}
             <div className="absolute -top-10 -left-10 animate-float">
               <Sparkles className="w-8 h-8 text-red-300 opacity-60" />
             </div>
-            <div className="absolute -bottom-10 -right-10 animate-float" style={{ animationDelay: '1s' }}>
+            <div
+              className="absolute -bottom-10 -right-10 animate-float"
+              style={{ animationDelay: '1s' }}
+            >
               <Sparkles className="w-6 h-6 text-red-400 opacity-80" />
             </div>
-            <div className="absolute top-1/2 -right-16 animate-float" style={{ animationDelay: '0.5s' }}>
+            <div
+              className="absolute top-1/2 -right-16 animate-float"
+              style={{ animationDelay: '0.5s' }}
+            >
               <Sparkles className="w-5 h-5 text-white opacity-70" />
             </div>
 
@@ -104,7 +116,6 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
         ) : (
           /* Chat Interface */
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden border border-red-100 animate-scale-in">
-            
             {/* Header */}
             <div className="bg-gradient-to-r from-red-900 to-red-700 px-6 py-4 flex items-center justify-between shadow-lg">
               <div className="flex items-center gap-3">
@@ -128,7 +139,10 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
             </div>
 
             {/* Chat Area */}
-            <div ref={chatContainerRef} className="flex-1 overflow-y-auto bg-gradient-to-br from-red-50/50 via-white to-red-50/30">
+            <div
+              ref={chatContainerRef}
+              className="flex-1 overflow-y-auto bg-gradient-to-br from-red-50/50 via-white to-red-50/30"
+            >
               <div className="px-6 py-8 space-y-6">
                 {messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full py-12">
@@ -140,21 +154,27 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                       Halo! Saya SitaBot AI 👋
                     </h2>
                     <p className="text-gray-500 text-center max-w-md mb-8">
-                      Tanyakan apa saja tentang sistem tugas akhir, topik penelitian, atau bantuan lainnya!
+                      Tanyakan apa saja tentang sistem tugas akhir, topik
+                      penelitian, atau bantuan lainnya!
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
-                      {[ 
-                        { icon: '📚', text: 'Bagaimana cara mengajukan topik?' },
+                      {[
+                        {
+                          icon: '📚',
+                          text: 'Bagaimana cara mengajukan topik?',
+                        },
                         { icon: '📝', text: 'Panduan bimbingan tugas akhir' },
                         { icon: '📅', text: 'Jadwal sidang proposal' },
-                        { icon: '💡', text: 'Tips memilih topik penelitian' }
+                        { icon: '💡', text: 'Tips memilih topik penelitian' },
                       ].map((prompt, idx) => (
                         <button
                           key={idx}
                           onClick={() => setInput(prompt.text)}
                           className="px-4 py-3 bg-white border-2 border-red-100 rounded-xl text-left text-gray-700 hover:border-red-400 hover:bg-red-50 hover:shadow-md transition-all duration-200 group"
                         >
-                          <span className="text-lg mr-2 group-hover:scale-110 inline-block transition-transform">{prompt.icon}</span>
+                          <span className="text-lg mr-2 group-hover:scale-110 inline-block transition-transform">
+                            {prompt.icon}
+                          </span>
                           {prompt.text}
                         </button>
                       ))}
@@ -178,7 +198,13 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                             : 'bg-white text-gray-800 border border-red-100'
                         }`}
                       >
-                        <div className={`prose prose-sm max-w-none ${msg.role === 'user' ? 'prose-invert' : ''}`}>
+                        <div
+                          className={`prose prose-sm max-w-none ${
+                            msg.role === 'user'
+                              ? 'prose-invert'
+                              : 'prose-headings:text-red-900 prose-headings:font-bold prose-p:text-gray-700 prose-p:leading-relaxed prose-strong:text-red-800 prose-strong:font-semibold prose-a:text-red-600 prose-a:no-underline hover:prose-a:underline prose-code:text-red-700 prose-code:bg-red-50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-ul:list-disc prose-ol:list-decimal prose-li:text-gray-700 prose-blockquote:border-l-red-500 prose-blockquote:text-gray-600'
+                          }`}
+                        >
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {msg.content || '...'}
                           </ReactMarkdown>
@@ -186,14 +212,16 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                       </div>
                       {msg.role === 'user' && (
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center ml-3 flex-shrink-0 shadow-lg">
-                          <span className="text-gray-600 font-semibold text-xs">You</span>
+                          <span className="text-gray-600 font-semibold text-xs">
+                            You
+                          </span>
                         </div>
                       )}
                     </div>
                   ))
                 )}
-                
-                {isLoading && (
+
+                {isLoading ? (
                   <div className="flex justify-start animate-fade-in">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-900 to-red-700 flex items-center justify-center mr-3 flex-shrink-0 shadow-lg">
                       <MessageCircle className="w-5 h-5 text-white" />
@@ -201,12 +229,18 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                     <div className="bg-white border border-red-100 px-5 py-3 rounded-2xl shadow-md">
                       <div className="flex gap-2">
                         <div className="w-2 h-2 bg-red-900 rounded-full animate-bounce" />
-                        <div className="w-2 h-2 bg-red-900 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                        <div className="w-2 h-2 bg-red-900 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
+                        <div
+                          className="w-2 h-2 bg-red-900 rounded-full animate-bounce"
+                          style={{ animationDelay: '0.2s' }}
+                        />
+                        <div
+                          className="w-2 h-2 bg-red-900 rounded-full animate-bounce"
+                          style={{ animationDelay: '0.4s' }}
+                        />
                       </div>
                     </div>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
 
@@ -247,14 +281,15 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                 )}
               </div>
               <p className="text-xs text-gray-400 text-center mt-3">
-                SitaBot AI dapat membuat kesalahan. Mohon verifikasi informasi penting.
+                SitaBot AI dapat membuat kesalahan. Mohon verifikasi informasi
+                penting.
               </p>
             </div>
           </div>
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fade-in {
           from {
             opacity: 0;
@@ -276,20 +311,39 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
           }
         }
         @keyframes gentle-bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-15px); }
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-15px);
+          }
         }
         @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(10deg); }
+          0%,
+          100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-20px) rotate(10deg);
+          }
         }
         @keyframes pulse-slow {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 0.5; }
+          0%,
+          100% {
+            opacity: 0.3;
+          }
+          50% {
+            opacity: 0.5;
+          }
         }
         @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
         }
         .animate-fade-in {
           animation: fade-in 0.3s ease-out;

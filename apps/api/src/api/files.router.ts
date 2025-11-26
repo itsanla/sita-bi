@@ -3,9 +3,127 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import * as path from 'path';
 import * as fs from 'fs';
-import { getMonorepoRoot, getAbsolutePath } from '../utils/upload.config';
+import multer from 'multer';
+import {
+  getMonorepoRoot,
+  getAbsolutePath,
+  getUploadPath,
+  generateFileName,
+  getFileUrl,
+} from '../utils/upload.config';
+import * as fileService from '../services/files.service';
 
 const router: Router = Router();
+
+// Configure multer storage
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const uploadPath = getUploadPath();
+    cb(null, uploadPath);
+  },
+  filename: (_req, file, cb) => {
+    const fileName = generateFileName(file.originalname);
+    cb(null, fileName);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+});
+
+// Endpoint untuk upload file (Single)
+router.post(
+  '/upload',
+  upload.single('file'),
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!req.file) {
+      res.status(400).json({
+        status: 'gagal',
+        message: 'Tidak ada file yang diunggah',
+      });
+      return;
+    }
+
+    const fileData = {
+      originalName: req.file.originalname,
+      filename: req.file.filename,
+      path: req.file.path,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      // uploadedBy: req.user?.id // Todo: Integrate with auth
+    };
+
+    const savedFile = await fileService.create(fileData);
+
+    res.status(201).json({
+      status: 'sukses',
+      message: 'File berhasil diunggah',
+      data: {
+        ...savedFile,
+        url: getFileUrl(savedFile.path),
+      },
+    });
+  }),
+);
+
+// Endpoint untuk upload multiple files
+router.post(
+  '/upload-multiple',
+  upload.array('files', 10), // Max 10 files
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!req.files || (req.files as Express.Multer.File[]).length === 0) {
+      res.status(400).json({
+        status: 'gagal',
+        message: 'Tidak ada file yang diunggah',
+      });
+      return;
+    }
+
+    const files = req.files as Express.Multer.File[];
+    const savedFiles = [];
+
+    for (const file of files) {
+      const fileData = {
+        originalName: file.originalname,
+        filename: file.filename,
+        path: file.path,
+        mimeType: file.mimetype,
+        size: file.size,
+      };
+      const saved = await fileService.create(fileData);
+      savedFiles.push({
+        ...saved,
+        url: getFileUrl(saved.path),
+      });
+    }
+
+    res.status(201).json({
+      status: 'sukses',
+      message: 'File berhasil diunggah',
+      data: savedFiles,
+    });
+  }),
+);
+
+// Endpoint untuk list files
+router.get(
+  '/',
+  asyncHandler(async (_req: Request, res: Response) => {
+    const files = await fileService.list();
+    const filesWithUrls = files.map((file) => ({
+      ...file,
+      url: getFileUrl(file.path),
+    }));
+
+    res.json({
+      status: 'sukses',
+      data: filesWithUrls,
+    });
+  }),
+);
 
 // Endpoint untuk download file berdasarkan path
 router.get(

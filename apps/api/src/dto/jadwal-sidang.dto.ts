@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createJadwalSchema = z.object({
-  pendaftaranSidangId: z.number().int('pendaftaranSidangId must be an integer'),
+  sidangId: z.number().int('sidangId must be an integer'),
   tanggal: z.string().refine((val) => !isNaN(new Date(val).getTime()), {
     message: 'Invalid date string',
   }),

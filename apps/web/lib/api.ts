@@ -1,96 +1,169 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+// apps/web/lib/api.ts
+import axios, {
+  AxiosError,
+  AxiosInstance,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from 'axios';
+import { toast } from 'sonner';
+import { ApiResponse } from '../types';
 
-// Definisikan tipe kustom untuk error agar bisa menyertakan detail
-export class FetchError extends Error {
-  response: Response;
-  data: unknown;
+const apiClient: AxiosInstance = axios.create({
+  baseURL: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'}/api`,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-  constructor(response: Response, data: unknown) {
-    const message =
-      (data as { message: string })?.message ||
-      `Request failed with status ${response.status}`;
-    super(message);
-    this.response = response;
-    this.data = data;
-  }
-}
-
-interface CustomRequestInit extends Omit<RequestInit, 'body'> {
-  body?: BodyInit | Record<string, unknown> | null;
-}
-
-async function request<T>(
-  endpoint: string,
-  options: CustomRequestInit = {},
-): Promise<T> {
-  // Get user from localStorage to send user ID in header
-  const storedUser =
-    typeof window !== 'undefined' ? localStorage.getItem('user') : null;
-
-  // Bangun konfigurasi secara manual untuk menghindari masalah dengan spread operator
-  const config: RequestInit = {
-    method: options.method || 'GET',
-    headers: new Headers(options.headers),
-    cache: options.cache,
-    credentials: options.credentials,
-    mode: options.mode,
-    redirect: options.redirect,
-    referrer: options.referrer,
-    referrerPolicy: options.referrerPolicy,
-    integrity: options.integrity,
-  };
-
-  // Add the x-user-id header if the user is logged in
-  if (storedUser) {
-    try {
-      const user = JSON.parse(storedUser);
-      if (user && user.id) {
-        (config.headers as Headers).append('x-user-id', user.id);
+// Request interceptor
+apiClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token && config.headers) {
+        config.headers['x-user-id'] = token;
       }
-    } catch (e) {
-      console.error(
-        'Failed to parse user from localStorage for API request',
-        e,
-      );
     }
+    return config;
+  },
+  (error: AxiosError) => {
+    console.error('[API Request] Error:', error);
+    return Promise.reject(error);
+  },
+);
+
+// Response interceptor dengan comprehensive error handling
+apiClient.interceptors.response.use(
+  (response: AxiosResponse) => response,
+  async (error: AxiosError) => {
+    // Network error
+    if (!error.response) {
+      console.error('[API Response] Network error:', error);
+
+      if (error.code === 'ECONNABORTED') {
+        toast.error('Permintaan timeout. Silakan coba lagi.');
+      } else if (error.message === 'Network Error') {
+        toast.error(
+          'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+        );
+      } else {
+        toast.error('Terjadi kesalahan jaringan.');
+      }
+
+      return Promise.reject(new Error('Network error'));
+    }
+
+    // HTTP errors
+    const status = error.response.status;
+    const message =
+      (error.response.data as ApiResponse)?.message || error.message;
+
+    console.error(`[API Response] HTTP ${status}:`, message);
+
+    switch (status) {
+      case 400:
+        toast.error(`Data tidak valid: ${message}`);
+        break;
+
+      case 401:
+        toast.error('Sesi Anda telah berakhir. Silakan login kembali.');
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+        }
+        break;
+
+      case 403:
+        toast.error('Anda tidak memiliki izin untuk melakukan aksi ini.');
+        break;
+
+      case 404:
+        toast.error('Data tidak ditemukan.');
+        break;
+
+      case 409:
+        toast.error(`Konflik data: ${message}`);
+        break;
+
+      case 422:
+        toast.error(`Validasi gagal: ${message}`);
+        break;
+
+      case 429:
+        toast.error('Terlalu banyak permintaan. Silakan tunggu sebentar.');
+        break;
+
+      case 500:
+        toast.error('Terjadi kesalahan di server. Tim kami telah diberitahu.');
+        break;
+
+      case 502:
+      case 503:
+      case 504:
+        toast.error('Server sedang sibuk. Silakan coba lagi nanti.');
+        break;
+
+      default:
+        toast.error('Terjadi kesalahan. Silakan coba lagi.');
+    }
+
+    return Promise.reject(error);
+  },
+);
+
+// Generic function to handle API errors
+export const handleApiError = (error: unknown): string => {
+  if (error instanceof AxiosError) {
+    const errorData = error.response?.data as ApiResponse;
+    return errorData?.message || 'Terjadi kesalahan pada server.';
   }
-
-  // Logika cerdas untuk body
-  if (options.body) {
-    if (options.body instanceof FormData) {
-      // Untuk FormData, jangan set Content-Type header
-      // Browser akan otomatis set multipart/form-data dengan boundary
-      config.body = options.body;
-    } else if (typeof options.body === 'object') {
-      config.body = JSON.stringify(options.body);
-      (config.headers as Headers).set('Content-Type', 'application/json');
-    } else {
-      config.body = options.body;
-    }
+  if (error instanceof Error) {
+    return error.message;
   }
+  return 'Gagal menghubungi server. Silakan coba lagi.';
+};
 
-  const fullUrl = `${API_URL}/api${endpoint}`;
-  try {
-    const response = await fetch(fullUrl, config);
-    if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({ message: 'An unexpected error occurred' }));
-      console.error('Request failed:', errorData);
-      throw new FetchError(response, errorData);
-    }
+// Safe API wrapper methods
+export const api = {
+  get: async <T>(
+    url: string,
+    config?: Parameters<typeof apiClient.get>[1],
+  ): Promise<AxiosResponse<ApiResponse<T>>> => {
+    return apiClient.get<ApiResponse<T>>(url, config);
+  },
 
-    // Handle kasus 204 No Content
-    if (response.status === 204) {
-      return null as T;
-    }
+  post: async <T>(
+    url: string,
+    data?: unknown,
+    config?: Parameters<typeof apiClient.post>[2],
+  ): Promise<AxiosResponse<ApiResponse<T>>> => {
+    return apiClient.post<ApiResponse<T>>(url, data, config);
+  },
 
-    const result = await response.json();
-    return result;
-  } catch (error) {
-    console.error('Request error:', error);
-    throw error;
-  }
-}
+  put: async <T>(
+    url: string,
+    data?: unknown,
+    config?: Parameters<typeof apiClient.put>[2],
+  ): Promise<AxiosResponse<ApiResponse<T>>> => {
+    return apiClient.put<ApiResponse<T>>(url, data, config);
+  },
 
-export default request;
+  delete: async <T>(
+    url: string,
+    config?: Parameters<typeof apiClient.delete>[1],
+  ): Promise<AxiosResponse<ApiResponse<T>>> => {
+    return apiClient.delete<ApiResponse<T>>(url, config);
+  },
+
+  patch: async <T>(
+    url: string,
+    data?: unknown,
+    config?: Parameters<typeof apiClient.patch>[2],
+  ): Promise<AxiosResponse<ApiResponse<T>>> => {
+    return apiClient.patch<ApiResponse<T>>(url, data, config);
+  },
+};
+
+export default apiClient;

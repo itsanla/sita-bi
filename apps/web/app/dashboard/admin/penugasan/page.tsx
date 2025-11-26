@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, FormEvent } from 'react';
 import request from '@/lib/api';
-import { Search, UserPlus, Loader, Info, X } from 'lucide-react';
+import { Search, UserPlus, Loader, Info, X, AlertCircle } from 'lucide-react';
 
 // --- Interfaces ---
 interface TugasAkhir {
@@ -13,24 +13,32 @@ interface TugasAkhir {
   };
 }
 
-interface Dosen {
+// Removed unused Dosen interface
+
+interface DosenLoad {
   id: number;
   name: string;
-  // We only need id and name for the select options
+  email: string;
+  totalLoad: number;
+  bimbinganLoad: number;
+  pengujiLoad: number;
 }
 
 // --- Main Page Component ---
 export default function PenugasanPage() {
   const [unassignedTAs, setUnassignedTAs] = useState<TugasAkhir[]>([]);
-  const [allDosen, setAllDosen] = useState<Dosen[]>([]);
+  const [dosenLoad, setDosenLoad] = useState<DosenLoad[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [assignType, setAssignType] = useState<'pembimbing' | 'penguji'>(
+    'pembimbing',
+  );
   const [selectedTA, setSelectedTA] = useState<TugasAkhir | null>(null);
-  const [pembimbing1Id, setPembimbing1Id] = useState<string>('');
-  const [pembimbing2Id, setPembimbing2Id] = useState<string>('');
+  const [dosen1Id, setDosen1Id] = useState<string>('');
+  const [dosen2Id, setDosen2Id] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchData = async () => {
@@ -39,10 +47,16 @@ export default function PenugasanPage() {
       setError('');
       const [taRes, dosenRes] = await Promise.all([
         request<{ data: { data: TugasAkhir[] } }>('/penugasan/unassigned'),
-        request<{ data: { data: Dosen[] } }>('/users/dosen'),
+        request<{ data: DosenLoad[] }>('/penugasan/dosen-load'),
       ]);
-      setUnassignedTAs(taRes.data.data || []);
-      setAllDosen(dosenRes.data.data || []);
+      if (taRes.data?.data && Array.isArray(taRes.data.data)) {
+        setUnassignedTAs(taRes.data.data);
+      }
+      if (Array.isArray(dosenRes.data)) {
+        if (Array.isArray(dosenRes.data)) {
+          setDosenLoad(dosenRes.data);
+        }
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message || 'Failed to fetch data');
@@ -56,34 +70,48 @@ export default function PenugasanPage() {
     fetchData();
   }, []);
 
-  const handleOpenModal = (ta: TugasAkhir) => {
+  const handleOpenModal = (ta: TugasAkhir, type: 'pembimbing' | 'penguji') => {
     setSelectedTA(ta);
+    setAssignType(type);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedTA(null);
-    setPembimbing1Id('');
-    setPembimbing2Id('');
+    setDosen1Id('');
+    setDosen2Id('');
   };
 
   const handleAssignSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!selectedTA || !pembimbing1Id) {
-      alert('Please select at least Supervisor 1.');
+    if (!selectedTA || !dosen1Id) {
+      alert(
+        `Please select at least ${assignType === 'pembimbing' ? 'Supervisor' : 'Examiner'} 1.`,
+      );
       return;
     }
     setIsSubmitting(true);
     try {
-      await request(`/penugasan/${selectedTA.id}/assign`, {
+      const endpoint =
+        assignType === 'pembimbing' ? 'assign' : 'assign-penguji';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const body: any = {};
+      if (assignType === 'pembimbing') {
+        body.pembimbing1Id = Number(dosen1Id);
+        body.pembimbing2Id = dosen2Id ? Number(dosen2Id) : undefined;
+      } else {
+        body.penguji1Id = Number(dosen1Id);
+        body.penguji2Id = dosen2Id ? Number(dosen2Id) : undefined;
+      }
+
+      await request(`/penugasan/${selectedTA.id}/${endpoint}`, {
         method: 'POST',
-        body: JSON.stringify({
-          pembimbing1Id: Number(pembimbing1Id),
-          pembimbing2Id: pembimbing2Id ? Number(pembimbing2Id) : undefined,
-        }),
+        data: body,
       });
-      alert('Supervisors assigned successfully!');
+      alert(
+        `${assignType === 'pembimbing' ? 'Supervisors' : 'Examiners'} assigned successfully!`,
+      );
       handleCloseModal();
       fetchData();
     } catch (err: unknown) {
@@ -93,6 +121,16 @@ export default function PenugasanPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Removed unused getLoadBadgeColor
+
+  const renderDosenOption = (d: DosenLoad) => {
+    return (
+      <option key={d.id} value={d.id}>
+        {d.name} (Load: {d.totalLoad} - B:{d.bimbinganLoad}/P:{d.pengujiLoad})
+      </option>
+    );
   };
 
   if (loading) {
@@ -156,11 +194,18 @@ export default function PenugasanPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
-                      onClick={() => handleOpenModal(ta)}
-                      className="inline-flex items-center text-red-800 hover:text-red-900 font-semibold"
+                      onClick={() => handleOpenModal(ta, 'pembimbing')}
+                      className="inline-flex items-center text-red-800 hover:text-red-900 font-semibold mr-4"
                     >
                       <UserPlus className="w-5 h-5 mr-1" />
-                      Tugaskan Pembimbing
+                      Assign Pembimbing
+                    </button>
+                    <button
+                      onClick={() => handleOpenModal(ta, 'penguji')}
+                      className="inline-flex items-center text-blue-800 hover:text-blue-900 font-semibold"
+                    >
+                      <UserPlus className="w-5 h-5 mr-1" />
+                      Assign Penguji
                     </button>
                   </td>
                 </tr>
@@ -183,7 +228,9 @@ export default function PenugasanPage() {
           <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-lg">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold text-gray-800">
-                Tugaskan Pembimbing
+                {assignType === 'pembimbing'
+                  ? 'Tugaskan Pembimbing'
+                  : 'Tugaskan Penguji'}
               </h2>
               <button
                 onClick={handleCloseModal}
@@ -202,50 +249,53 @@ export default function PenugasanPage() {
               Judul: <span className="font-semibold">{selectedTA.judul}</span>
             </p>
 
+            <div className="bg-yellow-50 border border-yellow-200 p-3 rounded mb-4 text-xs text-yellow-800 flex items-start">
+              <AlertCircle size={16} className="mr-2 mt-0.5" />
+              <span>
+                Info Load Dosen: <strong>Total</strong> (Aktif) -{' '}
+                <strong>B</strong> (Bimbingan) / <strong>P</strong> (Penguji).
+                Pilih dosen dengan beban kerja yang wajar.
+              </span>
+            </div>
+
             <form onSubmit={handleAssignSubmit} className="space-y-4">
               <div>
                 <label
-                  htmlFor="pembimbing1"
+                  htmlFor="dosen1"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Pembimbing 1
+                  {assignType === 'pembimbing' ? 'Pembimbing 1' : 'Penguji 1'}
                 </label>
                 <select
-                  id="pembimbing1"
-                  value={pembimbing1Id}
-                  onChange={(e) => setPembimbing1Id(e.target.value)}
+                  id="dosen1"
+                  value={dosen1Id}
+                  onChange={(e) => setDosen1Id(e.target.value)}
                   required
                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-red-800 focus:border-red-800 sm:text-sm rounded-md"
                 >
                   <option value="" disabled>
                     -- Pilih Dosen --
                   </option>
-                  {allDosen.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
+                  {dosenLoad.map(renderDosenOption)}
                 </select>
               </div>
               <div>
                 <label
-                  htmlFor="pembimbing2"
+                  htmlFor="dosen2"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Pembimbing 2 (Opsional)
+                  {assignType === 'pembimbing'
+                    ? 'Pembimbing 2 (Opsional)'
+                    : 'Penguji 2 (Opsional)'}
                 </label>
                 <select
-                  id="pembimbing2"
-                  value={pembimbing2Id}
-                  onChange={(e) => setPembimbing2Id(e.target.value)}
+                  id="dosen2"
+                  value={dosen2Id}
+                  onChange={(e) => setDosen2Id(e.target.value)}
                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-red-800 focus:border-red-800 sm:text-sm rounded-md"
                 >
                   <option value="">-- Tidak Ada --</option>
-                  {allDosen.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
+                  {dosenLoad.map(renderDosenOption)}
                 </select>
               </div>
               <div className="flex justify-end pt-4 space-x-3">

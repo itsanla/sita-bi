@@ -1,5 +1,4 @@
 // packages/db/prisma/schema.prisma
-// VERSI REFAKTOR: Skema ini telah disederhanakan untuk struktur yang lebih jelas dan efektif.
 
 generator client {
   provider = "prisma-client-js"
@@ -108,22 +107,49 @@ enum TipeDokumenSidang {
   BEBAS_JURUSAN
 }
 
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+  DEBUG
+}
+
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+}
+
+enum PrioritasPengumuman {
+  RENDAH
+  MENENGAH
+  TINGGI
+}
+
+enum KategoriPengumuman {
+  AKADEMIK
+  ADMINISTRASI
+  KEMAHASISWAAN
+  LAINNYA
+}
+
 //================================================================================
 //  MODEL INTI (User, Roles, Dosen, Mahasiswa)
 //================================================================================
 
 /// Model User merepresentasikan entitas login utama.
 model User {
-  id                Int       @id @default(autoincrement())
-  name              String
-  email             String    @unique
-  phone_number      String    @unique
-  email_verified_at DateTime?
-  password          String
-  photo             String?
-  remember_token    String?
-  created_at        DateTime  @default(now())
-  updated_at        DateTime  @updatedAt
+  id                    Int       @id @default(autoincrement())
+  name                  String
+  email                 String    @unique
+  phone_number          String    @unique
+  email_verified_at     DateTime?
+  password              String
+  photo                 String?
+  remember_token        String?
+  failed_login_attempts Int       @default(0)
+  lockout_until         DateTime?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
 
   // Relasi Profil & Hak Akses
   mahasiswa Mahasiswa? // Profil jika user adalah mahasiswa
@@ -131,14 +157,18 @@ model User {
   roles     Role[] // Peran yang dimiliki user
 
   // Relasi Kepemilikan Data
-  logs               Log[]
-  pengumumanDibuat   Pengumuman[]
-  tawaranTopikDibuat TawaranTopik[]
-  taDisetujui        TugasAkhir[]             @relation("Approver")
-  taDitolak          TugasAkhir[]             @relation("Rejecter")
-  notifikasi         NotifikasiTA[]
-  emailTokens        EmailVerificationToken[]
-  catatanBimbingan   CatatanBimbingan[] // Catatan yang dibuat oleh user ini
+  logs                   Log[]
+  pengumumanDibuat       Pengumuman[]
+  tawaranTopikDibuat     TawaranTopik[]
+  taDisetujui            TugasAkhir[]             @relation("Approver")
+  taDitolak              TugasAkhir[]             @relation("Rejecter")
+  notifikasi             NotifikasiTA[]
+  notificationHistory    NotificationHistory[]
+  emailTokens            EmailVerificationToken[]
+  catatanBimbingan       CatatanBimbingan[] // Catatan yang dibuat oleh user ini
+  historyPenugasan       HistoryPenugasanDosen[]  @relation("AdminAssigner")
+  historyPerubahanSidang HistoryPerubahanSidang[]
+  pengumumanDibaca       PengumumanPembaca[]
 
   @@map("users")
 }
@@ -189,20 +219,23 @@ model Mahasiswa {
 
 /// Profil khusus untuk Dosen, berisi data akademik.
 model Dosen {
-  id         Int      @id @default(autoincrement())
-  user_id    Int      @unique
-  nidn       String   @unique
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  user_id         Int      @unique
+  nidn            String   @unique
+  prodi           Prodi? // Menandakan homebase atau scope wewenang (untuk Kaprodi)
+  kuota_bimbingan Int      @default(4)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
   // Relasi
-  user               User                 @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  peranDosenTa       PeranDosenTa[]
-  bimbingan          BimbinganTA[]
-  nilaiSidang        NilaiSidang[]
-  dokumenValidasiP1  DokumenTa[]          @relation("ValidatorP1")
-  dokumenValidasiP2  DokumenTa[]          @relation("ValidatorP2")
-  PengajuanBimbingan PengajuanBimbingan[]
+  user                  User                    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  peranDosenTa          PeranDosenTa[]
+  bimbingan             BimbinganTA[]
+  nilaiSidang           NilaiSidang[]
+  dokumenValidasiP1     DokumenTa[]             @relation("ValidatorP1")
+  dokumenValidasiP2     DokumenTa[]             @relation("ValidatorP2")
+  PengajuanBimbingan    PengajuanBimbingan[]
+  historyPenugasanDosen HistoryPenugasanDosen[]
 
   @@map("dosen")
 }
@@ -255,16 +288,17 @@ model TugasAkhir {
   created_at        DateTime         @default(now())
   updated_at        DateTime         @updatedAt
 
-  mahasiswa         Mahasiswa           @relation(fields: [mahasiswa_id], references: [id])
-  tawaranTopik      TawaranTopik?       @relation(fields: [tawaran_topik_id], references: [id])
-  approver          User?               @relation("Approver", fields: [disetujui_oleh], references: [id])
-  rejecter          User?               @relation("Rejecter", fields: [ditolak_oleh], references: [id])
-  peranDosenTa      PeranDosenTa[]
-  bimbinganTa       BimbinganTA[]
-  dokumenTa         DokumenTa[]
-  sidang            Sidang[]
-  pendaftaranSidang PendaftaranSidang[]
-  notifikasi        NotifikasiTA[]
+  mahasiswa             Mahasiswa               @relation(fields: [mahasiswa_id], references: [id])
+  tawaranTopik          TawaranTopik?           @relation(fields: [tawaran_topik_id], references: [id])
+  approver              User?                   @relation("Approver", fields: [disetujui_oleh], references: [id])
+  rejecter              User?                   @relation("Rejecter", fields: [ditolak_oleh], references: [id])
+  peranDosenTa          PeranDosenTa[]
+  bimbinganTa           BimbinganTA[]
+  dokumenTa             DokumenTa[]
+  sidang                Sidang[]
+  pendaftaranSidang     PendaftaranSidang[]
+  notifikasi            NotifikasiTA[]
+  historyPenugasanDosen HistoryPenugasanDosen[]
 
   @@map("tugas_akhir")
 }
@@ -297,15 +331,31 @@ model BimbinganTA {
   tanggal_bimbingan DateTime?
   jam_bimbingan     String?
   status_bimbingan  StatusBimbingan
+  is_konfirmasi     Boolean         @default(false)
+  konfirmasi_at     DateTime?
   created_at        DateTime        @default(now())
   updated_at        DateTime        @updatedAt
 
   tugasAkhir       TugasAkhir               @relation(fields: [tugas_akhir_id], references: [id], onDelete: Cascade)
   dosen            Dosen                    @relation(fields: [dosen_id], references: [id])
   catatan          CatatanBimbingan[]
+  lampiran         BimbinganLampiran[]
   historyPerubahan HistoryPerubahanJadwal[]
 
   @@map("bimbingan_ta")
+}
+
+model BimbinganLampiran {
+  id              Int      @id @default(autoincrement())
+  bimbingan_ta_id Int
+  file_path       String
+  file_name       String?
+  file_type       String?
+  created_at      DateTime @default(now())
+
+  bimbinganTa BimbinganTA @relation(fields: [bimbingan_ta_id], references: [id], onDelete: Cascade)
+
+  @@map("bimbingan_lampiran")
 }
 
 model CatatanBimbingan {
@@ -405,12 +455,27 @@ model Sidang {
   created_at            DateTime    @default(now())
   updated_at            DateTime    @updatedAt
 
-  tugasAkhir        TugasAkhir         @relation(fields: [tugas_akhir_id], references: [id])
-  pendaftaranSidang PendaftaranSidang? @relation(fields: [pendaftaran_sidang_id], references: [id])
-  jadwalSidang      JadwalSidang[]
-  nilaiSidang       NilaiSidang[]
+  tugasAkhir       TugasAkhir               @relation(fields: [tugas_akhir_id], references: [id])
+  pendaftaranSidang PendaftaranSidang?       @relation(fields: [pendaftaran_sidang_id], references: [id])
+  jadwalSidang     JadwalSidang[]
+  nilaiSidang      NilaiSidang[]
+  historyPerubahan HistoryPerubahanSidang[]
 
   @@map("sidang")
+}
+
+model HistoryPerubahanSidang {
+  id               Int      @id @default(autoincrement())
+  sidang_id        Int
+  user_id          Int?
+  perubahan        String // JSON string or text description
+  alasan_perubahan String
+  created_at       DateTime @default(now())
+
+  sidang Sidang @relation(fields: [sidang_id], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [user_id], references: [id])
+
+  @@map("history_perubahan_sidang")
 }
 
 model JadwalSidang {
@@ -483,19 +548,51 @@ model DokumenTa {
 }
 
 model Pengumuman {
-  id             Int               @id @default(autoincrement())
+  id             Int                 @id @default(autoincrement())
   judul          String
   isi            String
   dibuat_oleh    Int
   audiens        AudiensPengumuman
+  is_published   Boolean             @default(false)
+  scheduled_at   DateTime?
+  prioritas      PrioritasPengumuman @default(MENENGAH)
+  kategori       KategoriPengumuman?
+  berakhir_pada  DateTime?
   tanggal_dibuat DateTime
   deleted_at     DateTime?
-  created_at     DateTime          @default(now())
-  updated_at     DateTime          @updatedAt
+  created_at     DateTime            @default(now())
+  updated_at     DateTime            @updatedAt
 
-  pembuat User @relation(fields: [dibuat_oleh], references: [id])
+  pembuat  User                 @relation(fields: [dibuat_oleh], references: [id])
+  lampiran PengumumanLampiran[]
+  pembaca  PengumumanPembaca[]
 
   @@map("pengumuman")
+}
+
+model PengumumanLampiran {
+  id            Int      @id @default(autoincrement())
+  pengumuman_id Int
+  file_path     String
+  file_name     String?
+  file_type     String?
+  created_at    DateTime @default(now())
+
+  pengumuman Pengumuman @relation(fields: [pengumuman_id], references: [id], onDelete: Cascade)
+
+  @@map("pengumuman_lampiran")
+}
+
+model PengumumanPembaca {
+  pengumuman_id Int
+  user_id       Int
+  read_at       DateTime @default(now())
+
+  pengumuman Pengumuman @relation(fields: [pengumuman_id], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([pengumuman_id, user_id])
+  @@map("pengumuman_pembaca")
 }
 
 model Log {
@@ -506,6 +603,10 @@ model Log {
   user_agent String?
   url        String?
   method     String?
+  details    String?
+  module     String?
+  entity_id  Int?
+  level      LogLevel @default(INFO)
   created_at DateTime @default(now())
 
   user User? @relation(fields: [user_id], references: [id])
@@ -523,6 +624,15 @@ model EmailVerificationToken {
   @@map("email_verification_tokens")
 }
 
+model PasswordResetToken {
+  id         Int      @id @default(autoincrement())
+  email      String
+  token      String   @unique
+  created_at DateTime @default(now())
+
+  @@map("password_reset_tokens")
+}
+
 model NotifikasiTA {
   id             Int      @id @default(autoincrement())
   user_id        Int
@@ -536,4 +646,36 @@ model NotifikasiTA {
   tugasAkhir TugasAkhir @relation(fields: [tugas_akhir_id], references: [id])
 
   @@map("notifikasi_ta")
+}
+
+model NotificationHistory {
+  id        Int                 @id @default(autoincrement())
+  user_id   Int
+  channel   NotificationChannel
+  recipient String
+  subject   String?
+  message   String
+  status    String
+  error     String?
+  sent_at   DateTime            @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@map("notification_history")
+}
+
+model HistoryPenugasanDosen {
+  id             Int      @id @default(autoincrement())
+  tugas_akhir_id Int
+  admin_id       Int
+  dosen_id       Int
+  peran          String // "pembimbing1", "penguji1", etc.
+  action         String // "ASSIGN", "UNASSIGN", "REPLACE"
+  created_at     DateTime @default(now())
+
+  tugasAkhir TugasAkhir @relation(fields: [tugas_akhir_id], references: [id], onDelete: Cascade)
+  admin      User       @relation("AdminAssigner", fields: [admin_id], references: [id])
+  dosen      Dosen      @relation(fields: [dosen_id], references: [id])
+
+  @@map("history_penugasan_dosen")
 }

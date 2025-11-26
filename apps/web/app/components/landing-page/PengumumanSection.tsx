@@ -3,13 +3,19 @@ import { Megaphone, Bell, Info, AlertCircle } from 'lucide-react';
 
 export default function PengumumanSection() {
   return (
-    <section id="pengumuman" className="py-24 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
+    <section
+      id="pengumuman"
+      className="py-24 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden"
+    >
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-0 left-0 w-full h-full" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgb(153 27 27) 1px, transparent 0)`,
-          backgroundSize: '40px 40px'
-        }}></div>
+        <div
+          className="absolute top-0 left-0 w-full h-full"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, rgb(153 27 27) 1px, transparent 0)`,
+            backgroundSize: '40px 40px',
+          }}
+        ></div>
       </div>
 
       <div className="relative max-w-7xl mx-auto px-6">
@@ -89,9 +95,12 @@ export default function PengumumanSection() {
             <div className="absolute -top-1 -right-1 w-6 h-6 bg-yellow-400 rounded-full border-4 border-white animate-ping"></div>
             <div className="absolute -top-1 -right-1 w-6 h-6 bg-yellow-400 rounded-full border-4 border-white"></div>
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">Belum Ada Pengumuman</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">
+            Belum Ada Pengumuman
+          </h3>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Pengumuman penting akan ditampilkan di sini. Aktifkan notifikasi untuk mendapatkan update terbaru!
+            Pengumuman penting akan ditampilkan di sini. Aktifkan notifikasi
+            untuk mendapatkan update terbaru!
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <button className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-red-200 text-red-600 rounded-full font-semibold hover:bg-red-50 transition-colors">

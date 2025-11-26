@@ -2,9 +2,7 @@
 import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import HeroSection from './components/landing-page/HeroSection';
-import {
-  SectionSkeleton,
-} from './components/Suspense/LoadingFallback';
+import { SectionSkeleton } from './components/Suspense/LoadingFallback';
 
 // Dynamic imports for below-the-fold sections (lazy load)
 const TawaranTopikSection = dynamic(

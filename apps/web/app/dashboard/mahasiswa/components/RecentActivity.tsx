@@ -15,7 +15,7 @@ interface Activity {
   title: string;
   description: string;
   time: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   iconBg: string;
   iconColor: string;
 }

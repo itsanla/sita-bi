@@ -36,8 +36,12 @@ export default function JadwalSection() {
                 <Calendar className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-gray-900 mb-1">Jadwal Fleksibel</h3>
-                <p className="text-sm text-gray-600">Atur jadwal sesuai ketersediaan Anda</p>
+                <h3 className="font-bold text-gray-900 mb-1">
+                  Jadwal Fleksibel
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Atur jadwal sesuai ketersediaan Anda
+                </p>
               </div>
             </div>
           </div>
@@ -48,8 +52,12 @@ export default function JadwalSection() {
                 <Clock className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-gray-900 mb-1">Notifikasi Real-time</h3>
-                <p className="text-sm text-gray-600">Dapatkan pengingat sebelum sidang</p>
+                <h3 className="font-bold text-gray-900 mb-1">
+                  Notifikasi Real-time
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Dapatkan pengingat sebelum sidang
+                </p>
               </div>
             </div>
           </div>
@@ -61,7 +69,9 @@ export default function JadwalSection() {
               </div>
               <div>
                 <h3 className="font-bold text-gray-900 mb-1">Lokasi Jelas</h3>
-                <p className="text-sm text-gray-600">Info lengkap lokasi dan ruangan</p>
+                <p className="text-sm text-gray-600">
+                  Info lengkap lokasi dan ruangan
+                </p>
               </div>
             </div>
           </div>
@@ -72,9 +82,12 @@ export default function JadwalSection() {
           <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
             <GraduationCap size={40} className="text-white" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">Belum Ada Jadwal Sidang</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">
+            Belum Ada Jadwal Sidang
+          </h3>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Jadwal sidang akan muncul di sini setelah diatur oleh admin. Pantau terus halaman ini!
+            Jadwal sidang akan muncul di sini setelah diatur oleh admin. Pantau
+            terus halaman ini!
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <button className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full font-semibold hover:shadow-lg transform hover:scale-105 transition-all">

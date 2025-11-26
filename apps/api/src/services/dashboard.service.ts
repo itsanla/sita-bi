@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import { PrismaClient, StatusTugasAkhir, StatusBimbingan } from '@repo/db';
 
 interface DashboardStats {
@@ -79,7 +78,7 @@ export class DashboardService {
       },
     });
 
-    if (!mahasiswa) {
+    if (mahasiswa === null) {
       throw new Error('Profil mahasiswa tidak ditemukan.');
     }
 
@@ -137,13 +136,13 @@ export class DashboardService {
     let sidangStatus = 'Belum Daftar';
     let sidangTanggal = null;
 
-    if (pendaftaranSidang) {
+    if (pendaftaranSidang !== undefined) {
       sidangStatus =
         pendaftaranSidang.status_verifikasi === 'disetujui'
           ? 'Terdaftar'
           : 'Menunggu Verifikasi';
 
-      if (pendaftaranSidang.sidang?.jadwalSidang?.[0]?.tanggal) {
+      if (pendaftaranSidang.sidang?.jadwalSidang?.[0]?.tanggal !== undefined) {
         sidangTanggal =
           pendaftaranSidang.sidang.jadwalSidang[0].tanggal.toISOString();
       }
@@ -176,7 +175,7 @@ export class DashboardService {
       where: { user_id: userId },
     });
 
-    if (!mahasiswa) {
+    if (mahasiswa === null) {
       throw new Error('Profil mahasiswa tidak ditemukan.');
     }
 
@@ -191,9 +190,9 @@ export class DashboardService {
       },
     });
 
-    if (tugasAkhir != null) {
+    if (tugasAkhir !== null) {
       // Pengajuan
-      if (tugasAkhir.tanggal_pengajuan) {
+      if (tugasAkhir.tanggal_pengajuan !== null) {
         activities.push({
           id: `ta-${tugasAkhir.id}-pengajuan`,
           type: 'pengajuan',
@@ -203,10 +202,9 @@ export class DashboardService {
         });
       }
 
-      // Approval
       if (
         tugasAkhir.status === StatusTugasAkhir.DISETUJUI &&
-        tugasAkhir.approver != null
+        tugasAkhir.approver !== null
       ) {
         activities.push({
           id: `ta-${tugasAkhir.id}-approval`,
@@ -217,10 +215,9 @@ export class DashboardService {
         });
       }
 
-      // Rejection
       if (
         tugasAkhir.status === StatusTugasAkhir.DITOLAK &&
-        tugasAkhir.rejecter != null
+        tugasAkhir.rejecter !== null
       ) {
         activities.push({
           id: `ta-${tugasAkhir.id}-rejection`,
@@ -278,7 +275,7 @@ export class DashboardService {
       where: { user_id: userId },
     });
 
-    if (!mahasiswa) {
+    if (mahasiswa === null) {
       throw new Error('Profil mahasiswa tidak ditemukan.');
     }
 

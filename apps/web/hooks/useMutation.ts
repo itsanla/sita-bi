@@ -2,12 +2,12 @@ import { useState } from 'react';
 import api from '@/lib/api';
 
 interface UseMutationOptions<TData> {
-  onSuccess?: (data: TData) => void;
-  onError?: (error: Error) => void;
+  onSuccess?: (_data: TData) => void;
+  onError?: (_error: Error) => void;
 }
 
 interface UseMutationReturn<TData, TVariables> {
-  mutate: (variables: TVariables) => Promise<void>;
+  mutate: (_variables: TVariables) => Promise<void>;
   data: TData | null;
   loading: boolean;
   error: string | null;
@@ -22,17 +22,17 @@ export function useMutation<TData = unknown, TVariables = unknown>(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const mutate = async (variables: TVariables) => {
+  const mutate = async (params: TVariables) => {
     setLoading(true);
     setError(null);
 
     try {
       const response = await api<{ data: TData }>(endpoint, {
         method,
-        body: variables as Record<string, unknown>,
+        data: params as Record<string, unknown>,
       });
-      setData(response.data);
-      options?.onSuccess?.(response.data);
+      setData(response.data.data);
+      options?.onSuccess?.(response.data.data);
     } catch (err) {
       const errorMessage = (err as Error).message || 'Operation failed';
       setError(errorMessage);

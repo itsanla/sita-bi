@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 
-export default function ClientOnly({ 
+export default function ClientOnly({
   children,
-  fallback = null 
-}: { 
+  fallback = null,
+}: {
   children: React.ReactNode;
   fallback?: React.ReactNode;
 }) {

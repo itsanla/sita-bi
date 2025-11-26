@@ -39,13 +39,16 @@ export function useChatLogic() {
   }, [messages]);
 
   useEffect(() => {
-    chatContainerRef.current?.scrollTo(0, chatContainerRef.current.scrollHeight);
+    chatContainerRef.current?.scrollTo(
+      0,
+      chatContainerRef.current.scrollHeight,
+    );
   }, [messages]);
 
   const stop = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
-      console.log('>>> [FRONTEND] Stream stopped by user.');
+      console.warn('>>> [FRONTEND] Stream stopped by user.');
     }
   };
 
@@ -55,7 +58,7 @@ export function useChatLogic() {
 
     const userMessage: Message = { role: 'user', content: input };
     const currentInput = input;
-    
+
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
@@ -68,14 +71,15 @@ export function useChatLogic() {
     try {
       // Call backend Gemini API through Next.js API proxy with chat history
       // Send only completed messages (exclude the empty assistant message we just added)
-      const historyToSend = messages.filter(msg => msg.content.trim() !== '');
-      
-      const response = await fetch('/api/gemini/chat/stream/public', {
+      const historyToSend = messages.filter((msg) => msg.content.trim() !== '');
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      const response = await fetch(`${apiUrl}/api/gemini/chat/stream/public`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: currentInput,
-          history: historyToSend
+          history: historyToSend,
         }),
         signal: abortController.signal,
       });
@@ -96,35 +100,41 @@ export function useChatLogic() {
         while (boundary !== -1) {
           const message = buffer.substring(0, boundary);
           buffer = buffer.substring(boundary + 2);
-          
+
           if (message.startsWith('data: ')) {
             const data = message.substring(6);
-            
+
             try {
               const parsed = JSON.parse(data);
-              
+
               // Handle different event types from backend
               if (parsed.type === 'chunk' && parsed.text) {
-                setMessages(prev => {
+                setMessages((prev) => {
                   if (prev.length === 0) return prev;
                   const allButLast = prev.slice(0, -1);
                   const last = prev[prev.length - 1];
                   if (!last || last.role !== 'assistant') return prev;
-                  const updatedLast = { ...last, content: last.content + parsed.text };
+                  const updatedLast = {
+                    ...last,
+                    content: last.content + parsed.text,
+                  };
                   return [...allButLast, updatedLast];
                 });
               } else if (parsed.type === 'done') {
                 break;
               } else if (parsed.type === 'error') {
                 console.error('Stream error:', parsed.error);
-                setMessages(prev => {
+                setMessages((prev) => {
                   const allButLast = prev.slice(0, -1);
                   const last = prev[prev.length - 1];
                   if (last && last.role === 'assistant') {
-                    return [...allButLast, { 
-                      ...last, 
-                      content: last.content || `Error: ${parsed.error}` 
-                    }];
+                    return [
+                      ...allButLast,
+                      {
+                        ...last,
+                        content: `😔 ${parsed.error || 'Maaf, terjadi kesalahan. Silakan coba lagi.'}`,
+                      },
+                    ];
                   }
                   return prev;
                 });
@@ -137,10 +147,10 @@ export function useChatLogic() {
           boundary = buffer.indexOf('\n\n');
         }
       }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.log('Fetch aborted by user.');
-        setMessages(prev => {
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.warn('Fetch aborted by user.');
+        setMessages((prev) => {
           const last = prev[prev.length - 1];
           if (last && last.role === 'assistant' && last.content.trim() === '') {
             return prev.slice(0, -1);
@@ -149,11 +159,24 @@ export function useChatLogic() {
         });
       } else {
         console.error('Fetch error:', error);
-        setMessages(prev => {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        let userMessage = '😔 Maaf, terjadi kesalahan. Silakan coba lagi.';
+        
+        if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+          userMessage = '😔 Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
+        }
+        
+        setMessages((prev) => {
           const allButLast = prev.slice(0, -1);
           const last = prev[prev.length - 1];
-          if (last && last.role === 'assistant' && last.content.trim() === '') {
-            return prev.slice(0, -1);
+          if (last && last.role === 'assistant') {
+            return [
+              ...allButLast,
+              {
+                ...last,
+                content: last.content.trim() || userMessage,
+              },
+            ];
           }
           return prev;
         });

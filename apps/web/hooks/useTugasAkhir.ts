@@ -28,7 +28,7 @@ export function useTugasAkhir() {
       const taResponse = await request<{ data: TugasAkhir | null }>(
         '/tugas-akhir/my-ta',
       );
-      setTugasAkhir(taResponse.data);
+      setTugasAkhir(taResponse.data?.data || null);
     } catch (err: unknown) {
       if (
         (err as { response?: { status?: number } }).response?.status !== 404
@@ -69,7 +69,7 @@ export function useRecommendedTopics() {
       const topicsResponse = await request<{
         data: { topics: TawaranTopik[] };
       }>('/tawaran-topik/available');
-      setRecommendedTitles(topicsResponse.data.topics || []);
+      setRecommendedTitles(topicsResponse.data.data.topics || []);
     } catch {
       // Silently fail for recommended topics
     } finally {
@@ -94,7 +94,7 @@ export function useAllTitles() {
       const titlesResponse = await request<{ data: { judul: string }[] }>(
         '/tugas-akhir/all-titles',
       );
-      setAllTitles(titlesResponse.data || []);
+      setAllTitles(titlesResponse.data.data || []);
     } catch {
       // Silently fail
     } finally {
@@ -134,10 +134,10 @@ export function useSimilarityCheck() {
         };
       }>('/tugas-akhir/check-similarity', {
         method: 'POST',
-        body: { judul },
+        data: { judul },
       });
-      setSimilarityResults(response.data.results || []);
-      setIsBlocked(response.data.isBlocked || false);
+      setSimilarityResults(response.data.data.results || []);
+      setIsBlocked(response.data.data.isBlocked || false);
     } catch (err: unknown) {
       throw new Error((err as Error).message);
     } finally {
@@ -167,7 +167,7 @@ export function useSubmitTitle() {
     try {
       await request('/tugas-akhir/', {
         method: 'POST',
-        body: { judul },
+        data: { judul },
       });
       onSuccess?.();
     } catch (err: unknown) {

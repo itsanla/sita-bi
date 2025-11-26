@@ -148,4 +148,28 @@ router.delete(
   }),
 );
 
+// New endpoint for unlocking user
+router.post(
+  '/:id/unlock',
+  authorizeRoles([Role.admin]),
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    if (id == null) {
+      res
+        .status(400)
+        .json({ status: 'gagal', message: 'ID Pengguna diperlukan' });
+      return;
+    }
+
+    await usersService.updateUser(parseInt(id, 10), {
+      failed_login_attempts: 0,
+      lockout_until: null,
+    });
+
+    res
+      .status(200)
+      .json({ status: 'sukses', message: 'Akun pengguna berhasil dibuka.' });
+  }),
+);
+
 export default router;

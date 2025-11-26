@@ -2,18 +2,27 @@
 
 import React, { useState, useEffect, FormEvent } from 'react';
 import request from '@/lib/api';
-import { Plus, Search, Edit, Trash2, Loader, X } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Loader,
+  X,
+  Lock,
+  Unlock,
+} from 'lucide-react';
 
 // --- Interfaces (Updated) ---
 interface User {
   id: number;
-  name: string;
+  nama: string;
   email: string;
-  roles: string[];
+  roles: { name: string }[];
   dosen?: { nidn: string };
   mahasiswa?: { nim: string };
-  nim?: string; // Keep for search compatibility
-  nidn?: string; // Keep for search compatibility
+  failed_login_attempts?: number;
+  lockout_until?: string | null;
 }
 
 // --- Modal Component ---
@@ -27,12 +36,12 @@ const UserModal = ({
   onSave: () => void;
 }) => {
   const [formData, setFormData] = useState({
-    role: user?.roles[0] || 'mahasiswa',
-    name: user?.name || '',
+    role: user?.roles[0]?.name || 'mahasiswa',
+    name: user?.nama || '',
     email: user?.email || '',
     password: '',
-    nim: user?.nim || user?.mahasiswa?.nim || '',
-    nidn: user?.nidn || user?.dosen?.nidn || '',
+    nim: user?.mahasiswa?.nim || '',
+    nidn: user?.dosen?.nidn || '',
     prodi: 'D4',
     angkatan: new Date().getFullYear().toString(),
     kelas: 'A',
@@ -86,7 +95,7 @@ const UserModal = ({
     }
 
     try {
-      await request(endpoint, { method, body });
+      await request(endpoint, { method, data: body });
       alert(`User successfully ${isEditing ? 'updated' : 'created'}!`);
       onSave();
     } catch (err: unknown) {
@@ -270,17 +279,12 @@ export default function KelolaPenggunaPage() {
         request<{ data: { data: User[] } }>('/users/mahasiswa'),
       ]);
 
-      // Backend now returns nested data for dosen, normalize it here
-      const mappedDosen = dosenRes.data.data.map((u) => ({
-        ...u,
-        roles: u.roles,
-      }));
-
-      const mappedMahasiswa = mahasiswaRes.data.data.map((u) => ({
-        ...u,
-        roles: u.roles,
-        nim: u.mahasiswa?.nim,
-      }));
+      const mappedDosen = Array.isArray(dosenRes.data?.data)
+        ? dosenRes.data.data
+        : [];
+      const mappedMahasiswa = Array.isArray(mahasiswaRes.data?.data)
+        ? mahasiswaRes.data.data
+        : [];
 
       const allUsers = [...mappedDosen, ...mappedMahasiswa];
       setUsers(allUsers);
@@ -310,6 +314,20 @@ export default function KelolaPenggunaPage() {
     }
   };
 
+  const handleUnlock = async (id: number) => {
+    if (!confirm(`Apakah Anda yakin ingin membuka kunci akun pengguna ini?`))
+      return;
+    try {
+      await request(`/users/${id}/unlock`, { method: 'POST' });
+      alert('Akun berhasil dibuka.');
+      fetchData();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+  };
+
   const handleOpenModal = (user: User | null) => {
     setEditingUser(user);
     setIsModalOpen(true);
@@ -326,17 +344,18 @@ export default function KelolaPenggunaPage() {
   };
 
   const filteredUsers = users.filter((user) => {
-    const roleMatch = roleFilter === 'all' || user.roles.includes(roleFilter);
+    const roleMatch =
+      roleFilter === 'all' || user.roles.some((r) => r.name === roleFilter);
     const searchMatch =
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (user.mahasiswa?.nim && user.mahasiswa.nim.includes(searchQuery)) ||
       (user.dosen?.nidn && user.dosen.nidn.includes(searchQuery));
     return roleMatch && searchMatch;
   });
 
-  const RoleBadge = ({ roles }: { roles: string[] }) => {
-    const roleName = roles[0] || 'unknown';
+  const RoleBadge = ({ roles }: { roles: { name: string }[] }) => {
+    const roleName = roles[0]?.name || 'unknown';
     const baseClasses =
       'px-3 py-1 text-xs font-semibold rounded-full capitalize';
     let roleClasses = '';
@@ -423,6 +442,9 @@ export default function KelolaPenggunaPage() {
                 NIM/NIDN
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Role
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -431,36 +453,60 @@ export default function KelolaPenggunaPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {user.name}
-                  </div>
-                  <div className="text-sm text-gray-500">{user.email}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {user.mahasiswa?.nim || user.dosen?.nidn || '-'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <RoleBadge roles={user.roles} />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => handleOpenModal(user)}
-                    className="text-indigo-600 hover:text-indigo-900 mr-4"
-                  >
-                    <Edit className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(user.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {filteredUsers.map((user) => {
+              const isLocked =
+                user.lockout_until && new Date(user.lockout_until) > new Date();
+              return (
+                <tr key={user.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {user.nama}
+                    </div>
+                    <div className="text-sm text-gray-500">{user.email}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {user.mahasiswa?.nim || user.dosen?.nidn || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {isLocked ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        <Lock className="w-3 h-3 mr-1" /> Terkunci
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <Unlock className="w-3 h-3 mr-1" /> Aktif
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <RoleBadge roles={user.roles} />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    {isLocked ? (
+                      <button
+                        onClick={() => handleUnlock(user.id)}
+                        className="text-orange-600 hover:text-orange-900 mr-4"
+                        title="Buka Kunci Akun"
+                      >
+                        <Unlock className="w-5 h-5" />
+                      </button>
+                    ) : null}
+                    <button
+                      onClick={() => handleOpenModal(user)}
+                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                    >
+                      <Edit className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(user.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

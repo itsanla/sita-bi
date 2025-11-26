@@ -3,13 +3,19 @@ import { BookOpen, Search, TrendingUp, Users } from 'lucide-react';
 
 export default function TawaranTopikSection() {
   return (
-    <section id="tawarantopik" className="py-24 bg-white relative overflow-hidden">
+    <section
+      id="tawarantopik"
+      className="py-24 bg-white relative overflow-hidden"
+    >
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-0 left-0 w-full h-full" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgb(153 27 27) 1px, transparent 0)`,
-          backgroundSize: '40px 40px'
-        }}></div>
+        <div
+          className="absolute top-0 left-0 w-full h-full"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, rgb(153 27 27) 1px, transparent 0)`,
+            backgroundSize: '40px 40px',
+          }}
+        ></div>
       </div>
 
       <div className="relative max-w-7xl mx-auto px-6">
@@ -36,7 +42,9 @@ export default function TawaranTopikSection() {
               <Search className="w-6 h-6 text-red-600" />
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">Cari Topik</h3>
-            <p className="text-sm text-gray-600">Temukan topik yang sesuai dengan minat penelitian Anda</p>
+            <p className="text-sm text-gray-600">
+              Temukan topik yang sesuai dengan minat penelitian Anda
+            </p>
           </div>
 
           <div className="bg-gradient-to-br from-orange-50 to-white p-6 rounded-2xl border border-orange-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -44,15 +52,21 @@ export default function TawaranTopikSection() {
               <Users className="w-6 h-6 text-orange-600" />
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">Kolaborasi</h3>
-            <p className="text-sm text-gray-600">Kerjasama dengan dosen pembimbing yang berpengalaman</p>
+            <p className="text-sm text-gray-600">
+              Kerjasama dengan dosen pembimbing yang berpengalaman
+            </p>
           </div>
 
           <div className="bg-gradient-to-br from-yellow-50 to-white p-6 rounded-2xl border border-yellow-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center mb-4">
               <TrendingUp className="w-6 h-6 text-yellow-600" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Tren Terkini</h3>
-            <p className="text-sm text-gray-600">Topik penelitian yang relevan dengan perkembangan teknologi</p>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              Tren Terkini
+            </h3>
+            <p className="text-sm text-gray-600">
+              Topik penelitian yang relevan dengan perkembangan teknologi
+            </p>
           </div>
         </div>
 
@@ -61,9 +75,12 @@ export default function TawaranTopikSection() {
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <BookOpen size={40} className="text-red-600" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">Belum Ada Topik Tersedia</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">
+            Belum Ada Topik Tersedia
+          </h3>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Tawaran topik penelitian akan segera ditampilkan di sini. Pantau terus untuk update terbaru!
+            Tawaran topik penelitian akan segera ditampilkan di sini. Pantau
+            terus untuk update terbaru!
           </p>
           <button className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-red-200 text-red-600 rounded-full font-semibold hover:bg-red-50 transition-colors">
             <span>Hubungi Admin</span>

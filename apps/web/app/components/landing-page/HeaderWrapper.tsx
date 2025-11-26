@@ -7,9 +7,9 @@ interface HeaderWrapperProps {
   scrollToSection?: (_id: string) => void;
 }
 
-export default function HeaderWrapper({ 
+export default function HeaderWrapper({
   activeSection = 'hero',
-  scrollToSection = () => {}
+  scrollToSection = () => {},
 }: HeaderWrapperProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 

@@ -30,10 +30,11 @@ export class PenilaianService {
       const isAllowed = peranDosen.some(
         (p) =>
           p.dosen_id === dosenId &&
-          (p.peran.startsWith('pembimbing') || p.peran.startsWith('penguji')),
+          (p.peran.startsWith('pembimbing') === true ||
+            p.peran.startsWith('penguji') === true),
       );
 
-      if (!isAllowed) {
+      if (isAllowed === false) {
         throw new Error(
           'You are not authorized to submit a score for this defense.',
         );
@@ -52,9 +53,11 @@ export class PenilaianService {
       // --- Finalize Logic ---
       const jumlahPenilai = peranDosen.filter(
         (p) =>
-          p.peran.startsWith('pembimbing') || p.peran.startsWith('penguji'),
+          p.peran.startsWith('pembimbing') === true ||
+          p.peran.startsWith('penguji') === true,
       ).length;
-      const jumlahNilaiMasuk = sidang._count.nilaiSidang + 1; // +1 for the one just created
+      const currentCount = sidang._count.nilaiSidang ?? 0;
+      const jumlahNilaiMasuk = Number(currentCount) + 1;
 
       if (jumlahNilaiMasuk >= jumlahPenilai) {
         await this._calculateAndFinalizeHasilSidang(sidang.id, tx);
@@ -74,7 +77,10 @@ export class PenilaianService {
 
     if (semuaNilai.length === 0) return;
 
-    const totalSkor = semuaNilai.reduce((acc, nilai) => acc + nilai.skor, 0);
+    const totalSkor = semuaNilai.reduce((acc, nilai) => {
+      const skorNumber = Number(nilai.skor);
+      return Number(acc) + skorNumber;
+    }, 0);
     const rataRata = totalSkor / semuaNilai.length;
 
     let hasilSidang: HasilSidang;

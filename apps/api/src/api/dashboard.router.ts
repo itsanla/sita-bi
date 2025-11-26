@@ -49,9 +49,10 @@ router.get(
       return;
     }
 
+    const queryLimit = req.query['limit'];
     const limit =
-      typeof req.query.limit === 'string' && req.query.limit.length > 0
-        ? parseInt(req.query.limit)
+      typeof queryLimit === 'string' && queryLimit.length > 0
+        ? parseInt(queryLimit)
         : 10;
     const activities = await dashboardService.getMahasiswaActivities(
       userId,
@@ -79,9 +80,10 @@ router.get(
       return;
     }
 
+    const queryLimit = req.query['limit'];
     const limit =
-      typeof req.query.limit === 'string' && req.query.limit.length > 0
-        ? parseInt(req.query.limit)
+      typeof queryLimit === 'string' && queryLimit.length > 0
+        ? parseInt(queryLimit)
         : 5;
     const schedule = await dashboardService.getMahasiswaSchedule(userId, limit);
     response.status(200).json({ status: 'sukses', data: schedule });
@@ -96,7 +98,7 @@ router.get(
   '/mahasiswa/system-stats',
   asyncHandler(authMiddleware),
   authorizeRoles([Role.mahasiswa]),
-  asyncHandler(async (req: Request, response: Response): Promise<void> => {
+  asyncHandler(async (_req: Request, response: Response): Promise<void> => {
     const stats = await dashboardService.getSystemStats();
     response.status(200).json({ status: 'sukses', data: stats });
   }),

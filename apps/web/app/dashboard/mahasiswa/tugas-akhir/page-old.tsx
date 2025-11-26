@@ -95,7 +95,7 @@ export default function TugasAkhirPage() {
       const taResponse = await request<{ data: TugasAkhir | null }>(
         '/tugas-akhir/my-ta',
       );
-      setTugasAkhir(taResponse.data);
+      setTugasAkhir(taResponse.data.data);
     } catch (err: unknown) {
       if (
         (err as { response?: { status?: number } }).response?.status !== 404
@@ -113,7 +113,11 @@ export default function TugasAkhirPage() {
       const response = await request<{ data: { judul: string }[] }>(
         '/tugas-akhir/all-titles',
       );
-      setAllTitles(response.data || []);
+      if (Array.isArray(response.data)) {
+        if (Array.isArray(response.data)) {
+          setAllTitles(response.data);
+        }
+      }
     } catch (err) {
       console.error('Failed to fetch all titles:', err);
     }
@@ -124,7 +128,9 @@ export default function TugasAkhirPage() {
       const response = await request<{ data: { data: TawaranTopik[] } }>(
         '/tawaran-topik/available',
       );
-      setRecommendedTitles(response.data.data || []);
+      if (Array.isArray(response.data?.data)) {
+        setRecommendedTitles(response.data.data);
+      }
     } catch (err) {
       console.error('Failed to fetch recommended titles:', err);
     }
@@ -154,10 +160,10 @@ export default function TugasAkhirPage() {
         };
       }>('/tugas-akhir/check-similarity', {
         method: 'POST',
-        body: { judul: titleToCheck },
+        data: { judul: titleToCheck },
       });
-      setSimilarityResults(response.data.results || []);
-      setIsBlocked(response.data.isBlocked || false);
+      setSimilarityResults(response.data?.data?.results || []);
+      setIsBlocked(response.data?.data?.isBlocked || false);
     } catch (err: unknown) {
       alert(`Error: ${(err as Error).message}`);
     } finally {
@@ -170,7 +176,7 @@ export default function TugasAkhirPage() {
     try {
       await request('/tugas-akhir', {
         method: 'POST',
-        body: { judul: judulMandiri },
+        data: { judul: judulMandiri },
       });
       alert('Successfully submitted title for approval.');
       setSimilarityResults(null);

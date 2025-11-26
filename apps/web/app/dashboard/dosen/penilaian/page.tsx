@@ -47,7 +47,7 @@ function PenilaianForm({
     try {
       await request('/penilaian', {
         method: 'POST',
-        body: { sidang_id: sidangId, aspek, skor: Number(skor), komentar },
+        data: { sidang_id: sidangId, aspek, skor: Number(skor), komentar },
       });
       alert('Score submitted successfully!');
       setAspek('');
@@ -153,7 +153,9 @@ export default function PenilaianPage() {
       const data = await request<{ data: { data: Sidang[] } }>(
         '/jadwal-sidang/for-penguji',
       );
-      setAssignedSidang(data.data.data);
+      if (Array.isArray(data.data?.data)) {
+        setAssignedSidang(data.data.data);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch data');
     } finally {

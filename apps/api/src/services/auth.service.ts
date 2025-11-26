@@ -1,5 +1,10 @@
 import type { Dosen, Mahasiswa, Role, User } from '@repo/db';
-import type { LoginDto, RegisterDto } from '../dto/auth.dto';
+import type {
+  LoginDto,
+  RegisterDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from '../dto/auth.dto';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { HttpError } from '../middlewares/error.middleware';
@@ -13,7 +18,10 @@ export class AuthService {
     this.emailService = new EmailService();
   }
 
-  async login(dto: LoginDto): Promise<{
+  async login(
+    dto: LoginDto,
+    meta?: { ip?: string; userAgent?: string },
+  ): Promise<{
     userId: number;
     user: Omit<
       User & {
@@ -41,24 +49,75 @@ export class AuthService {
       },
     });
 
-    const isDosen = user?.roles.some(
-      (role: { name: string }) => role.name === 'dosen',
-    );
-
     if (user == null) {
       throw new HttpError(401, 'Email atau password salah.');
+    }
+
+    // Check lockout
+    if (user.lockout_until != null && user.lockout_until > new Date()) {
+      const timeLeft = Math.ceil(
+        (user.lockout_until.getTime() - new Date().getTime()) / 60000,
+      );
+      throw new HttpError(
+        403,
+        `Akun Anda terkunci karena terlalu banyak percobaan gagal. Coba lagi dalam ${timeLeft} menit.`,
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
+      // Increment failed attempts
+      const attempts = Number(user.failed_login_attempts ?? 0) + 1;
+      let lockoutUntil = user.lockout_until;
+
+      // Lock if attempts > 5
+      if (attempts >= 5) {
+        lockoutUntil = new Date(new Date().getTime() + 15 * 60000); // Lock for 15 mins
+      }
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failed_login_attempts: attempts,
+          lockout_until: lockoutUntil,
+        },
+      });
+
       throw new HttpError(401, 'Email atau password salah.');
     }
 
+    // Reset failed attempts on success
+    if ((user.failed_login_attempts ?? 0) > 0 || user.lockout_until != null) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failed_login_attempts: 0,
+          lockout_until: null,
+        },
+      });
+    }
+
+    const isDosen = user.roles.some(
+      (role: { name: string }) => role.name === 'dosen',
+    );
+
     // Bypass email verification for dosen
-    if (isDosen !== true && user.email_verified_at === null) {
+    if (isDosen === false && user.email_verified_at === null) {
       throw new HttpError(401, 'Email belum diverifikasi.');
     }
+
+    // Log login activity
+    await prisma.log.create({
+      data: {
+        user_id: user.id,
+        action: 'LOGIN',
+        ip_address: meta?.ip ?? null,
+        user_agent: meta?.userAgent ?? null,
+        method: 'POST',
+        url: '/auth/login',
+      },
+    });
 
     const { password: _, ...userWithoutPassword } = user;
 
@@ -69,12 +128,10 @@ export class AuthService {
   async register(dto: RegisterDto): Promise<void> {
     const { name, email, password, phone_number, nim, prodi, kelas } = dto;
 
-    // Helper function to format phone number
     const formatPhoneNumber = (phone: string): string => {
       if (phone.startsWith('08')) {
         return `+628${phone.substring(2)}`;
       }
-      // Return as is if it doesn't start with 08 (e.g., already formatted)
       return phone;
     };
 
@@ -97,7 +154,7 @@ export class AuthService {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 4);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
@@ -118,7 +175,6 @@ export class AuthService {
       },
     });
 
-    // Buat dan kirim token verifikasi email
     const verificationToken = crypto.randomBytes(32).toString('hex');
     await prisma.emailVerificationToken.upsert({
       where: { email: user.email },
@@ -146,30 +202,119 @@ export class AuthService {
       );
     }
 
-    // Cek apakah token sudah kedaluwarsa (misal: 1 jam)
     const oneHour = 60 * 60 * 1000;
     if (
       new Date().getTime() - verificationToken.created_at.getTime() >
       oneHour
     ) {
-      // Hapus token yang sudah expired
       await prisma.emailVerificationToken.delete({ where: { token } });
       throw new HttpError(410, 'Token verifikasi sudah kedaluwarsa.');
     }
 
-    // Gunakan transaksi untuk memastikan konsistensi data
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await prisma.$transaction(async (tx: any) => {
-      // 1. Update status verifikasi user
       await tx.user.update({
         where: { email: verificationToken.email },
         data: { email_verified_at: new Date() },
       });
 
-      // 2. Hapus token yang sudah digunakan
       await tx.emailVerificationToken.delete({
         where: { token },
       });
     });
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto): Promise<void> {
+    const { email } = dto;
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (user === null) {
+      // Don't reveal if user exists
+      return;
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+
+    const existingToken = await prisma.passwordResetToken.findFirst({
+      where: { email },
+    });
+
+    if (existingToken !== null) {
+      await prisma.passwordResetToken.update({
+        where: { id: existingToken.id },
+        data: { token, created_at: new Date() },
+      });
+    } else {
+      await prisma.passwordResetToken.create({
+        data: { email, token },
+      });
+    }
+
+    await this.emailService.sendPasswordResetEmail(email, token);
+  }
+
+  async resetPassword(dto: ResetPasswordDto): Promise<void> {
+    const { token, newPassword } = dto;
+
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { token },
+    });
+
+    if (resetToken === null) {
+      throw new HttpError(404, 'Token tidak valid atau sudah kedaluwarsa.');
+    }
+
+    // Check expiration (e.g. 1 hour)
+    const oneHour = 60 * 60 * 1000;
+    if (new Date().getTime() - resetToken.created_at.getTime() > oneHour) {
+      await prisma.passwordResetToken.delete({ where: { token } });
+      throw new HttpError(410, 'Token sudah kedaluwarsa.');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await prisma.$transaction(async (tx: any) => {
+      await tx.user.update({
+        where: { email: resetToken.email },
+        data: { password: hashedPassword },
+      });
+
+      await tx.passwordResetToken.delete({
+        where: { token },
+      });
+    });
+  }
+
+  async getCurrentUser(
+    userId: number,
+  ): Promise<
+    Omit<
+      User & {
+        roles: Role[];
+        mahasiswa: Mahasiswa | null;
+        dosen: Dosen | null;
+      },
+      'password'
+    >
+  > {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        roles: true,
+        mahasiswa: true,
+        dosen: true,
+      },
+    });
+
+    if (user === null) {
+      throw new HttpError(404, 'User tidak ditemukan.');
+    }
+
+    const { password: _, ...userWithoutPassword } = user;
+    return userWithoutPassword;
   }
 }

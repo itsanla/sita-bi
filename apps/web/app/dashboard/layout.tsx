@@ -1,33 +1,34 @@
+// apps/web/app/dashboard/layout.tsx
 'use client';
 
-import { ReactNode, useEffect } from 'react';
-import { AuthProvider, useAuth } from '../../context/AuthContext';
+import React, { ReactNode } from 'react';
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
-function ProtectedLayout({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
+export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    // Redirect to login if loading is finished and there is no user
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-
-  // While loading or before the redirect happens, show a loading indicator.
-  if (loading || !user) {
-    return <div>Loading...</div>;
+  if (loading) {
+    return <div>Loading...</div>; // Or a proper loading spinner component
   }
 
-  // If the user is authenticated, render the actual dashboard content.
-  return <>{children}</>;
-}
+  if (!isAuthenticated) {
+    router.push('/login');
+    return null;
+  }
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <AuthProvider>
-      <ProtectedLayout>{children}</ProtectedLayout>
-    </AuthProvider>
+    <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
+      <Sidebar />
+      <div className="flex flex-col">
+        <Header />
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+          {children}
+        </main>
+      </div>
+    </div>
   );
 }

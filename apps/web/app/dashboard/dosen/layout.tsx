@@ -106,7 +106,7 @@ export default function DosenLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <DashboardHeader userName={user?.name || 'Dosen'} onLogout={logout} />
+      <DashboardHeader userName={user?.nama || 'Dosen'} onLogout={logout} />
       <div className="flex flex-1 pt-16">
         <aside className="w-64 bg-white shadow-lg p-4">
           <nav className="flex flex-col gap-2">

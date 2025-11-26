@@ -34,6 +34,10 @@ export class ProfileService {
       userData.password = await bcrypt.hash(dto.password, 10);
     }
 
+    if (dto.photo != null) {
+      userData.photo = dto.photo;
+    }
+
     return this.usersService.updateUser(userId, userData);
   }
 }

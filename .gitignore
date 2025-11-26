@@ -7,11 +7,11 @@ node_modules
 
 # Local env files
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
+.wwebjs_auth
+.wwebjs_cache
+
+.github
 # Testing
 .nyc_output
 blob-report/
@@ -33,6 +33,7 @@ display.txt
 out/
 build
 dist
+prisma.json
 
 # IDEs and editors
 /.idea
@@ -61,7 +62,3 @@ pnpm-debug.log*
 # Misc
 .DS_Store
 *.pem
-
-# Upload files (monorepo level)
-uploads/*
-!uploads/.gitkeep

@@ -37,7 +37,7 @@ export default function Header() {
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-gray-900">
-                  {user?.name || 'Student'}
+                  {user?.nama || 'Student'}
                 </span>
                 <span className="text-xs text-gray-500 capitalize flex items-center gap-1.5">
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500"></span>

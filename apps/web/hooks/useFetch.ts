@@ -4,7 +4,7 @@ import api from '@/lib/api';
 interface UseFetchOptions<T> {
   endpoint: string;
   dependencies?: unknown[];
-  transform?: (data: unknown) => T;
+  transform?: (_data: unknown) => T;
   enabled?: boolean;
 }
 

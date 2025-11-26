@@ -35,7 +35,7 @@ export default function AdminHeader() {
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-gray-900">
-                  {user?.name || 'Admin'}
+                  {user?.nama || 'Admin'}
                 </span>
                 <span className="text-xs text-red-800/70">Administrator</span>
               </div>

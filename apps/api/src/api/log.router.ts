@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { LogService } from '../services/log.service';
-import { authMiddleware } from '../middlewares/auth.middleware';
+import {
+  authMiddleware,
+  insecureAuthMiddleware,
+} from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
 import { Role } from '@repo/types';
 
@@ -13,7 +16,7 @@ const logService = new LogService();
 
 router.get(
   '/',
-  asyncHandler(authMiddleware),
+  authMiddleware,
   authorizeRoles([Role.admin]),
   asyncHandler(async (req, res): Promise<void> => {
     const page =
@@ -24,7 +27,50 @@ router.get(
       req.query['limit'] != null
         ? parseInt(req.query['limit'] as string)
         : undefined;
-    const logs = await logService.findAll(page, limit);
+
+    // Ensure filters are strings and respect exactOptionalPropertyTypes
+    const filters: { module?: string; user_id?: string; entity_id?: string } =
+      {};
+
+    if (typeof req.query['module'] === 'string') {
+      filters.module = req.query['module'];
+    }
+    if (typeof req.query['user_id'] === 'string') {
+      filters.user_id = req.query['user_id'];
+    }
+    if (typeof req.query['entity_id'] === 'string') {
+      filters.entity_id = req.query['entity_id'];
+    }
+
+    const logs = await logService.findAll(page, limit, filters);
+    res.status(200).json({ status: 'sukses', data: logs });
+  }),
+);
+
+// Endpoint to get logs for the current logged-in user (Mahasiswa/Dosen viewing their own history)
+router.get(
+  '/me',
+  asyncHandler(insecureAuthMiddleware),
+  asyncHandler(async (req, res): Promise<void> => {
+    const userId = req.user?.id;
+    if (userId == null) {
+      res.status(401).json({ status: 'gagal', message: 'Unauthorized' });
+      return;
+    }
+
+    const page =
+      req.query['page'] != null
+        ? parseInt(req.query['page'] as string)
+        : undefined;
+    const limit =
+      req.query['limit'] != null
+        ? parseInt(req.query['limit'] as string)
+        : undefined;
+    // Reuse findAll with user_id filter
+    const filters = {
+      user_id: userId.toString(),
+    };
+    const logs = await logService.findAll(page, limit, filters);
     res.status(200).json({ status: 'sukses', data: logs });
   }),
 );

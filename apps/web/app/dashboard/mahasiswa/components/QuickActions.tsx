@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, GraduationCap, BookOpen, TrendingUp } from 'lucide-react';
+import { Users, GraduationCap, BookOpen } from 'lucide-react';
 
 export default function QuickActions() {
   const [systemStats, setSystemStats] = useState({
@@ -14,23 +14,29 @@ export default function QuickActions() {
   useEffect(() => {
     const fetchSystemStats = async () => {
       try {
-        const userId = localStorage.getItem('userId') || localStorage.getItem('token');
-        
+        const userId =
+          localStorage.getItem('userId') || localStorage.getItem('token');
+
         if (!userId) {
           setLoading(false);
           return;
         }
 
-        const response = await fetch('http://localhost:3002/api/dashboard/mahasiswa/system-stats', {
-          headers: {
-            'x-user-id': userId,
-            'Content-Type': 'application/json',
+        const response = await fetch(
+          'http://localhost:3002/api/dashboard/mahasiswa/system-stats',
+          {
+            headers: {
+              'x-user-id': userId,
+              'Content-Type': 'application/json',
+            },
           },
-        });
+        );
 
         if (response.ok) {
           const result = await response.json();
-          setSystemStats(result.data);
+          if (Array.isArray(result.data)) {
+            setSystemStats(result.data);
+          }
         }
       } catch (error) {
         console.error('Error fetching system stats:', error);

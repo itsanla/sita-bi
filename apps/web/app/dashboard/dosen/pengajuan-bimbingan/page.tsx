@@ -43,13 +43,19 @@ export default function PengajuanBimbinganPage() {
       const proposalsResponse = await request<{ data: PengajuanBimbingan[] }>(
         '/pengajuan/dosen',
       );
-      setProposals(proposalsResponse.data || []);
+      if (Array.isArray(proposalsResponse.data)) {
+        if (Array.isArray(proposalsResponse.data)) {
+          setProposals(proposalsResponse.data);
+        }
+      }
 
       // Fetch available mahasiswa (yang belum punya pembimbing)
       const mahasiswaResponse = await request<{ data: { data: Mahasiswa[] } }>(
         '/users/mahasiswa-tanpa-pembimbing',
       );
-      setAvailableMahasiswa(mahasiswaResponse.data.data || []);
+      if (Array.isArray(mahasiswaResponse.data?.data)) {
+        setAvailableMahasiswa(mahasiswaResponse.data.data);
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         console.error('Fetch error:', err);
@@ -73,7 +79,7 @@ export default function PengajuanBimbinganPage() {
     try {
       await request('/pengajuan/dosen', {
         method: 'POST',
-        body: { mahasiswaId },
+        data: { mahasiswaId },
       });
     } catch (err: unknown) {
       if (err instanceof Error) {

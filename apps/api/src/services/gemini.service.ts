@@ -2,6 +2,7 @@ import axios, { type AxiosError } from 'axios';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import { ENHANCED_SYSTEM_PROMPT } from './gemini-prompt';
 
 dotenv.config();
 
@@ -115,16 +116,7 @@ ${JSON.stringify(informationData, null, 2)}
 `;
       }
 
-      systemPrompt += `
-CARA MENJAWAB:
-- Berikan jawaban yang jelas, spesifik, dan informatif
-- Jika ditanya tentang lokasi/path halaman, rujuk ke struktur sistem dari documentation.json
-- Jika ditanya tentang cara menggunakan fitur, rujuk ke panduan dari information.json
-- Gunakan bahasa Indonesia yang ramah dan profesional
-- Jika tidak yakin, akui keterbatasan dan arahkan user untuk menghubungi admin/dosen
-- Berikan langkah-langkah yang mudah diikuti untuk pertanyaan "how-to"
-- Jangan menampilkan raw JSON dalam jawaban, tapi gunakan informasi dari JSON untuk memberikan jawaban yang natural dan mudah dipahami
-`;
+      systemPrompt += ENHANCED_SYSTEM_PROMPT;
 
       return systemPrompt;
     } catch (error) {
@@ -187,11 +179,9 @@ CARA MENJAWAB:
     }
 
     const axiosError = error as AxiosError;
-    // Check for rate limit status codes
     if (axiosError.response?.status === 429) {
       return true;
     }
-    // Check for quota exceeded error messages
     const errorMessage = JSON.stringify(
       axiosError.response?.data ?? '',
     ).toLowerCase();
@@ -200,6 +190,20 @@ CARA MENJAWAB:
       errorMessage.includes('rate limit') ||
       errorMessage.includes('resource_exhausted')
     );
+  }
+
+  private isLeakedKeyError(error: unknown): boolean {
+    if (!axios.isAxiosError(error)) {
+      return false;
+    }
+    const axiosError = error as AxiosError;
+    if (axiosError.response?.status === 403) {
+      const errorMessage = JSON.stringify(
+        axiosError.response?.data ?? '',
+      ).toLowerCase();
+      return errorMessage.includes('leaked') || errorMessage.includes('permission_denied');
+    }
+    return false;
   }
 
   async generateContent(prompt: string): Promise<string> {
@@ -228,29 +232,18 @@ CARA MENJAWAB:
         return result;
       } catch (error) {
         attemptedKeys.add(this.currentKeyIndex);
-
-        if (this.isRateLimitError(error)) {
-          console.warn(
-            `⚠️  API key #${keyNumber} hit rate limit. Trying next key...`,
-          );
-          // Move to next API key
-          this.currentKeyIndex =
-            (this.currentKeyIndex + 1) % this.apiKeys.length;
-        } else {
-          // For non-rate-limit errors, throw immediately
-          console.error(
-            `❌ Error with API key #${keyNumber}:`,
-            (error as Error).message,
-          );
-          throw error;
-        }
+        console.warn(
+          `⚠️  API key #${keyNumber} failed:`,
+          (error as Error).message,
+        );
+        this.currentKeyIndex =
+          (this.currentKeyIndex + 1) % this.apiKeys.length;
       }
     }
 
-    // All API keys have been exhausted
-    console.error('❌ All Gemini API keys have reached their limits');
+    console.error('❌ All Gemini API keys have been tried and failed');
     throw new Error(
-      'Anda sudah mencapai limit. Semua API key Gemini telah mencapai batas penggunaan.',
+      'Layanan chatbot tidak tersedia saat ini. Silakan hubungi administrator.',
     );
   }
 
@@ -365,26 +358,18 @@ CARA MENJAWAB:
         return;
       } catch (error) {
         attemptedKeys.add(this.currentKeyIndex);
-
-        if (this.isRateLimitError(error)) {
-          console.warn(
-            `⚠️  API key #${keyNumber} hit rate limit. Trying next key...`,
-          );
-          this.currentKeyIndex =
-            (this.currentKeyIndex + 1) % this.apiKeys.length;
-        } else {
-          console.error(
-            `❌ Error with API key #${keyNumber}:`,
-            (error as Error).message,
-          );
-          throw error;
-        }
+        console.warn(
+          `⚠️  API key #${keyNumber} failed:`,
+          (error as Error).message,
+        );
+        this.currentKeyIndex =
+          (this.currentKeyIndex + 1) % this.apiKeys.length;
       }
     }
 
-    console.error('❌ All Gemini API keys have reached their limits');
+    console.error('❌ All Gemini API keys have been tried and failed');
     throw new Error(
-      'Anda sudah mencapai limit. Semua API key Gemini telah mencapai batas penggunaan.',
+      'Layanan chatbot tidak tersedia saat ini. Silakan hubungi administrator.',
     );
   }
 
@@ -475,26 +460,18 @@ CARA MENJAWAB:
         return;
       } catch (error) {
         attemptedKeys.add(this.currentKeyIndex);
-
-        if (this.isRateLimitError(error)) {
-          console.warn(
-            `⚠️  API key #${keyNumber} hit rate limit. Trying next key...`,
-          );
-          this.currentKeyIndex =
-            (this.currentKeyIndex + 1) % this.apiKeys.length;
-        } else {
-          console.error(
-            `❌ Error with API key #${keyNumber}:`,
-            (error as Error).message,
-          );
-          throw error;
-        }
+        console.warn(
+          `⚠️  API key #${keyNumber} failed:`,
+          (error as Error).message,
+        );
+        this.currentKeyIndex =
+          (this.currentKeyIndex + 1) % this.apiKeys.length;
       }
     }
 
-    console.error('❌ All Gemini API keys have reached their limits');
+    console.error('❌ All Gemini API keys have been tried and failed');
     throw new Error(
-      'Anda sudah mencapai limit. Semua API key Gemini telah mencapai batas penggunaan.',
+      'Layanan chatbot tidak tersedia saat ini. Silakan hubungi administrator.',
     );
   }
 

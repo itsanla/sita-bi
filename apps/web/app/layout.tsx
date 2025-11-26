@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
-import { AuthProvider } from '../context/AuthContext';
+import Providers from '../context/Providers';
 import './globals.css';
 
 const geistSans = localFont({
@@ -75,7 +75,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <AuthProvider>{children}</AuthProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

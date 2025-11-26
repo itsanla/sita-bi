@@ -6,77 +6,90 @@ import React, {
   useState,
   useEffect,
   ReactNode,
+  useCallback,
 } from 'react';
+import { useRouter } from 'next/navigation';
+import api, { handleApiError } from '../lib/api';
+import { User } from '../types';
 
-// User interface remains the same
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  roles: Array<{ name: string }>;
-  mahasiswa?: {
-    nim: string;
-    angkatan: string;
-  };
-  dosen?: {
-    nidn: string;
-  };
-}
-
-// AuthContextType is simplified: no token
 interface AuthContextType {
   user: User | null;
-  login: (user: User) => void; // Login function only takes user object
+  login: (_token: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // No more 'token' state
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  useEffect(() => {
-    // This effect now only runs once on mount to load user from localStorage
-    const loadUserFromStorage = () => {
-      setLoading(true);
-      try {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
-        }
-      } catch (error) {
-        console.error('Failed to parse user from localStorage', error);
-        // Clear potentially corrupted data
-        localStorage.removeItem('user');
-      }
+  const fetchUserProfile = useCallback(async () => {
+    if (typeof window === 'undefined') {
       setLoading(false);
-    };
+      return;
+    }
 
-    loadUserFromStorage();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setLoading(false);
+      setUser(null);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await api.get<User>('/auth/me');
+      if (response.data?.data) {
+        const userData = response.data.data;
+        // Add alias properties for backward compatibility
+        setUser({
+          ...userData,
+          nama: userData.name,
+          nim: userData.mahasiswa?.nim,
+          nidn: userData.dosen?.nidn,
+        });
+      } else {
+        setUser(null);
+        localStorage.removeItem('token');
+      }
+    } catch (error) {
+      console.error('Failed to fetch user profile:', handleApiError(error));
+      setUser(null);
+      localStorage.removeItem('token');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Login function is simplified
-  const login = (newUser: User) => {
-    setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
+  useEffect(() => {
+    fetchUserProfile();
+  }, [fetchUserProfile]);
+
+  const login = async (_token: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('token', _token);
+    }
+    await fetchUserProfile();
   };
 
-  // Logout function is simplified
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    localStorage.removeItem('userId');
-    // Redirect to login page
-    window.location.href = '/login';
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+    }
+    router.push('/login');
   };
 
-  // The provider value is simplified, no token
+  const isAuthenticated = !!user;
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider
+      value={{ user, login, logout, loading, isAuthenticated }}
+    >
       {children}
     </AuthContext.Provider>
   );

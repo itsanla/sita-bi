@@ -181,4 +181,22 @@ router.get(
   }),
 );
 
+router.get(
+  '/check-eligibility',
+  authorizeRoles([Role.mahasiswa]),
+  asyncHandler(async (req, res): Promise<void> => {
+    const mahasiswaId = req.user?.mahasiswa?.id;
+    if (mahasiswaId === undefined) {
+      res.status(401).json({
+        status: 'gagal',
+        message: 'Akses ditolak: Pengguna tidak memiliki profil mahasiswa.',
+      });
+      return;
+    }
+    const eligibility =
+      await pendaftaranSidangService.checkEligibility(mahasiswaId);
+    res.status(200).json({ status: 'sukses', data: eligibility });
+  }),
+);
+
 export default router;

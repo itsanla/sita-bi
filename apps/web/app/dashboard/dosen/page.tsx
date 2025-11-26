@@ -6,48 +6,89 @@ import {
   GraduationCap,
   Lightbulb,
   ChevronRight,
+  Users,
+  LayoutDashboard,
 } from 'lucide-react';
 import Link from 'next/link';
-
-const featureCards = [
-  {
-    title: 'Bimbingan Mahasiswa',
-    description: 'Kelola dan pantau kemajuan bimbingan tugas akhir mahasiswa.',
-    href: '/dashboard/dosen/bimbingan',
-    icon: BookUser,
-    color: 'text-red-700',
-  },
-  {
-    title: 'Tawaran Topik',
-    description:
-      'Publikasikan dan kelola topik tugas akhir yang Anda tawarkan.',
-    href: '/dashboard/dosen/tawaran-topik',
-    icon: Lightbulb,
-    color: 'text-red-700',
-  },
-  {
-    title: 'Persetujuan Sidang',
-    description: 'Review dan berikan persetujuan untuk pendaftaran sidang.',
-    href: '/dashboard/dosen/sidang-approvals',
-    icon: ClipboardCheck,
-    color: 'text-red-700',
-  },
-  {
-    title: 'Penilaian Sidang',
-    description: 'Akses dan isi formulir penilaian untuk sidang tugas akhir.',
-    href: '/dashboard/dosen/penilaian',
-    icon: GraduationCap,
-    color: 'text-red-700',
-  },
-];
+import { useAuth } from '../../../context/AuthContext';
 
 export default function DosenDashboardPage() {
+  const { user } = useAuth();
+  const roles = user?.roles.map((r) => r.name) || [];
+
+  const isKajur = roles.includes('kajur');
+  const isKaprodi =
+    roles.includes('kaprodi_d3') || roles.includes('kaprodi_d4');
+
+  const featureCards = [
+    {
+      title: 'Bimbingan Mahasiswa',
+      description:
+        'Kelola dan pantau kemajuan bimbingan tugas akhir mahasiswa.',
+      href: '/dashboard/dosen/bimbingan',
+      icon: BookUser,
+      color: 'text-red-700',
+      show: true,
+    },
+    {
+      title: 'Tawaran Topik',
+      description:
+        'Publikasikan dan kelola topik tugas akhir yang Anda tawarkan.',
+      href: '/dashboard/dosen/tawaran-topik',
+      icon: Lightbulb,
+      color: 'text-red-700',
+      show: true,
+    },
+    {
+      title: 'Persetujuan Sidang',
+      description: 'Review dan berikan persetujuan untuk pendaftaran sidang.',
+      href: '/dashboard/dosen/sidang-approvals',
+      icon: ClipboardCheck,
+      color: 'text-red-700',
+      show: true,
+    },
+    {
+      title: 'Penilaian Sidang',
+      description: 'Akses dan isi formulir penilaian untuk sidang tugas akhir.',
+      href: '/dashboard/dosen/penilaian',
+      icon: GraduationCap,
+      color: 'text-red-700',
+      show: true,
+    },
+    // Kaprodi/Kajur Specific
+    {
+      title: 'Manajemen Mahasiswa & TA',
+      description: isKajur
+        ? 'Kelola semua mahasiswa dan TA Jurusan'
+        : 'Kelola mahasiswa dan TA Prodi',
+      href: '/dashboard/admin/users', // Assuming redirection to admin features for these roles
+      icon: Users,
+      color: 'text-blue-700',
+      show: isKajur || isKaprodi,
+    },
+    {
+      title: 'Dashboard Monitoring',
+      description:
+        'Pantau statistik dan progres TA tingkat ' +
+        (isKajur ? 'Jurusan' : 'Prodi'),
+      href: '/dashboard/admin', // Assuming redirection to admin dashboard
+      icon: LayoutDashboard,
+      color: 'text-blue-700',
+      show: isKajur || isKaprodi,
+    },
+  ];
+
+  const visibleCards = featureCards.filter((card) => card.show);
+
   return (
     <div className="bg-white p-8 rounded-2xl shadow-lg">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-800 mb-2">
-          Selamat Datang di Dasbor Dosen
+          Selamat Datang, {user?.nama}
         </h1>
+        <p className="text-lg text-gray-600 mb-4">
+          Peran: {roles.join(', ').toUpperCase()}
+        </p>
         <p className="text-lg text-gray-600">
           Pilih salah satu menu di bawah untuk mengelola aktivitas akademik
           Anda.
@@ -55,9 +96,11 @@ export default function DosenDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {featureCards.map((card) => (
+        {visibleCards.map((card) => (
           <Link href={card.href} key={card.title}>
-            <div className="group bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-200 p-6 rounded-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-xl cursor-pointer">
+            <div
+              className={`group bg-gray-50 hover:bg-opacity-50 border border-gray-200 p-6 rounded-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-xl cursor-pointer ${card.color.replace('text', 'hover:border')}`}
+            >
               <div className="flex justify-between items-start">
                 <div>
                   <card.icon
@@ -68,7 +111,9 @@ export default function DosenDashboardPage() {
                   </h3>
                   <p className="text-gray-600 mb-4">{card.description}</p>
                 </div>
-                <ChevronRight className="w-6 h-6 text-gray-400 group-hover:text-red-700 transition-transform group-hover:translate-x-1" />
+                <ChevronRight
+                  className={`w-6 h-6 text-gray-400 ${card.color.replace('text-', 'group-hover:text-')} transition-transform group-hover:translate-x-1`}
+                />
               </div>
             </div>
           </Link>

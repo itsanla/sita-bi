@@ -1,9 +1,0 @@
-# Environment variables
-.env
-.wwebjs_cache/
-/dist
-**/.next
-**/node_modules
-# Upload files
-uploads/
-!uploads/.gitkeep

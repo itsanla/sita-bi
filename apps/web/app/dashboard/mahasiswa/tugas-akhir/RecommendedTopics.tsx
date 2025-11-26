@@ -1,7 +1,6 @@
 'use client';
 
-import { BookMarked, PlusCircle, User, Users2, Sparkles, TrendingUp } from 'lucide-react';
-import Card from '@/app/components/ui/Card';
+import { BookMarked, PlusCircle, User, Users2, Sparkles } from 'lucide-react';
 import { useRecommendedTopics } from '@/hooks/useTugasAkhir';
 import SkeletonCard from '@/app/components/loading/SkeletonCard';
 
@@ -31,7 +30,9 @@ export default function RecommendedTopics({
           <div className="bg-gray-300 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4">
             <BookMarked className="h-8 w-8 text-white" />
           </div>
-          <p className="text-gray-700 text-base font-semibold mb-2">Tidak Ada Topik Tersedia</p>
+          <p className="text-gray-700 text-base font-semibold mb-2">
+            Tidak Ada Topik Tersedia
+          </p>
           <p className="text-gray-500 text-sm">
             Periksa kembali nanti untuk topik rekomendasi dari dosen ahli kami.
           </p>
@@ -57,7 +58,8 @@ export default function RecommendedTopics({
             Topik Rekomendasi
           </h2>
           <p className="text-gray-600 leading-relaxed">
-            Topik tugas akhir yang dikurasi khusus oleh dosen ahli di bidangnya untuk membantu Anda memulai penelitian
+            Topik tugas akhir yang dikurasi khusus oleh dosen ahli di bidangnya
+            untuk membantu Anda memulai penelitian
           </p>
         </div>
       </div>
@@ -71,7 +73,7 @@ export default function RecommendedTopics({
           >
             {/* Decorative corner accent */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-maroon-500/5 rounded-full blur-2xl -mr-16 -mt-16 group-hover:bg-maroon-500/10 transition-colors duration-500"></div>
-            
+
             <div className="relative flex gap-6 p-6">
               {/* Left Side - Number Badge */}
               <div className="flex-shrink-0">
@@ -94,13 +96,13 @@ export default function RecommendedTopics({
                   <h3 className="font-bold text-xl text-gray-900 mb-2 leading-tight group-hover:text-maroon-900 transition-colors duration-300">
                     {topic.judul_topik}
                   </h3>
-                  
+
                   {/* Description */}
                   <p className="text-gray-600 leading-relaxed line-clamp-3 group-hover:text-gray-700">
                     {topic.deskripsi}
                   </p>
                 </div>
-                
+
                 {/* Info Cards */}
                 <div className="flex flex-wrap items-center gap-3">
                   {/* Lecturer Card */}
@@ -109,8 +111,12 @@ export default function RecommendedTopics({
                       <User className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-gray-500">Dosen Pembimbing</p>
-                      <p className="text-sm font-bold text-gray-900">{topic.dosenPencetus.name}</p>
+                      <p className="text-xs font-medium text-gray-500">
+                        Dosen Pembimbing
+                      </p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {topic.dosenPencetus.name}
+                      </p>
                     </div>
                   </div>
 
@@ -120,8 +126,12 @@ export default function RecommendedTopics({
                       <Users2 className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-gray-500">Kuota Tersedia</p>
-                      <p className="text-sm font-bold text-gray-900">{topic.kuota} Mahasiswa</p>
+                      <p className="text-xs font-medium text-gray-500">
+                        Kuota Tersedia
+                      </p>
+                      <p className="text-sm font-bold text-gray-900">
+                        {topic.kuota} Mahasiswa
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -139,7 +149,7 @@ export default function RecommendedTopics({
                 </button>
               </div>
             </div>
-            
+
             {/* Bottom accent line */}
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-maroon-500 via-maroon-600 to-maroon-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-center"></div>
           </div>

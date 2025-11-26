@@ -36,12 +36,35 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(insecureAuthMiddleware),
+  asyncHandler(authMiddleware), // Must be authenticated to get userId
   authorizeRoles([Role.admin]),
   validate(createJadwalSchema),
   asyncHandler(async (req, res): Promise<void> => {
-    const newJadwal = await jadwalSidangService.createJadwal(req.body);
+    const userId = req.user?.id;
+    const newJadwal = await jadwalSidangService.createJadwal(req.body, userId);
     res.status(201).json({ status: 'sukses', data: newJadwal });
+  }),
+);
+
+router.post(
+  '/check-conflict',
+  asyncHandler(authMiddleware),
+  authorizeRoles([Role.admin]),
+  validate(createJadwalSchema),
+  asyncHandler(async (req, res): Promise<void> => {
+    // We can't easily access the logic inside createJadwal without refactoring or duplicating.
+    // However, JadwalSidangService has checkScheduleConflict but it needs ALL dosen IDs.
+    // So we need to fetch the sidang here or add a helper in service.
+    // It is better to add a helper in service that accepts the DTO and returns conflict info.
+
+    // I will modify the service to expose a method that takes the DTO and does the check.
+    // For now, I will assume I'll add `checkConflictForJadwal` to the service.
+
+    // Actually, I can just use prisma client here? No, better keep logic in service.
+    // Let's go to the service and add `checkConflict` that accepts `CreateJadwalDto`.
+
+    const result = await jadwalSidangService.checkConflict(req.body);
+    res.status(200).json({ status: 'sukses', data: result });
   }),
 );
 

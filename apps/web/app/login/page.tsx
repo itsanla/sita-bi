@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LogIn, Mail, Lock, Eye, EyeOff, Sparkles } from 'lucide-react';
-import request from '@/lib/api';
+import { api } from '@/lib/api';
 
 import { useAuth } from '../../context/AuthContext';
 
@@ -22,43 +22,33 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // The API now returns { status: 'sukses', data: { userId, user } }
-      const response = await request<{
-        status: string;
-        data: {
-          userId: number;
-          user: {
-            id: number;
-            name: string;
-            email: string;
-            roles: Array<{ name: string }>;
-          };
+      const response = await api.post<{
+        userId: number;
+        user: {
+          id: number;
+          name: string;
+          email: string;
+          roles: Array<{ name: string }>;
         };
-      }>('/auth/login', {
-        method: 'POST',
-        body: { identifier, password },
-      });
+      }>('/auth/login', { identifier, password });
 
-      if (response.status !== 'sukses') {
-        throw new Error('Login failed');
-      }
+      const userId = response.data?.data?.userId;
+      const user = response.data?.data?.user;
 
-      const user = response.data.user;
+      if (userId && user) {
+        const token = String(userId);
+        await login(token);
 
-      // Store user data and userId as token in localStorage
-      login({ ...user, id: String(user.id) });
-      localStorage.setItem('token', String(response.data.userId));
-      localStorage.setItem('userId', String(response.data.userId));
+        // Redirect based on role
+        const userRole = user.roles[0]?.name;
 
-      // Redirect based on role
-      const userRole = user.roles[0]?.name;
-
-      if (userRole === 'dosen') {
-        router.push('/dashboard/dosen');
-      } else if (userRole === 'mahasiswa') {
-        router.push('/dashboard/mahasiswa');
-      } else {
-        router.push('/dashboard'); // Fallback for other roles like admin
+        if (userRole === 'dosen') {
+          router.push('/dashboard/dosen');
+        } else if (userRole === 'mahasiswa') {
+          router.push('/dashboard/mahasiswa');
+        } else {
+          router.push('/dashboard');
+        }
       }
     } catch (err) {
       const error = err as Error;
@@ -86,10 +76,10 @@ export default function LoginPage() {
                 <Sparkles className="w-8 h-8 text-white" />
               </div>
               <h1 className="text-3xl font-bold text-white mb-2">
-                Welcome Back
+                Selamat Datang
               </h1>
               <p className="text-white/90 text-sm">
-                Sign in to continue to SITA-BI
+                Masuk untuk melanjutkan ke SITA-BI
               </p>
             </div>
           </div>
@@ -103,7 +93,7 @@ export default function LoginPage() {
                   className="block text-sm font-semibold text-gray-700"
                   htmlFor="identifier"
                 >
-                  Email or Username
+                  Email atau Username
                 </label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -115,7 +105,7 @@ export default function LoginPage() {
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-rose-600 focus:ring-4 focus:ring-rose-100 outline-none transition-all duration-200 bg-gray-50 focus:bg-white"
-                    placeholder="you@example.com"
+                    placeholder="email@contoh.com"
                     required
                   />
                 </div>
@@ -162,7 +152,7 @@ export default function LoginPage() {
                   href="/forgot-password"
                   className="text-sm font-medium text-rose-600 hover:text-rose-700 transition-colors"
                 >
-                  Forgot password?
+                  Lupa Password?
                 </Link>
               </div>
 
@@ -182,11 +172,11 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Signing In...</span>
+                    <span>Masuk...</span>
                   </>
                 ) : (
                   <>
-                    <span>Sign In</span>
+                    <span>Masuk</span>
                     <LogIn className="w-5 h-5" />
                   </>
                 )}
@@ -200,7 +190,7 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-4 bg-white text-gray-500">
-                  Don&apos;t have an account?
+                  Belum punya akun?
                 </span>
               </div>
             </div>
@@ -211,7 +201,7 @@ export default function LoginPage() {
                 href="/register"
                 className="inline-flex items-center justify-center w-full px-6 py-3 rounded-xl border-2 border-rose-600 text-rose-600 font-semibold hover:bg-rose-50 transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0"
               >
-                Create New Account
+                Buat Akun Baru
               </Link>
             </div>
           </div>
@@ -219,7 +209,8 @@ export default function LoginPage() {
 
         {/* Footer text */}
         <p className="text-center text-gray-500 text-xs mt-6">
-          By signing in, you agree to our Terms of Service and Privacy Policy
+          Dengan masuk, Anda menyetujui Ketentuan Layanan dan Kebijakan Privasi
+          kami.
         </p>
       </div>
     </div>

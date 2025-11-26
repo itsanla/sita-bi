@@ -101,7 +101,9 @@ async function main() {
   console.log('Seeding mahasiswa user...');
   const mahasiswaEmail = 'sitabi.pnp@gmail.com';
   const mahasiswaPassword = 'password123';
-  const mahasiswaRole = await prisma.role.findUnique({ where: { name: 'mahasiswa' } });
+  const mahasiswaRole = await prisma.role.findUnique({
+    where: { name: 'mahasiswa' },
+  });
 
   if (mahasiswaRole) {
     const hashedPassword = await bcrypt.hash(mahasiswaPassword, 10);

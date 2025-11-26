@@ -20,7 +20,7 @@ export default function Header({
     <header className="fixed top-0 inset-x-0 z-40">
       {/* Backdrop with blur effect */}
       <div className="absolute inset-0 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-lg"></div>
-      
+
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -42,36 +42,38 @@ export default function Header({
               />
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-bold text-gray-900 leading-tight">SITA-BI</span>
-              <span className="text-xs text-gray-500 leading-tight">Thesis Management</span>
+              <span className="text-xl font-bold text-gray-900 leading-tight">
+                SITA-BI
+              </span>
+              <span className="text-xs text-gray-500 leading-tight">
+                Thesis Management
+              </span>
             </div>
           </a>
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-1">
-            {['hero', 'tawarantopik', 'jadwal', 'pengumuman'].map(
-              (section) => (
-                <a
-                  key={section}
-                  href={`#${section}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    scrollToSection(section);
-                  }}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                    activeSection === section
-                      ? 'text-red-600 bg-red-50'
-                      : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {section === 'hero'
-                    ? 'Home'
-                    : section === 'tawarantopik'
+            {['hero', 'tawarantopik', 'jadwal', 'pengumuman'].map((section) => (
+              <a
+                key={section}
+                href={`#${section}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  scrollToSection(section);
+                }}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                  activeSection === section
+                    ? 'text-red-600 bg-red-50'
+                    : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
+                }`}
+              >
+                {section === 'hero'
+                  ? 'Home'
+                  : section === 'tawarantopik'
                     ? 'Topik'
                     : section.charAt(0).toUpperCase() + section.slice(1)}
-                </a>
-              ),
-            )}
+              </a>
+            ))}
             <a
               href="/dokumentasi"
               className="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 transition-colors duration-200"
@@ -88,7 +90,7 @@ export default function Header({
             >
               Login
             </a>
-            
+
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -106,7 +108,7 @@ export default function Header({
         </div>
 
         {/* Mobile Navigation Menu */}
-        {isMenuOpen && (
+        {isMenuOpen ? (
           <div className="lg:hidden">
             <div className="pt-2 pb-4 space-y-1">
               {['hero', 'tawarantopik', 'jadwal', 'pengumuman'].map(
@@ -128,8 +130,8 @@ export default function Header({
                     {section === 'hero'
                       ? 'Home'
                       : section === 'tawarantopik'
-                      ? 'Tawaran Topik'
-                      : section.charAt(0).toUpperCase() + section.slice(1)}
+                        ? 'Tawaran Topik'
+                        : section.charAt(0).toUpperCase() + section.slice(1)}
                   </a>
                 ),
               )}
@@ -149,7 +151,7 @@ export default function Header({
               </div>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </header>
   );
