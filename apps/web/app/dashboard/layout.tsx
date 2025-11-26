@@ -5,14 +5,22 @@ import React, { ReactNode } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Skip this layout for routes that have their own layout
+  if (pathname?.startsWith('/dashboard/admin') || 
+      pathname?.startsWith('/dashboard/dosen') || 
+      pathname?.startsWith('/dashboard/mahasiswa')) {
+    return <>{children}</>;
+  }
 
   if (loading) {
-    return <div>Loading...</div>; // Or a proper loading spinner component
+    return <div>Loading...</div>;
   }
 
   if (!isAuthenticated) {

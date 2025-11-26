@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import linksRouter from './api/links.router';
 import contohPrismaRouter from './api/contoh-prisma.router';
 import bimbinganRouter from './api/bimbingan.router';
 import jadwalSidangRouter from './api/jadwal-sidang.router';
@@ -86,7 +85,6 @@ app.get('/health', (_req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/debug', debugRouter); // Debug routes
 app.use('/api/upload-test', uploadTestRouter); // Upload test routes (no auth)
-app.use('/api/links', linksRouter);
 app.use('/api/contoh-prisma', contohPrismaRouter);
 app.use('/api/bimbingan', bimbinganRouter);
 app.use('/api/jadwal-sidang', jadwalSidangRouter);

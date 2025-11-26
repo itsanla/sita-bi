@@ -6,23 +6,26 @@ import {
   Megaphone,
   Calendar,
   ArrowRight,
-  LucideIcon,
+  type LucideIcon,
 } from 'lucide-react';
 
 interface StatCardProps {
   title: string;
   value: string;
   icon: LucideIcon;
+  color: string;
 }
 
-const StatCard = ({ title, value, icon: Icon }: StatCardProps) => (
-  <div className="bg-white border border-gray-200/75 rounded-xl p-6 flex items-center shadow-sm">
-    <div className="p-3 bg-maroon-50 rounded-lg mr-4">
-      <Icon className="w-7 h-7 text-maroon-600" />
-    </div>
-    <div>
-      <p className="text-sm font-medium text-gray-500">{title}</p>
-      <p className="text-2xl font-bold text-gray-800">{value}</p>
+const StatCard = ({ title, value, icon: Icon, color }: StatCardProps) => (
+  <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm text-gray-600 mb-1">{title}</p>
+        <p className="text-3xl font-bold text-gray-900">{value}</p>
+      </div>
+      <div className={`p-3 ${color} rounded-lg`}>
+        <Icon className="w-6 h-6 text-white" />
+      </div>
     </div>
   </div>
 );
@@ -40,38 +43,40 @@ const QuickAccessLink = ({
 }: QuickAccessLinkProps) => (
   <Link
     href={href}
-    className="group block p-6 bg-white rounded-xl border border-gray-200/75 hover:shadow-lg hover:border-maroon-300 transition-all duration-300 hover:-translate-y-1"
+    className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-red-900 hover:shadow-md transition-all"
   >
-    <h3 className="text-lg font-bold text-maroon-800 mb-2 group-hover:text-maroon-600 transition-colors">
+    <h3 className="text-lg font-semibold text-gray-900 mb-2">
       {title}
     </h3>
-    <p className="text-gray-600 text-sm mb-4">{description}</p>
-    <span className="font-semibold text-sm text-maroon-700 flex items-center group-hover:text-maroon-500 transition-colors">
-      Lanjutkan{' '}
-      <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
+    <p className="text-sm text-gray-600 mb-4">{description}</p>
+    <span className="inline-flex items-center gap-2 text-sm font-medium text-red-900 hover:gap-3 transition-all">
+      Lanjutkan
+      <ArrowRight className="w-4 h-4" />
     </span>
   </Link>
 );
 
 export default function AdminDashboardPage() {
   return (
-    <div className="container mx-auto">
-      <div className="mb-10">
-        <h1 className="text-3xl font-bold text-gray-800">Dashboard Admin</h1>
-        <p className="text-gray-500 mt-1">
+    <div className="max-w-7xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Dashboard
+        </h1>
+        <p className="text-gray-600">
           Selamat datang! Kelola semua aspek sistem dari satu tempat.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <StatCard title="Total Pengguna" value="1,250" icon={Users} />
-        <StatCard title="Tugas Akhir Aktif" value="320" icon={BookOpen} />
-        <StatCard title="Pengumuman Terbit" value="42" icon={Megaphone} />
-        <StatCard title="Sidang Terjadwal" value="18" icon={Calendar} />
+        <StatCard title="Total Pengguna" value="1,250" icon={Users} color="bg-blue-600" />
+        <StatCard title="Tugas Akhir Aktif" value="320" icon={BookOpen} color="bg-red-900" />
+        <StatCard title="Pengumuman Terbit" value="42" icon={Megaphone} color="bg-orange-600" />
+        <StatCard title="Sidang Terjadwal" value="18" icon={Calendar} color="bg-green-600" />
       </div>
 
       <div>
-        <h2 className="text-xl font-semibold text-gray-700 mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">
           Akses Cepat
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
