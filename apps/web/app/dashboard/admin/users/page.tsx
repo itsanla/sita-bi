@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, FormEvent } from 'react';
-import request from '@/lib/api';
+import api from '@/lib/api';
+import { toast } from 'sonner';
+import ProtectedRoute from '@/components/shared/ProtectedRoute';
+import DosenCapacityBadge from '@/components/shared/DosenCapacityBadge';
 import {
   Plus,
   Search,
@@ -16,11 +19,11 @@ import {
 // --- Interfaces (Updated) ---
 interface User {
   id: number;
-  nama: string;
+  name: string;
   email: string;
   roles: { name: string }[];
-  dosen?: { nidn: string };
-  mahasiswa?: { nim: string };
+  dosen?: { nidn: string; prodi?: string | null; kuota_bimbingan?: number; assignedMahasiswa?: { id: number }[] };
+  mahasiswa?: { nim: string; prodi: string; kelas: string };
   failed_login_attempts?: number;
   lockout_until?: string | null;
 }
@@ -37,14 +40,15 @@ const UserModal = ({
 }) => {
   const [formData, setFormData] = useState({
     role: user?.roles[0]?.name || 'mahasiswa',
-    name: user?.nama || '',
+    name: user?.name || '',
     email: user?.email || '',
     password: '',
+    phone_number: '',
     nim: user?.mahasiswa?.nim || '',
     nidn: user?.dosen?.nidn || '',
-    prodi: 'D4',
-    angkatan: new Date().getFullYear().toString(),
-    kelas: 'A',
+    prodi: user?.mahasiswa?.prodi || user?.dosen?.prodi || 'D4',
+    kelas: user?.mahasiswa?.kelas || 'A',
+    roles: [] as string[],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -66,27 +70,29 @@ const UserModal = ({
     let body: Record<string, string | undefined> = {};
     const method = isEditing ? 'PATCH' : 'POST';
 
-    if (formData.role === 'dosen') {
+    if (formData.role === 'dosen' || formData.role === 'kajur' || formData.role === 'kaprodi_d3' || formData.role === 'kaprodi_d4') {
       endpoint = isEditing ? `/users/dosen/${user!.id}` : '/users/dosen';
       body = {
         name: formData.name,
         email: formData.email,
         nidn: formData.nidn,
+        phone_number: formData.phone_number,
+        prodi: formData.prodi,
       };
       if (formData.password || !isEditing) {
         body.password = formData.password;
       }
+      if (formData.roles.length > 0) {
+        body.roles = JSON.stringify(formData.roles);
+      }
     } else {
-      // mahasiswa
-      endpoint = isEditing
-        ? `/users/mahasiswa/${user!.id}`
-        : '/users/mahasiswa';
+      endpoint = isEditing ? `/users/mahasiswa/${user!.id}` : '/users/mahasiswa';
       body = {
         name: formData.name,
         email: formData.email,
         nim: formData.nim,
+        phone_number: formData.phone_number,
         prodi: formData.prodi,
-        angkatan: formData.angkatan,
         kelas: formData.kelas,
       };
       if (formData.password || !isEditing) {
@@ -95,14 +101,16 @@ const UserModal = ({
     }
 
     try {
-      await request(endpoint, { method, data: body });
-      alert(`User successfully ${isEditing ? 'updated' : 'created'}!`);
+      if (method === 'POST') {
+        await api.post(endpoint, body);
+      } else {
+        await api.patch(endpoint, body);
+      }
+      toast.success(`User berhasil ${isEditing ? 'diupdate' : 'dibuat'}!`);
       onSave();
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(
-          err.message || `Failed to ${isEditing ? 'update' : 'create'} user.`,
-        );
+        setError(err.message || `Gagal ${isEditing ? 'update' : 'membuat'} user.`);
       }
     } finally {
       setIsSubmitting(false);
@@ -146,6 +154,9 @@ const UserModal = ({
             >
               <option value="mahasiswa">Mahasiswa</option>
               <option value="dosen">Dosen</option>
+              <option value="kajur">Kajur</option>
+              <option value="kaprodi_d3">Kaprodi D3</option>
+              <option value="kaprodi_d4">Kaprodi D4</option>
             </select>
           </div>
           <div>
@@ -200,43 +211,103 @@ const UserModal = ({
               className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
             />
           </div>
+          <div>
+            <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700">
+              No. HP
+            </label>
+            <input
+              id="phone_number"
+              name="phone_number"
+              type="text"
+              value={formData.phone_number}
+              onChange={handleChange}
+              placeholder="08xxxxxxxxxx"
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+            />
+          </div>
           {formData.role === 'mahasiswa' && (
-            <div>
-              <label
-                htmlFor="nim"
-                className="block text-sm font-medium text-gray-700"
-              >
-                NIM
-              </label>
-              <input
-                id="nim"
-                name="nim"
-                type="text"
-                value={formData.nim}
-                onChange={handleChange}
-                required
-                className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              />
-            </div>
+            <>
+              <div>
+                <label htmlFor="nim" className="block text-sm font-medium text-gray-700">
+                  NIM
+                </label>
+                <input
+                  id="nim"
+                  name="nim"
+                  type="text"
+                  value={formData.nim}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                />
+              </div>
+              <div>
+                <label htmlFor="prodi" className="block text-sm font-medium text-gray-700">
+                  Prodi
+                </label>
+                <select
+                  id="prodi"
+                  name="prodi"
+                  value={formData.prodi}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                >
+                  <option value="D3">D3</option>
+                  <option value="D4">D4</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="kelas" className="block text-sm font-medium text-gray-700">
+                  Kelas
+                </label>
+                <input
+                  id="kelas"
+                  name="kelas"
+                  type="text"
+                  value={formData.kelas}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                />
+              </div>
+            </>
           )}
-          {formData.role === 'dosen' && (
-            <div>
-              <label
-                htmlFor="nidn"
-                className="block text-sm font-medium text-gray-700"
-              >
-                NIDN
-              </label>
-              <input
-                id="nidn"
-                name="nidn"
-                type="text"
-                value={formData.nidn}
-                onChange={handleChange}
-                required
-                className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              />
-            </div>
+          {(formData.role === 'dosen' || formData.role === 'kajur' || formData.role === 'kaprodi_d3' || formData.role === 'kaprodi_d4') && (
+            <>
+              <div>
+                <label htmlFor="nidn" className="block text-sm font-medium text-gray-700">
+                  NIDN
+                </label>
+                <input
+                  id="nidn"
+                  name="nidn"
+                  type="text"
+                  value={formData.nidn}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                />
+              </div>
+              {(formData.role === 'kaprodi_d3' || formData.role === 'kaprodi_d4') && (
+                <div>
+                  <label htmlFor="prodi" className="block text-sm font-medium text-gray-700">
+                    Prodi Scope
+                  </label>
+                  <select
+                    id="prodi"
+                    name="prodi"
+                    value={formData.prodi}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                  >
+                    <option value="D3">D3</option>
+                    <option value="D4">D4</option>
+                  </select>
+                </div>
+              )}
+            </>
           )}
           <div className="flex justify-end pt-4 space-x-3">
             <button
@@ -275,22 +346,22 @@ export default function KelolaPenggunaPage() {
       setLoading(true);
       setError('');
       const [dosenRes, mahasiswaRes] = await Promise.all([
-        request<{ data: { data: User[] } }>('/users/dosen'),
-        request<{ data: { data: User[] } }>('/users/mahasiswa'),
+        api.get('/users/dosen'),
+        api.get('/users/mahasiswa'),
       ]);
 
-      const mappedDosen = Array.isArray(dosenRes.data?.data)
-        ? dosenRes.data.data
+      const mappedDosen = Array.isArray(dosenRes.data?.data?.data)
+        ? dosenRes.data.data.data
         : [];
-      const mappedMahasiswa = Array.isArray(mahasiswaRes.data?.data)
-        ? mahasiswaRes.data.data
+      const mappedMahasiswa = Array.isArray(mahasiswaRes.data?.data?.data)
+        ? mahasiswaRes.data.data.data
         : [];
 
       const allUsers = [...mappedDosen, ...mappedMahasiswa];
       setUsers(allUsers);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message || 'Failed to fetch users');
+        setError(err.message || 'Gagal memuat data pengguna');
       }
     } finally {
       setLoading(false);
@@ -302,28 +373,27 @@ export default function KelolaPenggunaPage() {
   }, []);
 
   const handleDelete = async (id: number) => {
-    if (!confirm(`Are you sure you want to delete user ${id}?`)) return;
+    if (!confirm(`Apakah Anda yakin ingin menghapus user ini?`)) return;
     try {
-      await request(`/users/${id}`, { method: 'DELETE' });
-      alert('User deleted successfully');
+      await api.delete(`/users/${id}`);
+      toast.success('User berhasil dihapus');
       fetchData();
     } catch (err: unknown) {
       if (err instanceof Error) {
-        alert(`Error: ${err.message}`);
+        toast.error(`Error: ${err.message}`);
       }
     }
   };
 
   const handleUnlock = async (id: number) => {
-    if (!confirm(`Apakah Anda yakin ingin membuka kunci akun pengguna ini?`))
-      return;
+    if (!confirm(`Apakah Anda yakin ingin membuka kunci akun pengguna ini?`)) return;
     try {
-      await request(`/users/${id}/unlock`, { method: 'POST' });
-      alert('Akun berhasil dibuka.');
+      await api.post(`/users/${id}/unlock`);
+      toast.success('Akun berhasil dibuka');
       fetchData();
     } catch (err: unknown) {
       if (err instanceof Error) {
-        alert(`Error: ${err.message}`);
+        toast.error(`Error: ${err.message}`);
       }
     }
   };
@@ -347,7 +417,7 @@ export default function KelolaPenggunaPage() {
     const roleMatch =
       roleFilter === 'all' || user.roles.some((r) => r.name === roleFilter);
     const searchMatch =
-      user.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (user.mahasiswa?.nim && user.mahasiswa.nim.includes(searchQuery)) ||
       (user.dosen?.nidn && user.dosen.nidn.includes(searchQuery));
@@ -356,12 +426,16 @@ export default function KelolaPenggunaPage() {
 
   const RoleBadge = ({ roles }: { roles: { name: string }[] }) => {
     const roleName = roles[0]?.name || 'unknown';
-    const baseClasses =
-      'px-3 py-1 text-xs font-semibold rounded-full capitalize';
+    const baseClasses = 'px-3 py-1 text-xs font-semibold rounded-full capitalize';
     let roleClasses = '';
     switch (roleName) {
       case 'admin':
-        roleClasses = 'bg-maroon-100 text-maroon-800';
+      case 'kajur':
+        roleClasses = 'bg-purple-100 text-purple-800';
+        break;
+      case 'kaprodi_d3':
+      case 'kaprodi_d4':
+        roleClasses = 'bg-indigo-100 text-indigo-800';
         break;
       case 'dosen':
         roleClasses = 'bg-blue-100 text-blue-800';
@@ -394,7 +468,8 @@ export default function KelolaPenggunaPage() {
   }
 
   return (
-    <div className="container mx-auto">
+    <ProtectedRoute allowedRoles={['admin', 'kajur']}>
+      <div className="container mx-auto">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Kelola Pengguna</h1>
         <button
@@ -425,6 +500,9 @@ export default function KelolaPenggunaPage() {
           >
             <option value="all">Semua Role</option>
             <option value="admin">Admin</option>
+            <option value="kajur">Kajur</option>
+            <option value="kaprodi_d3">Kaprodi D3</option>
+            <option value="kaprodi_d4">Kaprodi D4</option>
             <option value="dosen">Dosen</option>
             <option value="mahasiswa">Mahasiswa</option>
           </select>
@@ -440,6 +518,12 @@ export default function KelolaPenggunaPage() {
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 NIM/NIDN
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Prodi
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Kapasitas
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
@@ -460,12 +544,23 @@ export default function KelolaPenggunaPage() {
                 <tr key={user.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      {user.nama}
+                      {user.name}
                     </div>
                     <div className="text-sm text-gray-500">{user.email}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {user.mahasiswa?.nim || user.dosen?.nidn || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {user.mahasiswa?.prodi || user.dosen?.prodi || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {user.dosen ? (
+                      <DosenCapacityBadge 
+                        current={user.dosen.assignedMahasiswa?.length || 0} 
+                        max={4} 
+                      />
+                    ) : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     {isLocked ? (
@@ -518,6 +613,7 @@ export default function KelolaPenggunaPage() {
           onSave={handleSave}
         />
       ) : null}
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

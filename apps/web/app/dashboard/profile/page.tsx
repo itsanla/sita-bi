@@ -29,7 +29,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user) {
-      setName(user.nama);
+      setName(user.nama || user.name || '');
       if (user.nim) {
         setNim(user.nim);
       }
@@ -111,7 +111,7 @@ export default function ProfilePage() {
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                 />
               ) : (
-                <p className="mt-1 text-lg">{user.nama}</p>
+                <p className="mt-1 text-lg">{user.nama || user.name}</p>
               )}
             </div>
             <div>

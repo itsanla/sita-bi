@@ -28,6 +28,7 @@ import geminiRouter from './api/gemini.router'; // Gemini AI chatbot router
 import dashboardRouter from './api/dashboard.router'; // Dashboard router
 import notificationRouter from './api/notification.router';
 import importRouter from './api/import.router';
+import rbacRouter from './api/rbac.router';
 import { errorHandler } from './middlewares/error.middleware';
 import { activityLogger } from './middlewares/logger.middleware';
 import { getUploadPath, getMonorepoRoot } from './utils/upload.config';
@@ -110,6 +111,7 @@ app.use('/api/gemini', geminiRouter); // Gemini AI chatbot routes
 app.use('/api/dashboard', dashboardRouter); // Dashboard routes
 app.use('/api/notifications', notificationRouter);
 app.use('/api/import', importRouter);
+app.use('/api/rbac', rbacRouter);
 
 // Error Handling Middleware
 app.use(errorHandler);

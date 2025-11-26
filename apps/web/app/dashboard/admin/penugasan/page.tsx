@@ -3,6 +3,11 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import request from '@/lib/api';
 import { Search, UserPlus, Loader, Info, X, AlertCircle } from 'lucide-react';
+import { useDosenCapacity } from '@/hooks/useDosenCapacity';
+import DosenCapacityBadge from '@/components/shared/DosenCapacityBadge';
+import { validatePembimbingSelection, validatePengujiSelection } from '@/lib/rbac-utils';
+import { toast } from 'sonner';
+import ProtectedRoute from '@/components/shared/ProtectedRoute';
 
 // --- Interfaces ---
 interface TugasAkhir {
@@ -25,11 +30,12 @@ interface DosenLoad {
 }
 
 // --- Main Page Component ---
-export default function PenugasanPage() {
+function PenugasanPageContent() {
   const [unassignedTAs, setUnassignedTAs] = useState<TugasAkhir[]>([]);
   const [dosenLoad, setDosenLoad] = useState<DosenLoad[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { isAvailable, getCapacity } = useDosenCapacity();
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -86,38 +92,56 @@ export default function PenugasanPage() {
   const handleAssignSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedTA || !dosen1Id) {
-      alert(
-        `Please select at least ${assignType === 'pembimbing' ? 'Supervisor' : 'Examiner'} 1.`,
-      );
+      toast.error(`Pilih minimal ${assignType === 'pembimbing' ? 'Pembimbing' : 'Penguji'} 1`);
       return;
     }
+
+    const d1 = Number(dosen1Id);
+    const d2 = dosen2Id ? Number(dosen2Id) : null;
+
+    if (assignType === 'pembimbing') {
+      const validation = validatePembimbingSelection(d1, d2);
+      if (!validation.valid) {
+        toast.error(validation.error);
+        return;
+      }
+      if (!isAvailable(d1)) {
+        toast.error('Pembimbing 1 sudah mencapai kapasitas maksimal');
+        return;
+      }
+      if (d2 && !isAvailable(d2)) {
+        toast.error('Pembimbing 2 sudah mencapai kapasitas maksimal');
+        return;
+      }
+    } else {
+      const validation = validatePengujiSelection(d1, d2, null);
+      if (!validation.valid) {
+        toast.error(validation.error);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
-      const endpoint =
-        assignType === 'pembimbing' ? 'assign' : 'assign-penguji';
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body: any = {};
+      const endpoint = assignType === 'pembimbing' ? 'assign' : 'assign-penguji';
+      const body: Record<string, number | undefined> = {};
       if (assignType === 'pembimbing') {
-        body.pembimbing1Id = Number(dosen1Id);
-        body.pembimbing2Id = dosen2Id ? Number(dosen2Id) : undefined;
+        body.pembimbing1Id = d1;
+        body.pembimbing2Id = d2 || undefined;
       } else {
-        body.penguji1Id = Number(dosen1Id);
-        body.penguji2Id = dosen2Id ? Number(dosen2Id) : undefined;
+        body.penguji1Id = d1;
+        body.penguji2Id = d2 || undefined;
       }
 
       await request(`/penugasan/${selectedTA.id}/${endpoint}`, {
         method: 'POST',
         data: body,
       });
-      alert(
-        `${assignType === 'pembimbing' ? 'Supervisors' : 'Examiners'} assigned successfully!`,
-      );
+      toast.success(`${assignType === 'pembimbing' ? 'Pembimbing' : 'Penguji'} berhasil ditugaskan`);
       handleCloseModal();
       fetchData();
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        alert(`Error: ${err.message}`);
-      }
+      console.error('[PenugasanPage] Error:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -126,9 +150,12 @@ export default function PenugasanPage() {
   // Removed unused getLoadBadgeColor
 
   const renderDosenOption = (d: DosenLoad) => {
+    const capacity = getCapacity(d.id);
+    const available = isAvailable(d.id);
     return (
-      <option key={d.id} value={d.id}>
-        {d.name} (Load: {d.totalLoad} - B:{d.bimbinganLoad}/P:{d.pengujiLoad})
+      <option key={d.id} value={d.id} disabled={assignType === 'pembimbing' && !available}>
+        {d.name} ({capacity?.current || 0}/{capacity?.max || 4}) - Load: {d.totalLoad}
+        {assignType === 'pembimbing' && !available ? ' (PENUH)' : ''}
       </option>
     );
   };
@@ -278,6 +305,11 @@ export default function PenugasanPage() {
                   </option>
                   {dosenLoad.map(renderDosenOption)}
                 </select>
+                {dosen1Id ? (
+                  <div className="mt-2">
+                    <DosenCapacityBadge current={getCapacity(Number(dosen1Id))?.current || 0} max={4} />
+                  </div>
+                ) : null}
               </div>
               <div>
                 <label
@@ -295,8 +327,13 @@ export default function PenugasanPage() {
                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-red-800 focus:border-red-800 sm:text-sm rounded-md"
                 >
                   <option value="">-- Tidak Ada --</option>
-                  {dosenLoad.map(renderDosenOption)}
+                  {dosenLoad.filter(d => d.id !== Number(dosen1Id)).map(renderDosenOption)}
                 </select>
+                {dosen2Id ? (
+                  <div className="mt-2">
+                    <DosenCapacityBadge current={getCapacity(Number(dosen2Id))?.current || 0} max={4} />
+                  </div>
+                ) : null}
               </div>
               <div className="flex justify-end pt-4 space-x-3">
                 <button
@@ -319,5 +356,13 @@ export default function PenugasanPage() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+export default function PenugasanPage() {
+  return (
+    <ProtectedRoute allowedRoles={['admin', 'kajur', 'kaprodi_d3', 'kaprodi_d4']}>
+      <PenugasanPageContent />
+    </ProtectedRoute>
   );
 }

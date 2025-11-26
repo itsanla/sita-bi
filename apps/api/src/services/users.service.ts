@@ -88,6 +88,7 @@ export class UsersService {
         dosen: {
           create: {
             nidn: dto.nidn,
+            prodi: dto.prodi,
           },
         },
       },
@@ -110,9 +111,12 @@ export class UsersService {
         set: dto.roles.map((roleName) => ({ name: roleName })),
       };
     }
-    if (dto.nidn != null) {
+    if (dto.nidn != null || dto.prodi !== undefined) {
+      const dosenUpdate: Prisma.DosenUpdateInput = {};
+      if (dto.nidn != null) dosenUpdate.nidn = dto.nidn;
+      if (dto.prodi !== undefined) dosenUpdate.prodi = dto.prodi;
       userData.dosen = {
-        update: { nidn: dto.nidn },
+        update: dosenUpdate,
       };
     }
 

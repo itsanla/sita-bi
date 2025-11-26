@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { BimbinganService } from '../services/bimbingan.service';
 import { insecureAuthMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
+import { validateDosenTugasAkhirAccess } from '../middlewares/rbac.middleware';
 import { validate } from '../middlewares/validation.middleware';
 import { Role } from '@repo/types';
 import { createCatatanSchema, setJadwalSchema } from '../dto/bimbingan.dto';
@@ -166,7 +167,8 @@ router.post(
 
 router.post(
   '/:tugasAkhirId/jadwal',
-  authorizeRoles([Role.dosen]),
+  authorizeRoles([Role.dosen, Role.kaprodi_d3, Role.kaprodi_d4, Role.kajur]),
+  validateDosenTugasAkhirAccess,
   validate(setJadwalSchema),
   asyncHandler(async (req, res): Promise<void> => {
     const { tugasAkhirId } = req.params;

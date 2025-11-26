@@ -9,6 +9,7 @@ import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
 import { Role } from '@repo/types';
 import { assignPembimbingSchema } from '../dto/penugasan.dto';
+import { validateTeamComposition } from '../utils/rbac-helpers';
 
 const router: Router = Router();
 const penugasanService = new PenugasanService();
@@ -19,7 +20,7 @@ const penugasanService = new PenugasanService();
 router.get(
   '/dosen-load',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin, Role.kajur]),
+  authorizeRoles([Role.admin, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const loadData = await penugasanService.getDosenLoad();
     res.status(200).json({ status: 'sukses', data: loadData });
@@ -29,7 +30,7 @@ router.get(
 router.get(
   '/unassigned',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin, Role.kajur]),
+  authorizeRoles([Role.admin, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const page =
       req.query['page'] != null
@@ -48,7 +49,7 @@ router.get(
 router.post(
   '/:tugasAkhirId/assign',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin, Role.kajur]),
+  authorizeRoles([Role.admin, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
   validate(assignPembimbingSchema),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { tugasAkhirId } = req.params;
@@ -66,6 +67,21 @@ router.post(
     }
     const adminId = req.user.id;
 
+    // Validate team composition & capacity
+    const validation = await validateTeamComposition(
+      req.body.pembimbing1Id,
+      req.body.pembimbing2Id,
+    );
+
+    if (!validation.isValid) {
+      res.status(400).json({
+        status: 'gagal',
+        message: 'Validasi gagal',
+        errors: validation.errors,
+      });
+      return;
+    }
+
     const assignedPembimbing = await penugasanService.assignPembimbing(
       parseInt(tugasAkhirId, 10),
       req.body,
@@ -78,7 +94,7 @@ router.post(
 router.post(
   '/:tugasAkhirId/assign-penguji',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin, Role.kajur]),
+  authorizeRoles([Role.admin, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
   validate(assignPengujiSchema),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { tugasAkhirId } = req.params;
@@ -94,6 +110,24 @@ router.post(
       return;
     }
     const adminId = req.user.id;
+
+    // Validate penguji uniqueness
+    const validation = await validateTeamComposition(
+      0, // No pembimbing validation for penguji
+      undefined,
+      req.body.penguji1Id,
+      req.body.penguji2Id,
+      req.body.penguji3Id,
+    );
+
+    if (!validation.isValid) {
+      res.status(400).json({
+        status: 'gagal',
+        message: 'Validasi gagal',
+        errors: validation.errors,
+      });
+      return;
+    }
 
     const assigned = await penugasanService.assignPenguji(
       parseInt(tugasAkhirId, 10),

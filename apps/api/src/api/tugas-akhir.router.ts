@@ -224,7 +224,7 @@ router.get(
 router.get(
   '/pending',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.dosen]),
+  authorizeRoles([Role.dosen, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     const userId = req.user?.id;
     if (userId === undefined) {
@@ -243,7 +243,7 @@ router.get(
 router.patch(
   '/:id/approve',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.dosen]),
+  authorizeRoles([Role.dosen, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     const { id } = req.params;
     if (id == null) {
@@ -272,7 +272,7 @@ router.patch(
 router.patch(
   '/:id/reject',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.dosen]),
+  authorizeRoles([Role.dosen, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     const { id } = req.params;
     if (id == null) {

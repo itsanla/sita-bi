@@ -10,6 +10,7 @@ export const createDosenSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters long'),
   nidn: z.string().min(1, 'NIDN cannot be empty'),
   phone_number: z.string().optional(),
+  prodi: z.enum([Prodi.D3, Prodi.D4]).optional(),
   roles: z
     .array(z.enum([Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4, Role.dosen]))
     .optional()
@@ -34,6 +35,7 @@ export const updateDosenSchema = z.object({
     .min(8, 'Password must be at least 8 characters long')
     .optional(),
   nidn: z.string().optional(),
+  prodi: z.enum([Prodi.D3, Prodi.D4]).optional(),
   roles: z
     .array(z.enum([Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4, Role.dosen]))
     .optional()

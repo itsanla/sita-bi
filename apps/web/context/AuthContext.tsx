@@ -42,10 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       setLoading(true);
-      const response = await api.get<User>('/auth/me');
+      const response = await api.get('/auth/me');
       if (response.data?.data) {
-        const userData = response.data.data;
-        // Add alias properties for backward compatibility
+        const userData = response.data.data as User;
         setUser({
           ...userData,
           nama: userData.name,

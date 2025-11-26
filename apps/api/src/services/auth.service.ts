@@ -296,7 +296,7 @@ export class AuthService {
       User & {
         roles: Role[];
         mahasiswa: Mahasiswa | null;
-        dosen: Dosen | null;
+        dosen: (Dosen & { assignedMahasiswa?: { id: number; nim: string; name: string; prodi: string }[] }) | null;
       },
       'password'
     >
@@ -306,7 +306,35 @@ export class AuthService {
       include: {
         roles: true,
         mahasiswa: true,
-        dosen: true,
+        dosen: {
+          include: {
+            peranDosenTa: {
+              where: {
+                tugasAkhir: {
+                  status: {
+                    in: ['BIMBINGAN', 'REVISI', 'DISETUJUI'],
+                  },
+                },
+              },
+              include: {
+                tugasAkhir: {
+                  include: {
+                    mahasiswa: {
+                      include: {
+                        user: {
+                          select: {
+                            id: true,
+                            name: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -315,6 +343,30 @@ export class AuthService {
     }
 
     const { password: _, ...userWithoutPassword } = user;
+
+    // Transform dosen data to include assigned mahasiswa
+    if (userWithoutPassword.dosen) {
+      const assignedMahasiswa = userWithoutPassword.dosen.peranDosenTa.map((peran) => ({
+        id: peran.tugasAkhir.mahasiswa.id,
+        nim: peran.tugasAkhir.mahasiswa.nim,
+        name: peran.tugasAkhir.mahasiswa.user.name,
+        prodi: peran.tugasAkhir.mahasiswa.prodi,
+      }));
+
+      // Remove duplicates
+      const uniqueMahasiswa = Array.from(
+        new Map(assignedMahasiswa.map((m) => [m.id, m])).values(),
+      );
+
+      return {
+        ...userWithoutPassword,
+        dosen: {
+          ...userWithoutPassword.dosen,
+          assignedMahasiswa: uniqueMahasiswa,
+        },
+      };
+    }
+
     return userWithoutPassword;
   }
 }

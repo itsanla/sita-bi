@@ -3,33 +3,34 @@
 import { useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
+import RoleBasedDashboard from './components/RoleBasedDashboard';
+import LoadingSpinner from '../../components/shared/LoadingSpinner';
 
-export default function DashboardRedirector() {
+export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // DEBUG: Log the user object to see its actual structure in the browser console
-    if (!loading && user) {
-      // Defensive check to prevent crash if role property is missing
-      if (user.roles && user.roles.length > 0) {
-        const role = user.roles[0]?.name;
-        if (role === 'admin') {
-          router.replace('/dashboard/admin');
-        } else if (role === 'dosen') {
-          router.replace('/dashboard/dosen');
-        } else if (role === 'mahasiswa') {
-          router.replace('/dashboard/mahasiswa');
-        } else {
-          // Fallback for users with no recognized role
-          router.replace('/login');
-        }
-      } else {
-        // Handle case where user object exists but has no role
-        router.replace('/login');
-      }
+    if (!loading && !user) {
+      router.replace('/login');
     }
   }, [user, loading, router]);
 
-  return <div>Loading...</div>; // Or a proper loading spinner
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <div className="container mx-auto p-6">
+      <RoleBasedDashboard />
+    </div>
+  );
 }

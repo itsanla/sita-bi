@@ -135,6 +135,14 @@ export class PenugasanService {
   ): Promise<unknown> {
     const { pembimbing1Id, pembimbing2Id } = dto;
 
+    // Validate using new RBAC helpers
+    const { validatePembimbingAssignment } = await import('../utils/rbac-helpers');
+    const validation = await validatePembimbingAssignment(pembimbing1Id, pembimbing2Id);
+    
+    if (!validation.valid) {
+      throw new Error(validation.errors.join(', '));
+    }
+
     await validateDosenWorkload(pembimbing1Id);
     if (pembimbing2Id !== undefined) {
       await validateDosenWorkload(pembimbing2Id);
@@ -234,6 +242,15 @@ export class PenugasanService {
     adminId: number,
   ): Promise<unknown> {
     const { penguji1Id, penguji2Id, penguji3Id } = dto;
+    
+    // Validate penguji assignment
+    const { validatePengujiAssignment } = await import('../utils/rbac-helpers');
+    const validation = validatePengujiAssignment(penguji1Id, penguji2Id, penguji3Id);
+    
+    if (!validation.valid) {
+      throw new Error(validation.errors.join(', '));
+    }
+    
     const queries: PrismaPromise<unknown>[] = [];
 
     // Assign Penguji 1
