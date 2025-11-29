@@ -1,4 +1,4 @@
-import { useQuery, UseQueryResult } from '@tantml:parameter>query';
+import { useQuery, UseQueryResult } from '@tanstack/react-query';
 import api from '@/lib/api';
 
 interface DashboardStats {

@@ -21,18 +21,10 @@ export const uploadConfig: UploadConfig = {
   ],
 };
 
-// Utility function untuk mendapatkan monorepo root path
-export const getMonorepoRoot = (): string => {
-  // Dari apps/api, naik 2 level untuk sampai ke monorepo root
-  const currentDir = process.cwd();
-
-  // Jika kita di apps/api, naik 2 level
-  if (currentDir.includes(path.join('apps', 'api'))) {
-    return path.resolve(currentDir, '../..');
-  }
-
-  // Jika sudah di monorepo root atau lokasi lain
-  return currentDir;
+// Utility function untuk mendapatkan apps/api root path
+export const getApiRoot = (): string => {
+  // Return current working directory (apps/api)
+  return process.cwd();
 };
 
 // Utility function untuk membuat directory jika belum ada
@@ -42,10 +34,10 @@ export const ensureDirectoryExists = (dirPath: string): void => {
   }
 };
 
-// Utility function untuk mendapatkan path upload lengkap di monorepo root
+// Utility function untuk mendapatkan path upload lengkap di apps/api
 export const getUploadPath = (subDir?: string): string => {
-  const monorepoRoot = getMonorepoRoot();
-  const basePath = path.join(monorepoRoot, uploadConfig.uploadsDir);
+  const apiRoot = getApiRoot();
+  const basePath = path.join(apiRoot, uploadConfig.uploadsDir);
 
   if (subDir !== undefined && subDir.length > 0) {
     const fullPath = path.join(basePath, subDir);
@@ -69,10 +61,10 @@ export const generateFileName = (
   return `${baseName}-${timestamp}-${random}${extension}`;
 };
 
-// Utility function untuk mendapatkan relative path untuk database (dari monorepo root)
+// Utility function untuk mendapatkan relative path untuk database (dari apps/api)
 export const getRelativePath = (fullPath: string): string => {
-  const monorepoRoot = getMonorepoRoot();
-  return fullPath.replace(monorepoRoot, '').replace(/\\/g, '/');
+  const apiRoot = getApiRoot();
+  return fullPath.replace(apiRoot, '').replace(/\\/g, '/');
 };
 
 // Utility function untuk mendapatkan URL akses file
@@ -84,6 +76,6 @@ export const getFileUrl = (relativePath: string): string => {
 
 // Utility function untuk mendapatkan absolute path dari relative path
 export const getAbsolutePath = (relativePath: string): string => {
-  const monorepoRoot = getMonorepoRoot();
-  return path.join(monorepoRoot, relativePath.replace(/^\//, ''));
+  const apiRoot = getApiRoot();
+  return path.join(apiRoot, relativePath.replace(/^\//, ''));
 };

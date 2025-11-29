@@ -50,16 +50,12 @@ class GeminiService {
   private readonly streamTimeout = 60000; // 60 seconds for streaming
   private readonly documentationPath = path.join(
     process.cwd(),
-    '..',
-    '..',
     'documentation',
     'model',
     'documentation.json',
   );
   private readonly informationPath = path.join(
     process.cwd(),
-    '..',
-    '..',
     'documentation',
     'model',
     'information.json',

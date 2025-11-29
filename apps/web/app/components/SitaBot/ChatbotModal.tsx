@@ -219,9 +219,9 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                         }`}
                       >
                         <div
-                          className={`prose prose-sm max-w-none ${
+                          className={`max-w-none ${
                             msg.role === 'user'
-                              ? 'prose-invert text-white'
+                              ? 'text-white'
                               : ''
                           }`}
                         >
@@ -229,35 +229,35 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                             remarkPlugins={[remarkGfm]}
                             components={{
                               h1: ({ children }) => (
-                                <h1 className={`text-2xl font-bold mb-3 mt-4 ${
+                                <h1 className={`text-lg font-bold mb-2 mt-3 ${
                                   msg.role === 'user' ? 'text-white' : 'text-red-900'
                                 }`}>
                                   {children}
                                 </h1>
                               ),
                               h2: ({ children }) => (
-                                <h2 className={`text-xl font-bold mb-2 mt-3 ${
+                                <h2 className={`text-base font-bold mb-2 mt-2 ${
                                   msg.role === 'user' ? 'text-white' : 'text-red-900'
                                 }`}>
                                   {children}
                                 </h2>
                               ),
                               h3: ({ children }) => (
-                                <h3 className={`text-lg font-bold mb-2 mt-2 ${
+                                <h3 className={`text-sm font-semibold mb-1 mt-2 ${
                                   msg.role === 'user' ? 'text-white' : 'text-red-800'
                                 }`}>
                                   {children}
                                 </h3>
                               ),
                               p: ({ children }) => (
-                                <p className={`mb-2 leading-relaxed ${
+                                <p className={`mb-2 text-sm leading-relaxed ${
                                   msg.role === 'user' ? 'text-white' : 'text-gray-700'
                                 }`}>
                                   {children}
                                 </p>
                               ),
                               strong: ({ children }) => (
-                                <strong className={`font-bold ${
+                                <strong className={`font-semibold ${
                                   msg.role === 'user' ? 'text-white' : 'text-red-800'
                                 }`}>
                                   {children}
@@ -269,24 +269,24 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                                 }`}>{children}</em>
                               ),
                               code: ({ children }) => (
-                                <code className={`px-1.5 py-0.5 rounded text-sm font-mono ${
+                                <code className={`px-1 py-0.5 rounded text-xs font-mono ${
                                   msg.role === 'user' ? 'bg-red-800 text-white' : 'bg-red-50 text-red-700'
                                 }`}>
                                   {children}
                                 </code>
                               ),
                               ul: ({ children }) => (
-                                <ul className="list-disc list-inside mb-2 space-y-1">
+                                <ul className="list-disc list-inside mb-2 space-y-0.5 text-sm">
                                   {children}
                                 </ul>
                               ),
                               ol: ({ children }) => (
-                                <ol className="list-decimal list-inside mb-2 space-y-1">
+                                <ol className="list-decimal list-inside mb-2 space-y-0.5 text-sm">
                                   {children}
                                 </ol>
                               ),
                               li: ({ children }) => (
-                                <li className={`ml-2 ${
+                                <li className={`ml-2 text-sm ${
                                   msg.role === 'user' ? 'text-white' : 'text-gray-700'
                                 }`}>{children}</li>
                               ),
@@ -326,7 +326,7 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                   ))
                 )}
 
-                {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && messages[messages.length - 1]?.content === '' ? (
+                {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.content ? (
                   <div className="flex justify-start animate-fade-in">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-900 to-red-700 flex items-center justify-center mr-3 flex-shrink-0 shadow-lg">
                       <MessageCircle className="w-5 h-5 text-white" />

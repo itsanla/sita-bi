@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import multer from 'multer';
 import {
-  getMonorepoRoot,
+  getApiRoot,
   getAbsolutePath,
   getUploadPath,
   generateFileName,
@@ -134,8 +134,8 @@ router.get(
     const fullPath = getAbsolutePath(`uploads/${filePath}`);
 
     // Security check: pastikan file berada dalam uploads directory
-    const monorepoRoot = getMonorepoRoot();
-    const uploadsDir = path.join(monorepoRoot, 'uploads');
+    const apiRoot = getApiRoot();
+    const uploadsDir = path.join(apiRoot, 'uploads');
     const resolvedPath = path.resolve(fullPath);
     const resolvedUploadsDir = path.resolve(uploadsDir);
 
@@ -186,8 +186,8 @@ router.get(
     const fullPath = getAbsolutePath(`uploads/${filePath}`);
 
     // Security check
-    const monorepoRoot = getMonorepoRoot();
-    const uploadsDir = path.join(monorepoRoot, 'uploads');
+    const apiRoot = getApiRoot();
+    const uploadsDir = path.join(apiRoot, 'uploads');
     const resolvedPath = path.resolve(fullPath);
     const resolvedUploadsDir = path.resolve(uploadsDir);
 

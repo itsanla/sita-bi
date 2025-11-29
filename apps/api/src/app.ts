@@ -26,7 +26,7 @@ import importRouter from './api/import.router';
 import rbacRouter from './api/rbac.router';
 import { errorHandler } from './middlewares/error.middleware';
 import { activityLogger } from './middlewares/logger.middleware';
-import { getUploadPath, getMonorepoRoot } from './utils/upload.config';
+import { getUploadPath, getApiRoot } from './utils/upload.config';
 import { whatsappService } from './services/whatsapp.service'; // WhatsApp service
 
 const app: express.Express = express();
@@ -44,10 +44,10 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Pastikan directory uploads exists di monorepo root
+// Pastikan directory uploads exists di apps/api
 const uploadsPath = getUploadPath();
 
-// Serve static files from uploads directory (from monorepo root)
+// Serve static files from uploads directory (from apps/api)
 app.use('/uploads', express.static(uploadsPath));
 
 console.warn('⚠️  WhatsApp not connected - Server running without WhatsApp');
@@ -80,7 +80,7 @@ app.get('/health', (_req, res) => {
     status: 'OK',
     timestamp: new Date().toISOString(),
     uploadsPath: uploadsPath,
-    monorepoRoot: getMonorepoRoot(),
+    apiRoot: getApiRoot(),
     whatsapp: {
       isReady: whatsappStatus.isReady,
       hasQR: whatsappStatus.hasQR,

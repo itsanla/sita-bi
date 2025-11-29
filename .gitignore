@@ -62,3 +62,10 @@ pnpm-debug.log*
 # Misc
 .DS_Store
 *.pem
+
+# Uploads (keep structure but ignore files)
+apps/api/uploads/*
+!apps/api/uploads/.gitkeep
+!apps/api/uploads/bimbingan/
+apps/api/uploads/bimbingan/*
+!apps/api/uploads/bimbingan/.gitkeep
