@@ -19,14 +19,14 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@faker-js/faker": "^10.0.0",
+    "@faker-js/faker": "^10.1.0",
     "@types/bcrypt": "^6.0.0",
-    "@types/node": "^20.15.3",
+    "@types/node": "^20.19.25",
     "bcrypt": "^6.0.0",
-    "prisma": "^6.16.3",
+    "prisma": "^6.19.0",
     "ts-node": "^10.9.2",
-    "tsup": "^8.2.2",
-    "typescript": "^5.5.4"
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
   },
   "exports": {
     ".": {
@@ -35,6 +35,6 @@
     }
   },
   "dependencies": {
-    "@prisma/client": "^6.16.3"
+    "@prisma/client": "^6.19.0"
   }
 }

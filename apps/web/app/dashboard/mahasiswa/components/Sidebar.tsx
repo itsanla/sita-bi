@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   LayoutDashboard,
+  UserPlus,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -29,6 +30,11 @@ const navItems = [
     href: '/dashboard/mahasiswa/tugas-akhir',
     icon: FileText,
     label: 'Tugas Akhir',
+  },
+  {
+    href: '/dashboard/mahasiswa/pengajuan',
+    icon: UserPlus,
+    label: 'Pengajuan Pembimbing',
   },
   {
     href: '/dashboard/mahasiswa/bimbingan',

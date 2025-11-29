@@ -63,7 +63,6 @@ async function main() {
       dosen: {
         create: {
           nip: '0001018801',
-          prodi: Prodi.D4,
           kuota_bimbingan: 4,
         },
       },
@@ -83,7 +82,6 @@ async function main() {
       dosen: {
         create: {
           nip: '0002028802',
-          prodi: Prodi.D3,
           kuota_bimbingan: 4,
         },
       },
@@ -103,7 +101,6 @@ async function main() {
       dosen: {
         create: {
           nip: '0003038803',
-          prodi: Prodi.D4,
           kuota_bimbingan: 4,
         },
       },
@@ -154,7 +151,6 @@ async function main() {
         dosen: {
           create: {
             nip: data.nip,
-            prodi: data.prodi,
             kuota_bimbingan: 4,
           },
         },

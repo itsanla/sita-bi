@@ -23,11 +23,11 @@
     "check:fast": "pnpm --filter web lint && prettier --check apps/web/**/*.{ts,tsx,js,jsx,json} && pnpm --filter api lint && pnpm --filter api run format:check"
   },
   "devDependencies": {
-    "@playwright/test": "^1.56.1",
+    "@playwright/test": "^1.57.0",
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "concurrently": "^9.2.1",
-    "prettier": "^3.6.2",
+    "prettier": "^3.7.2",
     "turbo": "^2.6.1"
   },
   "packageManager": "pnpm@8.15.5",

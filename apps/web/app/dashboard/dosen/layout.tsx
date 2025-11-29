@@ -17,14 +17,15 @@ import {
   Users,
   Menu,
   Settings,
+  UserPlus,
 } from 'lucide-react';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
   { href: '/dashboard/dosen', icon: Home, label: 'Dashboard' },
+  { href: '/dashboard/dosen/pengajuan', icon: UserPlus, label: 'Pengajuan Pembimbing' },
   { href: '/dashboard/dosen/bimbingan', icon: BookUser, label: 'Bimbingan' },
-  { href: '/dashboard/dosen/pengajuan-bimbingan', icon: Users, label: 'Pengajuan Bimbingan' },
   { href: '/dashboard/dosen/tawaran-topik', icon: Lightbulb, label: 'Tawaran Topik' },
   { href: '/dashboard/dosen/sidang-approvals', icon: ClipboardCheck, label: 'Persetujuan Sidang' },
   { href: '/dashboard/dosen/penilaian', icon: GraduationCap, label: 'Penilaian' },
