@@ -221,4 +221,55 @@ export class BimbinganRepository {
       },
     });
   }
+
+  async createEmptySesi(tugasAkhirId: number, dosenId: number, peran: string, sesiKe: number) {
+    return this.prisma.bimbinganTA.create({
+      data: {
+        tugas_akhir_id: tugasAkhirId,
+        dosen_id: dosenId,
+        peran,
+        sesi_ke: sesiKe,
+        status_bimbingan: 'dijadwalkan',
+      },
+    });
+  }
+
+  async countBimbinganByTugasAkhir(tugasAkhirId: number) {
+    return this.prisma.bimbinganTA.count({
+      where: { tugas_akhir_id: tugasAkhirId },
+    });
+  }
+
+  async updateJadwalBimbingan(id: number, tanggal: Date, jamMulai: string, jamSelesai?: string) {
+    return this.prisma.bimbinganTA.update({
+      where: { id },
+      data: {
+        tanggal_bimbingan: tanggal,
+        jam_bimbingan: jamMulai,
+        jam_selesai: jamSelesai,
+        status_bimbingan: 'dijadwalkan',
+      },
+    });
+  }
+
+  async findBimbinganWithAccess(id: number, userId: number) {
+    return this.prisma.bimbinganTA.findFirst({
+      where: {
+        id,
+        OR: [
+          { dosen: { user_id: userId } },
+          { tugasAkhir: { mahasiswa: { user_id: userId } } },
+        ],
+      },
+      include: {
+        tugasAkhir: {
+          include: {
+            mahasiswa: { include: { user: true } },
+            peranDosenTa: { include: { dosen: true } },
+          },
+        },
+        dosen: { include: { user: true } },
+      },
+    });
+  }
 }

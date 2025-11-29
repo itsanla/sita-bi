@@ -11,7 +11,7 @@ import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validateDosenTugasAkhirAccess } from '../middlewares/rbac.middleware';
 import { validate } from '../middlewares/validation.middleware';
 import { Role } from '../middlewares/auth.middleware';
-import { createCatatanSchema, setJadwalSchema } from '../dto/bimbingan.dto';
+import { createCatatanSchema, setJadwalSchema, createSesiSchema, setJadwalSesiSchema } from '../dto/bimbingan.dto';
 import { NotFoundError, BadRequestError } from '../errors/AppError';
 import multer from 'multer';
 import path from 'path';
@@ -188,16 +188,67 @@ router.post(
   }),
 );
 
+// Endpoint baru: Buat sesi kosong
 router.post(
-  '/sesi/:id/konfirmasi',
-  authorizeRoles([Role.dosen]),
+  '/sesi',
+  authorizeRoles([Role.dosen, Role.mahasiswa]),
+  validate(createSesiSchema),
   asyncHandler(async (req, res): Promise<void> => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestError('ID pengguna tidak ditemukan');
+    }
+
+    const { tugas_akhir_id } = req.body;
+    const newSesi = await bimbinganService.createEmptySesi(tugas_akhir_id, userId);
+    res.status(201).json({ status: 'sukses', data: newSesi });
+  }),
+);
+
+// Endpoint baru: Set jadwal pada sesi yang sudah ada
+router.put(
+  '/sesi/:id/jadwal',
+  authorizeRoles([Role.dosen, Role.mahasiswa]),
+  validate(setJadwalSesiSchema),
+  asyncHandler(async (req, res): Promise<void> => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestError('ID pengguna tidak ditemukan');
+    }
+
     const { id } = req.params;
     if (!id) {
       throw new BadRequestError('ID Sesi diperlukan');
     }
 
-    const result = await bimbinganService.konfirmasiBimbingan(parseInt(id, 10));
+    const { tanggal_bimbingan, jam_bimbingan, jam_selesai } = req.body;
+    const updated = await bimbinganService.setJadwalSesi(
+      parseInt(id, 10),
+      userId,
+      tanggal_bimbingan,
+      jam_bimbingan,
+      jam_selesai,
+    );
+    res.status(200).json({ status: 'sukses', data: updated });
+  }),
+);
+
+// Endpoint baru: Konfirmasi bimbingan selesai (hanya dosen)
+router.post(
+  '/sesi/:id/konfirmasi',
+  authorizeRoles([Role.dosen]),
+  asyncHandler(async (req, res): Promise<void> => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestError('ID pengguna tidak ditemukan');
+    }
+
+    const { id } = req.params;
+    if (!id) {
+      throw new BadRequestError('ID Sesi diperlukan');
+    }
+
+    const result = await bimbinganService.konfirmasiSelesai(parseInt(id, 10), userId);
     res.status(200).json({ status: 'sukses', data: result });
   }),
 );

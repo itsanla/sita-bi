@@ -233,7 +233,18 @@ export class PenugasanService {
       }),
     );
 
-    return this.prisma.$transaction(queries);
+    const result = await this.prisma.$transaction(queries);
+
+    // Auto-create 9 empty sessions after pembimbing assigned
+    try {
+      const { BimbinganService } = await import('./bimbingan.service');
+      const bimbinganService = new BimbinganService();
+      await bimbinganService.initializeEmptySessions(tugasAkhirId);
+    } catch (error) {
+      console.error('Failed to initialize empty sessions:', error);
+    }
+
+    return result;
   }
 
   async assignPenguji(

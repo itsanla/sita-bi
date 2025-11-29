@@ -606,4 +606,139 @@ export class BimbinganService {
 
     return this.repository.konfirmasiBimbingan(bimbinganTaId);
   }
+
+  async initializeEmptySessions(tugasAkhirId: number): Promise<void> {
+    const tugasAkhir = await this.prisma.tugasAkhir.findUnique({
+      where: { id: tugasAkhirId },
+      include: { peranDosenTa: true },
+    });
+
+    if (!tugasAkhir) {
+      throw new NotFoundError('Tugas Akhir tidak ditemukan');
+    }
+
+    const pembimbing = tugasAkhir.peranDosenTa.find(
+      (p) => p.peran === 'pembimbing1' || p.peran === 'pembimbing2',
+    );
+
+    if (!pembimbing) {
+      return;
+    }
+
+    const existingCount = await this.repository.countBimbinganByTugasAkhir(tugasAkhirId);
+    if (existingCount > 0) {
+      return;
+    }
+
+    for (let i = 1; i <= 9; i++) {
+      await this.repository.createEmptySesi(
+        tugasAkhirId,
+        pembimbing.dosen_id,
+        pembimbing.peran,
+        i,
+      );
+    }
+  }
+
+  async createEmptySesi(tugasAkhirId: number, userId: number): Promise<unknown> {
+    const tugasAkhir = await this.prisma.tugasAkhir.findUnique({
+      where: { id: tugasAkhirId },
+      include: {
+        mahasiswa: true,
+        peranDosenTa: { include: { dosen: true } },
+      },
+    });
+
+    if (!tugasAkhir) {
+      throw new NotFoundError('Tugas Akhir tidak ditemukan');
+    }
+
+    const isMahasiswa = tugasAkhir.mahasiswa.user_id === userId;
+    const pembimbing = tugasAkhir.peranDosenTa.find(
+      (p) => p.dosen.user_id === userId && (p.peran === 'pembimbing1' || p.peran === 'pembimbing2'),
+    );
+
+    if (!isMahasiswa && !pembimbing) {
+      throw new UnauthorizedError('Anda tidak memiliki akses untuk membuat sesi bimbingan');
+    }
+
+    const currentCount = await this.repository.countBimbinganByTugasAkhir(tugasAkhirId);
+    const nextSesi = currentCount + 1;
+
+    const dosenPembimbing = tugasAkhir.peranDosenTa.find(
+      (p) => p.peran === 'pembimbing1' || p.peran === 'pembimbing2',
+    );
+
+    if (!dosenPembimbing) {
+      throw new NotFoundError('Pembimbing belum ditugaskan');
+    }
+
+    const newSesi = await this.repository.createEmptySesi(
+      tugasAkhirId,
+      dosenPembimbing.dosen_id,
+      dosenPembimbing.peran,
+      nextSesi,
+    );
+
+    await this.logActivity(userId, `Membuat sesi bimbingan ke-${nextSesi} untuk TA ID ${tugasAkhirId}`);
+
+    return newSesi;
+  }
+
+  async setJadwalSesi(
+    bimbinganId: number,
+    userId: number,
+    tanggal: string,
+    jamMulai: string,
+    jamSelesai?: string,
+  ): Promise<unknown> {
+    const bimbingan = await this.repository.findBimbinganWithAccess(bimbinganId, userId);
+
+    if (!bimbingan) {
+      throw new NotFoundError('Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses');
+    }
+
+    const tanggalDate = new Date(tanggal);
+    const dosenId = bimbingan.dosen_id;
+
+    const hasConflict = await this.detectScheduleConflicts(dosenId, tanggalDate, jamMulai);
+    if (hasConflict) {
+      throw new ConflictError('Jadwal konflik dengan bimbingan atau sidang lain');
+    }
+
+    const updated = await this.repository.updateJadwalBimbingan(
+      bimbinganId,
+      tanggalDate,
+      jamMulai,
+      jamSelesai,
+    );
+
+    await this.logActivity(
+      userId,
+      `Set jadwal bimbingan ID ${bimbinganId} pada ${tanggal} ${jamMulai}`,
+    );
+
+    return updated;
+  }
+
+  async konfirmasiSelesai(bimbinganId: number, dosenUserId: number): Promise<unknown> {
+    const dosen = await this.repository.findDosenByUserId(dosenUserId);
+    if (!dosen) {
+      throw new NotFoundError('Dosen tidak ditemukan');
+    }
+
+    const bimbingan = await this.repository.findBimbinganByIdAndDosen(bimbinganId, dosen.id);
+    if (!bimbingan) {
+      throw new NotFoundError('Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses');
+    }
+
+    if (!bimbingan.tanggal_bimbingan || !bimbingan.jam_bimbingan) {
+      throw new ConflictError('Sesi belum dijadwalkan');
+    }
+
+    const result = await this.repository.konfirmasiBimbingan(bimbinganId);
+    await this.logActivity(dosenUserId, `Konfirmasi selesai bimbingan ID ${bimbinganId}`);
+
+    return result;
+  }
 }

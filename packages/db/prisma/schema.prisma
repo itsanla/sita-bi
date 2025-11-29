@@ -327,10 +327,11 @@ model BimbinganTA {
   tugas_akhir_id    Int
   dosen_id          Int
   peran             String
-  sesi_ke           Int?
+  sesi_ke           Int
   tanggal_bimbingan DateTime?
   jam_bimbingan     String?
-  status_bimbingan  StatusBimbingan
+  jam_selesai       String?
+  status_bimbingan  StatusBimbingan @default(dijadwalkan)
   is_konfirmasi     Boolean         @default(false)
   konfirmasi_at     DateTime?
   created_at        DateTime        @default(now())
@@ -393,18 +394,19 @@ model HistoryPerubahanJadwal {
 }
 
 model PengajuanBimbingan {
-  id              Int             @id @default(autoincrement())
-  mahasiswa_id    Int
-  dosen_id        Int
-  diinisiasi_oleh String
-  status          PengajuanStatus @default(MENUNGGU_PERSETUJUAN_DOSEN)
-  created_at      DateTime        @default(now())
-  updated_at      DateTime        @updatedAt
+  id                  Int             @id @default(autoincrement())
+  mahasiswa_id        Int
+  dosen_id            Int
+  diinisiasi_oleh     String
+  peran_yang_diajukan String // "pembimbing1" atau "pembimbing2"
+  status              PengajuanStatus @default(MENUNGGU_PERSETUJUAN_DOSEN)
+  created_at          DateTime        @default(now())
+  updated_at          DateTime        @updatedAt
 
   mahasiswa Mahasiswa @relation(fields: [mahasiswa_id], references: [id], onDelete: Cascade)
   dosen     Dosen     @relation(fields: [dosen_id], references: [id], onDelete: Cascade)
 
-  @@unique([mahasiswa_id, dosen_id])
+  @@unique([mahasiswa_id, dosen_id, peran_yang_diajukan])
   @@map("pengajuan_bimbingan")
 }
 

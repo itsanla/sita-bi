@@ -18,19 +18,25 @@ router.post(
         status: 'gagal',
         message: 'Akses ditolak: Anda bukan mahasiswa',
       });
-
       return;
     }
 
     const mahasiswaId = req.user.mahasiswa.id;
-    const { dosenId } = req.body;
+    const { dosenId, peran } = req.body;
 
     if (typeof dosenId !== 'number' && typeof dosenId !== 'string') {
       res.status(400).json({
         status: 'gagal',
         message: 'ID dosen diperlukan',
       });
+      return;
+    }
 
+    if (!peran || !['pembimbing1', 'pembimbing2'].includes(peran)) {
+      res.status(400).json({
+        status: 'gagal',
+        message: 'Peran harus pembimbing1 atau pembimbing2',
+      });
       return;
     }
 
@@ -38,6 +44,7 @@ router.post(
       const result = await pengajuanService.ajukanKeDosen(
         mahasiswaId,
         parseInt(String(dosenId), 10),
+        peran,
       );
       res.status(201).json({ status: 'sukses', data: result });
     } catch (_error) {
@@ -85,19 +92,25 @@ router.post(
         status: 'gagal',
         message: 'Akses ditolak: Anda bukan dosen',
       });
-
       return;
     }
 
     const dosenId = req.user.dosen.id;
-    const { mahasiswaId } = req.body;
+    const { mahasiswaId, peran } = req.body;
 
     if (typeof mahasiswaId !== 'number' && typeof mahasiswaId !== 'string') {
       res.status(400).json({
         status: 'gagal',
         message: 'ID mahasiswa diperlukan',
       });
+      return;
+    }
 
+    if (!peran || !['pembimbing1', 'pembimbing2'].includes(peran)) {
+      res.status(400).json({
+        status: 'gagal',
+        message: 'Peran harus pembimbing1 atau pembimbing2',
+      });
       return;
     }
 
@@ -105,6 +118,7 @@ router.post(
       const result = await pengajuanService.tawariMahasiswa(
         dosenId,
         parseInt(String(mahasiswaId), 10),
+        peran,
       );
       res.status(201).json({ status: 'sukses', data: result });
     } catch (_error) {
@@ -252,6 +266,46 @@ router.post(
       res.status(400).json({
         status: 'gagal',
         message: error instanceof Error ? error.message : 'Terjadi kesalahan',
+      });
+    }
+  }),
+);
+
+// Endpoint untuk mendapatkan list dosen tersedia
+router.get(
+  '/dosen-tersedia',
+  asyncHandler(async (req, res) => {
+    try {
+      const result = await pengajuanService.getAvailableDosen();
+      res.status(200).json({ status: 'sukses', data: result });
+    } catch (_error) {
+      res.status(500).json({
+        status: 'gagal',
+        message: 'Gagal mendapatkan data dosen',
+      });
+    }
+  }),
+);
+
+// Endpoint untuk mendapatkan list mahasiswa tersedia (untuk dosen)
+router.get(
+  '/mahasiswa-tersedia',
+  asyncHandler(async (req, res) => {
+    if (typeof req.user?.dosen?.id !== 'number') {
+      res.status(401).json({
+        status: 'gagal',
+        message: 'Akses ditolak: Anda bukan dosen',
+      });
+      return;
+    }
+
+    try {
+      const result = await pengajuanService.getAvailableMahasiswa();
+      res.status(200).json({ status: 'sukses', data: result });
+    } catch (_error) {
+      res.status(500).json({
+        status: 'gagal',
+        message: 'Gagal mendapatkan data mahasiswa',
       });
     }
   }),
