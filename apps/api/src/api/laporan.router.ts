@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../utils/asyncHandler';
 import { LaporanService } from '../services/laporan.service';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
-import { Role } from '@repo/types';
+import { Role } from '../middlewares/auth.middleware';
 
 const router: Router = Router();
 const laporanService = new LaporanService();

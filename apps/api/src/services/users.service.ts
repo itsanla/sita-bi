@@ -7,7 +7,7 @@ import type {
   UpdateMahasiswaDto,
   CreateMahasiswaDto,
 } from '../dto/users.dto';
-import { Role } from '@repo/types';
+import { Role } from '../middlewares/auth.middleware';
 
 export class UsersService {
   private prisma: PrismaClient;

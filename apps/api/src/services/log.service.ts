@@ -19,6 +19,7 @@ interface LogFilters {
   level?: LogLevel;
   user_id?: string;
   entity_id?: string;
+  date?: string; // Format: YYYY-MM-DD
 }
 
 export class LogService {
@@ -62,6 +63,18 @@ export class LogService {
       where.user_id = parseInt(filters.user_id, 10);
     if (filters.entity_id !== undefined && filters.entity_id.length > 0)
       where.entity_id = parseInt(filters.entity_id, 10);
+    
+    // Filter by date (YYYY-MM-DD)
+    if (filters.date !== undefined && filters.date.length > 0) {
+      const startOfDay = new Date(filters.date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(filters.date);
+      endOfDay.setHours(23, 59, 59, 999);
+      where.created_at = {
+        gte: startOfDay,
+        lte: endOfDay,
+      };
+    }
 
     const [logs, total] = await this.prisma.$transaction([
       this.prisma.log.findMany({

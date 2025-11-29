@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { Prodi } from '@repo/db';
-import { Role } from '@repo/types';
+import { Role } from '../middlewares/auth.middleware';
 
 const validRoles = [Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4, Role.dosen];
 

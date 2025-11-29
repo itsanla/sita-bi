@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../utils/asyncHandler';
 import { AuthService } from '../services/auth.service';
 import { validate } from '../middlewares/validation.middleware';
 import {

@@ -16,6 +16,7 @@ import {
   Menu,
   LayoutDashboard,
   Upload,
+  ScrollText,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -35,6 +36,7 @@ const navItems = [
   { href: '/dashboard/admin/pengumuman', icon: Megaphone, label: 'Pengumuman' },
   { href: '/dashboard/admin/import', icon: Upload, label: 'Import Data' },
   { href: '/dashboard/admin/reports', icon: FileText, label: 'Laporan' },
+  { href: '/dashboard/admin/logs', icon: ScrollText, label: 'Log Aktivitas' },
 ];
 
 const NavLink = ({

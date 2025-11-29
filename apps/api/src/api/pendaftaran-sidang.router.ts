@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../utils/asyncHandler';
 import { PrismaClient } from '@repo/db';
 import { PendaftaranSidangService } from '../services/pendaftaran-sidang.service';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
-import { Role } from '@repo/types';
+import { Role } from '../middlewares/auth.middleware';
 import { rejectPendaftaranSchema } from '../dto/pendaftaran-sidang.dto';
 import { uploadSidangFiles } from '../middlewares/upload.middleware';
 

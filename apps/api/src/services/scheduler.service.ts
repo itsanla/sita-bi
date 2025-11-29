@@ -16,9 +16,17 @@ export class SchedulerService {
   }
 
   init(): void {
+    // Daily reminders at 7 AM
     cron.schedule('0 7 * * *', () => {
       this.runDailyReminders().catch((err: unknown) => {
         console.error('Error in daily reminders:', err);
+      });
+    });
+
+    // Cleanup old logs every day at 2 AM
+    cron.schedule('0 2 * * *', () => {
+      this.cleanupOldLogs().catch((err: unknown) => {
+        console.error('Error in log cleanup:', err);
       });
     });
   }
@@ -180,5 +188,19 @@ export class SchedulerService {
         );
       }
     }
+  }
+
+  async cleanupOldLogs(): Promise<void> {
+    // Delete logs older than 90 days (3 months)
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+    const deleted = await this.prisma.log.deleteMany({
+      where: {
+        created_at: { lt: ninetyDaysAgo },
+      },
+    });
+
+    console.log(`Cleaned up ${deleted.count} old logs (older than 90 days)`);
   }
 }

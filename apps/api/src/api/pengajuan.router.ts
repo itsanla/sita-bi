@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../utils/asyncHandler';
 import { PengajuanService } from '../services/pengajuan.service';
 import { authMiddleware } from '../middlewares/auth.middleware';
 

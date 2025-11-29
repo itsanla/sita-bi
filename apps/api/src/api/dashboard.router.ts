@@ -1,9 +1,9 @@
 import { Router, type Request, type Response } from 'express';
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../utils/asyncHandler';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
-import { Role } from '@repo/types';
+import { Role } from '../middlewares/auth.middleware';
 import { DashboardService } from '../services/dashboard.service';
 import {
   getMahasiswaActivitiesQuerySchema,

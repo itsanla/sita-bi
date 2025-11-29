@@ -18,8 +18,8 @@
     "dev:frontend": "pnpm --filter web dev",
     "dev:backend": "pnpm --filter api dev",
     "check:backend": "pnpm --filter api lint && pnpm --filter api run format:check && pnpm --filter api run test",
-    "check:frontend": "pnpm --filter web lint && prettier --write apps/web/**/*.{ts,tsx,js,jsx,json} && set ANALYZE=true && pnpm --filter web build",
-    "check": "pnpm --filter web lint && prettier --write apps/web/**/*.{ts,tsx,js,jsx,json} && set ANALYZE=true && pnpm --filter web build && pnpm --filter api lint && pnpm --filter api run format:check && pnpm --filter api run build && pnpm --filter api run test",
+    "check:frontend": "pnpm --filter web lint && prettier --write apps/web/**/*.{ts,tsx,js,jsx,json} && pnpm --filter web build",
+    "check": "pnpm --filter web lint && prettier --write apps/web/**/*.{ts,tsx,js,jsx,json} && pnpm --filter web build && pnpm --filter api lint && pnpm --filter api run format:check && pnpm --filter api run build && pnpm --filter api run test",
     "check:fast": "pnpm --filter web lint && prettier --check apps/web/**/*.{ts,tsx,js,jsx,json} && pnpm --filter api lint && pnpm --filter api run format:check"
   },
   "devDependencies": {
@@ -41,11 +41,5 @@
       "glob": "^10.0.0",
       "rimraf": "^5.0.0"
     }
-  },
-  "dependencies": {
-    "@tiptap/extension-link": "^3.11.0",
-    "@tiptap/extension-underline": "^3.11.0",
-    "@tiptap/react": "^3.11.0",
-    "@tiptap/starter-kit": "^3.11.0"
   }
 }

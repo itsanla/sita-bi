@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../utils/asyncHandler';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import prisma from '../config/database';
 

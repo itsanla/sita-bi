@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../utils/asyncHandler';
 import * as path from 'path';
 import * as fs from 'fs';
 import multer from 'multer';

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../utils/asyncHandler';
 import { ProfileService } from '../services/profile.service';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validation.middleware';

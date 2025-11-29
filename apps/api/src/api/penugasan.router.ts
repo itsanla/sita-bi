@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from 'express';
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../utils/asyncHandler';
 import {
   assignPengujiSchema,
   PenugasanService,
@@ -7,7 +7,7 @@ import {
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
-import { Role } from '@repo/types';
+import { Role } from '../middlewares/auth.middleware';
 import { assignPembimbingSchema } from '../dto/penugasan.dto';
 import { validateTeamComposition } from '../utils/rbac-helpers';
 

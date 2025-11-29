@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../utils/asyncHandler';
 import { LogService } from '../services/log.service';
 import {
   authMiddleware,
   insecureAuthMiddleware,
 } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
-import { Role } from '@repo/types';
+import { Role } from '../middlewares/auth.middleware';
 
 const router: Router = Router();
 const logService = new LogService();
@@ -29,8 +29,12 @@ router.get(
         : undefined;
 
     // Ensure filters are strings and respect exactOptionalPropertyTypes
-    const filters: { module?: string; user_id?: string; entity_id?: string } =
-      {};
+    const filters: { 
+      module?: string; 
+      user_id?: string; 
+      entity_id?: string;
+      date?: string;
+    } = {};
 
     if (typeof req.query['module'] === 'string') {
       filters.module = req.query['module'];
@@ -40,6 +44,9 @@ router.get(
     }
     if (typeof req.query['entity_id'] === 'string') {
       filters.entity_id = req.query['entity_id'];
+    }
+    if (typeof req.query['date'] === 'string') {
+      filters.date = req.query['date']; // Format: YYYY-MM-DD
     }
 
     const logs = await logService.findAll(page, limit, filters);

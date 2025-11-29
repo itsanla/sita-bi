@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../utils/asyncHandler';
 import { JadwalSidangService } from '../services/jadwal-sidang.service';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
-import { Role } from '@repo/types';
+import { Role } from '../middlewares/auth.middleware';
 import { createJadwalSchema, paginationSchema } from '../dto/jadwal-sidang.dto';
 import { HttpError } from '../middlewares/error.middleware';
 

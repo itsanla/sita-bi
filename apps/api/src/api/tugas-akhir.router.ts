@@ -1,10 +1,10 @@
 import { Router, type Request, type Response } from 'express';
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../utils/asyncHandler';
 import { TugasAkhirService } from '../services/tugas-akhir.service';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
-import { Role } from '@repo/types';
+import { Role } from '../middlewares/auth.middleware';
 import { createTugasAkhirSchema } from '../dto/tugas-akhir.dto';
 // NOTE: rejectTugasAkhirSchema dan tugasAkhirGuard di-comment karena method terkait belum diimplementasi
 // import { rejectTugasAkhirSchema } from '../dto/tugas-akhir.dto';

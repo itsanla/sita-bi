@@ -4,13 +4,13 @@ import {
   type Response,
   type NextFunction,
 } from 'express';
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../utils/asyncHandler';
 import { BimbinganService } from '../services/bimbingan.service';
 import { insecureAuthMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validateDosenTugasAkhirAccess } from '../middlewares/rbac.middleware';
 import { validate } from '../middlewares/validation.middleware';
-import { Role } from '@repo/types';
+import { Role } from '../middlewares/auth.middleware';
 import { createCatatanSchema, setJadwalSchema } from '../dto/bimbingan.dto';
 import { NotFoundError, BadRequestError } from '../errors/AppError';
 import multer from 'multer';

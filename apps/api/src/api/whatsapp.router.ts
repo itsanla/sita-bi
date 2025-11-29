@@ -1,6 +1,6 @@
 import type { Request, Response, Router as ExpressRouter } from 'express';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../utils/asyncHandler';
 import { whatsappService } from '../services/whatsapp.service';
 import { authMiddleware } from '../middlewares/auth.middleware';
 

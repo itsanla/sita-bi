@@ -4,7 +4,7 @@ import { authenticate } from '../middlewares/auth.middleware';
 import { validateRequest } from '../middlewares/validation.middleware';
 import { createRateLimiter } from '../middlewares/rate-limit.middleware';
 import { ChatRequestSchema, ChatStreamRequestSchema } from '../dto/gemini.dto';
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../utils/asyncHandler';
 import { logger } from '../utils/logger';
 
 const router: Router = Router();

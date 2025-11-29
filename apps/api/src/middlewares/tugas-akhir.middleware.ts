@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@repo/db';
-import { Role } from '@repo/types';
+import { Role } from '../middlewares/auth.middleware';
 
 const prisma = new PrismaClient();
 

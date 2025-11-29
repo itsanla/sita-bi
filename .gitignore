@@ -7,11 +7,12 @@ node_modules
 
 # Local env files
 .env
-
 .wwebjs_auth
 .wwebjs_cache
-
 .github
+.vscode
+.amazonq
+
 # Testing
 .nyc_output
 blob-report/
