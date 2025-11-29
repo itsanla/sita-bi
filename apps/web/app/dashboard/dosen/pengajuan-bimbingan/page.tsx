@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import request from '@/lib/api';
 import { useAuth } from '../../../../context/AuthContext';
-import { Send, CheckCircle, XCircle, Clock, User } from 'lucide-react';
+import { Send, CheckCircle, XCircle, Clock, User, Users, X } from 'lucide-react';
 
 // --- Interfaces ---
 interface Mahasiswa {
@@ -26,11 +26,28 @@ interface PengajuanBimbingan {
   created_at: string;
 }
 
+interface MahasiswaBimbingan {
+  id: number;
+  peran: string;
+  tugasAkhir: {
+    mahasiswa: {
+      user: { name: string; email: string };
+      nim: string;
+    };
+  };
+  pengajuanPelepasanBimbingan?: Array<{
+    id: number;
+    diajukan_oleh_user_id: number;
+    status: string;
+  }>;
+}
+
 // --- Main Page Component ---
 export default function PengajuanBimbinganPage() {
   const { user } = useAuth();
   const [proposals, setProposals] = useState<PengajuanBimbingan[]>([]);
   const [availableMahasiswa, setAvailableMahasiswa] = useState<Mahasiswa[]>([]);
+  const [mahasiswaBimbingan, setMahasiswaBimbingan] = useState<MahasiswaBimbingan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -40,13 +57,14 @@ export default function PengajuanBimbinganPage() {
       setError('');
 
       // Fetch proposals for this dosen
-      const proposalsResponse = await request<{ data: PengajuanBimbingan[] }>(
+      const proposalsResponse = await request<{ data: PengajuanBimbingan[]; mahasiswaBimbingan: MahasiswaBimbingan[] }>(
         '/pengajuan/dosen',
       );
       if (Array.isArray(proposalsResponse.data)) {
-        if (Array.isArray(proposalsResponse.data)) {
-          setProposals(proposalsResponse.data);
-        }
+        setProposals(proposalsResponse.data);
+      }
+      if (Array.isArray(proposalsResponse.mahasiswaBimbingan)) {
+        setMahasiswaBimbingan(proposalsResponse.mahasiswaBimbingan);
       }
 
       // Fetch available mahasiswa (yang belum punya pembimbing)
@@ -128,6 +146,34 @@ export default function PengajuanBimbinganPage() {
     }
   };
 
+  const handleLepaskanBimbingan = async (peranDosenTaId: number) => {
+    if (!confirm('Apakah Anda yakin ingin mengajukan pelepasan bimbingan ini?')) return;
+    try {
+      await request('/pengajuan/lepaskan', {
+        method: 'POST',
+        data: { peranDosenTaId },
+      });
+      alert('Berhasil mengajukan pelepasan bimbingan');
+      fetchData();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+  };
+
+  const handleKonfirmasiPelepasan = async (pengajuanId: number, action: 'konfirmasi' | 'tolak') => {
+    try {
+      await request(`/pengajuan/lepaskan/${pengajuanId}/${action}`, { method: 'POST' });
+      alert(`Berhasil ${action === 'konfirmasi' ? 'menyetujui' : 'menolak'} pelepasan`);
+      fetchData();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+  };
+
   if (loading)
     return (
       <div className="flex items-center justify-center p-8">
@@ -159,6 +205,75 @@ export default function PengajuanBimbinganPage() {
       <h1 className="text-3xl font-bold text-gray-800">
         Supervision Proposals
       </h1>
+
+      {/* Mahasiswa Bimbingan Aktif */}
+      {mahasiswaBimbingan.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
+            <Users className="mr-2" size={24} />
+            Mahasiswa Bimbingan Aktif ({mahasiswaBimbingan.length})
+          </h2>
+          <div className="space-y-3">
+            {mahasiswaBimbingan.map((bimbingan) => {
+              const pengajuanAktif = bimbingan.pengajuanPelepasanBimbingan?.[0];
+              const isUserYangMengajukan = pengajuanAktif?.diajukan_oleh_user_id === user?.id;
+
+              return (
+                <div key={bimbingan.id} className="p-4 border rounded-lg flex justify-between items-center hover:bg-gray-50">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-bold text-gray-900">
+                        {bimbingan.tugasAkhir.mahasiswa.user.name}
+                      </p>
+                      <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                        {bimbingan.peran === 'pembimbing1' ? 'P1' : 'P2'}
+                      </span>
+                      {pengajuanAktif && (
+                        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                          Pengajuan Pelepasan
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      NIM: {bimbingan.tugasAkhir.mahasiswa.nim}
+                    </p>
+                  </div>
+                  {pengajuanAktif ? (
+                    isUserYangMengajukan ? (
+                      <span className="text-xs text-gray-500">Menunggu konfirmasi mahasiswa</span>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleKonfirmasiPelepasan(pengajuanAktif.id, 'konfirmasi')}
+                          className="px-3 py-1.5 text-xs font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all flex items-center gap-1.5"
+                        >
+                          <CheckCircle size={14} />
+                          Setuju
+                        </button>
+                        <button
+                          onClick={() => handleKonfirmasiPelepasan(pengajuanAktif.id, 'tolak')}
+                          className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all flex items-center gap-1.5"
+                        >
+                          <XCircle size={14} />
+                          Tolak
+                        </button>
+                      </div>
+                    )
+                  ) : (
+                    <button
+                      onClick={() => handleLepaskanBimbingan(bimbingan.id)}
+                      className="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1.5"
+                    >
+                      <X size={14} />
+                      Lepaskan
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column - Available Students */}

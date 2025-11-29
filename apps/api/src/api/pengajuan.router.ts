@@ -73,7 +73,13 @@ router.get(
 
     try {
       const result = await pengajuanService.getPengajuanMahasiswa(mahasiswaId);
-      res.status(200).json({ status: 'sukses', data: result });
+      const resultData = result as { pengajuan: any[]; pembimbingAktif: any[]; pelepasan: any[] };
+      res.status(200).json({ 
+        status: 'sukses', 
+        data: resultData.pengajuan,
+        pembimbingAktif: resultData.pembimbingAktif,
+        pelepasan: resultData.pelepasan 
+      });
     } catch (_error) {
       res.status(500).json({
         status: 'gagal',
@@ -147,7 +153,12 @@ router.get(
 
     try {
       const result = await pengajuanService.getPengajuanDosen(dosenId);
-      res.status(200).json({ status: 'sukses', data: result });
+      const resultData = result as { pengajuan: any[]; mahasiswaBimbingan: any[] };
+      res.status(200).json({ 
+        status: 'sukses', 
+        data: resultData.pengajuan,
+        mahasiswaBimbingan: resultData.mahasiswaBimbingan 
+      });
     } catch (_error) {
       res.status(500).json({
         status: 'gagal',
@@ -306,6 +317,115 @@ router.get(
       res.status(500).json({
         status: 'gagal',
         message: 'Gagal mendapatkan data mahasiswa',
+      });
+    }
+  }),
+);
+
+// Endpoint untuk mengajukan pelepasan bimbingan
+router.post(
+  '/lepaskan',
+  asyncHandler(async (req, res) => {
+    if (typeof req.user?.id !== 'number') {
+      res.status(401).json({
+        status: 'gagal',
+        message: 'Unauthorized',
+      });
+      return;
+    }
+
+    const { peranDosenTaId } = req.body;
+
+    if (typeof peranDosenTaId !== 'number') {
+      res.status(400).json({
+        status: 'gagal',
+        message: 'ID peran dosen TA diperlukan',
+      });
+      return;
+    }
+
+    try {
+      const result = await pengajuanService.ajukanPelepasanBimbingan(
+        peranDosenTaId,
+        req.user.id,
+      );
+      res.status(201).json({ status: 'sukses', data: result });
+    } catch (error) {
+      res.status(400).json({
+        status: 'gagal',
+        message: error instanceof Error ? error.message : 'Terjadi kesalahan',
+      });
+    }
+  }),
+);
+
+// Endpoint untuk konfirmasi pelepasan bimbingan
+router.post(
+  '/lepaskan/:id/konfirmasi',
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    if (typeof id !== 'string' || id.length === 0) {
+      res.status(400).json({
+        status: 'gagal',
+        message: 'ID pengajuan pelepasan diperlukan',
+      });
+      return;
+    }
+
+    if (typeof req.user?.id !== 'number') {
+      res.status(401).json({
+        status: 'gagal',
+        message: 'Unauthorized',
+      });
+      return;
+    }
+
+    try {
+      const result = await pengajuanService.konfirmasiPelepasanBimbingan(
+        parseInt(id, 10),
+        req.user.id,
+      );
+      res.status(200).json({ status: 'sukses', data: result });
+    } catch (error) {
+      res.status(400).json({
+        status: 'gagal',
+        message: error instanceof Error ? error.message : 'Terjadi kesalahan',
+      });
+    }
+  }),
+);
+
+// Endpoint untuk menolak pelepasan bimbingan
+router.post(
+  '/lepaskan/:id/tolak',
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    if (typeof id !== 'string' || id.length === 0) {
+      res.status(400).json({
+        status: 'gagal',
+        message: 'ID pengajuan pelepasan diperlukan',
+      });
+      return;
+    }
+
+    if (typeof req.user?.id !== 'number') {
+      res.status(401).json({
+        status: 'gagal',
+        message: 'Unauthorized',
+      });
+      return;
+    }
+
+    try {
+      const result = await pengajuanService.tolakPelepasanBimbingan(
+        parseInt(id, 10),
+        req.user.id,
+      );
+      res.status(200).json({ status: 'sukses', data: result });
+    } catch (error) {
+      res.status(400).json({
+        status: 'gagal',
+        message: error instanceof Error ? error.message : 'Terjadi kesalahan',
       });
     }
   }),

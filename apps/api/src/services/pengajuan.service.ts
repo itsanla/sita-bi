@@ -36,7 +36,7 @@ export class PengajuanService {
       throw new Error(`Anda sudah memiliki ${peran}`);
     }
 
-    // Cek apakah sudah mengajukan ke dosen ini untuk peran ini
+    // Cek apakah sudah ada pengajuan aktif
     const existingPengajuan = await this.prisma.pengajuanBimbingan.findFirst({
       where: {
         mahasiswa_id: mahasiswaId,
@@ -49,6 +49,16 @@ export class PengajuanService {
     if (existingPengajuan) {
       throw new Error(`Pengajuan ke dosen ini untuk ${peran} sudah ada`);
     }
+
+    // Hapus pengajuan lama yang sudah selesai (untuk handle kasus setelah pelepasan)
+    await this.prisma.pengajuanBimbingan.deleteMany({
+      where: {
+        mahasiswa_id: mahasiswaId,
+        dosen_id: dosenId,
+        peran_yang_diajukan: peran,
+        status: { notIn: ['MENUNGGU_PERSETUJUAN_DOSEN', 'MENUNGGU_PERSETUJUAN_MAHASISWA'] },
+      },
+    });
 
     // Cek jumlah pengajuan aktif untuk peran ini (maksimal 3)
     const activePengajuan = await this.prisma.pengajuanBimbingan.count({
@@ -125,19 +135,14 @@ export class PengajuanService {
       throw new Error(`Mahasiswa sudah memiliki ${peran}`);
     }
 
-    // Cek apakah sudah ada pengajuan
-    const existingPengajuan = await this.prisma.pengajuanBimbingan.findFirst({
+    // Hapus pengajuan lama jika ada (untuk handle kasus setelah pelepasan)
+    await this.prisma.pengajuanBimbingan.deleteMany({
       where: {
         mahasiswa_id: mahasiswaId,
         dosen_id: dosenId,
         peran_yang_diajukan: peran,
-        status: { in: ['MENUNGGU_PERSETUJUAN_DOSEN', 'MENUNGGU_PERSETUJUAN_MAHASISWA'] },
       },
     });
-
-    if (existingPengajuan) {
-      throw new Error(`Pengajuan dengan mahasiswa ini untuk ${peran} sudah ada`);
-    }
 
     // Cek jumlah tawaran aktif dosen (maksimal 5)
     const activeTawaran = await this.prisma.pengajuanBimbingan.count({
@@ -397,7 +402,31 @@ export class PengajuanService {
       orderBy: { created_at: 'desc' },
     });
 
-    return pengajuan;
+    // Get tugas akhir untuk mendapatkan pembimbing aktif dan pengajuan pelepasan
+    const tugasAkhir = await this.prisma.tugasAkhir.findFirst({
+      where: { mahasiswa_id: mahasiswaId },
+      include: {
+        peranDosenTa: {
+          where: {
+            peran: { in: ['pembimbing1', 'pembimbing2'] },
+          },
+          include: {
+            dosen: { include: { user: true } },
+            pengajuanPelepasanBimbingan: {
+              where: { status: 'MENUNGGU_KONFIRMASI' },
+              include: {
+                diajukanOleh: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const pembimbingAktif = tugasAkhir?.peranDosenTa || [];
+    const pelepasan = pembimbingAktif.flatMap(p => p.pengajuanPelepasanBimbingan) || [];
+
+    return { pengajuan, pembimbingAktif, pelepasan };
   }
 
   // Method untuk mendapatkan pengajuan dosen
@@ -410,7 +439,28 @@ export class PengajuanService {
       orderBy: { created_at: 'desc' },
     });
 
-    return pengajuan;
+    // Get mahasiswa bimbingan aktif
+    const mahasiswaBimbingan = await this.prisma.peranDosenTa.findMany({
+      where: {
+        dosen_id: dosenId,
+        peran: { in: ['pembimbing1', 'pembimbing2'] },
+      },
+      include: {
+        tugasAkhir: {
+          include: {
+            mahasiswa: { include: { user: true } },
+          },
+        },
+        pengajuanPelepasanBimbingan: {
+          where: { status: 'MENUNGGU_KONFIRMASI' },
+          include: {
+            diajukanOleh: true,
+          },
+        },
+      },
+    });
+
+    return { pengajuan, mahasiswaBimbingan };
   }
 
   // Method untuk mendapatkan list dosen tersedia
@@ -475,6 +525,174 @@ export class PengajuanService {
         available_for_p1: !hasPembimbing1,
         available_for_p2: !hasPembimbing2,
       };
+    });
+  }
+
+  // Method untuk mengajukan pelepasan bimbingan
+  async ajukanPelepasanBimbingan(peranDosenTaId: number, userId: number): Promise<unknown> {
+    const peranDosen = await this.prisma.peranDosenTa.findUnique({
+      where: { id: peranDosenTaId },
+      include: {
+        dosen: { include: { user: true } },
+        tugasAkhir: { include: { mahasiswa: { include: { user: true } } } },
+      },
+    });
+
+    if (!peranDosen) throw new Error('Pembimbing tidak ditemukan');
+
+    // Validasi user yang mengajukan (mahasiswa atau dosen terkait)
+    const isMahasiswa = peranDosen.tugasAkhir.mahasiswa.user_id === userId;
+    const isDosen = peranDosen.dosen.user_id === userId;
+
+    if (!isMahasiswa && !isDosen) {
+      throw new Error('Anda tidak berhak mengajukan pelepasan bimbingan ini');
+    }
+
+    // Cek apakah sudah ada pengajuan pelepasan aktif
+    const existingPengajuan = await this.prisma.pengajuanPelepasanBimbingan.findFirst({
+      where: {
+        peran_dosen_ta_id: peranDosenTaId,
+        status: 'MENUNGGU_KONFIRMASI',
+      },
+    });
+
+    if (existingPengajuan) {
+      throw new Error('Sudah ada pengajuan pelepasan yang menunggu konfirmasi');
+    }
+
+    // Buat pengajuan pelepasan
+    return this.prisma.pengajuanPelepasanBimbingan.create({
+      data: {
+        peran_dosen_ta_id: peranDosenTaId,
+        diajukan_oleh_user_id: userId,
+        status: 'MENUNGGU_KONFIRMASI',
+      },
+      include: {
+        peranDosenTa: {
+          include: {
+            dosen: { include: { user: true } },
+            tugasAkhir: { include: { mahasiswa: { include: { user: true } } } },
+          },
+        },
+        diajukanOleh: true,
+      },
+    });
+  }
+
+  // Method untuk konfirmasi pelepasan bimbingan
+  async konfirmasiPelepasanBimbingan(pengajuanId: number, userId: number): Promise<unknown> {
+    return this.prisma.$transaction(async (tx) => {
+      const pengajuan = await tx.pengajuanPelepasanBimbingan.findUnique({
+        where: { id: pengajuanId },
+        include: {
+          peranDosenTa: {
+            include: {
+              dosen: { include: { user: true } },
+              tugasAkhir: { include: { mahasiswa: { include: { user: true } } } },
+            },
+          },
+          diajukanOleh: true,
+        },
+      });
+
+      if (!pengajuan) throw new Error('Pengajuan pelepasan tidak ditemukan');
+      if (pengajuan.status !== 'MENUNGGU_KONFIRMASI') {
+        throw new Error('Pengajuan ini sudah diproses');
+      }
+
+      // Validasi user yang mengkonfirmasi (harus pihak yang tidak mengajukan)
+      const isMahasiswa = pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user_id === userId;
+      const isDosen = pengajuan.peranDosenTa.dosen.user_id === userId;
+
+      if (!isMahasiswa && !isDosen) {
+        throw new Error('Anda tidak berhak mengkonfirmasi pelepasan ini');
+      }
+
+      if (pengajuan.diajukan_oleh_user_id === userId) {
+        throw new Error('Anda tidak bisa mengkonfirmasi pengajuan Anda sendiri');
+      }
+
+      // Update status pengajuan
+      await tx.pengajuanPelepasanBimbingan.update({
+        where: { id: pengajuanId },
+        data: { status: 'DISETUJUI' },
+      });
+
+      // Hapus pengajuan bimbingan yang terkait
+      await tx.pengajuanBimbingan.deleteMany({
+        where: {
+          mahasiswa_id: pengajuan.peranDosenTa.tugas_akhir_id,
+          dosen_id: pengajuan.peranDosenTa.dosen_id,
+          peran_yang_diajukan: pengajuan.peranDosenTa.peran,
+        },
+      });
+
+      // Hapus peran dosen
+      await tx.peranDosenTa.delete({
+        where: { id: pengajuan.peran_dosen_ta_id },
+      });
+
+      // Update status TA jika perlu
+      const remainingPembimbing = await tx.peranDosenTa.count({
+        where: {
+          tugas_akhir_id: pengajuan.peranDosenTa.tugas_akhir_id,
+          peran: { in: ['pembimbing1', 'pembimbing2'] },
+        },
+      });
+
+      if (remainingPembimbing < 2) {
+        await tx.tugasAkhir.update({
+          where: { id: pengajuan.peranDosenTa.tugas_akhir_id },
+          data: { status: 'DRAFT' },
+        });
+      }
+
+      return pengajuan;
+    });
+  }
+
+  // Method untuk menolak pelepasan bimbingan
+  async tolakPelepasanBimbingan(pengajuanId: number, userId: number): Promise<unknown> {
+    const pengajuan = await this.prisma.pengajuanPelepasanBimbingan.findUnique({
+      where: { id: pengajuanId },
+      include: {
+        peranDosenTa: {
+          include: {
+            dosen: { include: { user: true } },
+            tugasAkhir: { include: { mahasiswa: { include: { user: true } } } },
+          },
+        },
+      },
+    });
+
+    if (!pengajuan) throw new Error('Pengajuan pelepasan tidak ditemukan');
+    if (pengajuan.status !== 'MENUNGGU_KONFIRMASI') {
+      throw new Error('Pengajuan ini sudah diproses');
+    }
+
+    // Validasi user yang menolak
+    const isMahasiswa = pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user_id === userId;
+    const isDosen = pengajuan.peranDosenTa.dosen.user_id === userId;
+
+    if (!isMahasiswa && !isDosen) {
+      throw new Error('Anda tidak berhak menolak pelepasan ini');
+    }
+
+    if (pengajuan.diajukan_oleh_user_id === userId) {
+      throw new Error('Anda tidak bisa menolak pengajuan Anda sendiri');
+    }
+
+    return this.prisma.pengajuanPelepasanBimbingan.update({
+      where: { id: pengajuanId },
+      data: { status: 'DITOLAK' },
+      include: {
+        peranDosenTa: {
+          include: {
+            dosen: { include: { user: true } },
+            tugasAkhir: { include: { mahasiswa: { include: { user: true } } } },
+          },
+        },
+      },
     });
   }
 }

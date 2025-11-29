@@ -163,12 +163,13 @@ model User {
   taDisetujui            TugasAkhir[]             @relation("Approver")
   taDitolak              TugasAkhir[]             @relation("Rejecter")
   notifikasi             NotifikasiTA[]
-  notificationHistory    NotificationHistory[]
-  emailTokens            EmailVerificationToken[]
-  catatanBimbingan       CatatanBimbingan[] // Catatan yang dibuat oleh user ini
-  historyPenugasan       HistoryPenugasanDosen[]  @relation("AdminAssigner")
-  historyPerubahanSidang HistoryPerubahanSidang[]
-  pengumumanDibaca       PengumumanPembaca[]
+  notificationHistory         NotificationHistory[]
+  emailTokens                 EmailVerificationToken[]
+  catatanBimbingan            CatatanBimbingan[] // Catatan yang dibuat oleh user ini
+  historyPenugasan            HistoryPenugasanDosen[]         @relation("AdminAssigner")
+  historyPerubahanSidang      HistoryPerubahanSidang[]
+  pengumumanDibaca            PengumumanPembaca[]
+  pengajuanPelepasanBimbingan PengajuanPelepasanBimbingan[]
 
   @@map("users")
 }
@@ -310,8 +311,9 @@ model PeranDosenTa {
   created_at     DateTime   @default(now())
   updated_at     DateTime   @updatedAt
 
-  tugasAkhir TugasAkhir @relation(fields: [tugas_akhir_id], references: [id], onDelete: Cascade)
-  dosen      Dosen      @relation(fields: [dosen_id], references: [id])
+  tugasAkhir                 TugasAkhir                      @relation(fields: [tugas_akhir_id], references: [id], onDelete: Cascade)
+  dosen                      Dosen                           @relation(fields: [dosen_id], references: [id])
+  pengajuanPelepasanBimbingan PengajuanPelepasanBimbingan[]
 
   @@unique([tugas_akhir_id, peran])
   @@map("peran_dosen_ta")
@@ -407,6 +409,26 @@ model PengajuanBimbingan {
 
   @@unique([mahasiswa_id, dosen_id, peran_yang_diajukan])
   @@map("pengajuan_bimbingan")
+}
+
+enum StatusPelepasanBimbingan {
+  MENUNGGU_KONFIRMASI
+  DISETUJUI
+  DITOLAK
+}
+
+model PengajuanPelepasanBimbingan {
+  id                      Int                       @id @default(autoincrement())
+  peran_dosen_ta_id       Int
+  diajukan_oleh_user_id   Int
+  status                  StatusPelepasanBimbingan  @default(MENUNGGU_KONFIRMASI)
+  created_at              DateTime                  @default(now())
+  updated_at              DateTime                  @updatedAt
+
+  peranDosenTa  PeranDosenTa @relation(fields: [peran_dosen_ta_id], references: [id], onDelete: Cascade)
+  diajukanOleh  User         @relation(fields: [diajukan_oleh_user_id], references: [id])
+
+  @@map("pengajuan_pelepasan_bimbingan")
 }
 
 //================================================================================

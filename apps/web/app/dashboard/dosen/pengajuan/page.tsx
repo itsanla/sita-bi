@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { CheckCircle, XCircle, Clock, AlertCircle, Users } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, AlertCircle, Users, X } from 'lucide-react';
 
 interface Mahasiswa {
   id: number;
@@ -29,10 +29,27 @@ interface Pengajuan {
   created_at: string;
 }
 
+interface MahasiswaBimbingan {
+  id: number;
+  peran: string;
+  tugasAkhir: {
+    mahasiswa: {
+      user: { name: string; email: string };
+      nim: string;
+    };
+  };
+  pengajuanPelepasanBimbingan?: Array<{
+    id: number;
+    diajukan_oleh_user_id: number;
+    status: string;
+  }>;
+}
+
 export default function PengajuanDosenPage() {
   const { user } = useAuth();
   const [mahasiswaList, setMahasiswaList] = useState<Mahasiswa[]>([]);
   const [pengajuanList, setPengajuanList] = useState<Pengajuan[]>([]);
+  const [mahasiswaBimbingan, setMahasiswaBimbingan] = useState<MahasiswaBimbingan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPeran, setSelectedPeran] = useState<'pembimbing1' | 'pembimbing2'>('pembimbing1');
   const [kuotaInfo, setKuotaInfo] = useState({ current: 0, max: 4 });
@@ -57,10 +74,9 @@ export default function PengajuanDosenPage() {
 
       setMahasiswaList(mahasiswaData.data || []);
       setPengajuanList(pengajuanData.data || []);
+      setMahasiswaBimbingan(pengajuanData.mahasiswaBimbingan || []);
 
-      // Hitung kuota dari pengajuan yang disetujui
-      const approved = (pengajuanData.data || []).filter((p: Pengajuan) => p.status === 'DISETUJUI').length;
-      setKuotaInfo({ current: approved, max: 4 });
+      setKuotaInfo({ current: pengajuanData.mahasiswaBimbingan?.length || 0, max: 4 });
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -110,6 +126,49 @@ export default function PengajuanDosenPage() {
     }
   };
 
+  const handleLepaskanBimbingan = async (peranDosenTaId: number) => {
+    if (!confirm('Apakah Anda yakin ingin mengajukan pelepasan bimbingan ini?')) return;
+    try {
+      const res = await fetch('http://localhost:3002/api/pengajuan/lepaskan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user?.id?.toString() || '',
+        },
+        body: JSON.stringify({ peranDosenTaId }),
+      });
+
+      const data = await res.json();
+      if (data.status === 'sukses') {
+        alert('Berhasil mengajukan pelepasan bimbingan');
+        fetchData();
+      } else {
+        alert(data.message || 'Gagal mengajukan pelepasan');
+      }
+    } catch (error) {
+      alert('Terjadi kesalahan');
+    }
+  };
+
+  const handleKonfirmasiPelepasan = async (pengajuanId: number, action: 'konfirmasi' | 'tolak') => {
+    try {
+      const res = await fetch(`http://localhost:3002/api/pengajuan/lepaskan/${pengajuanId}/${action}`, {
+        method: 'POST',
+        headers: { 'x-user-id': user?.id?.toString() || '' },
+      });
+
+      const data = await res.json();
+      if (data.status === 'sukses') {
+        alert(`Berhasil ${action === 'konfirmasi' ? 'menyetujui' : 'menolak'} pelepasan`);
+        fetchData();
+      } else {
+        alert(data.message || `Gagal ${action} pelepasan`);
+      }
+    } catch (error) {
+      alert('Terjadi kesalahan');
+    }
+  };
+
   const tawaranAktif = pengajuanList.filter(p => p.diinisiasi_oleh === 'dosen' && p.status === 'MENUNGGU_PERSETUJUAN_MAHASISWA').length;
   const kuotaPenuh = kuotaInfo.current >= kuotaInfo.max;
 
@@ -134,6 +193,70 @@ export default function PengajuanDosenPage() {
             <p className="text-sm text-yellow-800">
               Kuota bimbingan Anda sudah penuh. Anda tidak dapat menerima mahasiswa baru.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Mahasiswa Bimbingan Aktif */}
+      {mahasiswaBimbingan.length > 0 && (
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-4 border-b">
+            <h2 className="text-lg font-semibold">Mahasiswa Bimbingan Aktif</h2>
+          </div>
+          <div className="divide-y">
+            {mahasiswaBimbingan.map((bimbingan) => {
+              const pengajuanAktif = bimbingan.pengajuanPelepasanBimbingan?.[0];
+              const isUserYangMengajukan = pengajuanAktif?.diajukan_oleh_user_id === user?.id;
+
+              return (
+                <div key={bimbingan.id} className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium text-gray-900">{bimbingan.tugasAkhir.mahasiswa.user.name}</h3>
+                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                          {bimbingan.peran === 'pembimbing1' ? 'P1' : 'P2'}
+                        </span>
+                        {pengajuanAktif && (
+                          <span className="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-800">
+                            Pengajuan Pelepasan
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">NIM: {bimbingan.tugasAkhir.mahasiswa.nim}</p>
+                    </div>
+                    {pengajuanAktif ? (
+                      isUserYangMengajukan ? (
+                        <span className="text-sm text-gray-500">Menunggu konfirmasi mahasiswa</span>
+                      ) : (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleKonfirmasiPelepasan(pengajuanAktif.id, 'konfirmasi')}
+                            className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                          >
+                            Setuju
+                          </button>
+                          <button
+                            onClick={() => handleKonfirmasiPelepasan(pengajuanAktif.id, 'tolak')}
+                            className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                          >
+                            Tolak
+                          </button>
+                        </div>
+                      )
+                    ) : (
+                      <button
+                        onClick={() => handleLepaskanBimbingan(bimbingan.id)}
+                        className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded flex items-center gap-1"
+                      >
+                        <X className="w-4 h-4" />
+                        Lepaskan
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
