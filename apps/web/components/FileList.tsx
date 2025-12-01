@@ -20,7 +20,7 @@ export default function FileList() {
   const fetchFiles = async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/files`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/files`,
       );
       if (response.ok) {
         const data = await response.json();
@@ -69,7 +69,7 @@ export default function FileList() {
                 </td>
                 <td className="py-2 px-4 border-b">
                   <a
-                    href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${file.url}`}
+                    href={`${process.env.NEXT_PUBLIC_API_URL}${file.url}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline mr-2"
@@ -77,7 +77,7 @@ export default function FileList() {
                     Lihat
                   </a>
                   <a
-                    href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/files/download/${file.path.split('/').pop()}`}
+                    href={`${process.env.NEXT_PUBLIC_API_URL}/api/files/download/${file.path.split('/').pop()}`}
                     className="text-green-600 hover:underline"
                   >
                     Unduh

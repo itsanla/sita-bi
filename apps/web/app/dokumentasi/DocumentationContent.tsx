@@ -756,9 +756,9 @@ export default function DocumentationContent() {
                           Akses Halaman Registrasi
                         </h4>
                         <p className="text-sm text-gray-700 leading-relaxed">
-                          Buka{' '}
+                          Buka halaman{' '}
                           <code className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">
-                            http://localhost:3001/register
+                            /register
                           </code>{' '}
                           atau klik tombol
                           <strong> &quot;Daftar&quot;</strong> di halaman login

@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { CheckCircle, XCircle, Clock, AlertCircle, Users, X } from 'lucide-react';
 import { toast as sonnerToast } from 'sonner';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '@/lib/config';
 
 interface Mahasiswa {
   id: number;
@@ -64,10 +65,10 @@ export default function PengajuanDosenPage() {
   const fetchData = async () => {
     try {
       const [mahasiswaRes, pengajuanRes] = await Promise.all([
-        fetch('http://localhost:3002/api/pengajuan/mahasiswa-tersedia', {
+        fetch(`${API_BASE_URL}/pengajuan/mahasiswa-tersedia`, {
           headers: { 'x-user-id': user?.id?.toString() || '' },
         }),
-        fetch('http://localhost:3002/api/pengajuan/dosen', {
+        fetch(`${API_BASE_URL}/pengajuan/dosen`, {
           headers: { 'x-user-id': user?.id?.toString() || '' },
         }),
       ]);
@@ -89,7 +90,7 @@ export default function PengajuanDosenPage() {
 
   const handleTawarkan = async (mahasiswaId: number) => {
     try {
-      const res = await fetch('http://localhost:3002/api/pengajuan/dosen', {
+      const res = await fetch(`${API_BASE_URL}/pengajuan/dosen`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +113,7 @@ export default function PengajuanDosenPage() {
 
   const handleAction = async (pengajuanId: number, action: 'terima' | 'tolak' | 'batalkan') => {
     try {
-      const res = await fetch(`http://localhost:3002/api/pengajuan/${pengajuanId}/${action}`, {
+      const res = await fetch(`${API_BASE_URL}/pengajuan/${pengajuanId}/${action}`, {
         method: 'POST',
         headers: { 'x-user-id': user?.id?.toString() || '' },
       });
@@ -132,7 +133,7 @@ export default function PengajuanDosenPage() {
   const handleLepaskanBimbingan = async (peranDosenTaId: number) => {
     if (!confirm('Apakah Anda yakin ingin mengajukan pelepasan bimbingan ini?')) return;
     try {
-      const res = await fetch('http://localhost:3002/api/pengajuan/lepaskan', {
+      const res = await fetch(`${API_BASE_URL}/pengajuan/lepaskan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -155,7 +156,7 @@ export default function PengajuanDosenPage() {
 
   const handleKonfirmasiPelepasan = async (pengajuanId: number, action: 'konfirmasi' | 'tolak') => {
     try {
-      const res = await fetch(`http://localhost:3002/api/pengajuan/lepaskan/${pengajuanId}/${action}`, {
+      const res = await fetch(`${API_BASE_URL}/pengajuan/lepaskan/${pengajuanId}/${action}`, {
         method: 'POST',
         headers: { 'x-user-id': user?.id?.toString() || '' },
       });

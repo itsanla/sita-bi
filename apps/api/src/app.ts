@@ -60,7 +60,7 @@ app.use(activityLogger);
 
 // Explicit CORS configuration
 const corsOptions = {
-  origin: 'http://localhost:3001', // Allow frontend origin
+  origin: process.env.FRONTEND_URL || '*', // Allow frontend origin from env
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true, // Allow cookies to be sent
 };

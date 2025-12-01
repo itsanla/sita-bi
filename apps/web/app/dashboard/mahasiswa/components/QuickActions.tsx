@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Users, GraduationCap, BookOpen } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/config';
 
 export default function QuickActions() {
   const [systemStats, setSystemStats] = useState({
@@ -23,7 +24,7 @@ export default function QuickActions() {
         }
 
         const response = await fetch(
-          'http://localhost:3002/api/dashboard/mahasiswa/system-stats',
+          `${API_BASE_URL}/dashboard/mahasiswa/system-stats`,
           {
             headers: {
               'x-user-id': userId,

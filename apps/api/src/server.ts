@@ -28,9 +28,9 @@ if (process.env['NODE_ENV'] !== 'test') {
 }
 
 httpServer.listen(PORT, () => {
-  console.warn(`Backend server running on http://localhost:${PORT}`);
-  console.warn(`Health check: http://localhost:${PORT}/health`);
-  console.warn(`Ready for frontend connections from port 3001`);
+  console.warn(`Backend server running on port ${PORT}`);
+  console.warn(`Health check: /health`);
+  console.warn(`Ready for frontend connections`);
 });
 
 // Graceful shutdown handlers

@@ -7,8 +7,8 @@ export const revalidate = 0; // No cache
 
 // Async Server Component untuk fetch data
 async function JadwalSidangContent() {
-  // Simulasi fetch data - ganti dengan fetch real nanti
-  // const data = await fetch('http://localhost:3002/api/jadwal-sidang');
+  // TODO: Implement fetch data dari API
+  // const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/jadwal-sidang`);
 
   return (
     <div>

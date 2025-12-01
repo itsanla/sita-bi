@@ -22,7 +22,7 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: 'SITA-BI',
   description: 'Sistem Informasi Tugas Akhir & Bimbingan',
-  metadataBase: new URL('http://localhost:3001'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL!),
 };
 
 export const viewport: Viewport = {
@@ -40,10 +40,10 @@ export default function RootLayout({
     <html lang="id" suppressHydrationWarning>
       <head>
         {/* DNS Prefetch & Preconnect untuk faster API calls */}
-        <link rel="dns-prefetch" href="http://localhost:3002" />
+        <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_API_URL} />
         <link
           rel="preconnect"
-          href="http://localhost:3002"
+          href={process.env.NEXT_PUBLIC_API_URL}
           crossOrigin="anonymous"
         />
         {/* Inline critical CSS for faster FCP */}

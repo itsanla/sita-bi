@@ -1,8 +1,9 @@
 {
   "systemName": "SITA-BI Design System",
-  "version": "1.0.0",
-  "lastUpdated": "2024-11-19",
-  "description": "Universal design rules untuk sistem SITA-BI (Sistem Informasi Tugas Akhir - Bimbingan)",
+  "version": "2.0.0",
+  "lastUpdated": "2025-01-29",
+  "description": "Universal design rules untuk sistem SITA-BI dengan fokus performa dan best practices 2025",
+  "referenceImplementation": "/dashboard/mahasiswa/pengajuan",
   
   "colors": {
     "primary": {
@@ -164,6 +165,14 @@
     "cards": {
       "padding": "1.5rem",
       "gap": "1rem"
+    },
+    "mobile": {
+      "pageHorizontal": "0.5rem",
+      "pageVertical": "0.75rem",
+      "cardPadding": "1rem",
+      "betweenCards": "1rem",
+      "betweenElements": "0.75rem",
+      "note": "Mobile padding sangat kecil untuk maksimalkan screen real estate"
     }
   },
 
@@ -181,7 +190,9 @@
       "2xl": "1536px"
     },
     "container": {
-      "padding": "1.5rem"
+      "padding": "1.5rem",
+      "mobile": "p-0 sm:p-4 lg:p-6",
+      "note": "Layout container tidak ada padding di mobile, child component yang atur padding sendiri"
     },
     "grid": {
       "columns": {
@@ -389,11 +400,225 @@
     }
   },
 
+  "performance": {
+    "codesplitting": {
+      "strategy": "dynamic-import",
+      "icons": "React.lazy() untuk semua icons dari lucide-react",
+      "components": "next/dynamic untuk dialog, modal, heavy components",
+      "ssr": false
+    },
+    "dataFetching": {
+      "library": "@tanstack/react-query",
+      "caching": {
+        "staleTime": {
+          "static": "30000ms",
+          "dynamic": "10000ms",
+          "realtime": "5000ms"
+        },
+        "refetchInterval": "30000ms",
+        "refetchOnWindowFocus": false
+      },
+      "optimisticUpdates": true,
+      "requestDeduplication": true
+    },
+    "rendering": {
+      "debouncing": "useDeferredValue untuk search inputs",
+      "memoization": {
+        "handlers": "useCallback untuk semua event handlers",
+        "computed": "useMemo untuk filtered/sorted data",
+        "components": "React.memo untuk pure components"
+      },
+      "suspense": "Wrap dengan Suspense untuk progressive loading",
+      "virtualization": "@tanstack/react-virtual untuk list >100 items"
+    },
+    "bundleOptimization": {
+      "treeShaking": true,
+      "minification": true,
+      "compression": "gzip/brotli",
+      "targetBundleSize": "<200KB initial"
+    }
+  },
+
+  "patterns": {
+    "pengajuanMahasiswa": {
+      "layout": {
+        "parentContainer": "p-0 sm:p-4 lg:p-6 (dari layout.tsx)",
+        "pageContainer": "max-w-7xl mx-auto",
+        "background": "bg-gray-50",
+        "padding": "px-2 py-3 sm:p-4 lg:p-6",
+        "gap": "space-y-4 sm:space-y-6",
+        "mobileNote": "Parent layout p-0, page container px-2 py-3 = total 8px horizontal"
+      },
+      "statusCards": {
+        "grid": "grid-cols-1 md:grid-cols-3",
+        "cardStyle": "bg-white rounded-xl shadow-base border",
+        "padding": "p-6",
+        "iconSize": "w-14 h-14",
+        "hover": "hover:shadow-md transition-shadow duration-300"
+      },
+      "dosenList": {
+        "searchDebounce": "useDeferredValue",
+        "pagination": "5 items per page",
+        "sorting": ["bimbingan_asc", "bimbingan_desc", "nama_asc", "nama_desc"],
+        "progressBar": {
+          "height": "h-2",
+          "width": "w-24",
+          "color": "bg-[#7f1d1d]"
+        }
+      },
+      "riwayatPengajuan": {
+        "layout": "grid-cols-1 lg:grid-cols-2",
+        "filters": ["search", "status", "sort"],
+        "dateFormat": "DD MMM YYYY, HH:mm WIB",
+        "statusIcons": {
+          "MENUNGGU_PERSETUJUAN_DOSEN": "Clock (amber)",
+          "DISETUJUI": "CheckCircle (green)",
+          "DITOLAK": "XCircle (red)",
+          "DIBATALKAN_MAHASISWA": "X (gray)"
+        }
+      },
+      "pembimbingAktif": {
+        "placeholder": "Belum terhubung dengan Pembimbing X",
+        "avatarGradient": "from-green-500 to-green-600",
+        "pelepasanFlow": {
+          "initiator": "Mahasiswa atau Dosen",
+          "confirmation": "ConfirmDialog dengan variant warning",
+          "actions": ["Lepaskan", "Batalkan", "Setuju", "Tolak"]
+        }
+      },
+      "tawaranDosen": {
+        "avatarGradient": "from-purple-500 to-purple-600",
+        "actions": ["Terima", "Tolak"],
+        "emptyState": "AlertCircle dengan pesan informatif"
+      }
+    }
+  },
+
+  "reactPatterns": {
+    "hooks": {
+      "useQuery": {
+        "enabled": "!!user?.id untuk conditional fetching",
+        "queryKey": "['resource-name', userId] untuk cache isolation",
+        "staleTime": "30000 untuk static, 10000 untuk dynamic"
+      },
+      "useMutation": {
+        "onMutate": "Cancel queries + return previous data",
+        "onSuccess": "invalidateQueries untuk refetch",
+        "onError": "Rollback dengan previous data"
+      },
+      "useCallback": "Wrap semua event handlers",
+      "useMemo": "Untuk filtered, sorted, computed data",
+      "useDeferredValue": "Untuk search query debouncing"
+    },
+    "imports": {
+      "dynamic": "next/dynamic untuk heavy components",
+      "lazy": "React.lazy() untuk icons",
+      "suspense": "Wrap lazy components dengan Suspense"
+    }
+  },
+
+  "apiIntegration": {
+    "baseURL": "process.env.NEXT_PUBLIC_API_URL/api",
+    "envVariable": "NEXT_PUBLIC_API_URL",
+    "configFile": "lib/config.ts",
+    "usage": "import { API_BASE_URL } from '@/lib/config'",
+    "production": "WAJIB set NEXT_PUBLIC_API_URL di production environment",
+    "headers": {
+      "required": "x-user-id",
+      "contentType": "application/json"
+    },
+    "endpoints": {
+      "dosenTersedia": "GET /pengajuan/dosen-tersedia",
+      "pengajuanMahasiswa": "GET /pengajuan/mahasiswa",
+      "ajukanPembimbing": "POST /pengajuan/mahasiswa",
+      "aksiPengajuan": "POST /pengajuan/:id/:action",
+      "lepaskanBimbingan": "POST /pengajuan/lepaskan",
+      "batalkanPelepasan": "POST /pengajuan/lepaskan/:id/batalkan",
+      "konfirmasiPelepasan": "POST /pengajuan/lepaskan/:id/:action"
+    },
+    "errorHandling": {
+      "toast": "sonner untuk user feedback",
+      "rollback": "Optimistic updates dengan rollback on error"
+    }
+  },
+
+  "uiComponents": {
+    "confirmDialog": {
+      "variants": ["danger", "warning", "info"],
+      "loading": "dynamic import dengan ssr: false",
+      "buttons": {
+        "confirm": "Ya, Lanjutkan",
+        "cancel": "Batal"
+      }
+    },
+    "avatar": {
+      "size": "w-10 h-10",
+      "borderRadius": "rounded-lg",
+      "gradient": {
+        "dosen": "from-[#7f1d1d] to-[#991b1b]",
+        "riwayat": "from-blue-500 to-blue-600",
+        "pembimbing": "from-green-500 to-green-600",
+        "tawaran": "from-purple-500 to-purple-600"
+      },
+      "initial": "First character uppercase, font-bold, text-white"
+    },
+    "badge": {
+      "peran": {
+        "P1": "bg-blue-100 text-blue-800",
+        "P2": "bg-blue-100 text-blue-800"
+      },
+      "status": {
+        "menunggu": "bg-orange-100 text-orange-800",
+        "disetujui": "bg-green-100 text-green-800",
+        "ditolak": "bg-red-100 text-red-800"
+      }
+    },
+    "emptyState": {
+      "icon": "w-12 h-12 text-gray-300",
+      "text": "text-gray-500",
+      "subtext": "text-gray-400 text-xs mt-1"
+    },
+    "tooltip": {
+      "trigger": "HelpCircle w-4 h-4 text-gray-400 cursor-help",
+      "content": "absolute w-64 p-3 bg-gray-900 text-white text-xs rounded-lg",
+      "visibility": "opacity-0 invisible group-hover:opacity-100 group-hover:visible"
+    }
+  },
+
+  "responsive": {
+    "approach": "Mobile-first design",
+    "breakpoints": {
+      "mobile": "< 640px (default)",
+      "tablet": "sm: >= 640px",
+      "desktop": "lg: >= 1024px"
+    },
+    "mobileOptimization": {
+      "horizontalPadding": "px-2 (8px) - Minimal untuk maksimalkan konten",
+      "verticalPadding": "py-3 (12px) - Cukup untuk breathing room",
+      "cardPadding": "p-3 (12px) - Lebih kecil dari desktop",
+      "gap": "gap-3 (12px) - Lebih rapat untuk mobile",
+      "fontSize": "text-sm sebagai base, scale up untuk desktop",
+      "touchTarget": "Minimal 44x44px untuk semua interactive elements",
+      "stackVertical": "flex-col untuk mobile, flex-row untuk desktop",
+      "fullWidthButtons": "w-full di mobile untuk easier tap"
+    }
+  },
+
   "notes": {
     "colorScheme": "Dominan putih-abu-abu dengan aksen maroon (#7f1d1d)",
     "language": "Bahasa Indonesia",
     "consistency": "Semua halaman harus mengikuti aturan spacing, typography, dan color yang sama",
-    "responsive": "Desain harus responsif untuk mobile, tablet, dan desktop",
-    "accessibility": "Ikuti standar WCAG 2.1 Level AA minimum"
+    "responsive": "Mobile-first: px-2 py-3 untuk mobile, scale up untuk tablet/desktop",
+    "accessibility": "Ikuti standar WCAG 2.1 Level AA minimum",
+    "performance": "Target: LCP <2.5s, FID <100ms, CLS <0.1",
+    "bestPractices2025": [
+      "React Query untuk data fetching & caching",
+      "Dynamic imports untuk code splitting",
+      "useDeferredValue untuk debouncing",
+      "useCallback & useMemo untuk optimization",
+      "Optimistic updates untuk instant feedback",
+      "Suspense untuk progressive loading",
+      "Lazy loading untuk icons & heavy components"
+    ]
   }
 }

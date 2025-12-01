@@ -33,7 +33,7 @@ export default function NotificationsPage() {
     try {
       const token = localStorage.getItem('token'); // Assuming token is in localStorage
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}/api/notifications/history`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/notifications/history`,
         {
           headers: {
             Authorization: `Bearer ${token ?? ''}`,

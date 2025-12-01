@@ -9,9 +9,8 @@
 require('dotenv').config();
 
 async function kirimPesan() {
-  // Gunakan PORT dari environment variable
-  const PORT = process.env.PORT || 3002;
-  const API_URL = process.env.API_URL || `http://localhost:${PORT}`;
+  // Gunakan API_URL dari environment variable
+  const API_URL = process.env.API_URL;
   const baseUrl = `${API_URL}/api/whatsapp`;
   
   console.log(`📱 Testing WhatsApp Integration on ${API_URL}...\n`);
