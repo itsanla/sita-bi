@@ -648,8 +648,8 @@
     }
   },
   "api_documentation": {
-    "base_url": "http://localhost:3002",
-    "cors_origin": "http://localhost:3001",
+    "base_url": "backend",
+    "cors_origin": "frontend",
     "authentication_header": "Authorization: Bearer <jwt_token>",
     "health_check": "GET /health - Returns server health status and WhatsApp connection info"
   },

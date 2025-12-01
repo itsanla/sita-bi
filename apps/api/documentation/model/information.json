@@ -285,7 +285,7 @@
             {
               "step": 1,
               "title": "Akses Halaman Registrasi",
-              "content": "Buka http://localhost:3001/register atau klik tombol \"Daftar\" di halaman login"
+              "content": "Buka /register atau klik tombol \"Daftar\" di halaman login"
             },
             {
               "step": 2,
