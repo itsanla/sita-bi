@@ -30,7 +30,7 @@ const NavLink = ({
 }) => {
   const pathname = usePathname();
   const isActive = pathname === item.href;
-  const [tooltipPos, setTooltipPos] = React.useState({ top: 0, left: 0 });
+  const [tooltipPos, setTooltipPos] = React.useState<{ top: number; left: number } | null>(null);
   const linkRef = React.useRef<HTMLAnchorElement>(null);
 
   const handleMouseEnter = () => {
@@ -40,12 +40,17 @@ const NavLink = ({
     }
   };
 
+  const handleMouseLeave = () => {
+    setTooltipPos(null);
+  };
+
   return (
     <li className="group relative">
       <Link
         ref={linkRef}
         href={item.href}
         onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
           isActive
             ? 'bg-red-900 text-white shadow-sm'
@@ -61,9 +66,9 @@ const NavLink = ({
         {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
       </Link>
 
-      {!sidebarOpen && !isActive && (
+      {!sidebarOpen && !isActive && tooltipPos && (
         <div 
-          className="fixed ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[60] -translate-y-1/2 pointer-events-none"
+          className="fixed ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md whitespace-nowrap z-[60] -translate-y-1/2 pointer-events-none"
           style={{ top: `${tooltipPos.top}px`, left: `${tooltipPos.left}px` }}
         >
           {item.label}
