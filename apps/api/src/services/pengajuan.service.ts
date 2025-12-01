@@ -695,4 +695,42 @@ export class PengajuanService {
       },
     });
   }
+
+  // Method untuk membatalkan pelepasan bimbingan (oleh yang mengajukan)
+  async batalkanPelepasanBimbingan(pengajuanId: number, userId: number): Promise<unknown> {
+    const pengajuan = await this.prisma.pengajuanPelepasanBimbingan.findUnique({
+      where: { id: pengajuanId },
+      include: {
+        peranDosenTa: {
+          include: {
+            dosen: { include: { user: true } },
+            tugasAkhir: { include: { mahasiswa: { include: { user: true } } } },
+          },
+        },
+      },
+    });
+
+    if (!pengajuan) throw new Error('Pengajuan pelepasan tidak ditemukan');
+    if (pengajuan.status !== 'MENUNGGU_KONFIRMASI') {
+      throw new Error('Pengajuan ini sudah diproses');
+    }
+
+    // Validasi user yang membatalkan (harus yang mengajukan)
+    if (pengajuan.diajukan_oleh_user_id !== userId) {
+      throw new Error('Anda tidak berhak membatalkan pengajuan ini');
+    }
+
+    return this.prisma.pengajuanPelepasanBimbingan.update({
+      where: { id: pengajuanId },
+      data: { status: 'DITOLAK' },
+      include: {
+        peranDosenTa: {
+          include: {
+            dosen: { include: { user: true } },
+            tugasAkhir: { include: { mahasiswa: { include: { user: true } } } },
+          },
+        },
+      },
+    });
+  }
 }

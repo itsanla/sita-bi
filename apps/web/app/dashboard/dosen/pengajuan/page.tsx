@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { CheckCircle, XCircle, Clock, AlertCircle, Users, X } from 'lucide-react';
+import { toast as sonnerToast } from 'sonner';
+import toast from 'react-hot-toast';
 
 interface Mahasiswa {
   id: number;
@@ -47,6 +49,7 @@ interface MahasiswaBimbingan {
 
 export default function PengajuanDosenPage() {
   const { user } = useAuth();
+
   const [mahasiswaList, setMahasiswaList] = useState<Mahasiswa[]>([]);
   const [pengajuanList, setPengajuanList] = useState<Pengajuan[]>([]);
   const [mahasiswaBimbingan, setMahasiswaBimbingan] = useState<MahasiswaBimbingan[]>([]);
@@ -431,6 +434,7 @@ export default function PengajuanDosenPage() {
           ))}
         </div>
       </div>
+
     </div>
   );
 }

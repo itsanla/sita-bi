@@ -431,4 +431,40 @@ router.post(
   }),
 );
 
+// Endpoint untuk membatalkan pelepasan bimbingan (oleh yang mengajukan)
+router.post(
+  '/lepaskan/:id/batalkan',
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    if (typeof id !== 'string' || id.length === 0) {
+      res.status(400).json({
+        status: 'gagal',
+        message: 'ID pengajuan pelepasan diperlukan',
+      });
+      return;
+    }
+
+    if (typeof req.user?.id !== 'number') {
+      res.status(401).json({
+        status: 'gagal',
+        message: 'Unauthorized',
+      });
+      return;
+    }
+
+    try {
+      const result = await pengajuanService.batalkanPelepasanBimbingan(
+        parseInt(id, 10),
+        req.user.id,
+      );
+      res.status(200).json({ status: 'sukses', data: result });
+    } catch (error) {
+      res.status(400).json({
+        status: 'gagal',
+        message: error instanceof Error ? error.message : 'Terjadi kesalahan',
+      });
+    }
+  }),
+);
+
 export default router;

@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { CheckCircle, XCircle, Clock, AlertCircle, Search, UserCheck, Send, X, Users, Award, UserX, HelpCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface Dosen {
   id: number;
@@ -67,8 +69,18 @@ export default function PengajuanMahasiswaPage() {
   const [riwayatSortBy, setRiwayatSortBy] = useState<'terbaru' | 'terlama'>('terbaru');
   const [riwayatFilterStatus, setRiwayatFilterStatus] = useState<string>('semua');
   const [riwayatPage, setRiwayatPage] = useState(1);
+  const [tawaranPage, setTawaranPage] = useState(1);
   const [dosenSortBy, setDosenSortBy] = useState<'bimbingan_asc' | 'bimbingan_desc' | 'nama_asc' | 'nama_desc'>('bimbingan_asc');
   const itemsPerPage = 5;
+  const tawaranPerPage = 4;
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({ open: false, title: '', description: '', onConfirm: () => {}, variant: 'warning' });
 
   useEffect(() => {
     fetchData();
@@ -99,7 +111,17 @@ export default function PengajuanMahasiswaPage() {
     }
   };
 
-  const handleAjukan = async (dosenId: number) => {
+  const handleAjukan = (dosenId: number, dosenName: string) => {
+    setConfirmDialog({
+      open: true,
+      title: 'Konfirmasi Pengajuan Pembimbing',
+      description: `Apakah Anda yakin ingin mengajukan ${dosenName} sebagai ${selectedPeran === 'pembimbing1' ? 'Pembimbing 1' : 'Pembimbing 2'}?`,
+      variant: 'info',
+      onConfirm: () => executeAjukan(dosenId)
+    });
+  };
+
+  const executeAjukan = async (dosenId: number) => {
     try {
       const res = await fetch('http://localhost:3002/api/pengajuan/mahasiswa', {
         method: 'POST',
@@ -112,17 +134,37 @@ export default function PengajuanMahasiswaPage() {
 
       const data = await res.json();
       if (data.status === 'sukses') {
-        alert(`Berhasil mengajukan ke ${selectedPeran}`);
+        toast.success('Berhasil mengajukan pembimbing', {
+          description: `Pengajuan sebagai ${selectedPeran === 'pembimbing1' ? 'Pembimbing 1' : 'Pembimbing 2'} telah dikirim ke dosen`,
+        });
         fetchData();
       } else {
-        alert(data.message || 'Gagal mengajukan');
+        toast.error('Gagal mengajukan pembimbing', {
+          description: data.message || 'Terjadi kesalahan saat mengajukan',
+        });
       }
     } catch (error) {
-      alert('Terjadi kesalahan');
+      toast.error('Terjadi kesalahan', {
+        description: 'Tidak dapat terhubung ke server',
+      });
     }
   };
 
-  const handleAction = async (pengajuanId: number, action: 'terima' | 'tolak' | 'batalkan') => {
+  const handleAction = (pengajuanId: number, action: 'terima' | 'tolak' | 'batalkan', dosenName?: string) => {
+    if (action === 'batalkan') {
+      setConfirmDialog({
+        open: true,
+        title: 'Batalkan Pengajuan',
+        description: `Apakah Anda yakin ingin membatalkan pengajuan pembimbing kepada ${dosenName}?`,
+        variant: 'warning',
+        onConfirm: () => executeAction(pengajuanId, action)
+      });
+    } else {
+      executeAction(pengajuanId, action);
+    }
+  };
+
+  const executeAction = async (pengajuanId: number, action: 'terima' | 'tolak' | 'batalkan') => {
     try {
       const res = await fetch(`http://localhost:3002/api/pengajuan/${pengajuanId}/${action}`, {
         method: 'POST',
@@ -131,19 +173,38 @@ export default function PengajuanMahasiswaPage() {
 
       const data = await res.json();
       if (data.status === 'sukses') {
-        alert(`Berhasil ${action} pengajuan`);
+        const messages = {
+          terima: { title: 'Tawaran diterima', desc: 'Dosen berhasil ditambahkan sebagai pembimbing Anda' },
+          tolak: { title: 'Tawaran ditolak', desc: 'Tawaran pembimbing telah ditolak' },
+          batalkan: { title: 'Pengajuan dibatalkan', desc: 'Pengajuan pembimbing telah dibatalkan' },
+        };
+        toast.success(messages[action].title, {
+          description: messages[action].desc,
+        });
         fetchData();
       } else {
-        alert(data.message || `Gagal ${action} pengajuan`);
+        toast.error(`Gagal ${action} pengajuan`, {
+          description: data.message || 'Terjadi kesalahan',
+        });
       }
     } catch (error) {
-      alert('Terjadi kesalahan');
+      toast.error('Terjadi kesalahan', {
+        description: 'Tidak dapat terhubung ke server',
+      });
     }
   };
 
-  const handleLepaskanBimbingan = async (peranDosenTaId: number) => {
-    if (!confirm('Apakah Anda yakin ingin mengajukan pelepasan bimbingan ini?')) return;
-    
+  const handleLepaskanBimbingan = (peranDosenTaId: number) => {
+    setConfirmDialog({
+      open: true,
+      title: 'Konfirmasi Pelepasan Bimbingan',
+      description: 'Apakah Anda yakin ingin mengajukan pelepasan bimbingan ini? Tindakan ini memerlukan konfirmasi dari dosen pembimbing.',
+      variant: 'warning',
+      onConfirm: () => executeLepaskanBimbingan(peranDosenTaId)
+    });
+  };
+
+  const executeLepaskanBimbingan = async (peranDosenTaId: number) => {
     try {
       const res = await fetch('http://localhost:3002/api/pengajuan/lepaskan', {
         method: 'POST',
@@ -156,13 +217,54 @@ export default function PengajuanMahasiswaPage() {
 
       const data = await res.json();
       if (data.status === 'sukses') {
-        alert('Berhasil mengajukan pelepasan bimbingan');
+        toast.success('Pengajuan pelepasan dikirim', {
+          description: 'Menunggu konfirmasi dari dosen pembimbing',
+        });
         fetchData();
       } else {
-        alert(data.message || 'Gagal mengajukan pelepasan');
+        toast.error('Gagal mengajukan pelepasan', {
+          description: data.message || 'Terjadi kesalahan',
+        });
       }
     } catch (error) {
-      alert('Terjadi kesalahan');
+      toast.error('Terjadi kesalahan', {
+        description: 'Tidak dapat terhubung ke server',
+      });
+    }
+  };
+
+  const handleBatalkanPelepasan = (pengajuanId: number) => {
+    setConfirmDialog({
+      open: true,
+      title: 'Batalkan Pengajuan Pelepasan',
+      description: 'Apakah Anda yakin ingin membatalkan pengajuan pelepasan bimbingan ini?',
+      variant: 'info',
+      onConfirm: () => executeBatalkanPelepasan(pengajuanId)
+    });
+  };
+
+  const executeBatalkanPelepasan = async (pengajuanId: number) => {
+    try {
+      const res = await fetch(`http://localhost:3002/api/pengajuan/lepaskan/${pengajuanId}/batalkan`, {
+        method: 'POST',
+        headers: { 'x-user-id': user?.id?.toString() || '' },
+      });
+
+      const data = await res.json();
+      if (data.status === 'sukses') {
+        toast.success('Pengajuan pelepasan dibatalkan', {
+          description: 'Pengajuan pelepasan bimbingan telah dibatalkan',
+        });
+        fetchData();
+      } else {
+        toast.error('Gagal membatalkan pengajuan', {
+          description: data.message || 'Terjadi kesalahan',
+        });
+      }
+    } catch (error) {
+      toast.error('Terjadi kesalahan', {
+        description: 'Tidak dapat terhubung ke server',
+      });
     }
   };
 
@@ -175,13 +277,25 @@ export default function PengajuanMahasiswaPage() {
 
       const data = await res.json();
       if (data.status === 'sukses') {
-        alert(`Berhasil ${action === 'konfirmasi' ? 'menyetujui' : 'menolak'} pelepasan`);
+        if (action === 'konfirmasi') {
+          toast.success('Pelepasan bimbingan disetujui', {
+            description: 'Pembimbing telah dilepaskan dari tugas akhir Anda',
+          });
+        } else {
+          toast.info('Pelepasan bimbingan ditolak', {
+            description: 'Pengajuan pelepasan telah ditolak',
+          });
+        }
         fetchData();
       } else {
-        alert(data.message || `Gagal ${action} pelepasan`);
+        toast.error(`Gagal ${action} pelepasan`, {
+          description: data.message || 'Terjadi kesalahan',
+        });
       }
     } catch (error) {
-      alert('Terjadi kesalahan');
+      toast.error('Terjadi kesalahan', {
+        description: 'Tidak dapat terhubung ke server',
+      });
     }
   };
 
@@ -236,6 +350,17 @@ export default function PengajuanMahasiswaPage() {
   );
 
   const tawaranDosen = pengajuanList.filter(p => p.diinisiasi_oleh === 'dosen');
+  const totalTawaranPages = Math.ceil(tawaranDosen.length / tawaranPerPage);
+  const paginatedTawaran = tawaranDosen.slice(
+    (tawaranPage - 1) * tawaranPerPage,
+    tawaranPage * tawaranPerPage
+  );
+
+  // Placeholder untuk pembimbing yang belum ada
+  const pembimbingPlaceholder = [
+    { peran: 'pembimbing1', exists: pembimbingAktif.some(p => p.peran === 'pembimbing1') },
+    { peran: 'pembimbing2', exists: pembimbingAktif.some(p => p.peran === 'pembimbing2') },
+  ];
 
   if (loading) {
     return (
@@ -425,7 +550,7 @@ export default function PengajuanMahasiswaPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => handleAjukan(dosen.id)}
+                    onClick={() => handleAjukan(dosen.id, dosen.user.name)}
                     disabled={
                       (selectedPeran === 'pembimbing1' && (hasPembimbing1 || pengajuanAktifP1 >= 3)) ||
                       (selectedPeran === 'pembimbing2' && (hasPembimbing2 || pengajuanAktifP2 >= 3))
@@ -496,8 +621,10 @@ export default function PengajuanMahasiswaPage() {
           )}
         </div>
 
-        {/* Riwayat Pengajuan */}
-        <div className="bg-white rounded-xl shadow-base border border-gray-200 overflow-hidden">
+        {/* Grid Layout untuk Riwayat, Pembimbing Aktif, dan Tawaran */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Riwayat Pengajuan */}
+          <div className="bg-white rounded-xl shadow-base border border-gray-200 overflow-hidden">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-gray-700">Riwayat Pengajuan</h2>
@@ -614,7 +741,7 @@ export default function PengajuanMahasiswaPage() {
                     </div>
                     {pengajuan.status === 'MENUNGGU_PERSETUJUAN_DOSEN' && (
                       <button
-                        onClick={() => handleAction(pengajuan.id, 'batalkan')}
+                        onClick={() => handleAction(pengajuan.id, 'batalkan', pengajuan.dosen.user.name)}
                         className="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -655,81 +782,109 @@ export default function PengajuanMahasiswaPage() {
               </div>
             </div>
           )}
-        </div>
+          </div>
 
-        {/* Pembimbing Aktif */}
-        {pembimbingAktif.length > 0 && (
-          <div className="bg-white rounded-xl shadow-base border border-gray-200 overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-700">Pembimbing Aktif</h2>
-              <p className="text-sm text-gray-500 mt-1">Dosen pembimbing yang sudah disetujui</p>
-            </div>
-            <div className="divide-y divide-gray-200">
-              {pembimbingAktif.map((pembimbing) => {
+          {/* Column 2: Pembimbing Aktif & Tawaran */}
+          <div className="space-y-6">
+            {/* Pembimbing Aktif */}
+            <div className="bg-white rounded-xl shadow-base border border-gray-200 overflow-hidden">
+              <div className="p-6 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-700">Pembimbing Aktif</h2>
+                <p className="text-sm text-gray-500 mt-1">Dosen pembimbing yang sudah disetujui</p>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {pembimbingPlaceholder.map((placeholder) => {
+                  const pembimbing = pembimbingAktif.find(p => p.peran === placeholder.peran);
+                  
+                  if (!placeholder.exists) {
+                    return (
+                      <div key={placeholder.peran} className="p-3 bg-gray-50">
+                        <div className="flex items-center gap-2">
+                          <div className="w-9 h-9 bg-gray-300 rounded-lg flex items-center justify-center">
+                            <UserCheck className="w-5 h-5 text-gray-500" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500 italic">
+                              Belum terhubung dengan {placeholder.peran === 'pembimbing1' ? 'Pembimbing 1' : 'Pembimbing 2'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (!pembimbing) return null;
                 const pengajuanAktif = pembimbing.pengajuanPelepasanBimbingan?.[0];
                 const isUserYangMengajukan = pengajuanAktif?.diajukan_oleh_user_id === user?.id;
 
                 return (
                   <div key={pembimbing.id} className="p-3 hover:bg-gray-50 transition-colors duration-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 flex-1">
-                        <div className="w-9 h-9 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2 flex-1 min-w-0">
+                        <div className="w-9 h-9 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                           {pembimbing.dosen.user.name.charAt(0)}
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-semibold text-gray-900 text-sm">{pembimbing.dosen.user.name}</h3>
                             <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                               {pembimbing.peran === 'pembimbing1' ? 'P1' : 'P2'}
                             </span>
-                            {pengajuanAktif && (
-                              <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
-                                Pengajuan Pelepasan
-                              </span>
-                            )}
                           </div>
+                          {pengajuanAktif && (
+                            <span className="inline-block mt-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                              Pengajuan Pelepasan
+                            </span>
+                          )}
                         </div>
                       </div>
-                      {pengajuanAktif ? (
-                        isUserYangMengajukan ? (
-                          <span className="text-xs text-gray-500">Menunggu konfirmasi dosen</span>
+                      <div className="flex-shrink-0">
+                        {pengajuanAktif ? (
+                          isUserYangMengajukan ? (
+                            <button
+                              onClick={() => handleBatalkanPelepasan(pengajuanAktif.id)}
+                              className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              Batalkan
+                            </button>
+                          ) : (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleKonfirmasiPelepasan(pengajuanAktif.id, 'konfirmasi')}
+                                className="px-3 py-1.5 text-xs font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all flex items-center gap-1.5"
+                              >
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                Setuju
+                              </button>
+                              <button
+                                onClick={() => handleKonfirmasiPelepasan(pengajuanAktif.id, 'tolak')}
+                                className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all flex items-center gap-1.5"
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                                Tolak
+                              </button>
+                            </div>
+                          )
                         ) : (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleKonfirmasiPelepasan(pengajuanAktif.id, 'konfirmasi')}
-                              className="px-3 py-1.5 text-xs font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all flex items-center gap-1.5"
-                            >
-                              <CheckCircle className="w-3.5 h-3.5" />
-                              Setuju
-                            </button>
-                            <button
-                              onClick={() => handleKonfirmasiPelepasan(pengajuanAktif.id, 'tolak')}
-                              className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all flex items-center gap-1.5"
-                            >
-                              <XCircle className="w-3.5 h-3.5" />
-                              Tolak
-                            </button>
-                          </div>
-                        )
-                      ) : (
-                        <button
-                          onClick={() => handleLepaskanBimbingan(pembimbing.id)}
-                          className="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1.5"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                          Lepaskan
-                        </button>
-                      )}
+                          <button
+                            onClick={() => handleLepaskanBimbingan(pembimbing.id)}
+                            className="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            Lepaskan
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
-              })}
+                })}
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* Tawaran dari Dosen */}
-        <div className="bg-white rounded-xl shadow-base border border-gray-200 overflow-hidden">
+            {/* Tawaran dari Dosen */}
+            <div className="bg-white rounded-xl shadow-base border border-gray-200 overflow-hidden">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-gray-700">Tawaran dari Dosen</h2>
@@ -743,7 +898,7 @@ export default function PengajuanMahasiswaPage() {
             <p className="text-sm text-gray-500 mt-1">Dosen yang menawarkan diri sebagai pembimbing Anda</p>
           </div>
           <div className="divide-y divide-gray-200">
-            {tawaranDosen.map((pengajuan) => {
+            {paginatedTawaran.map((pengajuan) => {
               const createdDate = new Date(pengajuan.created_at);
               const formatWIB = (date: Date) => {
                 return new Intl.DateTimeFormat('id-ID', {
@@ -815,8 +970,44 @@ export default function PengajuanMahasiswaPage() {
               </div>
             )}
           </div>
+          {totalTawaranPages > 1 && (
+            <div className="p-4 border-t border-gray-200 flex items-center justify-between">
+              <p className="text-sm text-gray-600">
+                {(tawaranPage - 1) * tawaranPerPage + 1} - {Math.min(tawaranPage * tawaranPerPage, tawaranDosen.length)} dari {tawaranDosen.length}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setTawaranPage(p => Math.max(1, p - 1))}
+                  disabled={tawaranPage === 1}
+                  className="px-3 py-1 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
+                >
+                  Prev
+                </button>
+                <button
+                  onClick={() => setTawaranPage(p => Math.min(totalTawaranPages, p + 1))}
+                  disabled={tawaranPage === totalTawaranPages}
+                  className="px-3 py-1 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+          </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        confirmText="Ya, Lanjutkan"
+        cancelText="Batal"
+        onConfirm={confirmDialog.onConfirm}
+        variant={confirmDialog.variant}
+      />
     </div>
   );
 }
