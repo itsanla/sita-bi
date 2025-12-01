@@ -54,7 +54,7 @@ async function main() {
   console.log('👨🏫 Creating jurusan level access...');
   await prisma.user.create({
     data: {
-      name: 'Dr. Budi Santoso, M.Kom',
+      name: 'Dr. Yohannes Telaumbanua, S.Hum.,M.Pd',
       email: 'jurusan@pnp.ac.id',
       phone_number: '081234567891',
       password: hashedPassword,
@@ -62,7 +62,7 @@ async function main() {
       roles: { connect: [{ name: 'jurusan' }, { name: 'dosen' }] },
       dosen: {
         create: {
-          nip: '0001018801',
+          nip: '197808062009121001',
           kuota_bimbingan: 4,
         },
       },
@@ -122,7 +122,7 @@ async function main() {
     { name: 'Witri Handayani, SS., M.Pd', email: 'witri.handayani@pnp.ac.id', nip: '198112302010122004', prodi: Prodi.D3 },
     { name: 'Silvia Djonnaidi, SS., M.Hum', email: 'silvia.djonnaidi@pnp.ac.id', nip: '198311252015042002', prodi: Prodi.D4 },
     { name: 'Nini Wahyuni, S.Pd., M.Pd', email: 'nini.wahyuni@pnp.ac.id', nip: '198501242014042001', prodi: Prodi.D3 },
-    { name: 'Dr. Yohannes Telaumbanua, S.Hum.,M.Pd', email: 'yohannes.telaumbanua@pnp.ac.id', nip: '197808062009121001', prodi: Prodi.D4 },
+
     { name: 'Titin Ritmi,, SS, M.Hum', email: 'titin.ritmi@pnp.ac.id', nip: '197108052003122002', prodi: Prodi.D3 },
     { name: 'Hendro Saptopramono, SS, M.Ed', email: 'hendro.saptopramono@pnp.ac.id', nip: '197509022000121001', prodi: Prodi.D4 },
     { name: 'Dr. Sabriandi Erdian, S.S., M.Hum', email: 'sabriandi.erdian@pnp.ac.id', nip: '197905142010121002', prodi: Prodi.D3 },
