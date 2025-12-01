@@ -3,6 +3,7 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import UserSidebar from '@/components/shared/UserSidebar';
+import UserFooter from '@/components/shared/UserFooter';
 import {
   LayoutDashboard,
   FileText,
@@ -93,9 +94,10 @@ export default function MahasiswaLayout({ children }: { children: ReactNode }) {
       />
 
       <main
-        className={`min-h-screen transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}
+        className={`min-h-screen transition-all duration-300 flex flex-col ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}
       >
-        <div className="p-6 max-w-7xl mx-auto w-full">{children}</div>
+        <div className="p-6 max-w-7xl mx-auto w-full flex-1">{children}</div>
+        <UserFooter />
       </main>
     </div>
   );

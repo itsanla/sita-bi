@@ -35,6 +35,8 @@ out/
 build
 dist
 prisma.json
+migrations/
+dev.db
 
 # IDEs and editors
 /.idea
