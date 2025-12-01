@@ -1,7 +1,6 @@
 'use client';
 
 import * as Dialog from '@radix-ui/react-dialog';
-import { motion } from 'framer-motion';
 import { AlertTriangle } from 'lucide-react';
 
 interface ConfirmDialogProps {
@@ -34,15 +33,15 @@ export default function ConfirmDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm" style={{ zIndex: 9998 }} />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md" style={{ zIndex: 9999 }}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: 'spring', duration: 0.5, bounce: 0.3 }}
-            className="bg-white rounded-2xl shadow-2xl p-6 mx-4"
-          >
+        <Dialog.Overlay 
+          className="DialogOverlay" 
+          style={{ zIndex: 9998 }}
+        />
+        <Dialog.Content 
+          className="DialogContent" 
+          style={{ zIndex: 9999 }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl p-6 mx-4">
             <div className="flex items-start gap-4 mb-4">
               <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
                 <AlertTriangle className="w-6 h-6 text-amber-600" />
@@ -74,7 +73,7 @@ export default function ConfirmDialog({
                 {confirmText}
               </button>
             </div>
-          </motion.div>
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

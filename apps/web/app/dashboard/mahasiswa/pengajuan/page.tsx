@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { CheckCircle, XCircle, Clock, AlertCircle, Search, UserCheck, Send, X, Users, Award, UserX, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -299,68 +299,79 @@ export default function PengajuanMahasiswaPage() {
     }
   };
 
-  const pengajuanP1 = pengajuanList.filter(p => p.peran_yang_diajukan === 'pembimbing1');
-  const pengajuanP2 = pengajuanList.filter(p => p.peran_yang_diajukan === 'pembimbing2');
-  const pengajuanAktifP1 = pengajuanP1.filter(p => p.status === 'MENUNGGU_PERSETUJUAN_DOSEN' && p.diinisiasi_oleh === 'mahasiswa').length;
-  const pengajuanAktifP2 = pengajuanP2.filter(p => p.status === 'MENUNGGU_PERSETUJUAN_DOSEN' && p.diinisiasi_oleh === 'mahasiswa').length;
-  const hasPembimbing1 = pembimbingAktif.some(p => p.peran === 'pembimbing1');
-  const hasPembimbing2 = pembimbingAktif.some(p => p.peran === 'pembimbing2');
+  const pengajuanStats = useMemo(() => {
+    const pengajuanP1 = pengajuanList.filter(p => p.peran_yang_diajukan === 'pembimbing1');
+    const pengajuanP2 = pengajuanList.filter(p => p.peran_yang_diajukan === 'pembimbing2');
+    return {
+      pengajuanAktifP1: pengajuanP1.filter(p => p.status === 'MENUNGGU_PERSETUJUAN_DOSEN' && p.diinisiasi_oleh === 'mahasiswa').length,
+      pengajuanAktifP2: pengajuanP2.filter(p => p.status === 'MENUNGGU_PERSETUJUAN_DOSEN' && p.diinisiasi_oleh === 'mahasiswa').length,
+      hasPembimbing1: pembimbingAktif.some(p => p.peran === 'pembimbing1'),
+      hasPembimbing2: pembimbingAktif.some(p => p.peran === 'pembimbing2'),
+    };
+  }, [pengajuanList, pembimbingAktif]);
 
-  const filteredDosen = dosenList
-    .filter(d => d.available)
-    .filter(d => 
-      d.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.nip.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (dosenSortBy === 'bimbingan_asc') {
-        return a.jumlah_bimbingan - b.jumlah_bimbingan;
-      } else if (dosenSortBy === 'bimbingan_desc') {
-        return b.jumlah_bimbingan - a.jumlah_bimbingan;
-      } else if (dosenSortBy === 'nama_asc') {
-        return a.user.name.localeCompare(b.user.name);
-      } else {
+  const { pengajuanAktifP1, pengajuanAktifP2, hasPembimbing1, hasPembimbing2 } = pengajuanStats;
+
+  const filteredDosen = useMemo(() => {
+    return dosenList
+      .filter(d => d.available)
+      .filter(d => 
+        d.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        d.nip.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .sort((a, b) => {
+        if (dosenSortBy === 'bimbingan_asc') return a.jumlah_bimbingan - b.jumlah_bimbingan;
+        if (dosenSortBy === 'bimbingan_desc') return b.jumlah_bimbingan - a.jumlah_bimbingan;
+        if (dosenSortBy === 'nama_asc') return a.user.name.localeCompare(b.user.name);
         return b.user.name.localeCompare(a.user.name);
-      }
-    });
+      });
+  }, [dosenList, searchQuery, dosenSortBy]);
 
-  const totalPages = Math.ceil(filteredDosen.length / itemsPerPage);
-  const paginatedDosen = filteredDosen.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedDosen = useMemo(() => {
+    const totalPages = Math.ceil(filteredDosen.length / itemsPerPage);
+    return {
+      data: filteredDosen.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
+      totalPages,
+    };
+  }, [filteredDosen, currentPage]);
 
-  const filteredRiwayat = pengajuanList
-    .filter(p => p.diinisiasi_oleh === 'mahasiswa')
-    .filter(p => {
-      const matchSearch = p.dosen.user.name.toLowerCase().includes(riwayatSearchQuery.toLowerCase());
-      const matchStatus = riwayatFilterStatus === 'semua' || p.status === riwayatFilterStatus;
-      return matchSearch && matchStatus;
-    })
-    .sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-      return riwayatSortBy === 'terbaru' ? dateB - dateA : dateA - dateB;
-    });
+  const filteredRiwayat = useMemo(() => {
+    return pengajuanList
+      .filter(p => p.diinisiasi_oleh === 'mahasiswa')
+      .filter(p => {
+        const matchSearch = p.dosen.user.name.toLowerCase().includes(riwayatSearchQuery.toLowerCase());
+        const matchStatus = riwayatFilterStatus === 'semua' || p.status === riwayatFilterStatus;
+        return matchSearch && matchStatus;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return riwayatSortBy === 'terbaru' ? dateB - dateA : dateA - dateB;
+      });
+  }, [pengajuanList, riwayatSearchQuery, riwayatFilterStatus, riwayatSortBy]);
 
-  const totalRiwayatPages = Math.ceil(filteredRiwayat.length / itemsPerPage);
-  const paginatedRiwayat = filteredRiwayat.slice(
-    (riwayatPage - 1) * itemsPerPage,
-    riwayatPage * itemsPerPage
-  );
+  const paginatedRiwayat = useMemo(() => {
+    const totalPages = Math.ceil(filteredRiwayat.length / itemsPerPage);
+    return {
+      data: filteredRiwayat.slice((riwayatPage - 1) * itemsPerPage, riwayatPage * itemsPerPage),
+      totalPages,
+    };
+  }, [filteredRiwayat, riwayatPage]);
 
-  const tawaranDosen = pengajuanList.filter(p => p.diinisiasi_oleh === 'dosen');
-  const totalTawaranPages = Math.ceil(tawaranDosen.length / tawaranPerPage);
-  const paginatedTawaran = tawaranDosen.slice(
-    (tawaranPage - 1) * tawaranPerPage,
-    tawaranPage * tawaranPerPage
-  );
+  const tawaranData = useMemo(() => {
+    const tawaranDosen = pengajuanList.filter(p => p.diinisiasi_oleh === 'dosen');
+    const totalPages = Math.ceil(tawaranDosen.length / tawaranPerPage);
+    return {
+      data: tawaranDosen.slice((tawaranPage - 1) * tawaranPerPage, tawaranPage * tawaranPerPage),
+      total: tawaranDosen.length,
+      totalPages,
+    };
+  }, [pengajuanList, tawaranPage]);
 
-  // Placeholder untuk pembimbing yang belum ada
-  const pembimbingPlaceholder = [
-    { peran: 'pembimbing1', exists: pembimbingAktif.some(p => p.peran === 'pembimbing1') },
-    { peran: 'pembimbing2', exists: pembimbingAktif.some(p => p.peran === 'pembimbing2') },
-  ];
+  const pembimbingPlaceholder = useMemo(() => [
+    { peran: 'pembimbing1', exists: hasPembimbing1 },
+    { peran: 'pembimbing2', exists: hasPembimbing2 },
+  ], [hasPembimbing1, hasPembimbing2]);
 
   if (loading) {
     return (
@@ -524,25 +535,25 @@ export default function PengajuanMahasiswaPage() {
           </div>
           
           <div className="divide-y divide-gray-200">
-            {paginatedDosen.map((dosen) => (
-              <div key={dosen.id} className="p-3 hover:bg-gray-50 transition-colors duration-200">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 flex-1">
-                    <div className="w-9 h-9 bg-gradient-to-br from-[#7f1d1d] to-[#991b1b] rounded-lg flex items-center justify-center text-white font-bold text-sm">
+            {paginatedDosen.data.map((dosen) => (
+              <div key={dosen.id} className="p-4 hover:bg-gray-100 transition-colors">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#7f1d1d] to-[#991b1b] rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">
                       {dosen.user.name.charAt(0)}
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 text-sm">{dosen.user.name}</h3>
-                      <div className="flex items-center gap-3 mt-0.5">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900">{dosen.user.name}</h3>
+                      <div className="flex items-center gap-4 mt-1">
                         <p className="text-xs text-gray-500">NIP: {dosen.nip}</p>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-20 bg-gray-200 rounded-full h-1.5 flex items-center">
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 bg-gray-200 rounded-full h-2">
                             <div 
-                              className="bg-[#7f1d1d] h-1.5 rounded-full transition-all duration-300" 
+                              className="bg-[#7f1d1d] h-2 rounded-full transition-all duration-300" 
                               style={{ width: `${(dosen.jumlah_bimbingan / dosen.kuota_bimbingan) * 100}%` }}
                             ></div>
                           </div>
-                          <span className="text-xs text-gray-600 whitespace-nowrap">
+                          <span className="text-xs text-gray-600 font-medium whitespace-nowrap">
                             {dosen.jumlah_bimbingan}/{dosen.kuota_bimbingan}
                           </span>
                         </div>
@@ -555,15 +566,15 @@ export default function PengajuanMahasiswaPage() {
                       (selectedPeran === 'pembimbing1' && (hasPembimbing1 || pengajuanAktifP1 >= 3)) ||
                       (selectedPeran === 'pembimbing2' && (hasPembimbing2 || pengajuanAktifP2 >= 3))
                     }
-                    className="px-4 py-2 bg-[#7f1d1d] text-white rounded-lg text-sm font-semibold hover:bg-[#991b1b] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-1.5"
+                    className="px-4 py-2 bg-[#7f1d1d] text-white rounded-lg text-sm font-semibold hover:bg-[#991b1b] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 flex-shrink-0"
                   >
-                    <Send className="w-3.5 h-3.5" />
+                    <Send className="w-4 h-4" />
                     Ajukan
                   </button>
                 </div>
               </div>
             ))}
-            {paginatedDosen.length === 0 && (
+            {paginatedDosen.data.length === 0 && (
               <div className="p-8 text-center">
                 <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p className="text-gray-500">Tidak ada dosen yang ditemukan</p>
@@ -571,7 +582,7 @@ export default function PengajuanMahasiswaPage() {
             )}
           </div>
 
-          {totalPages > 1 && (
+          {paginatedDosen.totalPages > 1 && (
             <div className="p-6 border-t border-gray-200 flex items-center justify-between">
               <p className="text-sm text-gray-600">
                 Menampilkan {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredDosen.length)} dari {filteredDosen.length} dosen
@@ -580,18 +591,18 @@ export default function PengajuanMahasiswaPage() {
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   Prev
                 </button>
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                {Array.from({ length: Math.min(5, paginatedDosen.totalPages) }, (_, i) => {
                   let pageNum;
-                  if (totalPages <= 5) {
+                  if (paginatedDosen.totalPages <= 5) {
                     pageNum = i + 1;
                   } else if (currentPage <= 3) {
                     pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
+                  } else if (currentPage >= paginatedDosen.totalPages - 2) {
+                    pageNum = paginatedDosen.totalPages - 4 + i;
                   } else {
                     pageNum = currentPage - 2 + i;
                   }
@@ -602,7 +613,7 @@ export default function PengajuanMahasiswaPage() {
                       className={`w-10 h-10 rounded-lg font-medium transition-all ${
                         currentPage === pageNum
                           ? 'bg-[#7f1d1d] text-white shadow-md'
-                          : 'border border-gray-300 hover:bg-gray-50'
+                          : 'border border-gray-300 hover:bg-gray-100'
                       }`}
                     >
                       {pageNum}
@@ -610,9 +621,9 @@ export default function PengajuanMahasiswaPage() {
                   );
                 })}
                 <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  onClick={() => setCurrentPage(p => Math.min(paginatedDosen.totalPages, p + 1))}
+                  disabled={currentPage === paginatedDosen.totalPages}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   Next
                 </button>
@@ -677,7 +688,7 @@ export default function PengajuanMahasiswaPage() {
             </div>
           </div>
           <div className="divide-y divide-gray-200">
-            {paginatedRiwayat.map((pengajuan) => {
+            {paginatedRiwayat.data.map((pengajuan) => {
               const createdDate = new Date(pengajuan.created_at);
               const updatedDate = new Date(pengajuan.updated_at);
               const formatWIB = (date: Date) => {
@@ -710,20 +721,20 @@ export default function PengajuanMahasiswaPage() {
               const StatusIcon = statusInfo.icon;
 
               return (
-                <div key={pengajuan.id} className="p-3 hover:bg-gray-50 transition-colors duration-200">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-2 flex-1">
-                      <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                <div key={pengajuan.id} className="p-4 hover:bg-gray-100 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">
                         {pengajuan.dosen.user.name.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-gray-900 text-sm">{pengajuan.dosen.user.name}</h3>
+                          <h3 className="font-semibold text-gray-900">{pengajuan.dosen.user.name}</h3>
                           <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                             {pengajuan.peran_yang_diajukan === 'pembimbing1' ? 'P1' : 'P2'}
                           </span>
                           <div className="flex items-center gap-1">
-                            <StatusIcon className={`w-3.5 h-3.5 text-${statusInfo.color}-500`} />
+                            <StatusIcon className={`w-4 h-4 text-${statusInfo.color}-500`} />
                             <span className={`text-xs text-${statusInfo.color}-600 font-medium`}>{statusInfo.text}</span>
                           </div>
                         </div>
@@ -742,9 +753,9 @@ export default function PengajuanMahasiswaPage() {
                     {pengajuan.status === 'MENUNGGU_PERSETUJUAN_DOSEN' && (
                       <button
                         onClick={() => handleAction(pengajuan.id, 'batalkan', pengajuan.dosen.user.name)}
-                        className="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
+                        className="px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-all flex items-center gap-1.5 flex-shrink-0"
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X className="w-4 h-4" />
                         Batalkan
                       </button>
                     )}
@@ -752,14 +763,14 @@ export default function PengajuanMahasiswaPage() {
                 </div>
               );
             })}
-            {filteredRiwayat.length === 0 && (
+            {paginatedRiwayat.data.length === 0 && (
               <div className="p-8 text-center">
                 <Send className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p className="text-gray-500">Belum ada pengajuan yang dikirim</p>
               </div>
             )}
           </div>
-          {totalRiwayatPages > 1 && (
+          {paginatedRiwayat.totalPages > 1 && (
             <div className="p-4 border-t border-gray-200 flex items-center justify-between">
               <p className="text-sm text-gray-600">
                 {(riwayatPage - 1) * itemsPerPage + 1} - {Math.min(riwayatPage * itemsPerPage, filteredRiwayat.length)} dari {filteredRiwayat.length}
@@ -768,14 +779,14 @@ export default function PengajuanMahasiswaPage() {
                 <button
                   onClick={() => setRiwayatPage(p => Math.max(1, p - 1))}
                   disabled={riwayatPage === 1}
-                  className="px-3 py-1 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-all"
                 >
                   Prev
                 </button>
                 <button
-                  onClick={() => setRiwayatPage(p => Math.min(totalRiwayatPages, p + 1))}
-                  disabled={riwayatPage === totalRiwayatPages}
-                  className="px-3 py-1 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
+                  onClick={() => setRiwayatPage(p => Math.min(paginatedRiwayat.totalPages, p + 1))}
+                  disabled={riwayatPage === paginatedRiwayat.totalPages}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-all"
                 >
                   Next
                 </button>
@@ -798,9 +809,9 @@ export default function PengajuanMahasiswaPage() {
                   
                   if (!placeholder.exists) {
                     return (
-                      <div key={placeholder.peran} className="p-3 bg-gray-50">
-                        <div className="flex items-center gap-2">
-                          <div className="w-9 h-9 bg-gray-300 rounded-lg flex items-center justify-center">
+                      <div key={placeholder.peran} className="p-4 bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gray-300 rounded-lg flex items-center justify-center flex-shrink-0">
                             <UserCheck className="w-5 h-5 text-gray-500" />
                           </div>
                           <div>
@@ -818,15 +829,15 @@ export default function PengajuanMahasiswaPage() {
                 const isUserYangMengajukan = pengajuanAktif?.diajukan_oleh_user_id === user?.id;
 
                 return (
-                  <div key={pembimbing.id} className="p-3 hover:bg-gray-50 transition-colors duration-200">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-2 flex-1 min-w-0">
-                        <div className="w-9 h-9 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                  <div key={pembimbing.id} className="p-4 hover:bg-gray-100 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">
                           {pembimbing.dosen.user.name.charAt(0)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-semibold text-gray-900 text-sm">{pembimbing.dosen.user.name}</h3>
+                            <h3 className="font-semibold text-gray-900">{pembimbing.dosen.user.name}</h3>
                             <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                               {pembimbing.peran === 'pembimbing1' ? 'P1' : 'P2'}
                             </span>
@@ -843,9 +854,9 @@ export default function PengajuanMahasiswaPage() {
                           isUserYangMengajukan ? (
                             <button
                               onClick={() => handleBatalkanPelepasan(pengajuanAktif.id)}
-                              className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                              className="px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap"
                             >
-                              <X className="w-3.5 h-3.5" />
+                              <X className="w-4 h-4" />
                               Batalkan
                             </button>
                           ) : (
@@ -854,14 +865,14 @@ export default function PengajuanMahasiswaPage() {
                                 onClick={() => handleKonfirmasiPelepasan(pengajuanAktif.id, 'konfirmasi')}
                                 className="px-3 py-1.5 text-xs font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all flex items-center gap-1.5"
                               >
-                                <CheckCircle className="w-3.5 h-3.5" />
+                                <CheckCircle className="w-4 h-4" />
                                 Setuju
                               </button>
                               <button
                                 onClick={() => handleKonfirmasiPelepasan(pengajuanAktif.id, 'tolak')}
                                 className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all flex items-center gap-1.5"
                               >
-                                <XCircle className="w-3.5 h-3.5" />
+                                <XCircle className="w-4 h-4" />
                                 Tolak
                               </button>
                             </div>
@@ -869,9 +880,9 @@ export default function PengajuanMahasiswaPage() {
                         ) : (
                           <button
                             onClick={() => handleLepaskanBimbingan(pembimbing.id)}
-                            className="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                            className="px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            <X className="w-4 h-4" />
                             Lepaskan
                           </button>
                         )}
@@ -898,7 +909,7 @@ export default function PengajuanMahasiswaPage() {
             <p className="text-sm text-gray-500 mt-1">Dosen yang menawarkan diri sebagai pembimbing Anda</p>
           </div>
           <div className="divide-y divide-gray-200">
-            {paginatedTawaran.map((pengajuan) => {
+            {tawaranData.data.map((pengajuan) => {
               const createdDate = new Date(pengajuan.created_at);
               const formatWIB = (date: Date) => {
                 return new Intl.DateTimeFormat('id-ID', {
@@ -912,15 +923,15 @@ export default function PengajuanMahasiswaPage() {
               };
 
               return (
-                <div key={pengajuan.id} className="p-3 hover:bg-gray-50 transition-colors duration-200">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-2 flex-1">
-                      <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                <div key={pengajuan.id} className="p-4 hover:bg-gray-100 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">
                         {pengajuan.dosen.user.name.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-gray-900 text-sm">{pengajuan.dosen.user.name}</h3>
+                          <h3 className="font-semibold text-gray-900">{pengajuan.dosen.user.name}</h3>
                           <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
                             {pengajuan.peran_yang_diajukan === 'pembimbing1' ? 'P1' : 'P2'}
                           </span>
@@ -962,7 +973,7 @@ export default function PengajuanMahasiswaPage() {
                 </div>
               );
             })}
-            {tawaranDosen.length === 0 && (
+            {tawaranData.total === 0 && (
               <div className="p-8 text-center">
                 <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p className="text-gray-500">Belum ada tawaran dari dosen</p>
@@ -970,23 +981,23 @@ export default function PengajuanMahasiswaPage() {
               </div>
             )}
           </div>
-          {totalTawaranPages > 1 && (
+          {tawaranData.totalPages > 1 && (
             <div className="p-4 border-t border-gray-200 flex items-center justify-between">
               <p className="text-sm text-gray-600">
-                {(tawaranPage - 1) * tawaranPerPage + 1} - {Math.min(tawaranPage * tawaranPerPage, tawaranDosen.length)} dari {tawaranDosen.length}
+                {(tawaranPage - 1) * tawaranPerPage + 1} - {Math.min(tawaranPage * tawaranPerPage, tawaranData.total)} dari {tawaranData.total}
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setTawaranPage(p => Math.max(1, p - 1))}
                   disabled={tawaranPage === 1}
-                  className="px-3 py-1 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-all"
                 >
                   Prev
                 </button>
                 <button
-                  onClick={() => setTawaranPage(p => Math.min(totalTawaranPages, p + 1))}
-                  disabled={tawaranPage === totalTawaranPages}
-                  className="px-3 py-1 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
+                  onClick={() => setTawaranPage(p => Math.min(tawaranData.totalPages, p + 1))}
+                  disabled={tawaranPage === tawaranData.totalPages}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-all"
                 >
                   Next
                 </button>
