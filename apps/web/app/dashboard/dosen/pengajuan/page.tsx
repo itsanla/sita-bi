@@ -50,60 +50,17 @@ const HelpCircle = lazy(() =>
   import('lucide-react').then((m) => ({ default: m.HelpCircle })),
 );
 
-interface Mahasiswa {
-  id: number;
-  user: { id: number; name: string; email: string };
-  nim: string;
-  prodi: string;
-  kelas: string;
-  judul_ta: string;
-  has_pembimbing1: boolean;
-  has_pembimbing2: boolean;
-  available_for_p1: boolean;
-  available_for_p2: boolean;
-}
-
-interface Pengajuan {
-  id: number;
-  peran_yang_diajukan: string;
-  diinisiasi_oleh: string;
-  status: string;
-  mahasiswa: {
-    id: number;
-    user: { name: string; email: string };
-    nim: string;
-  };
-  created_at: string;
-  updated_at: string;
-}
-
-interface MahasiswaBimbingan {
-  id: number;
-  peran: string;
-  tugasAkhir: {
-    mahasiswa: {
-      user: { name: string; email: string };
-      nim: string;
-    };
-  };
-  pengajuanPelepasanBimbingan?: Array<{
-    id: number;
-    diajukan_oleh_user_id: number;
-    status: string;
-  }>;
-}
-
-interface PengajuanPelepasan {
-  id: number;
-  peran_dosen_ta_id: number;
-  diajukan_oleh_user_id: number;
-  status: string;
-  diajukanOleh: {
-    id: number;
-    name: string;
-  };
-  created_at: string;
-}
+const QUERY_KEY_PENGAJUAN_DOSEN = 'pengajuan-dosen';
+const STATUS_MENUNGGU_MAHASISWA = 'MENUNGGU_PERSETUJUAN_MAHASISWA';
+const STATUS_MENUNGGU_DOSEN = 'MENUNGGU_PERSETUJUAN_DOSEN';
+const PERAN_PEMBIMBING_1 = 'pembimbing1';
+const PERAN_PEMBIMBING_2 = 'pembimbing2';
+const LABEL_P1 = 'P1';
+const LABEL_P2 = 'P2';
+const LABEL_PEMBIMBING_1 = 'Pembimbing 1';
+const LABEL_PEMBIMBING_2 = 'Pembimbing 2';
+const MSG_TERJADI_KESALAHAN = 'Terjadi kesalahan';
+const MSG_TIDAK_DAPAT_TERHUBUNG = 'Tidak dapat terhubung ke server';
 
 export default function PengajuanDosenPage() {
   const { user } = useAuth();
@@ -162,7 +119,7 @@ export default function PengajuanDosenPage() {
   });
 
   const { data: pengajuanData, isLoading: pengajuanLoading } = useQuery({
-    queryKey: ['pengajuan-dosen', user?.id],
+    queryKey: [QUERY_KEY_PENGAJUAN_DOSEN, user?.id],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/pengajuan/dosen`, {
         headers: { 'x-user-id': user?.id?.toString() || '' },
@@ -174,8 +131,14 @@ export default function PengajuanDosenPage() {
     enabled: !!user?.id,
   });
 
-  const mahasiswaList = mahasiswaData?.data || [];
-  const pengajuanList = pengajuanData?.data || [];
+  const mahasiswaList = useMemo(
+    () => mahasiswaData?.data || [],
+    [mahasiswaData],
+  );
+  const pengajuanList = useMemo(
+    () => pengajuanData?.data || [],
+    [pengajuanData],
+  );
   const mahasiswaBimbingan = pengajuanData?.mahasiswaBimbingan || [];
   const kuotaInfo = { current: mahasiswaBimbingan.length || 0, max: 4 };
 
@@ -206,18 +169,20 @@ export default function PengajuanDosenPage() {
     onSuccess: (data, variables) => {
       if (data.status === 'sukses') {
         toast.success('Berhasil menawarkan pembimbing', {
-          description: `Tawaran sebagai ${variables.peran === 'pembimbing1' ? 'Pembimbing 1' : 'Pembimbing 2'} telah dikirim`,
+          description: `Tawaran sebagai ${variables.peran === PERAN_PEMBIMBING_1 ? LABEL_PEMBIMBING_1 : LABEL_PEMBIMBING_2} telah dikirim`,
         });
-        queryClient.invalidateQueries({ queryKey: ['pengajuan-dosen'] });
+        queryClient.invalidateQueries({
+          queryKey: [QUERY_KEY_PENGAJUAN_DOSEN],
+        });
       } else {
         toast.error('Gagal menawarkan pembimbing', {
-          description: data.message || 'Terjadi kesalahan',
+          description: data.message || MSG_TERJADI_KESALAHAN,
         });
       }
     },
     onError: () => {
-      toast.error('Terjadi kesalahan', {
-        description: 'Tidak dapat terhubung ke server',
+      toast.error(MSG_TERJADI_KESALAHAN, {
+        description: MSG_TIDAK_DAPAT_TERHUBUNG,
       });
     },
   });
@@ -230,12 +195,12 @@ export default function PengajuanDosenPage() {
   );
 
   const handleSelectPeran = useCallback(
-    (peran: 'pembimbing1' | 'pembimbing2') => {
+    (peran: PERAN_PEMBIMBING_1 | PERAN_PEMBIMBING_2) => {
       setPeranDialog({ open: false, mahasiswaId: 0, mahasiswaName: '' });
       setConfirmDialog({
         open: true,
         title: 'Konfirmasi Tawaran Pembimbing',
-        description: `Apakah Anda yakin ingin menawarkan diri sebagai ${peran === 'pembimbing1' ? 'Pembimbing 1' : 'Pembimbing 2'} untuk ${peranDialog.mahasiswaName}?`,
+        description: `Apakah Anda yakin ingin menawarkan diri sebagai ${peran === PERAN_PEMBIMBING_1 ? LABEL_PEMBIMBING_1 : LABEL_PEMBIMBING_2} untuk ${peranDialog.mahasiswaName}?`,
         variant: 'info',
         onConfirm: () =>
           tawarkanMutation.mutate({
@@ -287,16 +252,18 @@ export default function PengajuanDosenPage() {
               messages[variables.action as keyof typeof messages].desc,
           },
         );
-        queryClient.invalidateQueries({ queryKey: ['pengajuan-dosen'] });
+        queryClient.invalidateQueries({
+          queryKey: [QUERY_KEY_PENGAJUAN_DOSEN],
+        });
       } else {
         toast.error(`Gagal ${variables.action} pengajuan`, {
-          description: data.message || 'Terjadi kesalahan',
+          description: data.message || MSG_TERJADI_KESALAHAN,
         });
       }
     },
     onError: () => {
-      toast.error('Terjadi kesalahan', {
-        description: 'Tidak dapat terhubung ke server',
+      toast.error(MSG_TERJADI_KESALAHAN, {
+        description: MSG_TIDAK_DAPAT_TERHUBUNG,
       });
     },
   });
@@ -339,16 +306,18 @@ export default function PengajuanDosenPage() {
         toast.success('Pengajuan pelepasan dikirim', {
           description: 'Menunggu konfirmasi dari mahasiswa',
         });
-        queryClient.invalidateQueries({ queryKey: ['pengajuan-dosen'] });
+        queryClient.invalidateQueries({
+          queryKey: [QUERY_KEY_PENGAJUAN_DOSEN],
+        });
       } else {
         toast.error('Gagal mengajukan pelepasan', {
-          description: data.message || 'Terjadi kesalahan',
+          description: data.message || MSG_TERJADI_KESALAHAN,
         });
       }
     },
     onError: () => {
-      toast.error('Terjadi kesalahan', {
-        description: 'Tidak dapat terhubung ke server',
+      toast.error(MSG_TERJADI_KESALAHAN, {
+        description: MSG_TIDAK_DAPAT_TERHUBUNG,
       });
     },
   });
@@ -366,36 +335,6 @@ export default function PengajuanDosenPage() {
     },
     [lepaskanMutation],
   );
-
-  const batalkanPelepasanMutation = useMutation({
-    mutationFn: async (pengajuanId: number) => {
-      const res = await fetch(
-        `${API_BASE_URL}/pengajuan/lepaskan/${pengajuanId}/batalkan`,
-        {
-          method: 'POST',
-          headers: { 'x-user-id': user?.id?.toString() || '' },
-        },
-      );
-      return res.json();
-    },
-    onSuccess: (data) => {
-      if (data.status === 'sukses') {
-        toast.success('Pengajuan pelepasan dibatalkan', {
-          description: 'Pengajuan pelepasan bimbingan telah dibatalkan',
-        });
-        queryClient.invalidateQueries({ queryKey: ['pengajuan-dosen'] });
-      } else {
-        toast.error('Gagal membatalkan pengajuan', {
-          description: data.message || 'Terjadi kesalahan',
-        });
-      }
-    },
-    onError: () => {
-      toast.error('Terjadi kesalahan', {
-        description: 'Tidak dapat terhubung ke server',
-      });
-    },
-  });
 
   const konfirmasiPelepasanMutation = useMutation({
     mutationFn: async ({
@@ -425,33 +364,21 @@ export default function PengajuanDosenPage() {
             description: 'Pengajuan pelepasan telah ditolak',
           });
         }
-        queryClient.invalidateQueries({ queryKey: ['pengajuan-dosen'] });
+        queryClient.invalidateQueries({
+          queryKey: [QUERY_KEY_PENGAJUAN_DOSEN],
+        });
       } else {
         toast.error(`Gagal ${variables.action} pelepasan`, {
-          description: data.message || 'Terjadi kesalahan',
+          description: data.message || MSG_TERJADI_KESALAHAN,
         });
       }
     },
     onError: () => {
-      toast.error('Terjadi kesalahan', {
-        description: 'Tidak dapat terhubung ke server',
+      toast.error(MSG_TERJADI_KESALAHAN, {
+        description: MSG_TIDAK_DAPAT_TERHUBUNG,
       });
     },
   });
-
-  const handleBatalkanPelepasan = useCallback(
-    (pengajuanId: number) => {
-      setConfirmDialog({
-        open: true,
-        title: 'Batalkan Pengajuan Pelepasan',
-        description:
-          'Apakah Anda yakin ingin membatalkan pengajuan pelepasan bimbingan ini?',
-        variant: 'info',
-        onConfirm: () => batalkanPelepasanMutation.mutate(pengajuanId),
-      });
-    },
-    [batalkanPelepasanMutation],
-  );
 
   const handleKonfirmasiPelepasan = useCallback(
     (pengajuanId: number, action: 'konfirmasi' | 'tolak') => {
@@ -460,16 +387,25 @@ export default function PengajuanDosenPage() {
     [konfirmasiPelepasanMutation],
   );
 
+  const formatWIB = useCallback((date: Date) => {
+    return new Intl.DateTimeFormat('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  }, []);
+
   const tawaranAktif = pengajuanList.filter(
     (p) =>
-      p.diinisiasi_oleh === 'dosen' &&
-      p.status === 'MENUNGGU_PERSETUJUAN_MAHASISWA',
+      p.diinisiasi_oleh === 'dosen' && p.status === STATUS_MENUNGGU_MAHASISWA,
   ).length;
   const kuotaPenuh = kuotaInfo.current >= kuotaInfo.max;
   const pengajuanMasuk = pengajuanList.filter(
     (p) =>
-      p.diinisiasi_oleh === 'mahasiswa' &&
-      p.status === 'MENUNGGU_PERSETUJUAN_DOSEN',
+      p.diinisiasi_oleh === 'mahasiswa' && p.status === STATUS_MENUNGGU_DOSEN,
   );
 
   const filteredMahasiswa = useMemo(() => {
@@ -697,16 +633,6 @@ export default function PengajuanDosenPage() {
             <div className="divide-y divide-gray-200">
               {pengajuanMasukData.data.map((pengajuan) => {
                 const createdDate = new Date(pengajuan.created_at);
-                const formatWIB = (date: Date) => {
-                  return new Intl.DateTimeFormat('id-ID', {
-                    timeZone: 'Asia/Jakarta',
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  }).format(date);
-                };
 
                 return (
                   <div
@@ -724,9 +650,10 @@ export default function PengajuanDosenPage() {
                               {pengajuan.mahasiswa.user.name}
                             </h3>
                             <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                              {pengajuan.peran_yang_diajukan === 'pembimbing1'
-                                ? 'P1'
-                                : 'P2'}
+                              {pengajuan.peran_yang_diajukan ===
+                              PERAN_PEMBIMBING_1
+                                ? LABEL_P1
+                                : LABEL_P2}
                             </span>
                           </div>
                           <p className="text-xs text-gray-500 mt-1">
@@ -899,12 +826,12 @@ export default function PengajuanDosenPage() {
                       <td className="px-4 py-3 text-sm text-gray-600">-</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1 h-6 items-center">
-                          {mahasiswa.has_pembimbing1 && (
+                          {!!mahasiswa.has_pembimbing1 && (
                             <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded whitespace-nowrap">
                               P1
                             </span>
                           )}
-                          {mahasiswa.has_pembimbing2 && (
+                          {!!mahasiswa.has_pembimbing2 && (
                             <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded whitespace-nowrap">
                               P2
                             </span>
@@ -919,8 +846,10 @@ export default function PengajuanDosenPage() {
                         className="px-4 py-3 text-center"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {(mahasiswa.available_for_p1 ||
-                          mahasiswa.available_for_p2) && (
+                        {!!(
+                          mahasiswa.available_for_p1 ||
+                          mahasiswa.available_for_p2
+                        ) && (
                           <button
                             onClick={() =>
                               handleTawarkan(mahasiswa.id, mahasiswa.user.name)
@@ -969,12 +898,12 @@ export default function PengajuanDosenPage() {
                           {mahasiswa.user.name}
                         </h3>
                         <div className="flex gap-1 flex-shrink-0">
-                          {mahasiswa.has_pembimbing1 && (
+                          {!!mahasiswa.has_pembimbing1 && (
                             <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded">
                               P1
                             </span>
                           )}
-                          {mahasiswa.has_pembimbing2 && (
+                          {!!mahasiswa.has_pembimbing2 && (
                             <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded">
                               P2
                             </span>
@@ -985,8 +914,9 @@ export default function PengajuanDosenPage() {
                         {mahasiswa.nim} • {mahasiswa.prodi}
                       </p>
                     </div>
-                    {(mahasiswa.available_for_p1 ||
-                      mahasiswa.available_for_p2) && (
+                    {!!(
+                      mahasiswa.available_for_p1 || mahasiswa.available_for_p2
+                    ) && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1146,20 +1076,10 @@ export default function PengajuanDosenPage() {
                 {paginatedRiwayat.data.map((pengajuan) => {
                   const createdDate = new Date(pengajuan.created_at);
                   const updatedDate = new Date(pengajuan.updated_at);
-                  const formatWIB = (date: Date) => {
-                    return new Intl.DateTimeFormat('id-ID', {
-                      timeZone: 'Asia/Jakarta',
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    }).format(date);
-                  };
 
                   const getStatusInfo = (status: string) => {
                     switch (status) {
-                      case 'MENUNGGU_PERSETUJUAN_MAHASISWA':
+                      case STATUS_MENUNGGU_MAHASISWA:
                         return {
                           icon: Clock,
                           color: 'amber',
@@ -1203,9 +1123,10 @@ export default function PengajuanDosenPage() {
                                 {pengajuan.mahasiswa.user.name}
                               </h3>
                               <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
-                                {pengajuan.peran_yang_diajukan === 'pembimbing1'
-                                  ? 'P1'
-                                  : 'P2'}
+                                {pengajuan.peran_yang_diajukan ===
+                                PERAN_PEMBIMBING_1
+                                  ? LABEL_P1
+                                  : LABEL_P2}
                               </span>
                               <div className="flex items-center gap-1">
                                 <StatusIcon
@@ -1222,8 +1143,7 @@ export default function PengajuanDosenPage() {
                               <p className="text-xs text-gray-500">
                                 Diajukan: {formatWIB(createdDate)} WIB
                               </p>
-                              {pengajuan.status !==
-                                'MENUNGGU_PERSETUJUAN_DOSEN' && (
+                              {pengajuan.status !== STATUS_MENUNGGU_DOSEN && (
                                 <p className="text-xs text-gray-500">
                                   Respon: {formatWIB(updatedDate)} WIB
                                 </p>
@@ -1231,8 +1151,7 @@ export default function PengajuanDosenPage() {
                             </div>
                           </div>
                         </div>
-                        {pengajuan.status ===
-                          'MENUNGGU_PERSETUJUAN_MAHASISWA' && (
+                        {pengajuan.status === STATUS_MENUNGGU_MAHASISWA && (
                           <button
                             onClick={() =>
                               handleAction(
@@ -1331,15 +1250,15 @@ export default function PengajuanDosenPage() {
                                   {bimbingan.tugasAkhir.mahasiswa.user.name}
                                 </h3>
                                 <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                  {bimbingan.peran === 'pembimbing1'
-                                    ? 'P1'
-                                    : 'P2'}
+                                  {bimbingan.peran === PERAN_PEMBIMBING_1
+                                    ? LABEL_P1
+                                    : LABEL_P2}
                                 </span>
                               </div>
                               <p className="text-xs text-gray-500 mt-1">
                                 NIM: {bimbingan.tugasAkhir.mahasiswa.nim}
                               </p>
-                              {pengajuanAktif && (
+                              {!!pengajuanAktif && (
                                 <span className="inline-block mt-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
                                   Pengajuan Pelepasan
                                 </span>
@@ -1347,40 +1266,7 @@ export default function PengajuanDosenPage() {
                             </div>
                           </div>
                           <div className="w-full sm:w-auto sm:flex-shrink-0">
-                            {pengajuanAktif ? (
-                              isUserYangMengajukan ? (
-                                <span className="text-sm text-gray-500">
-                                  Menunggu konfirmasi mahasiswa
-                                </span>
-                              ) : (
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() =>
-                                      handleKonfirmasiPelepasan(
-                                        pengajuanAktif.id,
-                                        'konfirmasi',
-                                      )
-                                    }
-                                    className="flex-1 sm:flex-none px-3 py-1.5 text-xs font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-1.5"
-                                  >
-                                    <CheckCircle className="w-4 h-4" />
-                                    Setuju
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      handleKonfirmasiPelepasan(
-                                        pengajuanAktif.id,
-                                        'tolak',
-                                      )
-                                    }
-                                    className="flex-1 sm:flex-none px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all flex items-center justify-center gap-1.5"
-                                  >
-                                    <XCircle className="w-4 h-4" />
-                                    Tolak
-                                  </button>
-                                </div>
-                              )
-                            ) : (
+                            {!pengajuanAktif && (
                               <button
                                 onClick={() =>
                                   handleLepaskanBimbingan(bimbingan.id)
@@ -1390,6 +1276,39 @@ export default function PengajuanDosenPage() {
                                 <X className="w-4 h-4" />
                                 Lepaskan
                               </button>
+                            )}
+                            {!!pengajuanAktif && !!isUserYangMengajukan && (
+                              <span className="text-sm text-gray-500">
+                                Menunggu konfirmasi mahasiswa
+                              </span>
+                            )}
+                            {!!pengajuanAktif && !isUserYangMengajukan && (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() =>
+                                    handleKonfirmasiPelepasan(
+                                      pengajuanAktif.id,
+                                      'konfirmasi',
+                                    )
+                                  }
+                                  className="flex-1 sm:flex-none px-3 py-1.5 text-xs font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-1.5"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                  Setuju
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleKonfirmasiPelepasan(
+                                      pengajuanAktif.id,
+                                      'tolak',
+                                    )
+                                  }
+                                  className="flex-1 sm:flex-none px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all flex items-center justify-center gap-1.5"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                  Tolak
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -1421,7 +1340,7 @@ export default function PengajuanDosenPage() {
           variant={confirmDialog.variant}
         />
 
-        {peranDialog.open &&
+        {!!peranDialog.open &&
           (() => {
             const mahasiswa = mahasiswaList.find(
               (m) => m.id === peranDialog.mahasiswaId,
@@ -1480,12 +1399,12 @@ export default function PengajuanDosenPage() {
                           Status Pembimbing
                         </p>
                         <div className="flex gap-1 mt-1">
-                          {mahasiswa.has_pembimbing1 && (
+                          {!!mahasiswa.has_pembimbing1 && (
                             <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded">
                               Sudah ada P1
                             </span>
                           )}
-                          {mahasiswa.has_pembimbing2 && (
+                          {!!mahasiswa.has_pembimbing2 && (
                             <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded">
                               Sudah ada P2
                             </span>
@@ -1508,16 +1427,19 @@ export default function PengajuanDosenPage() {
                       </p>
                     </div>
                   </div>
-                  {(mahasiswa.available_for_p1 ||
-                    mahasiswa.available_for_p2) && (
+                  {!!(
+                    mahasiswa.available_for_p1 || mahasiswa.available_for_p2
+                  ) && (
                     <>
                       <p className="text-sm text-gray-600 mb-3">
                         Pilih peran pembimbing yang akan Anda tawarkan:
                       </p>
                       <div className="space-y-2">
-                        {mahasiswa.available_for_p1 && (
+                        {!!mahasiswa.available_for_p1 && (
                           <button
-                            onClick={() => handleSelectPeran('pembimbing1')}
+                            onClick={() =>
+                              handleSelectPeran(PERAN_PEMBIMBING_1)
+                            }
                             disabled={kuotaPenuh || tawaranAktif >= 5}
                             className="w-full px-6 py-3 bg-gradient-to-r from-[#7f1d1d] to-[#991b1b] text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
@@ -1525,9 +1447,11 @@ export default function PengajuanDosenPage() {
                             <span>Tawarkan sebagai Pembimbing 1</span>
                           </button>
                         )}
-                        {mahasiswa.available_for_p2 && (
+                        {!!mahasiswa.available_for_p2 && (
                           <button
-                            onClick={() => handleSelectPeran('pembimbing2')}
+                            onClick={() =>
+                              handleSelectPeran(PERAN_PEMBIMBING_2)
+                            }
                             disabled={kuotaPenuh || tawaranAktif >= 5}
                             className="w-full px-6 py-3 bg-gradient-to-r from-[#7f1d1d] to-[#991b1b] text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                           >

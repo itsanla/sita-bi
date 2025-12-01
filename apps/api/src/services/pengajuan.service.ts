@@ -1,17 +1,27 @@
 import { PrismaClient } from '@repo/db';
-// import { PenugasanService } from './penugasan.service'; // Unused
+
+const JUDUL_DEFAULT = 'Judul Tugas Akhir (Belum Ditentukan)';
+const STATUS_MENUNGGU_KONFIRMASI = 'MENUNGGU_KONFIRMASI';
+const ERROR_PENGAJUAN_TIDAK_DITEMUKAN = 'Pengajuan tidak ditemukan';
+const ERROR_PELEPASAN_TIDAK_DITEMUKAN = 'Pengajuan pelepasan tidak ditemukan';
+const STATUS_MENUNGGU_PERSETUJUAN_DOSEN = 'MENUNGGU_PERSETUJUAN_DOSEN';
+const STATUS_MENUNGGU_PERSETUJUAN_MAHASISWA = 'MENUNGGU_PERSETUJUAN_MAHASISWA';
+const PERAN_PEMBIMBING: readonly string[] = ['pembimbing1', 'pembimbing2'];
+const ERROR_PENGAJUAN_SUDAH_DIPROSES = 'Pengajuan sudah diproses';
 
 export class PengajuanService {
   private prisma: PrismaClient;
-  // private penugasanService: PenugasanService; // Unused
 
   constructor() {
     this.prisma = new PrismaClient();
-    // this.penugasanService = new PenugasanService(); // Unused
   }
 
   // Method untuk mahasiswa mengajukan ke dosen
-  async ajukanKeDosen(mahasiswaId: number, dosenId: number, peran: 'pembimbing1' | 'pembimbing2'): Promise<unknown> {
+  async ajukanKeDosen(
+    mahasiswaId: number,
+    dosenId: number,
+    peran: 'pembimbing1' | 'pembimbing2',
+  ): Promise<unknown> {
     // Cek tugas akhir mahasiswa
     let tugasAkhir = await this.prisma.tugasAkhir.findFirst({
       where: { mahasiswa_id: mahasiswaId },
@@ -19,19 +29,19 @@ export class PengajuanService {
     });
 
     // Buat tugas akhir jika belum ada
-    if (!tugasAkhir) {
-      tugasAkhir = await this.prisma.tugasAkhir.create({
-        data: {
-          mahasiswa_id: mahasiswaId,
-          judul: 'Judul Tugas Akhir (Belum Ditentukan)',
-          status: 'DRAFT',
-        },
-        include: { peranDosenTa: true },
-      });
-    }
+    tugasAkhir ??= await this.prisma.tugasAkhir.create({
+      data: {
+        mahasiswa_id: mahasiswaId,
+        judul: JUDUL_DEFAULT,
+        status: 'DRAFT',
+      },
+      include: { peranDosenTa: true },
+    });
 
     // Cek apakah peran sudah terisi
-    const existingPeran = tugasAkhir.peranDosenTa.find(p => p.peran === peran);
+    const existingPeran = tugasAkhir.peranDosenTa.find(
+      (p) => p.peran === peran,
+    );
     if (existingPeran) {
       throw new Error(`Anda sudah memiliki ${peran}`);
     }
@@ -42,7 +52,12 @@ export class PengajuanService {
         mahasiswa_id: mahasiswaId,
         dosen_id: dosenId,
         peran_yang_diajukan: peran,
-        status: { in: ['MENUNGGU_PERSETUJUAN_DOSEN', 'MENUNGGU_PERSETUJUAN_MAHASISWA'] },
+        status: {
+          in: [
+            STATUS_MENUNGGU_PERSETUJUAN_DOSEN,
+            STATUS_MENUNGGU_PERSETUJUAN_MAHASISWA,
+          ],
+        },
       },
     });
 
@@ -56,7 +71,12 @@ export class PengajuanService {
         mahasiswa_id: mahasiswaId,
         dosen_id: dosenId,
         peran_yang_diajukan: peran,
-        status: { notIn: ['MENUNGGU_PERSETUJUAN_DOSEN', 'MENUNGGU_PERSETUJUAN_MAHASISWA'] },
+        status: {
+          notIn: [
+            STATUS_MENUNGGU_PERSETUJUAN_DOSEN,
+            STATUS_MENUNGGU_PERSETUJUAN_MAHASISWA,
+          ],
+        },
       },
     });
 
@@ -66,7 +86,7 @@ export class PengajuanService {
         mahasiswa_id: mahasiswaId,
         peran_yang_diajukan: peran,
         diinisiasi_oleh: 'mahasiswa',
-        status: 'MENUNGGU_PERSETUJUAN_DOSEN',
+        status: STATUS_MENUNGGU_PERSETUJUAN_DOSEN,
       },
     });
 
@@ -81,7 +101,7 @@ export class PengajuanService {
         dosen_id: dosenId,
         peran_yang_diajukan: peran,
         diinisiasi_oleh: 'mahasiswa',
-        status: 'MENUNGGU_PERSETUJUAN_DOSEN',
+        status: STATUS_MENUNGGU_PERSETUJUAN_DOSEN,
       },
       include: {
         mahasiswa: { include: { user: true } },
@@ -97,13 +117,15 @@ export class PengajuanService {
     peran: 'pembimbing1' | 'pembimbing2',
   ): Promise<unknown> {
     // Cek kuota dosen
-    const dosen = await this.prisma.dosen.findUnique({ where: { id: dosenId } });
+    const dosen = await this.prisma.dosen.findUnique({
+      where: { id: dosenId },
+    });
     if (!dosen) throw new Error('Dosen tidak ditemukan');
 
     const jumlahBimbingan = await this.prisma.peranDosenTa.count({
       where: {
         dosen_id: dosenId,
-        peran: { in: ['pembimbing1', 'pembimbing2'] },
+        peran: { in: PERAN_PEMBIMBING },
       },
     });
 
@@ -118,19 +140,19 @@ export class PengajuanService {
     });
 
     // Buat tugas akhir jika belum ada
-    if (!tugasAkhir) {
-      tugasAkhir = await this.prisma.tugasAkhir.create({
-        data: {
-          mahasiswa_id: mahasiswaId,
-          judul: 'Judul Tugas Akhir (Belum Ditentukan)',
-          status: 'DRAFT',
-        },
-        include: { peranDosenTa: true },
-      });
-    }
+    tugasAkhir ??= await this.prisma.tugasAkhir.create({
+      data: {
+        mahasiswa_id: mahasiswaId,
+        judul: JUDUL_DEFAULT,
+        status: 'DRAFT',
+      },
+      include: { peranDosenTa: true },
+    });
 
     // Cek apakah peran sudah terisi
-    const existingPeran = tugasAkhir.peranDosenTa.find(p => p.peran === peran);
+    const existingPeran = tugasAkhir.peranDosenTa.find(
+      (p) => p.peran === peran,
+    );
     if (existingPeran) {
       throw new Error(`Mahasiswa sudah memiliki ${peran}`);
     }
@@ -149,7 +171,7 @@ export class PengajuanService {
       where: {
         dosen_id: dosenId,
         diinisiasi_oleh: 'dosen',
-        status: 'MENUNGGU_PERSETUJUAN_MAHASISWA',
+        status: STATUS_MENUNGGU_PERSETUJUAN_MAHASISWA,
       },
     });
 
@@ -164,7 +186,7 @@ export class PengajuanService {
         dosen_id: dosenId,
         peran_yang_diajukan: peran,
         diinisiasi_oleh: 'dosen',
-        status: 'MENUNGGU_PERSETUJUAN_MAHASISWA',
+        status: STATUS_MENUNGGU_PERSETUJUAN_MAHASISWA,
       },
       include: {
         mahasiswa: { include: { user: true } },
@@ -184,29 +206,39 @@ export class PengajuanService {
         },
       });
 
-      if (!pengajuan) throw new Error('Pengajuan tidak ditemukan');
+      if (!pengajuan) throw new Error(ERROR_PENGAJUAN_TIDAK_DITEMUKAN);
 
       // Validasi user yang berhak menerima
       const isValidUser =
-        (pengajuan.diinisiasi_oleh === 'mahasiswa' && pengajuan.dosen.user.id === userId) ||
-        (pengajuan.diinisiasi_oleh === 'dosen' && pengajuan.mahasiswa.user.id === userId);
+        (pengajuan.diinisiasi_oleh === 'mahasiswa' &&
+          pengajuan.dosen.user.id === userId) ||
+        (pengajuan.diinisiasi_oleh === 'dosen' &&
+          pengajuan.mahasiswa.user.id === userId);
 
-      if (!isValidUser) throw new Error('Anda tidak berhak menerima pengajuan ini');
+      if (!isValidUser)
+        throw new Error('Anda tidak berhak menerima pengajuan ini');
 
-      if (!['MENUNGGU_PERSETUJUAN_DOSEN', 'MENUNGGU_PERSETUJUAN_MAHASISWA'].includes(pengajuan.status)) {
-        throw new Error('Pengajuan ini sudah diproses');
+      if (
+        ![
+          STATUS_MENUNGGU_PERSETUJUAN_DOSEN,
+          STATUS_MENUNGGU_PERSETUJUAN_MAHASISWA,
+        ].includes(pengajuan.status)
+      ) {
+        throw new Error(ERROR_PENGAJUAN_SUDAH_DIPROSES);
       }
 
       // Cek kuota dosen
       const jumlahBimbingan = await tx.peranDosenTa.count({
         where: {
           dosen_id: pengajuan.dosen_id,
-          peran: { in: ['pembimbing1', 'pembimbing2'] },
+          peran: { in: PERAN_PEMBIMBING },
         },
       });
 
-      const dosen = await tx.dosen.findUnique({ where: { id: pengajuan.dosen_id } });
-      if (jumlahBimbingan >= (dosen?.kuota_bimbingan || 4)) {
+      const dosen = await tx.dosen.findUnique({
+        where: { id: pengajuan.dosen_id },
+      });
+      if (jumlahBimbingan >= (dosen?.kuota_bimbingan ?? 4)) {
         throw new Error('Kuota bimbingan dosen sudah penuh');
       }
 
@@ -216,19 +248,19 @@ export class PengajuanService {
         include: { peranDosenTa: true },
       });
 
-      if (!tugasAkhir) {
-        tugasAkhir = await tx.tugasAkhir.create({
-          data: {
-            mahasiswa_id: pengajuan.mahasiswa_id,
-            judul: 'Judul Tugas Akhir (Belum Ditentukan)',
-            status: 'DRAFT',
-          },
-          include: { peranDosenTa: true },
-        });
-      }
+      tugasAkhir ??= await tx.tugasAkhir.create({
+        data: {
+          mahasiswa_id: pengajuan.mahasiswa_id,
+          judul: JUDUL_DEFAULT,
+          status: 'DRAFT',
+        },
+        include: { peranDosenTa: true },
+      });
 
       // Cek apakah peran sudah terisi
-      const existingPeran = tugasAkhir.peranDosenTa.find(p => p.peran === pengajuan.peran_yang_diajukan);
+      const existingPeran = tugasAkhir.peranDosenTa.find(
+        (p) => p.peran === pengajuan.peran_yang_diajukan,
+      );
       if (existingPeran) {
         throw new Error(`${pengajuan.peran_yang_diajukan} sudah terisi`);
       }
@@ -238,7 +270,7 @@ export class PengajuanService {
         data: {
           tugas_akhir_id: tugasAkhir.id,
           dosen_id: pengajuan.dosen_id,
-          peran: pengajuan.peran_yang_diajukan as any,
+          peran: pengajuan.peran_yang_diajukan,
         },
       });
 
@@ -246,7 +278,7 @@ export class PengajuanService {
       const totalPembimbing = await tx.peranDosenTa.count({
         where: {
           tugas_akhir_id: tugasAkhir.id,
-          peran: { in: ['pembimbing1', 'pembimbing2'] },
+          peran: { in: PERAN_PEMBIMBING },
         },
       });
 
@@ -282,7 +314,12 @@ export class PengajuanService {
           mahasiswa_id: pengajuan.mahasiswa_id,
           peran_yang_diajukan: pengajuan.peran_yang_diajukan,
           id: { not: pengajuanId },
-          status: { in: ['MENUNGGU_PERSETUJUAN_DOSEN', 'MENUNGGU_PERSETUJUAN_MAHASISWA'] },
+          status: {
+            in: [
+              STATUS_MENUNGGU_PERSETUJUAN_DOSEN,
+              STATUS_MENUNGGU_PERSETUJUAN_MAHASISWA,
+            ],
+          },
         },
         data: { status: 'DIBATALKAN_MAHASISWA' },
       });
@@ -302,8 +339,8 @@ export class PengajuanService {
       },
     });
 
-    if (pengajuan === null) {
-      throw new Error('Pengajuan tidak ditemukan');
+    if (!pengajuan) {
+      throw new Error(ERROR_PENGAJUAN_TIDAK_DITEMUKAN);
     }
 
     // Validasi user yang berhak menolak
@@ -320,11 +357,11 @@ export class PengajuanService {
     // Cek status pengajuan
     if (
       ![
-        'MENUNGGU_PERSETUJUAN_DOSEN',
-        'MENUNGGU_PERSETUJUAN_MAHASISWA',
+        STATUS_MENUNGGU_PERSETUJUAN_DOSEN,
+        STATUS_MENUNGGU_PERSETUJUAN_MAHASISWA,
       ].includes(pengajuan.status)
     ) {
-      throw new Error('Pengajuan ini sudah diproses');
+      throw new Error(ERROR_PENGAJUAN_SUDAH_DIPROSES);
     }
 
     // Update status menjadi ditolak
@@ -354,8 +391,8 @@ export class PengajuanService {
       },
     });
 
-    if (pengajuan === null) {
-      throw new Error('Pengajuan tidak ditemukan');
+    if (!pengajuan) {
+      throw new Error(ERROR_PENGAJUAN_TIDAK_DITEMUKAN);
     }
 
     // Validasi user yang berhak membatalkan (hanya yang menginisiasi)
@@ -372,11 +409,11 @@ export class PengajuanService {
     // Cek status pengajuan
     if (
       ![
-        'MENUNGGU_PERSETUJUAN_DOSEN',
-        'MENUNGGU_PERSETUJUAN_MAHASISWA',
+        STATUS_MENUNGGU_PERSETUJUAN_DOSEN,
+        STATUS_MENUNGGU_PERSETUJUAN_MAHASISWA,
       ].includes(pengajuan.status)
     ) {
-      throw new Error('Pengajuan ini sudah diproses');
+      throw new Error(ERROR_PENGAJUAN_SUDAH_DIPROSES);
     }
 
     // Update status menjadi dibatalkan
@@ -408,12 +445,12 @@ export class PengajuanService {
       include: {
         peranDosenTa: {
           where: {
-            peran: { in: ['pembimbing1', 'pembimbing2'] },
+            peran: { in: PERAN_PEMBIMBING },
           },
           include: {
             dosen: { include: { user: true } },
             pengajuanPelepasanBimbingan: {
-              where: { status: 'MENUNGGU_KONFIRMASI' },
+              where: { status: STATUS_MENUNGGU_KONFIRMASI },
               include: {
                 diajukanOleh: true,
               },
@@ -423,8 +460,10 @@ export class PengajuanService {
       },
     });
 
-    const pembimbingAktif = tugasAkhir?.peranDosenTa || [];
-    const pelepasan = pembimbingAktif.flatMap(p => p.pengajuanPelepasanBimbingan) || [];
+    const pembimbingAktif = tugasAkhir?.peranDosenTa ?? [];
+    const pelepasan = pembimbingAktif.flatMap(
+      (p) => p.pengajuanPelepasanBimbingan,
+    );
 
     return { pengajuan, pembimbingAktif, pelepasan };
   }
@@ -443,7 +482,7 @@ export class PengajuanService {
     const mahasiswaBimbingan = await this.prisma.peranDosenTa.findMany({
       where: {
         dosen_id: dosenId,
-        peran: { in: ['pembimbing1', 'pembimbing2'] },
+        peran: { in: PERAN_PEMBIMBING },
       },
       include: {
         tugasAkhir: {
@@ -452,7 +491,7 @@ export class PengajuanService {
           },
         },
         pengajuanPelepasanBimbingan: {
-          where: { status: 'MENUNGGU_KONFIRMASI' },
+          where: { status: STATUS_MENUNGGU_KONFIRMASI },
           include: {
             diajukanOleh: true,
           },
@@ -470,7 +509,7 @@ export class PengajuanService {
         user: { select: { id: true, name: true, email: true } },
         peranDosenTa: {
           where: {
-            peran: { in: ['pembimbing1', 'pembimbing2'] },
+            peran: { in: PERAN_PEMBIMBING },
           },
         },
       },
@@ -501,7 +540,7 @@ export class PengajuanService {
           include: {
             peranDosenTa: {
               where: {
-                peran: { in: ['pembimbing1', 'pembimbing2'] },
+                peran: { in: PERAN_PEMBIMBING },
               },
             },
           },
@@ -511,8 +550,12 @@ export class PengajuanService {
 
     return mahasiswaList.map((m) => {
       const tugasAkhir = m.tugasAkhir;
-      const hasPembimbing1 = tugasAkhir?.peranDosenTa.some(p => p.peran === 'pembimbing1') || false;
-      const hasPembimbing2 = tugasAkhir?.peranDosenTa.some(p => p.peran === 'pembimbing2') || false;
+      const hasPembimbing1 = Boolean(
+        tugasAkhir?.peranDosenTa.some((p) => p.peran === 'pembimbing1'),
+      );
+      const hasPembimbing2 = Boolean(
+        tugasAkhir?.peranDosenTa.some((p) => p.peran === 'pembimbing2'),
+      );
 
       return {
         id: m.id,
@@ -520,7 +563,7 @@ export class PengajuanService {
         nim: m.nim,
         prodi: m.prodi,
         kelas: m.kelas,
-        judul_ta: tugasAkhir?.judul || 'Belum menentukan judul',
+        judul_ta: tugasAkhir?.judul ?? 'Belum menentukan judul',
         has_pembimbing1: hasPembimbing1,
         has_pembimbing2: hasPembimbing2,
         available_for_p1: !hasPembimbing1,
@@ -530,7 +573,10 @@ export class PengajuanService {
   }
 
   // Method untuk mengajukan pelepasan bimbingan
-  async ajukanPelepasanBimbingan(peranDosenTaId: number, userId: number): Promise<unknown> {
+  async ajukanPelepasanBimbingan(
+    peranDosenTaId: number,
+    userId: number,
+  ): Promise<unknown> {
     const peranDosen = await this.prisma.peranDosenTa.findUnique({
       where: { id: peranDosenTaId },
       include: {
@@ -550,12 +596,13 @@ export class PengajuanService {
     }
 
     // Cek apakah sudah ada pengajuan pelepasan aktif
-    const existingPengajuan = await this.prisma.pengajuanPelepasanBimbingan.findFirst({
-      where: {
-        peran_dosen_ta_id: peranDosenTaId,
-        status: 'MENUNGGU_KONFIRMASI',
-      },
-    });
+    const existingPengajuan =
+      await this.prisma.pengajuanPelepasanBimbingan.findFirst({
+        where: {
+          peran_dosen_ta_id: peranDosenTaId,
+          status: STATUS_MENUNGGU_KONFIRMASI,
+        },
+      });
 
     if (existingPengajuan) {
       throw new Error('Sudah ada pengajuan pelepasan yang menunggu konfirmasi');
@@ -566,7 +613,7 @@ export class PengajuanService {
       data: {
         peran_dosen_ta_id: peranDosenTaId,
         diajukan_oleh_user_id: userId,
-        status: 'MENUNGGU_KONFIRMASI',
+        status: STATUS_MENUNGGU_KONFIRMASI,
       },
       include: {
         peranDosenTa: {
@@ -581,7 +628,10 @@ export class PengajuanService {
   }
 
   // Method untuk konfirmasi pelepasan bimbingan
-  async konfirmasiPelepasanBimbingan(pengajuanId: number, userId: number): Promise<unknown> {
+  async konfirmasiPelepasanBimbingan(
+    pengajuanId: number,
+    userId: number,
+  ): Promise<unknown> {
     return this.prisma.$transaction(async (tx) => {
       const pengajuan = await tx.pengajuanPelepasanBimbingan.findUnique({
         where: { id: pengajuanId },
@@ -589,20 +639,23 @@ export class PengajuanService {
           peranDosenTa: {
             include: {
               dosen: { include: { user: true } },
-              tugasAkhir: { include: { mahasiswa: { include: { user: true } } } },
+              tugasAkhir: {
+                include: { mahasiswa: { include: { user: true } } },
+              },
             },
           },
           diajukanOleh: true,
         },
       });
 
-      if (!pengajuan) throw new Error('Pengajuan pelepasan tidak ditemukan');
-      if (pengajuan.status !== 'MENUNGGU_KONFIRMASI') {
-        throw new Error('Pengajuan ini sudah diproses');
+      if (!pengajuan) throw new Error(ERROR_PELEPASAN_TIDAK_DITEMUKAN);
+      if (pengajuan.status !== STATUS_MENUNGGU_KONFIRMASI) {
+        throw new Error(ERROR_PENGAJUAN_SUDAH_DIPROSES);
       }
 
       // Validasi user yang mengkonfirmasi (harus pihak yang tidak mengajukan)
-      const isMahasiswa = pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user_id === userId;
+      const isMahasiswa =
+        pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user_id === userId;
       const isDosen = pengajuan.peranDosenTa.dosen.user_id === userId;
 
       if (!isMahasiswa && !isDosen) {
@@ -610,7 +663,9 @@ export class PengajuanService {
       }
 
       if (pengajuan.diajukan_oleh_user_id === userId) {
-        throw new Error('Anda tidak bisa mengkonfirmasi pengajuan Anda sendiri');
+        throw new Error(
+          'Anda tidak bisa mengkonfirmasi pengajuan Anda sendiri',
+        );
       }
 
       // Update status pengajuan
@@ -637,7 +692,7 @@ export class PengajuanService {
       const remainingPembimbing = await tx.peranDosenTa.count({
         where: {
           tugas_akhir_id: pengajuan.peranDosenTa.tugas_akhir_id,
-          peran: { in: ['pembimbing1', 'pembimbing2'] },
+          peran: { in: PERAN_PEMBIMBING },
         },
       });
 
@@ -653,7 +708,10 @@ export class PengajuanService {
   }
 
   // Method untuk menolak pelepasan bimbingan
-  async tolakPelepasanBimbingan(pengajuanId: number, userId: number): Promise<unknown> {
+  async tolakPelepasanBimbingan(
+    pengajuanId: number,
+    userId: number,
+  ): Promise<unknown> {
     const pengajuan = await this.prisma.pengajuanPelepasanBimbingan.findUnique({
       where: { id: pengajuanId },
       include: {
@@ -666,13 +724,14 @@ export class PengajuanService {
       },
     });
 
-    if (!pengajuan) throw new Error('Pengajuan pelepasan tidak ditemukan');
-    if (pengajuan.status !== 'MENUNGGU_KONFIRMASI') {
-      throw new Error('Pengajuan ini sudah diproses');
+    if (!pengajuan) throw new Error(ERROR_PELEPASAN_TIDAK_DITEMUKAN);
+    if (pengajuan.status !== STATUS_MENUNGGU_KONFIRMASI) {
+      throw new Error(ERROR_PENGAJUAN_SUDAH_DIPROSES);
     }
 
     // Validasi user yang menolak
-    const isMahasiswa = pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user_id === userId;
+    const isMahasiswa =
+      pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user_id === userId;
     const isDosen = pengajuan.peranDosenTa.dosen.user_id === userId;
 
     if (!isMahasiswa && !isDosen) {
@@ -698,7 +757,10 @@ export class PengajuanService {
   }
 
   // Method untuk membatalkan pelepasan bimbingan (oleh yang mengajukan)
-  async batalkanPelepasanBimbingan(pengajuanId: number, userId: number): Promise<unknown> {
+  async batalkanPelepasanBimbingan(
+    pengajuanId: number,
+    userId: number,
+  ): Promise<unknown> {
     const pengajuan = await this.prisma.pengajuanPelepasanBimbingan.findUnique({
       where: { id: pengajuanId },
       include: {
@@ -711,9 +773,9 @@ export class PengajuanService {
       },
     });
 
-    if (!pengajuan) throw new Error('Pengajuan pelepasan tidak ditemukan');
-    if (pengajuan.status !== 'MENUNGGU_KONFIRMASI') {
-      throw new Error('Pengajuan ini sudah diproses');
+    if (!pengajuan) throw new Error(ERROR_PELEPASAN_TIDAK_DITEMUKAN);
+    if (pengajuan.status !== STATUS_MENUNGGU_KONFIRMASI) {
+      throw new Error(ERROR_PENGAJUAN_SUDAH_DIPROSES);
     }
 
     // Validasi user yang membatalkan (harus yang mengajukan)

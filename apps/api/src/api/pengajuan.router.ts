@@ -3,6 +3,17 @@ import asyncHandler from '../utils/asyncHandler';
 import { PengajuanService } from '../services/pengajuan.service';
 import { authMiddleware } from '../middlewares/auth.middleware';
 
+const MSG_GAGAL = 'gagal';
+const MSG_SUKSES = 'sukses';
+const MSG_UNAUTHORIZED = 'Unauthorized';
+const MSG_TERJADI_KESALAHAN = 'Terjadi kesalahan';
+const MSG_ID_PENGAJUAN_DIPERLUKAN = 'ID pengajuan diperlukan';
+const MSG_ID_PELEPASAN_DIPERLUKAN = 'ID pelepasan diperlukan';
+const MSG_GAGAL_DATA_PENGAJUAN = 'Gagal mengambil data pengajuan';
+const MSG_AKSES_DITOLAK_DOSEN = 'Akses ditolak: Anda bukan dosen';
+const MSG_GAGAL_DATA_DOSEN = 'Gagal mengambil data dosen';
+const MSG_GAGAL_DATA_MAHASISWA = 'Gagal mengambil data mahasiswa';
+
 const router: Router = Router();
 const pengajuanService = new PengajuanService();
 
@@ -15,7 +26,7 @@ router.post(
   asyncHandler(async (req, res) => {
     if (typeof req.user?.mahasiswa?.id !== 'number') {
       res.status(401).json({
-        status: 'gagal',
+        status: MSG_GAGAL,
         message: 'Akses ditolak: Anda bukan mahasiswa',
       });
       return;
@@ -24,17 +35,21 @@ router.post(
     const mahasiswaId = req.user.mahasiswa.id;
     const { dosenId, peran } = req.body;
 
-    if (typeof dosenId !== 'number' && typeof dosenId !== 'string') {
+    if (dosenId === undefined || dosenId === null) {
       res.status(400).json({
-        status: 'gagal',
+        status: MSG_GAGAL,
         message: 'ID dosen diperlukan',
       });
       return;
     }
 
-    if (!peran || !['pembimbing1', 'pembimbing2'].includes(peran)) {
+    if (
+      peran === undefined ||
+      peran === null ||
+      !['pembimbing1', 'pembimbing2'].includes(peran)
+    ) {
       res.status(400).json({
-        status: 'gagal',
+        status: MSG_GAGAL,
         message: 'Peran harus pembimbing1 atau pembimbing2',
       });
       return;
@@ -46,11 +61,11 @@ router.post(
         parseInt(String(dosenId), 10),
         peran,
       );
-      res.status(201).json({ status: 'sukses', data: result });
-    } catch (_error) {
+      res.status(201).json({ status: MSG_SUKSES, data: result });
+    } catch (error) {
       res.status(400).json({
-        status: 'gagal',
-        message: _error instanceof Error ? _error.message : 'Terjadi kesalahan',
+        status: MSG_GAGAL,
+        message: error instanceof Error ? error.message : MSG_TERJADI_KESALAHAN,
       });
     }
   }),
@@ -62,7 +77,7 @@ router.get(
   asyncHandler(async (req, res) => {
     if (typeof req.user?.mahasiswa?.id !== 'number') {
       res.status(401).json({
-        status: 'gagal',
+        status: MSG_GAGAL,
         message: 'Akses ditolak: Anda bukan mahasiswa',
       });
 
@@ -73,17 +88,22 @@ router.get(
 
     try {
       const result = await pengajuanService.getPengajuanMahasiswa(mahasiswaId);
-      const resultData = result as { pengajuan: any[]; pembimbingAktif: any[]; pelepasan: any[] };
-      res.status(200).json({ 
-        status: 'sukses', 
+      const resultData = result as {
+        pengajuan: unknown[];
+        pembimbingAktif: unknown[];
+        pelepasan: unknown[];
+      };
+      res.status(200).json({
+        status: MSG_SUKSES,
         data: resultData.pengajuan,
         pembimbingAktif: resultData.pembimbingAktif,
-        pelepasan: resultData.pelepasan 
+        pelepasan: resultData.pelepasan,
       });
-    } catch (_error) {
+    } catch (error) {
       res.status(500).json({
-        status: 'gagal',
-        message: 'Gagal mendapatkan data pengajuan',
+        status: MSG_GAGAL,
+        message:
+          error instanceof Error ? error.message : MSG_GAGAL_DATA_PENGAJUAN,
       });
     }
   }),
@@ -95,8 +115,8 @@ router.post(
   asyncHandler(async (req, res) => {
     if (typeof req.user?.dosen?.id !== 'number') {
       res.status(401).json({
-        status: 'gagal',
-        message: 'Akses ditolak: Anda bukan dosen',
+        status: MSG_GAGAL,
+        message: MSG_AKSES_DITOLAK_DOSEN,
       });
       return;
     }
@@ -104,17 +124,21 @@ router.post(
     const dosenId = req.user.dosen.id;
     const { mahasiswaId, peran } = req.body;
 
-    if (typeof mahasiswaId !== 'number' && typeof mahasiswaId !== 'string') {
+    if (mahasiswaId === undefined || mahasiswaId === null) {
       res.status(400).json({
-        status: 'gagal',
+        status: MSG_GAGAL,
         message: 'ID mahasiswa diperlukan',
       });
       return;
     }
 
-    if (!peran || !['pembimbing1', 'pembimbing2'].includes(peran)) {
+    if (
+      peran === undefined ||
+      peran === null ||
+      !['pembimbing1', 'pembimbing2'].includes(peran)
+    ) {
       res.status(400).json({
-        status: 'gagal',
+        status: MSG_GAGAL,
         message: 'Peran harus pembimbing1 atau pembimbing2',
       });
       return;
@@ -126,11 +150,11 @@ router.post(
         parseInt(String(mahasiswaId), 10),
         peran,
       );
-      res.status(201).json({ status: 'sukses', data: result });
-    } catch (_error) {
+      res.status(201).json({ status: MSG_SUKSES, data: result });
+    } catch (error) {
       res.status(400).json({
-        status: 'gagal',
-        message: _error instanceof Error ? _error.message : 'Terjadi kesalahan',
+        status: MSG_GAGAL,
+        message: error instanceof Error ? error.message : MSG_TERJADI_KESALAHAN,
       });
     }
   }),
@@ -142,8 +166,8 @@ router.get(
   asyncHandler(async (req, res) => {
     if (typeof req.user?.dosen?.id !== 'number') {
       res.status(401).json({
-        status: 'gagal',
-        message: 'Akses ditolak: Anda bukan dosen',
+        status: MSG_GAGAL,
+        message: MSG_AKSES_DITOLAK_DOSEN,
       });
 
       return;
@@ -153,16 +177,20 @@ router.get(
 
     try {
       const result = await pengajuanService.getPengajuanDosen(dosenId);
-      const resultData = result as { pengajuan: any[]; mahasiswaBimbingan: any[] };
-      res.status(200).json({ 
-        status: 'sukses', 
+      const resultData = result as {
+        pengajuan: unknown[];
+        mahasiswaBimbingan: unknown[];
+      };
+      res.status(200).json({
+        status: MSG_SUKSES,
         data: resultData.pengajuan,
-        mahasiswaBimbingan: resultData.mahasiswaBimbingan 
+        mahasiswaBimbingan: resultData.mahasiswaBimbingan,
       });
-    } catch (_error) {
+    } catch (error) {
       res.status(500).json({
-        status: 'gagal',
-        message: 'Gagal mendapatkan data pengajuan',
+        status: MSG_GAGAL,
+        message:
+          error instanceof Error ? error.message : MSG_GAGAL_DATA_PENGAJUAN,
       });
     }
   }),
@@ -175,8 +203,8 @@ router.post(
     const { id } = req.params;
     if (typeof id !== 'string' || id.length === 0) {
       res.status(400).json({
-        status: 'gagal',
-        message: 'ID pengajuan diperlukan',
+        status: MSG_GAGAL,
+        message: MSG_ID_PENGAJUAN_DIPERLUKAN,
       });
 
       return;
@@ -184,8 +212,8 @@ router.post(
 
     if (typeof req.user?.id !== 'number') {
       res.status(401).json({
-        status: 'gagal',
-        message: 'Unauthorized',
+        status: MSG_GAGAL,
+        message: MSG_UNAUTHORIZED,
       });
 
       return;
@@ -196,11 +224,11 @@ router.post(
         parseInt(id, 10),
         req.user.id,
       );
-      res.status(200).json({ status: 'sukses', data: result });
+      res.status(200).json({ status: MSG_SUKSES, data: result });
     } catch (error) {
       res.status(400).json({
-        status: 'gagal',
-        message: error instanceof Error ? error.message : 'Terjadi kesalahan',
+        status: MSG_GAGAL,
+        message: error instanceof Error ? error.message : MSG_TERJADI_KESALAHAN,
       });
     }
   }),
@@ -213,8 +241,8 @@ router.post(
     const { id } = req.params;
     if (typeof id !== 'string' || id.length === 0) {
       res.status(400).json({
-        status: 'gagal',
-        message: 'ID pengajuan diperlukan',
+        status: MSG_GAGAL,
+        message: MSG_ID_PENGAJUAN_DIPERLUKAN,
       });
 
       return;
@@ -222,8 +250,8 @@ router.post(
 
     if (typeof req.user?.id !== 'number') {
       res.status(401).json({
-        status: 'gagal',
-        message: 'Unauthorized',
+        status: MSG_GAGAL,
+        message: MSG_UNAUTHORIZED,
       });
 
       return;
@@ -234,11 +262,11 @@ router.post(
         parseInt(id, 10),
         req.user.id,
       );
-      res.status(200).json({ status: 'sukses', data: result });
+      res.status(200).json({ status: MSG_SUKSES, data: result });
     } catch (error) {
       res.status(400).json({
-        status: 'gagal',
-        message: error instanceof Error ? error.message : 'Terjadi kesalahan',
+        status: MSG_GAGAL,
+        message: error instanceof Error ? error.message : MSG_TERJADI_KESALAHAN,
       });
     }
   }),
@@ -251,8 +279,8 @@ router.post(
     const { id } = req.params;
     if (typeof id !== 'string' || id.length === 0) {
       res.status(400).json({
-        status: 'gagal',
-        message: 'ID pengajuan diperlukan',
+        status: MSG_GAGAL,
+        message: MSG_ID_PENGAJUAN_DIPERLUKAN,
       });
 
       return;
@@ -260,8 +288,8 @@ router.post(
 
     if (typeof req.user?.id !== 'number') {
       res.status(401).json({
-        status: 'gagal',
-        message: 'Unauthorized',
+        status: MSG_GAGAL,
+        message: MSG_UNAUTHORIZED,
       });
 
       return;
@@ -272,11 +300,11 @@ router.post(
         parseInt(id, 10),
         req.user.id,
       );
-      res.status(200).json({ status: 'sukses', data: result });
+      res.status(200).json({ status: MSG_SUKSES, data: result });
     } catch (error) {
       res.status(400).json({
-        status: 'gagal',
-        message: error instanceof Error ? error.message : 'Terjadi kesalahan',
+        status: MSG_GAGAL,
+        message: error instanceof Error ? error.message : MSG_TERJADI_KESALAHAN,
       });
     }
   }),
@@ -288,11 +316,11 @@ router.get(
   asyncHandler(async (req, res) => {
     try {
       const result = await pengajuanService.getAvailableDosen();
-      res.status(200).json({ status: 'sukses', data: result });
-    } catch (_error) {
+      res.status(200).json({ status: MSG_SUKSES, data: result });
+    } catch (error) {
       res.status(500).json({
-        status: 'gagal',
-        message: 'Gagal mendapatkan data dosen',
+        status: MSG_GAGAL,
+        message: error instanceof Error ? error.message : MSG_GAGAL_DATA_DOSEN,
       });
     }
   }),
@@ -304,19 +332,20 @@ router.get(
   asyncHandler(async (req, res) => {
     if (typeof req.user?.dosen?.id !== 'number') {
       res.status(401).json({
-        status: 'gagal',
-        message: 'Akses ditolak: Anda bukan dosen',
+        status: MSG_GAGAL,
+        message: MSG_AKSES_DITOLAK_DOSEN,
       });
       return;
     }
 
     try {
       const result = await pengajuanService.getAvailableMahasiswa();
-      res.status(200).json({ status: 'sukses', data: result });
-    } catch (_error) {
+      res.status(200).json({ status: MSG_SUKSES, data: result });
+    } catch (error) {
       res.status(500).json({
-        status: 'gagal',
-        message: 'Gagal mendapatkan data mahasiswa',
+        status: MSG_GAGAL,
+        message:
+          error instanceof Error ? error.message : MSG_GAGAL_DATA_MAHASISWA,
       });
     }
   }),
@@ -328,8 +357,8 @@ router.post(
   asyncHandler(async (req, res) => {
     if (typeof req.user?.id !== 'number') {
       res.status(401).json({
-        status: 'gagal',
-        message: 'Unauthorized',
+        status: MSG_GAGAL,
+        message: MSG_UNAUTHORIZED,
       });
       return;
     }
@@ -338,7 +367,7 @@ router.post(
 
     if (typeof peranDosenTaId !== 'number') {
       res.status(400).json({
-        status: 'gagal',
+        status: MSG_GAGAL,
         message: 'ID peran dosen TA diperlukan',
       });
       return;
@@ -349,11 +378,11 @@ router.post(
         peranDosenTaId,
         req.user.id,
       );
-      res.status(201).json({ status: 'sukses', data: result });
+      res.status(201).json({ status: MSG_SUKSES, data: result });
     } catch (error) {
       res.status(400).json({
-        status: 'gagal',
-        message: error instanceof Error ? error.message : 'Terjadi kesalahan',
+        status: MSG_GAGAL,
+        message: error instanceof Error ? error.message : MSG_TERJADI_KESALAHAN,
       });
     }
   }),
@@ -366,16 +395,16 @@ router.post(
     const { id } = req.params;
     if (typeof id !== 'string' || id.length === 0) {
       res.status(400).json({
-        status: 'gagal',
-        message: 'ID pengajuan pelepasan diperlukan',
+        status: MSG_GAGAL,
+        message: MSG_ID_PELEPASAN_DIPERLUKAN,
       });
       return;
     }
 
     if (typeof req.user?.id !== 'number') {
       res.status(401).json({
-        status: 'gagal',
-        message: 'Unauthorized',
+        status: MSG_GAGAL,
+        message: MSG_UNAUTHORIZED,
       });
       return;
     }
@@ -385,11 +414,11 @@ router.post(
         parseInt(id, 10),
         req.user.id,
       );
-      res.status(200).json({ status: 'sukses', data: result });
+      res.status(200).json({ status: MSG_SUKSES, data: result });
     } catch (error) {
       res.status(400).json({
-        status: 'gagal',
-        message: error instanceof Error ? error.message : 'Terjadi kesalahan',
+        status: MSG_GAGAL,
+        message: error instanceof Error ? error.message : MSG_TERJADI_KESALAHAN,
       });
     }
   }),
@@ -402,16 +431,16 @@ router.post(
     const { id } = req.params;
     if (typeof id !== 'string' || id.length === 0) {
       res.status(400).json({
-        status: 'gagal',
-        message: 'ID pengajuan pelepasan diperlukan',
+        status: MSG_GAGAL,
+        message: MSG_ID_PELEPASAN_DIPERLUKAN,
       });
       return;
     }
 
     if (typeof req.user?.id !== 'number') {
       res.status(401).json({
-        status: 'gagal',
-        message: 'Unauthorized',
+        status: MSG_GAGAL,
+        message: MSG_UNAUTHORIZED,
       });
       return;
     }
@@ -421,11 +450,11 @@ router.post(
         parseInt(id, 10),
         req.user.id,
       );
-      res.status(200).json({ status: 'sukses', data: result });
+      res.status(200).json({ status: MSG_SUKSES, data: result });
     } catch (error) {
       res.status(400).json({
-        status: 'gagal',
-        message: error instanceof Error ? error.message : 'Terjadi kesalahan',
+        status: MSG_GAGAL,
+        message: error instanceof Error ? error.message : MSG_TERJADI_KESALAHAN,
       });
     }
   }),
@@ -438,16 +467,16 @@ router.post(
     const { id } = req.params;
     if (typeof id !== 'string' || id.length === 0) {
       res.status(400).json({
-        status: 'gagal',
-        message: 'ID pengajuan pelepasan diperlukan',
+        status: MSG_GAGAL,
+        message: MSG_ID_PELEPASAN_DIPERLUKAN,
       });
       return;
     }
 
     if (typeof req.user?.id !== 'number') {
       res.status(401).json({
-        status: 'gagal',
-        message: 'Unauthorized',
+        status: MSG_GAGAL,
+        message: MSG_UNAUTHORIZED,
       });
       return;
     }
@@ -457,11 +486,11 @@ router.post(
         parseInt(id, 10),
         req.user.id,
       );
-      res.status(200).json({ status: 'sukses', data: result });
+      res.status(200).json({ status: MSG_SUKSES, data: result });
     } catch (error) {
       res.status(400).json({
-        status: 'gagal',
-        message: error instanceof Error ? error.message : 'Terjadi kesalahan',
+        status: MSG_GAGAL,
+        message: error instanceof Error ? error.message : MSG_TERJADI_KESALAHAN,
       });
     }
   }),
