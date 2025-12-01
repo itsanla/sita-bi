@@ -53,35 +53,38 @@ export function useChatLogic() {
     }
   }, [messages]);
 
-  const isUserScrollingRef = useRef(false);
-
-  useEffect(() => {
-    const container = chatContainerRef.current;
-    if (!container || isUserScrollingRef.current) return;
-
-    const isNearBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight <
-      100;
-
-    if (isNearBottom) {
-      container.scrollTo(0, container.scrollHeight);
-    }
-  }, [messages]);
+  const shouldAutoScrollRef = useRef(true);
+  const forceScrollRef = useRef(false);
 
   useEffect(() => {
     const container = chatContainerRef.current;
     if (!container) return;
 
     const handleScroll = () => {
-      const isNearBottom =
-        container.scrollHeight - container.scrollTop - container.clientHeight <
-        100;
-      isUserScrollingRef.current = !isNearBottom;
+      const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+      shouldAutoScrollRef.current = isAtBottom;
     };
 
-    container.addEventListener('scroll', handleScroll);
+    container.addEventListener('scroll', handleScroll, { passive: true });
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const container = chatContainerRef.current;
+    if (!container) return;
+
+    if (forceScrollRef.current) {
+      container.scrollTop = container.scrollHeight;
+      forceScrollRef.current = false;
+      return;
+    }
+
+    const isCurrentlyAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+    
+    if (shouldAutoScrollRef.current && isCurrentlyAtBottom) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, [messages, isLoading]);
 
   const stop = () => {
     if (abortControllerRef.current) {
@@ -98,6 +101,8 @@ export function useChatLogic() {
     const currentInput = input;
     const requestId = ++currentRequestIdRef.current;
 
+    shouldAutoScrollRef.current = true;
+    forceScrollRef.current = true;
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     

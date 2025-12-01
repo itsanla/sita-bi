@@ -13,11 +13,11 @@ export async function canAccessMahasiswa(
   context: RBACContext,
   targetMahasiswaId: number,
 ): Promise<boolean> {
-  if (context.role === Role.kajur || context.role === Role.admin) {
+  if (context.role === Role.jurusan || context.role === Role.admin) {
     return true;
   }
 
-  if (context.role === Role.kaprodi_d3 || context.role === Role.kaprodi_d4) {
+  if (context.role === Role.prodi_d3 || context.role === Role.prodi_d4) {
     const mahasiswa = await prisma.mahasiswa.findUnique({
       where: { id: targetMahasiswaId },
       select: { prodi: true },
@@ -51,7 +51,7 @@ export async function canAccessTugasAkhir(
   context: RBACContext,
   tugasAkhirId: number,
 ): Promise<boolean> {
-  if (context.role === Role.kajur || context.role === Role.admin) {
+  if (context.role === Role.jurusan || context.role === Role.admin) {
     return true;
   }
 
@@ -65,7 +65,7 @@ export async function canAccessTugasAkhir(
 
   if (!tugasAkhir) return false;
 
-  if (context.role === Role.kaprodi_d3 || context.role === Role.kaprodi_d4) {
+  if (context.role === Role.prodi_d3 || context.role === Role.prodi_d4) {
     return tugasAkhir.mahasiswa.prodi === context.prodi;
   }
 
@@ -81,11 +81,11 @@ export async function canAccessTugasAkhir(
 }
 
 export async function getFilteredMahasiswaQuery(context: RBACContext) {
-  if (context.role === Role.kajur || context.role === Role.admin) {
+  if (context.role === Role.jurusan || context.role === Role.admin) {
     return {};
   }
 
-  if (context.role === Role.kaprodi_d3 || context.role === Role.kaprodi_d4) {
+  if (context.role === Role.prodi_d3 || context.role === Role.prodi_d4) {
     return { prodi: context.prodi };
   }
 

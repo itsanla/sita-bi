@@ -27,9 +27,9 @@ async function main() {
   console.log('👥 Creating roles...');
   const roles = await Promise.all([
     prisma.role.create({ data: { name: 'admin', guard_name: 'api' } }),
-    prisma.role.create({ data: { name: 'kajur', guard_name: 'api' } }),
-    prisma.role.create({ data: { name: 'kaprodi_d3', guard_name: 'api' } }),
-    prisma.role.create({ data: { name: 'kaprodi_d4', guard_name: 'api' } }),
+    prisma.role.create({ data: { name: 'jurusan', guard_name: 'api' } }),
+    prisma.role.create({ data: { name: 'prodi_d3', guard_name: 'api' } }),
+    prisma.role.create({ data: { name: 'prodi_d4', guard_name: 'api' } }),
     prisma.role.create({ data: { name: 'dosen', guard_name: 'api' } }),
     prisma.role.create({ data: { name: 'mahasiswa', guard_name: 'api' } }),
   ]);
@@ -50,16 +50,16 @@ async function main() {
     },
   });
 
-  // Create Kajur
-  console.log('👨🏫 Creating kajur...');
+  // Create Jurusan Level Access
+  console.log('👨🏫 Creating jurusan level access...');
   await prisma.user.create({
     data: {
       name: 'Dr. Budi Santoso, M.Kom',
-      email: 'kajur@pnp.ac.id',
+      email: 'jurusan@pnp.ac.id',
       phone_number: '081234567891',
       password: hashedPassword,
       email_verified_at: emailVerifiedAt,
-      roles: { connect: [{ name: 'kajur' }, { name: 'dosen' }] },
+      roles: { connect: [{ name: 'jurusan' }, { name: 'dosen' }] },
       dosen: {
         create: {
           nip: '0001018801',
@@ -69,16 +69,16 @@ async function main() {
     },
   });
 
-  // Create Kaprodi D3
-  console.log('👨🏫 Creating kaprodi D3...');
+  // Create Prodi D3 Level Access
+  console.log('👨🏫 Creating prodi D3 level access...');
   await prisma.user.create({
     data: {
       name: 'Dr. Siti Aminah, M.T',
-      email: 'kaprodi.d3@pnp.ac.id',
+      email: 'prodi.d3@pnp.ac.id',
       phone_number: '081234567892',
       password: hashedPassword,
       email_verified_at: emailVerifiedAt,
-      roles: { connect: [{ name: 'kaprodi_d3' }, { name: 'dosen' }] },
+      roles: { connect: [{ name: 'prodi_d3' }, { name: 'dosen' }] },
       dosen: {
         create: {
           nip: '0002028802',
@@ -88,16 +88,16 @@ async function main() {
     },
   });
 
-  // Create Kaprodi D4
-  console.log('👨🏫 Creating kaprodi D4...');
+  // Create Prodi D4 Level Access
+  console.log('👨🏫 Creating prodi D4 level access...');
   await prisma.user.create({
     data: {
       name: 'Dr. Ahmad Fauzi, M.Kom',
-      email: 'kaprodi.d4@pnp.ac.id',
+      email: 'prodi.d4@pnp.ac.id',
       phone_number: '081234567893',
       password: hashedPassword,
       email_verified_at: emailVerifiedAt,
-      roles: { connect: [{ name: 'kaprodi_d4' }, { name: 'dosen' }] },
+      roles: { connect: [{ name: 'prodi_d4' }, { name: 'dosen' }] },
       dosen: {
         create: {
           nip: '0003038803',
@@ -373,8 +373,8 @@ async function main() {
   console.log('\n📊 Summary:');
   console.log(`- Roles: ${roles.length}`);
   console.log('- Admin: 1');
-  console.log('- Kajur: 1');
-  console.log('- Kaprodi: 2 (D3 & D4)');
+  console.log('- Jurusan Level: 1');
+  console.log('- Prodi Level: 2 (D3 & D4)');
   console.log(`- Dosen: ${dosenUsers.length}`);
   console.log(`- Mahasiswa: ${mahasiswaUsers.length}`);
   console.log('- Tugas Akhir: 15 (5 DISETUJUI, 5 BIMBINGAN, 5 DRAFT)');
@@ -384,9 +384,9 @@ async function main() {
   console.log('- Sidang Terjadwal: 3');
   console.log('\n🔑 Login Credentials (password: password123):');
   console.log('- Admin: admin@pnp.ac.id');
-  console.log('- Kajur: kajur@pnp.ac.id');
-  console.log('- Kaprodi D3: kaprodi.d3@pnp.ac.id');
-  console.log('- Kaprodi D4: kaprodi.d4@pnp.ac.id');
+  console.log('- Jurusan Level: jurusan@pnp.ac.id');
+  console.log('- Prodi D3 Level: prodi.d3@pnp.ac.id');
+  console.log('- Prodi D4 Level: prodi.d4@pnp.ac.id');
   console.log('- Dosen: rina.anggraini@pnp.ac.id (dan 24 dosen lainnya)');
   console.log('- Mahasiswa: 2101010001@student.pnp.ac.id (dan 19 mahasiswa lainnya)');
 }

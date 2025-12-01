@@ -13,17 +13,17 @@ export function hasRole(user: User | null, roles: RoleName[]): boolean {
   if (userRole === 'admin') return true;
 
   // Kajur inherits Kaprodi & Dosen access
-  if (userRole === 'kajur') {
+  if (userRole === 'jurusan') {
     return (
-      roles.includes('kajur') ||
-      roles.includes('kaprodi_d3') ||
-      roles.includes('kaprodi_d4') ||
+      roles.includes('jurusan') ||
+      roles.includes('prodi_d3') ||
+      roles.includes('prodi_d4') ||
       roles.includes('dosen')
     );
   }
 
   // Kaprodi inherits Dosen access
-  if (userRole === 'kaprodi_d3' || userRole === 'kaprodi_d4') {
+  if (userRole === 'prodi_d3' || userRole === 'prodi_d4') {
     return roles.includes(userRole) || roles.includes('dosen');
   }
 
@@ -39,7 +39,7 @@ export function canAccessMahasiswa(
   const role = getUserRole(user);
 
   // Kajur & Admin can access all
-  if (role === 'kajur' || role === 'admin') return true;
+  if (role === 'jurusan' || role === 'admin') return true;
 
   // Mahasiswa can access their own
   if (role === 'mahasiswa' && user.mahasiswa?.id === mahasiswaId) return true;
@@ -61,14 +61,14 @@ export function filterDataByProdi<T extends { prodi?: string }>(
   const role = getUserRole(user);
 
   // Kajur & Admin see all
-  if (role === 'kajur' || role === 'admin') return data;
+  if (role === 'jurusan' || role === 'admin') return data;
 
   // Kaprodi filter by prodi
-  if (role === 'kaprodi_d3') {
+  if (role === 'prodi_d3') {
     return data.filter((item) => item.prodi === 'D3');
   }
 
-  if (role === 'kaprodi_d4') {
+  if (role === 'prodi_d4') {
     return data.filter((item) => item.prodi === 'D4');
   }
 

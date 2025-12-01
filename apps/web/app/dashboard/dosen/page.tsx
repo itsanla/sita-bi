@@ -16,9 +16,9 @@ export default function DosenDashboardPage() {
   const { user } = useAuth();
   const roles = user?.roles.map((r) => r.name) || [];
 
-  const isKajur = roles.includes('kajur');
-  const isKaprodi =
-    roles.includes('kaprodi_d3') || roles.includes('kaprodi_d4');
+  const isJurusan = roles.includes('jurusan');
+  const isProdi =
+    roles.includes('prodi_d3') || roles.includes('prodi_d4');
 
   const featureCards = [
     {
@@ -58,23 +58,23 @@ export default function DosenDashboardPage() {
     // Kaprodi/Kajur Specific
     {
       title: 'Manajemen Mahasiswa & TA',
-      description: isKajur
+      description: isJurusan
         ? 'Kelola semua mahasiswa dan TA Jurusan'
         : 'Kelola mahasiswa dan TA Prodi',
       href: '/dashboard/admin/users', // Assuming redirection to admin features for these roles
       icon: Users,
       color: 'text-blue-700',
-      show: isKajur || isKaprodi,
+      show: isJurusan || isProdi,
     },
     {
       title: 'Dashboard Monitoring',
       description:
         'Pantau statistik dan progres TA tingkat ' +
-        (isKajur ? 'Jurusan' : 'Prodi'),
+        (isJurusan ? 'Jurusan' : 'Prodi'),
       href: '/dashboard/admin', // Assuming redirection to admin dashboard
       icon: LayoutDashboard,
       color: 'text-blue-700',
-      show: isKajur || isKaprodi,
+      show: isJurusan || isProdi,
     },
   ];
 

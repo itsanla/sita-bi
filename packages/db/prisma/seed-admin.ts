@@ -12,9 +12,9 @@ async function main() {
     'admin',
     'dosen',
     'mahasiswa',
-    'kajur',
-    'kaprodi_d3',
-    'kaprodi_d4',
+    'jurusan',
+    'prodi_d3',
+    'prodi_d4',
   ];
   for (const roleName of rolesToSeed) {
     await prisma.role.upsert({

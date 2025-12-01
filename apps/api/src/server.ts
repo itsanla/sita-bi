@@ -4,10 +4,16 @@ import { createServer } from 'http';
 import { initSocket } from './socket';
 import { whatsappService } from './services/whatsapp.service';
 import { SchedulerService } from './services/scheduler.service';
+import { PrismaService } from './config/prisma';
 
 const PORT = process.env['PORT'] ?? 3000;
 
 const httpServer = createServer(app);
+
+// Set server timeout to prevent hanging connections
+httpServer.timeout = 35000; // 35 seconds (slightly longer than request timeout)
+httpServer.keepAliveTimeout = 65000; // 65 seconds
+httpServer.headersTimeout = 66000; // 66 seconds (must be greater than keepAliveTimeout)
 
 // Initialize Socket.IO
 initSocket(httpServer);
@@ -25,4 +31,53 @@ httpServer.listen(PORT, () => {
   console.warn(`Backend server running on http://localhost:${PORT}`);
   console.warn(`Health check: http://localhost:${PORT}/health`);
   console.warn(`Ready for frontend connections from port 3001`);
+});
+
+// Graceful shutdown handlers
+const gracefulShutdown = async (signal: string) => {
+  console.warn(`\n🛑 ${signal} received - Shutting down gracefully...`);
+  
+  // Stop accepting new connections
+  httpServer.close(async () => {
+    console.warn('✅ HTTP server closed');
+    
+    try {
+      // Disconnect WhatsApp
+      await whatsappService.logout();
+      console.warn('✅ WhatsApp disconnected');
+    } catch (err) {
+      console.error('❌ Error during WhatsApp cleanup:', err);
+    }
+    
+    try {
+      // Disconnect database
+      await PrismaService.disconnect();
+      console.warn('✅ Database disconnected');
+    } catch (err) {
+      console.error('❌ Error during database cleanup:', err);
+    }
+    
+    console.warn('👋 Shutdown complete');
+    process.exit(0);
+  });
+  
+  // Force shutdown after 10 seconds
+  setTimeout(() => {
+    console.error('⚠️  Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle uncaught errors
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+  gracefulShutdown('uncaughtException');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  gracefulShutdown('unhandledRejection');
 });

@@ -42,7 +42,7 @@ export default function LoginPage() {
         const userRole = user.roles[0]?.name;
         let redirectUrl = '/dashboard/mahasiswa';
 
-        if (userRole === 'kajur' || userRole === 'kaprodi_d3' || userRole === 'kaprodi_d4' || userRole === 'admin') {
+        if (userRole === 'jurusan' || userRole === 'prodi_d3' || userRole === 'prodi_d4' || userRole === 'admin') {
           redirectUrl = '/dashboard/admin';
         } else if (userRole === 'dosen') {
           redirectUrl = '/dashboard/dosen';

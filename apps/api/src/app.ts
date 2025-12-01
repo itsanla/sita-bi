@@ -32,7 +32,30 @@ import { whatsappService } from './services/whatsapp.service'; // WhatsApp servi
 const app: express.Express = express();
 
 // Global Middlewares
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request timeout middleware - prevent hanging requests
+app.use((req, res, next) => {
+  // Set timeout for all requests (30 seconds)
+  req.setTimeout(30000);
+  res.setTimeout(30000);
+  
+  const timeout = setTimeout(() => {
+    if (!res.headersSent) {
+      res.status(408).json({
+        status: 'error',
+        message: 'Request timeout - server took too long to respond'
+      });
+    }
+  }, 30000);
+  
+  res.on('finish', () => clearTimeout(timeout));
+  res.on('close', () => clearTimeout(timeout));
+  
+  next();
+});
+
 app.use(activityLogger);
 
 // Explicit CORS configuration
@@ -51,27 +74,6 @@ const uploadsPath = getUploadPath();
 app.use('/uploads', express.static(uploadsPath));
 
 console.warn('⚠️  WhatsApp not connected - Server running without WhatsApp');
-
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.warn('\n🛑 Shutting down gracefully...');
-  try {
-    await whatsappService.logout();
-  } catch (err) {
-    console.error('Error during WhatsApp cleanup:', err);
-  }
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  console.warn('\n🛑 Shutting down gracefully...');
-  try {
-    await whatsappService.logout();
-  } catch (err) {
-    console.error('Error during WhatsApp cleanup:', err);
-  }
-  process.exit(0);
-});
 
 // Health check endpoint
 app.get('/health', (_req, res) => {

@@ -20,7 +20,7 @@ const penugasanService = new PenugasanService();
 router.get(
   '/dosen-load',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
+  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const loadData = await penugasanService.getDosenLoad();
     res.status(200).json({ status: 'sukses', data: loadData });
@@ -30,7 +30,7 @@ router.get(
 router.get(
   '/unassigned',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
+  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const page =
       req.query['page'] != null
@@ -49,7 +49,7 @@ router.get(
 router.post(
   '/:tugasAkhirId/assign',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
+  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   validate(assignPembimbingSchema),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { tugasAkhirId } = req.params;
@@ -94,7 +94,7 @@ router.post(
 router.post(
   '/:tugasAkhirId/assign-penguji',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
+  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   validate(assignPengujiSchema),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { tugasAkhirId } = req.params;

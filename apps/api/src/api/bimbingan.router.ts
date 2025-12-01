@@ -255,7 +255,7 @@ router.post(
 
 router.post(
   '/:tugasAkhirId/jadwal',
-  authorizeRoles([Role.dosen, Role.kaprodi_d3, Role.kaprodi_d4, Role.kajur]),
+  authorizeRoles([Role.dosen, Role.prodi_d3, Role.prodi_d4, Role.jurusan]),
   validateDosenTugasAkhirAccess,
   validate(setJadwalSchema),
   asyncHandler(async (req, res): Promise<void> => {

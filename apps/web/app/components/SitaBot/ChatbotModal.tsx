@@ -201,7 +201,7 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                     </div>
                   </div>
                 ) : (
-                  messages.map((msg, index) => (
+                  messages.filter(msg => msg.content.trim() !== '').map((msg, index) => (
                     <div
                       key={index}
                       className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
@@ -326,7 +326,7 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                   ))
                 )}
 
-                {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.content ? (
+                {isLoading && !(messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && messages[messages.length - 1]?.content.trim() !== '') && (
                   <div className="flex justify-start animate-fade-in">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-900 to-red-700 flex items-center justify-center mr-3 flex-shrink-0 shadow-lg">
                       <MessageCircle className="w-5 h-5 text-white" />
@@ -352,7 +352,7 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                       </div>
                     </div>
                   </div>
-                ) : null}
+                )}
               </div>
             </div>
 
@@ -363,7 +363,7 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                   value={mode}
                   onChange={(e) => setMode(e.target.value as 'fast' | 'expert')}
                   disabled={isLoading}
-                  className="px-3 py-3 border-2 border-red-100 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400 transition-all duration-200 text-gray-800 bg-white cursor-pointer"
+                  className="px-4 py-3 border-2 border-red-100 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-red-400 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400 transition-all duration-200 text-gray-800 bg-white cursor-pointer hover:border-red-300 hover:shadow-md font-medium text-sm flex-shrink-0"
                 >
                   <option value="fast">⚡ Cepat</option>
                   <option value="expert">🎓 Ahli</option>

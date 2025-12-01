@@ -5,12 +5,12 @@ import { useAuth } from '../../../context/AuthContext';
 
 export default function RoleBasedDashboard() {
   const { user } = useAuth();
-  const { isKajur, isKaprodi, isDosen, isMahasiswa, canAccessProdi } =
+  const { isJurusan, isProdi, isDosen, isMahasiswa, canAccessProdi } =
     useRBAC();
 
   if (!user) return null;
 
-  if (isKajur) {
+  if (isJurusan) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">Dashboard Kajur</h1>
@@ -35,7 +35,7 @@ export default function RoleBasedDashboard() {
     );
   }
 
-  if (isKaprodi) {
+  if (isProdi) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">

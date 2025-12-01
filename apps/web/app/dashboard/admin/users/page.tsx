@@ -87,9 +87,9 @@ const UserModal = ({
     if (
       formData.role === 'admin' ||
       formData.role === 'dosen' ||
-      formData.role === 'kajur' ||
-      formData.role === 'kaprodi_d3' ||
-      formData.role === 'kaprodi_d4'
+      formData.role === 'jurusan' ||
+      formData.role === 'prodi_d3' ||
+      formData.role === 'prodi_d4'
     ) {
       endpoint = isEditing ? `/users/dosen/${user!.id}` : '/users/dosen';
       body = {
@@ -181,9 +181,9 @@ const UserModal = ({
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent disabled:bg-gray-100 transition-all"
             >
               <option value="admin">Admin</option>
-              <option value="kajur">Kajur</option>
-              <option value="kaprodi_d3">Kaprodi D3</option>
-              <option value="kaprodi_d4">Kaprodi D4</option>
+              <option value="jurusan">Kajur</option>
+              <option value="prodi_d3">Kaprodi D3</option>
+              <option value="prodi_d4">Kaprodi D4</option>
               <option value="dosen">Dosen</option>
               <option value="mahasiswa">Mahasiswa</option>
             </select>
@@ -429,9 +429,9 @@ const UserModal = ({
           )}
           {(formData.role === 'admin' ||
             formData.role === 'dosen' ||
-            formData.role === 'kajur' ||
-            formData.role === 'kaprodi_d3' ||
-            formData.role === 'kaprodi_d4') && (
+            formData.role === 'jurusan' ||
+            formData.role === 'prodi_d3' ||
+            formData.role === 'prodi_d4') && (
             <>
               <div>
                 <label
@@ -450,8 +450,8 @@ const UserModal = ({
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all"
                 />
               </div>
-              {(formData.role === 'kaprodi_d3' ||
-                formData.role === 'kaprodi_d4') && (
+              {(formData.role === 'prodi_d3' ||
+                formData.role === 'prodi_d4') && (
                 <div>
                   <label
                     htmlFor="prodi"
@@ -647,12 +647,12 @@ export default function KelolaPenggunaPage() {
   }, [searchQuery, roleFilter]);
 
   const RoleBadge = ({ roles }: { roles: { name: string }[] }) => {
-    // Prioritas role: admin > kajur > kaprodi > dosen > mahasiswa
+    // Prioritas role: admin > jurusan > prodi > dosen > mahasiswa
     const roleHierarchy = [
       'admin',
-      'kajur',
-      'kaprodi_d3',
-      'kaprodi_d4',
+      'jurusan',
+      'prodi_d3',
+      'prodi_d4',
       'dosen',
       'mahasiswa',
     ];
@@ -669,11 +669,11 @@ export default function KelolaPenggunaPage() {
     let roleClasses = '';
     switch (highestRole) {
       case 'admin':
-      case 'kajur':
+      case 'jurusan':
         roleClasses = 'bg-purple-100 text-purple-800';
         break;
-      case 'kaprodi_d3':
-      case 'kaprodi_d4':
+      case 'prodi_d3':
+      case 'prodi_d4':
         roleClasses = 'bg-indigo-100 text-indigo-800';
         break;
       case 'dosen':
@@ -768,9 +768,9 @@ export default function KelolaPenggunaPage() {
           >
             <option value="all">Semua Role</option>
             <option value="admin">Admin</option>
-            <option value="kajur">Kajur</option>
-            <option value="kaprodi_d3">Kaprodi D3</option>
-            <option value="kaprodi_d4">Kaprodi D4</option>
+            <option value="jurusan">Kajur</option>
+            <option value="prodi_d3">Kaprodi D3</option>
+            <option value="prodi_d4">Kaprodi D4</option>
             <option value="dosen">Dosen</option>
             <option value="mahasiswa">Mahasiswa</option>
           </select>

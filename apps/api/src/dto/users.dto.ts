@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { Prodi } from '@repo/db';
 import { Role } from '../middlewares/auth.middleware';
 
-const validRoles = [Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4, Role.dosen];
+const validRoles = [Role.jurusan, Role.prodi_d3, Role.prodi_d4, Role.dosen];
 
 export const createDosenSchema = z.object({
   name: z.string().min(1, 'Name cannot be empty'),
@@ -12,7 +12,7 @@ export const createDosenSchema = z.object({
   phone_number: z.string().optional(),
   prodi: z.enum([Prodi.D3, Prodi.D4]).optional(),
   roles: z
-    .array(z.enum([Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4, Role.dosen]))
+    .array(z.enum([Role.jurusan, Role.prodi_d3, Role.prodi_d4, Role.dosen]))
     .optional()
     .refine(
       (roles) => {
@@ -33,7 +33,7 @@ export const updateDosenSchema = z.object({
   nip: z.string().optional(),
   prodi: z.enum([Prodi.D3, Prodi.D4]).optional(),
   roles: z
-    .array(z.enum([Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4, Role.dosen]))
+    .array(z.enum([Role.jurusan, Role.prodi_d3, Role.prodi_d4, Role.dosen]))
     .optional()
     .refine(
       (roles) => {

@@ -6,8 +6,8 @@ import type { RoleName, RBACPermissions } from '../types';
 
 export function useRBAC(): RBACPermissions & {
   role: RoleName | null;
-  isKajur: boolean;
-  isKaprodi: boolean;
+  isJurusan: boolean;
+  isProdi: boolean;
   isDosen: boolean;
   isMahasiswa: boolean;
   isAdmin: boolean;
@@ -22,8 +22,8 @@ export function useRBAC(): RBACPermissions & {
     if (!user || !user.roles || user.roles.length === 0) {
       return {
         role: null,
-        isKajur: false,
-        isKaprodi: false,
+        isJurusan: false,
+        isProdi: false,
         isDosen: false,
         isMahasiswa: false,
         isAdmin: false,
@@ -42,17 +42,17 @@ export function useRBAC(): RBACPermissions & {
     }
 
     const role = user.roles[0]?.name || 'mahasiswa';
-    const isKajur = role === 'kajur';
-    const isKaprodi = role === 'kaprodi_d3' || role === 'kaprodi_d4';
-    const isDosen = role === 'dosen' || isKaprodi || isKajur;
+    const isJurusan = role === 'jurusan';
+    const isProdi = role === 'prodi_d3' || role === 'prodi_d4';
+    const isDosen = role === 'dosen' || isProdi || isJurusan;
     const isMahasiswa = role === 'mahasiswa';
     const isAdmin = role === 'admin';
 
     // Determine prodi scope
     let canAccessProdi: 'D3' | 'D4' | null = null;
-    if (role === 'kaprodi_d3') canAccessProdi = 'D3';
-    if (role === 'kaprodi_d4') canAccessProdi = 'D4';
-    if (isKajur) canAccessProdi = null; // Can access both
+    if (role === 'prodi_d3') canAccessProdi = 'D3';
+    if (role === 'prodi_d4') canAccessProdi = 'D4';
+    if (isJurusan) canAccessProdi = null; // Can access both
 
     // Determine accessible mahasiswa IDs
     const canAccessMahasiswaIds: number[] = [];
@@ -64,19 +64,19 @@ export function useRBAC(): RBACPermissions & {
     }
 
     // Permissions
-    const canAccessAllData = isKajur || isAdmin;
-    const canManageUsers = isKajur || isAdmin;
-    const canAssignDosen = isKajur || isKaprodi || isAdmin;
-    const canValidateJudul = isKajur || isKaprodi || isAdmin;
-    const canViewReports = isKajur || isKaprodi || isAdmin;
+    const canAccessAllData = isJurusan || isAdmin;
+    const canManageUsers = isJurusan || isAdmin;
+    const canAssignDosen = isJurusan || isProdi || isAdmin;
+    const canValidateJudul = isJurusan || isProdi || isAdmin;
+    const canViewReports = isJurusan || isProdi || isAdmin;
 
     // Helper functions
     const canAccess = (requiredRoles: RoleName[]): boolean => {
       if (isAdmin) return true;
-      if (isKajur && (requiredRoles.includes('kajur') || requiredRoles.includes('kaprodi_d3') || requiredRoles.includes('kaprodi_d4') || requiredRoles.includes('dosen'))) {
+      if (isJurusan && (requiredRoles.includes('jurusan') || requiredRoles.includes('prodi_d3') || requiredRoles.includes('prodi_d4') || requiredRoles.includes('dosen'))) {
         return true;
       }
-      if (isKaprodi && (requiredRoles.includes(role) || requiredRoles.includes('dosen'))) {
+      if (isProdi && (requiredRoles.includes(role) || requiredRoles.includes('dosen'))) {
         return true;
       }
       return requiredRoles.includes(role);
@@ -89,8 +89,8 @@ export function useRBAC(): RBACPermissions & {
 
     return {
       role,
-      isKajur,
-      isKaprodi,
+      isJurusan,
+      isProdi,
       isDosen,
       isMahasiswa,
       isAdmin,

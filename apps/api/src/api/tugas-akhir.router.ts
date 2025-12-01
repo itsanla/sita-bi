@@ -64,7 +64,7 @@ router.post(
 router.get(
   '/validasi',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
+  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     if (req.user == null) {
       response.status(401).json({ status: 'gagal', message: 'Unauthorized' });
@@ -90,7 +90,7 @@ router.patch(
   '/:id/approve',
   asyncHandler(authMiddleware),
   asyncHandler(tugasAkhirGuard), // Custom guard for Tugas Akhir
-  authorizeRoles([Role.admin, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
+  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     const { id } = req.params;
     if (id == null) {
@@ -122,7 +122,7 @@ router.patch(
   '/:id/reject',
   asyncHandler(authMiddleware),
   asyncHandler(tugasAkhirGuard), // Custom guard for Tugas Akhir
-  authorizeRoles([Role.admin, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
+  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   validate(rejectTugasAkhirSchema),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     const { id } = req.params;
@@ -156,7 +156,7 @@ router.patch(
 router.post(
   '/:id/cek-kemiripan',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
+  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     const { id } = req.params;
     if (id == null) {
@@ -224,7 +224,7 @@ router.get(
 router.get(
   '/pending',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.dosen, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
+  authorizeRoles([Role.dosen, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     const userId = req.user?.id;
     if (userId === undefined) {
@@ -243,7 +243,7 @@ router.get(
 router.patch(
   '/:id/approve',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.dosen, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
+  authorizeRoles([Role.dosen, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     const { id } = req.params;
     if (id == null) {
@@ -272,7 +272,7 @@ router.patch(
 router.patch(
   '/:id/reject',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.dosen, Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4]),
+  authorizeRoles([Role.dosen, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     const { id } = req.params;
     if (id == null) {

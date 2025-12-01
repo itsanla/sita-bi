@@ -13,13 +13,13 @@ export const validateProdiScope = (requiredProdi?: 'D3' | 'D4') => {
     const userRole = req.user.role;
     
     // Kajur bypass scope check
-    if (userRole === Role.kajur || userRole === Role.admin) {
+    if (userRole === Role.jurusan || userRole === Role.admin) {
       next();
       return;
     }
 
     // Kaprodi must have matching prodi
-    if (userRole === Role.kaprodi_d3 || userRole === Role.kaprodi_d4) {
+    if (userRole === Role.prodi_d3 || userRole === Role.prodi_d4) {
       const userProdi = req.user.dosen?.prodi;
       
       if (!userProdi) {
@@ -55,7 +55,7 @@ export const validateDosenMahasiswaRelation = async (
   const userRole = req.user.role;
 
   // Kajur & Kaprodi bypass relationship check
-  if (userRole === Role.kajur || userRole === Role.kaprodi_d3 || userRole === Role.kaprodi_d4 || userRole === Role.admin) {
+  if (userRole === Role.jurusan || userRole === Role.prodi_d3 || userRole === Role.prodi_d4 || userRole === Role.admin) {
     next();
     return;
   }
@@ -113,7 +113,7 @@ export const validateDosenTugasAkhirAccess = async (
   const userRole = req.user.role;
 
   // Kajur & Kaprodi bypass
-  if (userRole === Role.kajur || userRole === Role.kaprodi_d3 || userRole === Role.kaprodi_d4 || userRole === Role.admin) {
+  if (userRole === Role.jurusan || userRole === Role.prodi_d3 || userRole === Role.prodi_d4 || userRole === Role.admin) {
     next();
     return;
   }

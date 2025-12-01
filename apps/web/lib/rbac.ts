@@ -1,9 +1,9 @@
 import { User, RoleName } from '../types';
 
 export const ROLES = {
-  KAJUR: 'kajur' as const,
-  KAPRODI_D3: 'kaprodi_d3' as const,
-  KAPRODI_D4: 'kaprodi_d4' as const,
+  JURUSAN: 'jurusan' as const,
+  PRODI_D3: 'prodi_d3' as const,
+  PRODI_D4: 'prodi_d4' as const,
   DOSEN: 'dosen' as const,
   MAHASISWA: 'mahasiswa' as const,
   ADMIN: 'admin' as const,
@@ -14,8 +14,8 @@ export const hasRole = (user: User | null, roles: RoleName[]): boolean => {
   return user.roles.some((r) => roles.includes(r.name));
 };
 
-export const isKajur = (user: User | null): boolean => hasRole(user, [ROLES.KAJUR]);
-export const isKaprodi = (user: User | null): boolean => hasRole(user, [ROLES.KAPRODI_D3, ROLES.KAPRODI_D4]);
+export const isJurusan = (user: User | null): boolean => hasRole(user, [ROLES.JURUSAN]);
+export const isProdi = (user: User | null): boolean => hasRole(user, [ROLES.PRODI_D3, ROLES.PRODI_D4]);
 export const isDosen = (user: User | null): boolean => hasRole(user, [ROLES.DOSEN]);
 export const isMahasiswa = (user: User | null): boolean => hasRole(user, [ROLES.MAHASISWA]);
 export const isAdmin = (user: User | null): boolean => hasRole(user, [ROLES.ADMIN]);
@@ -26,8 +26,8 @@ export const getProdiScope = (user: User | null): 'D3' | 'D4' | null => {
 };
 
 export const canAccessProdi = (user: User | null, prodi: 'D3' | 'D4'): boolean => {
-  if (isKajur(user) || isAdmin(user)) return true;
-  if (isKaprodi(user)) {
+  if (isJurusan(user) || isAdmin(user)) return true;
+  if (isProdi(user)) {
     const userProdi = getProdiScope(user);
     return userProdi === prodi;
   }
@@ -35,7 +35,7 @@ export const canAccessProdi = (user: User | null, prodi: 'D3' | 'D4'): boolean =
 };
 
 export const canAccessMahasiswa = (user: User | null, mahasiswaId: number): boolean => {
-  if (isKajur(user) || isAdmin(user)) return true;
+  if (isJurusan(user) || isAdmin(user)) return true;
   
   if (isDosen(user) && user?.dosen?.assignedMahasiswa) {
     return user.dosen.assignedMahasiswa.some((m) => m.id === mahasiswaId);
@@ -49,28 +49,28 @@ export const canAccessMahasiswa = (user: User | null, mahasiswaId: number): bool
 };
 
 export const canManageUsers = (user: User | null): boolean => {
-  return isKajur(user) || isAdmin(user);
+  return isJurusan(user) || isAdmin(user);
 };
 
 export const canAssignPembimbing = (user: User | null): boolean => {
-  return isKajur(user) || isKaprodi(user) || isAdmin(user);
+  return isJurusan(user) || isProdi(user) || isAdmin(user);
 };
 
 export const canValidateJudul = (user: User | null): boolean => {
-  return isKajur(user) || isKaprodi(user) || isAdmin(user);
+  return isJurusan(user) || isProdi(user) || isAdmin(user);
 };
 
 export const canViewAllBimbingan = (user: User | null): boolean => {
-  return isKajur(user) || isKaprodi(user) || isAdmin(user);
+  return isJurusan(user) || isProdi(user) || isAdmin(user);
 };
 
 export const filterByProdiScope = <T extends { prodi?: string }>(
   user: User | null,
   items: T[],
 ): T[] => {
-  if (isKajur(user) || isAdmin(user)) return items;
+  if (isJurusan(user) || isAdmin(user)) return items;
   
-  if (isKaprodi(user)) {
+  if (isProdi(user)) {
     const userProdi = getProdiScope(user);
     if (!userProdi) return [];
     return items.filter((item) => item.prodi === userProdi);
@@ -83,7 +83,7 @@ export const filterByAssignment = <T extends { mahasiswa_id?: number; mahasiswa?
   user: User | null,
   items: T[],
 ): T[] => {
-  if (isKajur(user) || isKaprodi(user) || isAdmin(user)) return items;
+  if (isJurusan(user) || isProdi(user) || isAdmin(user)) return items;
   
   if (isDosen(user) && user?.dosen?.assignedMahasiswa) {
     const assignedIds = user.dosen.assignedMahasiswa.map((m) => m.id);

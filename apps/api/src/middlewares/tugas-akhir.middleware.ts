@@ -42,9 +42,9 @@ export const tugasAkhirGuard = async (
     // Check if the user has the necessary role to approve/reject
     const allowedRoles = [
       Role.admin,
-      Role.kajur,
-      Role.kaprodi_d3,
-      Role.kaprodi_d4,
+      Role.jurusan,
+      Role.prodi_d3,
+      Role.prodi_d4,
     ];
     if (!allowedRoles.includes(userRoles)) {
       res

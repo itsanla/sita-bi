@@ -89,7 +89,7 @@ export class UsersService {
 
     // Tambahkan peran lain dari DTO jika ada dan valid
     if (dto.roles != null) {
-      const validRoles = [Role.kajur, Role.kaprodi_d3, Role.kaprodi_d4];
+      const validRoles = [Role.jurusan, Role.prodi_d3, Role.prodi_d4];
       dto.roles.forEach((roleName) => {
         if (roleName !== Role.dosen && validRoles.includes(roleName)) {
           rolesToConnect.push({ name: roleName });

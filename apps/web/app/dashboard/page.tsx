@@ -19,7 +19,7 @@ export default function DashboardPage() {
       const userRole = user.roles[0]?.name;
       
       // Redirect langsung ke dashboard sesuai role
-      if (userRole === 'kajur' || userRole === 'kaprodi_d3' || userRole === 'kaprodi_d4' || userRole === 'admin') {
+      if (userRole === 'jurusan' || userRole === 'prodi_d3' || userRole === 'prodi_d4' || userRole === 'admin') {
         router.replace('/dashboard/admin');
       } else if (userRole === 'dosen') {
         router.replace('/dashboard/dosen');

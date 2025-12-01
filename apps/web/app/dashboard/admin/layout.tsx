@@ -17,9 +17,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       user?.roles?.some(
         (role) =>
           role.name === 'admin' ||
-          role.name === 'kajur' ||
-          role.name === 'kaprodi_d3' ||
-          role.name === 'kaprodi_d4',
+          role.name === 'jurusan' ||
+          role.name === 'prodi_d3' ||
+          role.name === 'prodi_d4',
       ) || false
     );
   }, [user]);

@@ -19,7 +19,7 @@ const navLinks = {
     { href: '/admin/import', label: 'Import Data', icon: Book },
     { href: '/admin/reports', label: 'Laporan', icon: FileText },
   ],
-  kajur: [
+  jurusan: [
     { href: '/dashboard/admin', label: 'Dashboard', icon: Home },
     { href: '/dashboard/admin/users', label: 'Manajemen User', icon: Users },
     {
@@ -29,7 +29,7 @@ const navLinks = {
     },
     { href: '/dashboard/pengumuman', label: 'Pengumuman', icon: FileText },
   ],
-  kaprodi_d3: [
+  prodi_d3: [
     { href: '/dashboard/admin', label: 'Dashboard', icon: Home },
     { href: '/dashboard/admin/users', label: 'Manajemen User', icon: Users },
     {
@@ -39,7 +39,7 @@ const navLinks = {
     },
     { href: '/dashboard/pengumuman', label: 'Pengumuman', icon: FileText },
   ],
-  kaprodi_d4: [
+  prodi_d4: [
     { href: '/dashboard/admin', label: 'Dashboard', icon: Home },
     { href: '/dashboard/admin/users', label: 'Manajemen User', icon: Users },
     {

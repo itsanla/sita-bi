@@ -21,7 +21,7 @@ router.use(asyncHandler(authMiddleware));
 // Bulk delete endpoint - MUST be FIRST before any /:id routes
 router.post(
   '/bulk-delete',
-  authorizeRoles([Role.admin, Role.kajur]),
+  authorizeRoles([Role.admin, Role.jurusan]),
   asyncHandler(async (req, res) => {
     const { ids } = req.body;
     if (!Array.isArray(ids) || ids.length === 0) {
@@ -42,7 +42,7 @@ router.post(
 
 router.post(
   '/dosen',
-  authorizeRoles([Role.admin, Role.kajur]),
+  authorizeRoles([Role.admin, Role.jurusan]),
   validate(createDosenSchema),
   asyncHandler(async (req, res) => {
     const newDosen = await usersService.createDosen(req.body);
@@ -52,7 +52,7 @@ router.post(
 
 router.post(
   '/mahasiswa',
-  authorizeRoles([Role.admin, Role.kajur]),
+  authorizeRoles([Role.admin, Role.jurusan]),
   validate(createMahasiswaSchema),
   asyncHandler(async (req, res) => {
     const newMahasiswa = await usersService.createMahasiswa(req.body);
@@ -99,7 +99,7 @@ router.get(
 
 router.get(
   '/mahasiswa',
-  authorizeRoles([Role.admin, Role.kajur]),
+  authorizeRoles([Role.admin, Role.jurusan]),
   asyncHandler(async (req, res) => {
     const page =
       req.query['page'] != null
@@ -116,7 +116,7 @@ router.get(
 
 router.patch(
   '/dosen/:id',
-  authorizeRoles([Role.admin, Role.kajur]),
+  authorizeRoles([Role.admin, Role.jurusan]),
   validate(updateDosenSchema),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
@@ -134,7 +134,7 @@ router.patch(
 
 router.patch(
   '/mahasiswa/:id',
-  authorizeRoles([Role.admin, Role.kajur]),
+  authorizeRoles([Role.admin, Role.jurusan]),
   validate(updateMahasiswaSchema),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
@@ -154,7 +154,7 @@ router.patch(
 
 router.delete(
   '/:id',
-  authorizeRoles([Role.admin, Role.kajur]),
+  authorizeRoles([Role.admin, Role.jurusan]),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     if (id == null) {
@@ -174,7 +174,7 @@ router.delete(
 // New endpoint for unlocking user
 router.post(
   '/:id/unlock',
-  authorizeRoles([Role.admin, Role.kajur]),
+  authorizeRoles([Role.admin, Role.jurusan]),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     if (id == null) {
