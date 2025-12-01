@@ -16,7 +16,9 @@ export function useChatLogic() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState<'fast' | 'expert'>('fast');
-  const [thinkingStatus, setThinkingStatus] = useState<'thinking' | 'researching' | null>(null);
+  const [thinkingStatus, setThinkingStatus] = useState<
+    'thinking' | 'researching' | null
+  >(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -61,7 +63,9 @@ export function useChatLogic() {
     if (!container) return;
 
     const handleScroll = () => {
-      const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+      const isAtBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight <
+        50;
       shouldAutoScrollRef.current = isAtBottom;
     };
 
@@ -79,8 +83,10 @@ export function useChatLogic() {
       return;
     }
 
-    const isCurrentlyAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
-    
+    const isCurrentlyAtBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      50;
+
     if (shouldAutoScrollRef.current && isCurrentlyAtBottom) {
       container.scrollTop = container.scrollHeight;
     }
@@ -105,13 +111,13 @@ export function useChatLogic() {
     forceScrollRef.current = true;
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
-    
+
     // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = '48px';
     }
-    
+
     setIsLoading(true);
     setThinkingStatus(null);
 
@@ -120,7 +126,7 @@ export function useChatLogic() {
     // Expert mode: wait 3 seconds before sending
     if (mode === 'expert') {
       setThinkingStatus('researching');
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
     }
 
     // Set thinking status after 1 second
@@ -191,7 +197,7 @@ export function useChatLogic() {
                   .replace(/&lt;/g, '<')
                   .replace(/&gt;/g, '>')
                   .replace(/&#39;/g, "'");
-                
+
                 setMessages((prev) => {
                   if (prev.length === 0) return prev;
                   const allButLast = prev.slice(0, -1);
@@ -204,7 +210,7 @@ export function useChatLogic() {
                   return [...allButLast, updatedLast];
                 });
                 // Force immediate render
-                await new Promise(resolve => setTimeout(resolve, 0));
+                await new Promise((resolve) => setTimeout(resolve, 0));
               } else if (parsed.type === 'done') {
                 break;
               } else if (parsed.type === 'error') {
@@ -302,7 +308,8 @@ export function useChatLogic() {
         setIsLoading(false);
         setThinkingStatus(null);
         if (thinkingTimerRef.current) clearTimeout(thinkingTimerRef.current);
-        if (researchingTimerRef.current) clearTimeout(researchingTimerRef.current);
+        if (researchingTimerRef.current)
+          clearTimeout(researchingTimerRef.current);
         abortControllerRef.current = null;
       }
     }

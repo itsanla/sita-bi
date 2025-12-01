@@ -1,6 +1,12 @@
 // apps/web/types/index.ts
 
-export type RoleName = 'mahasiswa' | 'dosen' | 'admin' | 'jurusan' | 'prodi_d3' | 'prodi_d4';
+export type RoleName =
+  | 'mahasiswa'
+  | 'dosen'
+  | 'admin'
+  | 'jurusan'
+  | 'prodi_d3'
+  | 'prodi_d4';
 
 export interface User {
   id: number;

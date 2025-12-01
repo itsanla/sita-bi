@@ -3,7 +3,15 @@
 import { useEffect, useState } from 'react';
 import request from '@/lib/api';
 import { useAuth } from '../../../../context/AuthContext';
-import { Send, CheckCircle, XCircle, Clock, User, Users, X } from 'lucide-react';
+import {
+  Send,
+  CheckCircle,
+  XCircle,
+  Clock,
+  User,
+  Users,
+  X,
+} from 'lucide-react';
 
 // --- Interfaces ---
 interface Mahasiswa {
@@ -47,7 +55,9 @@ export default function PengajuanBimbinganPage() {
   const { user } = useAuth();
   const [proposals, setProposals] = useState<PengajuanBimbingan[]>([]);
   const [availableMahasiswa, setAvailableMahasiswa] = useState<Mahasiswa[]>([]);
-  const [mahasiswaBimbingan, setMahasiswaBimbingan] = useState<MahasiswaBimbingan[]>([]);
+  const [mahasiswaBimbingan, setMahasiswaBimbingan] = useState<
+    MahasiswaBimbingan[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -57,9 +67,10 @@ export default function PengajuanBimbinganPage() {
       setError('');
 
       // Fetch proposals for this dosen
-      const proposalsResponse = await request<{ data: PengajuanBimbingan[]; mahasiswaBimbingan: MahasiswaBimbingan[] }>(
-        '/pengajuan/dosen',
-      );
+      const proposalsResponse = await request<{
+        data: PengajuanBimbingan[];
+        mahasiswaBimbingan: MahasiswaBimbingan[];
+      }>('/pengajuan/dosen');
       if (Array.isArray(proposalsResponse.data)) {
         setProposals(proposalsResponse.data);
       }
@@ -147,7 +158,8 @@ export default function PengajuanBimbinganPage() {
   };
 
   const handleLepaskanBimbingan = async (peranDosenTaId: number) => {
-    if (!confirm('Apakah Anda yakin ingin mengajukan pelepasan bimbingan ini?')) return;
+    if (!confirm('Apakah Anda yakin ingin mengajukan pelepasan bimbingan ini?'))
+      return;
     try {
       await request('/pengajuan/lepaskan', {
         method: 'POST',
@@ -162,10 +174,17 @@ export default function PengajuanBimbinganPage() {
     }
   };
 
-  const handleKonfirmasiPelepasan = async (pengajuanId: number, action: 'konfirmasi' | 'tolak') => {
+  const handleKonfirmasiPelepasan = async (
+    pengajuanId: number,
+    action: 'konfirmasi' | 'tolak',
+  ) => {
     try {
-      await request(`/pengajuan/lepaskan/${pengajuanId}/${action}`, { method: 'POST' });
-      alert(`Berhasil ${action === 'konfirmasi' ? 'menyetujui' : 'menolak'} pelepasan`);
+      await request(`/pengajuan/lepaskan/${pengajuanId}/${action}`, {
+        method: 'POST',
+      });
+      alert(
+        `Berhasil ${action === 'konfirmasi' ? 'menyetujui' : 'menolak'} pelepasan`,
+      );
       fetchData();
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -216,10 +235,14 @@ export default function PengajuanBimbinganPage() {
           <div className="space-y-3">
             {mahasiswaBimbingan.map((bimbingan) => {
               const pengajuanAktif = bimbingan.pengajuanPelepasanBimbingan?.[0];
-              const isUserYangMengajukan = pengajuanAktif?.diajukan_oleh_user_id === user?.id;
+              const isUserYangMengajukan =
+                pengajuanAktif?.diajukan_oleh_user_id === user?.id;
 
               return (
-                <div key={bimbingan.id} className="p-4 border rounded-lg flex justify-between items-center hover:bg-gray-50">
+                <div
+                  key={bimbingan.id}
+                  className="p-4 border rounded-lg flex justify-between items-center hover:bg-gray-50"
+                >
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-bold text-gray-900">
@@ -240,18 +263,30 @@ export default function PengajuanBimbinganPage() {
                   </div>
                   {pengajuanAktif ? (
                     isUserYangMengajukan ? (
-                      <span className="text-xs text-gray-500">Menunggu konfirmasi mahasiswa</span>
+                      <span className="text-xs text-gray-500">
+                        Menunggu konfirmasi mahasiswa
+                      </span>
                     ) : (
                       <div className="flex gap-2">
                         <button
-                          onClick={() => handleKonfirmasiPelepasan(pengajuanAktif.id, 'konfirmasi')}
+                          onClick={() =>
+                            handleKonfirmasiPelepasan(
+                              pengajuanAktif.id,
+                              'konfirmasi',
+                            )
+                          }
                           className="px-3 py-1.5 text-xs font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all flex items-center gap-1.5"
                         >
                           <CheckCircle size={14} />
                           Setuju
                         </button>
                         <button
-                          onClick={() => handleKonfirmasiPelepasan(pengajuanAktif.id, 'tolak')}
+                          onClick={() =>
+                            handleKonfirmasiPelepasan(
+                              pengajuanAktif.id,
+                              'tolak',
+                            )
+                          }
                           className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all flex items-center gap-1.5"
                         >
                           <XCircle size={14} />

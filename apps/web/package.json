@@ -6,10 +6,12 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
+    "analyze": "ANALYZE=true next build && node parse-bundle.js",
     "start": "next start",
     "lint": "eslint .",
     "check-types": "tsc --noEmit",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json}\"",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json}\""
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -40,7 +42,7 @@
     "zod": "^4.1.11"
   },
   "devDependencies": {
-    "@next/bundle-analyzer": "^14.2.33",
+    "@next/bundle-analyzer": "^16.0.6",
     "@playwright/test": "^1.56.1",
     "@repo/eslint-config": "workspace:^",
     "@repo/typescript-config": "workspace:*",

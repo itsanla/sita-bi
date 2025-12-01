@@ -17,8 +17,7 @@ export default function DosenDashboardPage() {
   const roles = user?.roles.map((r) => r.name) || [];
 
   const isJurusan = roles.includes('jurusan');
-  const isProdi =
-    roles.includes('prodi_d3') || roles.includes('prodi_d4');
+  const isProdi = roles.includes('prodi_d3') || roles.includes('prodi_d4');
 
   const featureCards = [
     {

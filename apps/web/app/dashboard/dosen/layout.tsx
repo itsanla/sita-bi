@@ -1,149 +1,111 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import UserSidebar from '@/components/shared/UserSidebar';
+import UserFooter from '@/components/shared/UserFooter';
 import {
-  Home,
+  LayoutDashboard,
   BookUser,
   Lightbulb,
   ClipboardCheck,
   GraduationCap,
-  LogOut,
-  User as UserIcon,
-  Users,
-  Menu,
-  Settings,
   UserPlus,
+  Lock,
 } from 'lucide-react';
-import Image from 'next/image';
-import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { href: '/dashboard/dosen', icon: Home, label: 'Dashboard' },
-  { href: '/dashboard/dosen/pengajuan', icon: UserPlus, label: 'Pengajuan Pembimbing' },
+  { href: '/dashboard/dosen', icon: LayoutDashboard, label: 'Dashboard' },
+  {
+    href: '/dashboard/dosen/pengajuan',
+    icon: UserPlus,
+    label: 'Pengajuan Pembimbing',
+  },
   { href: '/dashboard/dosen/bimbingan', icon: BookUser, label: 'Bimbingan' },
-  { href: '/dashboard/dosen/tawaran-topik', icon: Lightbulb, label: 'Tawaran Topik' },
-  { href: '/dashboard/dosen/sidang-approvals', icon: ClipboardCheck, label: 'Persetujuan Sidang' },
-  { href: '/dashboard/dosen/penilaian', icon: GraduationCap, label: 'Penilaian' },
+  {
+    href: '/dashboard/dosen/tawaran-topik',
+    icon: Lightbulb,
+    label: 'Tawaran Topik',
+  },
+  {
+    href: '/dashboard/dosen/sidang-approvals',
+    icon: ClipboardCheck,
+    label: 'Persetujuan Sidang',
+  },
+  {
+    href: '/dashboard/dosen/penilaian',
+    icon: GraduationCap,
+    label: 'Penilaian',
+  },
 ];
 
-const NavLink = ({ item }: { item: (typeof navItems)[0] }) => {
-  const pathname = usePathname();
-  const isActive = pathname === item.href;
-
-  return (
-    <Link
-      href={item.href}
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-        isActive
-          ? 'bg-maroon-700 text-white shadow-md'
-          : 'text-gray-700 hover:bg-maroon-100 hover:text-maroon-800'
-      }`}
-    >
-      <item.icon size={20} />
-      <span>{item.label}</span>
-    </Link>
-  );
-};
-
 export default function DosenLayout({ children }: { children: ReactNode }) {
-  const { user, logout, isAuthenticated, loading } = useAuth();
-  const router = useRouter();
+  const { user, loading } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  if (loading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
-  }
-
-  if (!isAuthenticated) {
-    router.push('/login');
-    return null;
-  }
+  useEffect(() => {
+    const handleResize = () => {
+      setSidebarOpen(window.innerWidth >= 1024);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const isDosen = user?.roles?.some((role) => role.name === 'dosen');
 
+  if (loading || !user) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center">
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 border-4 border-red-200 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-red-900 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-sm font-medium text-gray-600">
+            Loading your dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isDosen) {
     return (
-      <div className="flex h-screen items-center justify-center text-red-600">
-        Unauthorized: Dosen access required.
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center p-8 bg-white rounded-xl shadow-lg border border-gray-200 max-w-md">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-8 h-8 text-red-900" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            Unauthorized Access
+          </h2>
+          <p className="text-sm text-gray-600">
+            This dashboard is for lecturers only.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-md shadow-md z-40">
-        <div className="max-w-full mx-auto px-6">
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center gap-3">
-              {/* Mobile Menu */}
-              <div className="lg:hidden">
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" size="icon">
-                      <Menu className="h-5 w-5" />
-                      <span className="sr-only">Toggle navigation menu</span>
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="w-64 p-0">
-                    <div className="p-4 space-y-2">
-                      {navItems.map((item) => (
-                        <NavLink key={item.href} item={item} />
-                      ))}
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
+    <div className="min-h-screen bg-gray-50">
+      <UserSidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        navItems={navItems}
+        menuTitle="Menu Dosen"
+        dashboardHref="/dashboard/dosen"
+      />
 
-              <Image
-                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYB48qcI4RmLRUfQqoGwJb6GIM7SqYE9rcBg&s"
-                alt="Logo"
-                width={40}
-                height={40}
-                className="rounded-lg"
-              />
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-red-900 to-red-700 bg-clip-text text-transparent">
-                SITA-BI
-              </h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <UserIcon className="text-gray-600" size={20} />
-                <span className="font-medium text-gray-700">{user?.nama || 'Dosen'}</span>
-              </div>
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 bg-red-800 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-900 transition-all"
-              >
-                <LogOut size={18} />
-                Logout
-              </button>
-            </div>
-          </div>
+      <main
+        className={`min-h-screen transition-all duration-300 flex flex-col pt-16 lg:pt-0 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}
+      >
+        <div className="p-0 sm:p-4 lg:p-6 max-w-7xl mx-auto w-full flex-1">
+          {children}
         </div>
-      </header>
-
-      <div className="flex flex-1 pt-16">
-        {/* Desktop Sidebar */}
-        <aside className="hidden lg:block w-64 bg-white shadow-lg">
-          <div className="flex h-full max-h-screen flex-col gap-2">
-            <div className="flex-1 overflow-auto py-2">
-              <nav className="p-4 flex flex-col gap-2">
-                {navItems.map((item) => (
-                  <NavLink key={item.href} item={item} />
-                ))}
-              </nav>
-            </div>
-          </div>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 p-8 overflow-auto">{children}</main>
-      </div>
+        <UserFooter />
+      </main>
     </div>
   );
 }

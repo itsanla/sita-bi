@@ -22,25 +22,19 @@ export default function ConfirmDialog({
   confirmText = 'Ya',
   cancelText = 'Batal',
   onConfirm,
-  variant = 'warning'
+  variant = 'warning',
 }: ConfirmDialogProps) {
   const variantStyles = {
     danger: 'bg-red-600 hover:bg-red-700',
     warning: 'bg-[#7f1d1d] hover:bg-[#991b1b]',
-    info: 'bg-blue-600 hover:bg-blue-700'
+    info: 'bg-blue-600 hover:bg-blue-700',
   };
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay 
-          className="DialogOverlay" 
-          style={{ zIndex: 9998 }}
-        />
-        <Dialog.Content 
-          className="DialogContent" 
-          style={{ zIndex: 9999 }}
-        >
+        <Dialog.Overlay className="DialogOverlay" style={{ zIndex: 9998 }} />
+        <Dialog.Content className="DialogContent" style={{ zIndex: 9999 }}>
           <div className="bg-white rounded-2xl shadow-2xl p-6 mx-4">
             <div className="flex items-start gap-4 mb-4">
               <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
@@ -55,7 +49,7 @@ export default function ConfirmDialog({
                 </Dialog.Description>
               </div>
             </div>
-            
+
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => onOpenChange(false)}

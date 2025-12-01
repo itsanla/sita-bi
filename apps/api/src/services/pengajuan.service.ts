@@ -520,6 +520,7 @@ export class PengajuanService {
         nim: m.nim,
         prodi: m.prodi,
         kelas: m.kelas,
+        judul_ta: tugasAkhir?.judul || 'Belum menentukan judul',
         has_pembimbing1: hasPembimbing1,
         has_pembimbing2: hasPembimbing2,
         available_for_p1: !hasPembimbing1,

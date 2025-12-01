@@ -13,17 +13,40 @@ import {
   CalendarClock,
   Megaphone,
   Lock,
-  Menu,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard/mahasiswa', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/dashboard/mahasiswa/tugas-akhir', icon: FileText, label: 'Tugas Akhir' },
-  { href: '/dashboard/mahasiswa/pengajuan', icon: UserPlus, label: 'Pengajuan Pembimbing' },
-  { href: '/dashboard/mahasiswa/bimbingan', icon: MessagesSquare, label: 'Bimbingan' },
-  { href: '/dashboard/mahasiswa/sidang', icon: CalendarCheck2, label: 'Daftar Sidang' },
-  { href: '/dashboard/mahasiswa/jadwal-sidang', icon: CalendarClock, label: 'Jadwal Sidang' },
-  { href: '/dashboard/mahasiswa/pengumuman', icon: Megaphone, label: 'Pengumuman' },
+  {
+    href: '/dashboard/mahasiswa/tugas-akhir',
+    icon: FileText,
+    label: 'Tugas Akhir',
+  },
+  {
+    href: '/dashboard/mahasiswa/pengajuan',
+    icon: UserPlus,
+    label: 'Pengajuan Pembimbing',
+  },
+  {
+    href: '/dashboard/mahasiswa/bimbingan',
+    icon: MessagesSquare,
+    label: 'Bimbingan',
+  },
+  {
+    href: '/dashboard/mahasiswa/sidang',
+    icon: CalendarCheck2,
+    label: 'Daftar Sidang',
+  },
+  {
+    href: '/dashboard/mahasiswa/jadwal-sidang',
+    icon: CalendarClock,
+    label: 'Jadwal Sidang',
+  },
+  {
+    href: '/dashboard/mahasiswa/pengumuman',
+    icon: Megaphone,
+    label: 'Pengumuman',
+  },
 ];
 
 export default function MahasiswaLayout({ children }: { children: ReactNode }) {
@@ -77,14 +100,6 @@ export default function MahasiswaLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile menu button */}
-      <button
-        onClick={() => setSidebarOpen(true)}
-        className="fixed top-4 left-4 z-30 p-2 bg-white rounded-lg shadow-lg lg:hidden hover:bg-gray-50"
-      >
-        <Menu className="h-6 w-6 text-gray-700" />
-      </button>
-
       <UserSidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
@@ -94,9 +109,11 @@ export default function MahasiswaLayout({ children }: { children: ReactNode }) {
       />
 
       <main
-        className={`min-h-screen transition-all duration-300 flex flex-col ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}
+        className={`min-h-screen transition-all duration-300 flex flex-col pt-16 lg:pt-0 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}
       >
-        <div className="p-0 sm:p-4 lg:p-6 max-w-7xl mx-auto w-full flex-1">{children}</div>
+        <div className="p-0 sm:p-4 lg:p-6 max-w-7xl mx-auto w-full flex-1">
+          {children}
+        </div>
         <UserFooter />
       </main>
     </div>

@@ -13,9 +13,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   // Skip this layout for routes that have their own layout
-  if (pathname?.startsWith('/dashboard/admin') || 
-      pathname?.startsWith('/dashboard/dosen') || 
-      pathname?.startsWith('/dashboard/mahasiswa')) {
+  if (
+    pathname?.startsWith('/dashboard/admin') ||
+    pathname?.startsWith('/dashboard/dosen') ||
+    pathname?.startsWith('/dashboard/mahasiswa')
+  ) {
     return <>{children}</>;
   }
 

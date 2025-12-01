@@ -57,7 +57,9 @@ export function useRBAC(): RBACPermissions & {
     // Determine accessible mahasiswa IDs
     const canAccessMahasiswaIds: number[] = [];
     if (isDosen && user.dosen?.assignedMahasiswa) {
-      canAccessMahasiswaIds.push(...user.dosen.assignedMahasiswa.map((m) => m.id));
+      canAccessMahasiswaIds.push(
+        ...user.dosen.assignedMahasiswa.map((m) => m.id),
+      );
     }
     if (isMahasiswa && user.mahasiswa) {
       canAccessMahasiswaIds.push(user.mahasiswa.id);
@@ -73,10 +75,19 @@ export function useRBAC(): RBACPermissions & {
     // Helper functions
     const canAccess = (requiredRoles: RoleName[]): boolean => {
       if (isAdmin) return true;
-      if (isJurusan && (requiredRoles.includes('jurusan') || requiredRoles.includes('prodi_d3') || requiredRoles.includes('prodi_d4') || requiredRoles.includes('dosen'))) {
+      if (
+        isJurusan &&
+        (requiredRoles.includes('jurusan') ||
+          requiredRoles.includes('prodi_d3') ||
+          requiredRoles.includes('prodi_d4') ||
+          requiredRoles.includes('dosen'))
+      ) {
         return true;
       }
-      if (isProdi && (requiredRoles.includes(role) || requiredRoles.includes('dosen'))) {
+      if (
+        isProdi &&
+        (requiredRoles.includes(role) || requiredRoles.includes('dosen'))
+      ) {
         return true;
       }
       return requiredRoles.includes(role);

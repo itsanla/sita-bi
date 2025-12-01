@@ -26,7 +26,10 @@ export default function AssignPembimbingForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const validation = validatePembimbingSelection(pembimbing1Id, pembimbing2Id);
+    const validation = validatePembimbingSelection(
+      pembimbing1Id,
+      pembimbing2Id,
+    );
     if (!validation.valid) {
       toast.error(validation.error);
       return;
@@ -78,15 +81,15 @@ export default function AssignPembimbingForm({
           {capacities.map((c) => {
             const capacity = getCapacity(c.dosenId);
             const available = isAvailable(c.dosenId);
-            
+
             return (
-              <option
-                key={c.dosenId}
-                value={c.dosenId}
-                disabled={!available}
-              >
+              <option key={c.dosenId} value={c.dosenId} disabled={!available}>
                 {c.name} - {capacity?.current}/{capacity?.max} mahasiswa
-                {!available ? ' (PENUH)' : capacity?.current === 3 ? ' (HAMPIR PENUH)' : ''}
+                {!available
+                  ? ' (PENUH)'
+                  : capacity?.current === 3
+                    ? ' (HAMPIR PENUH)'
+                    : ''}
               </option>
             );
           })}
@@ -116,15 +119,15 @@ export default function AssignPembimbingForm({
             .map((c) => {
               const capacity = getCapacity(c.dosenId);
               const available = isAvailable(c.dosenId);
-              
+
               return (
-                <option
-                  key={c.dosenId}
-                  value={c.dosenId}
-                  disabled={!available}
-                >
+                <option key={c.dosenId} value={c.dosenId} disabled={!available}>
                   {c.name} - {capacity?.current}/{capacity?.max} mahasiswa
-                  {!available ? ' (PENUH)' : capacity?.current === 3 ? ' (HAMPIR PENUH)' : ''}
+                  {!available
+                    ? ' (PENUH)'
+                    : capacity?.current === 3
+                      ? ' (HAMPIR PENUH)'
+                      : ''}
                 </option>
               );
             })}

@@ -1,5 +1,16 @@
+import bundleAnalyzer from '@next/bundle-analyzer';
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+  analyzerMode: 'json',
+  openAnalyzer: false,
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   output: 'standalone',
   async rewrites() {
     return [
@@ -69,4 +80,5 @@ const nextConfig = {
     return config;
   },
 };
-export default nextConfig;
+
+export default withBundleAnalyzer(nextConfig);

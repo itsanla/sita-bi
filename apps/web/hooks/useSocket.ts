@@ -11,9 +11,7 @@ export const useSocket = (userId: number | undefined): Socket | null => {
   useEffect(() => {
     if (!userId) return;
 
-    const socketInstance = io(
-      process.env.NEXT_PUBLIC_API_URL!,
-    );
+    const socketInstance = io(process.env.NEXT_PUBLIC_API_URL!);
 
     socketInstance.on('connect', () => {
       // console.warn("Connected to socket server");

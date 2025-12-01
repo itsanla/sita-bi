@@ -1,4 +1,10 @@
-export type Role = 'mahasiswa' | 'dosen' | 'admin' | 'jurusan' | 'prodi_d3' | 'prodi_d4';
+export type Role =
+  | 'mahasiswa'
+  | 'dosen'
+  | 'admin'
+  | 'jurusan'
+  | 'prodi_d3'
+  | 'prodi_d4';
 export type Prodi = 'D3' | 'D4';
 
 export interface RBACContext {

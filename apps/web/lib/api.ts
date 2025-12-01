@@ -71,7 +71,10 @@ apiClient.interceptors.response.use(
 
       case 401:
         // Don't redirect on login page
-        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+        if (
+          typeof window !== 'undefined' &&
+          !window.location.pathname.includes('/login')
+        ) {
           toast.error('Sesi Anda telah berakhir. Silakan login kembali.');
           localStorage.removeItem('token');
           localStorage.removeItem('user');

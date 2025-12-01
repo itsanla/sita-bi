@@ -13,8 +13,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
-
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -42,7 +40,12 @@ export default function LoginPage() {
         const userRole = user.roles[0]?.name;
         let redirectUrl = '/dashboard/mahasiswa';
 
-        if (userRole === 'jurusan' || userRole === 'prodi_d3' || userRole === 'prodi_d4' || userRole === 'admin') {
+        if (
+          userRole === 'jurusan' ||
+          userRole === 'prodi_d3' ||
+          userRole === 'prodi_d4' ||
+          userRole === 'admin'
+        ) {
           redirectUrl = '/dashboard/admin';
         } else if (userRole === 'dosen') {
           redirectUrl = '/dashboard/dosen';
@@ -53,7 +56,10 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error('Login error:', err);
-      const errorMessage = err.response?.data?.message || err.message || 'Terjadi kesalahan saat login';
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        'Terjadi kesalahan saat login';
       setError(errorMessage);
       setLoading(false);
     }

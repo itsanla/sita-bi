@@ -24,7 +24,11 @@ export default function RoleGuard({
     return <>{fallback}</>;
   }
 
-  if (requireProdi && canAccessProdi !== requireProdi && canAccessProdi !== null) {
+  if (
+    requireProdi &&
+    canAccessProdi !== requireProdi &&
+    canAccessProdi !== null
+  ) {
     return <>{fallback}</>;
   }
 

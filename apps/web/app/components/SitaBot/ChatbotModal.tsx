@@ -201,158 +201,207 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                     </div>
                   </div>
                 ) : (
-                  messages.filter(msg => msg.content.trim() !== '').map((msg, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
-                    >
-                      {msg.role === 'assistant' && (
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-900 to-red-700 flex items-center justify-center mr-3 flex-shrink-0 shadow-lg">
-                          <MessageCircle className="w-5 h-5 text-white" />
-                        </div>
-                      )}
+                  messages
+                    .filter((msg) => msg.content.trim() !== '')
+                    .map((msg, index) => (
                       <div
-                        className={`max-w-2xl px-5 py-3 rounded-2xl shadow-md ${
-                          msg.role === 'user'
-                            ? 'bg-gradient-to-br from-red-900 to-red-700'
-                            : 'bg-white text-gray-800 border border-red-100'
-                        }`}
+                        key={index}
+                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
                       >
+                        {msg.role === 'assistant' && (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-900 to-red-700 flex items-center justify-center mr-3 flex-shrink-0 shadow-lg">
+                            <MessageCircle className="w-5 h-5 text-white" />
+                          </div>
+                        )}
                         <div
-                          className={`max-w-none ${
+                          className={`max-w-2xl px-5 py-3 rounded-2xl shadow-md ${
                             msg.role === 'user'
-                              ? 'text-white'
-                              : ''
+                              ? 'bg-gradient-to-br from-red-900 to-red-700'
+                              : 'bg-white text-gray-800 border border-red-100'
                           }`}
                         >
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={{
-                              h1: ({ children }) => (
-                                <h1 className={`text-lg font-bold mb-2 mt-3 ${
-                                  msg.role === 'user' ? 'text-white' : 'text-red-900'
-                                }`}>
-                                  {children}
-                                </h1>
-                              ),
-                              h2: ({ children }) => (
-                                <h2 className={`text-base font-bold mb-2 mt-2 ${
-                                  msg.role === 'user' ? 'text-white' : 'text-red-900'
-                                }`}>
-                                  {children}
-                                </h2>
-                              ),
-                              h3: ({ children }) => (
-                                <h3 className={`text-sm font-semibold mb-1 mt-2 ${
-                                  msg.role === 'user' ? 'text-white' : 'text-red-800'
-                                }`}>
-                                  {children}
-                                </h3>
-                              ),
-                              p: ({ children }) => (
-                                <p className={`mb-2 text-sm leading-relaxed ${
-                                  msg.role === 'user' ? 'text-white' : 'text-gray-700'
-                                }`}>
-                                  {children}
-                                </p>
-                              ),
-                              strong: ({ children }) => (
-                                <strong className={`font-semibold ${
-                                  msg.role === 'user' ? 'text-white' : 'text-red-800'
-                                }`}>
-                                  {children}
-                                </strong>
-                              ),
-                              em: ({ children }) => (
-                                <em className={`italic ${
-                                  msg.role === 'user' ? 'text-white' : 'text-gray-600'
-                                }`}>{children}</em>
-                              ),
-                              code: ({ children }) => (
-                                <code className={`px-1 py-0.5 rounded text-xs font-mono ${
-                                  msg.role === 'user' ? 'bg-red-800 text-white' : 'bg-red-50 text-red-700'
-                                }`}>
-                                  {children}
-                                </code>
-                              ),
-                              ul: ({ children }) => (
-                                <ul className="list-disc list-inside mb-2 space-y-0.5 text-sm">
-                                  {children}
-                                </ul>
-                              ),
-                              ol: ({ children }) => (
-                                <ol className="list-decimal list-inside mb-2 space-y-0.5 text-sm">
-                                  {children}
-                                </ol>
-                              ),
-                              li: ({ children }) => (
-                                <li className={`ml-2 text-sm ${
-                                  msg.role === 'user' ? 'text-white' : 'text-gray-700'
-                                }`}>{children}</li>
-                              ),
-                              a: ({ children, href }) => (
-                                <a
-                                  href={href}
-                                  className={`hover:underline ${
-                                    msg.role === 'user' ? 'text-white' : 'text-red-600'
-                                  }`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  {children}
-                                </a>
-                              ),
-                              blockquote: ({ children }) => (
-                                <blockquote className={`border-l-4 pl-4 py-2 my-2 italic ${
-                                  msg.role === 'user' ? 'border-white text-white bg-red-800' : 'border-red-500 text-gray-700 bg-red-50'
-                                }`}>
-                                  {children}
-                                </blockquote>
-                              ),
-                            }}
+                          <div
+                            className={`max-w-none ${
+                              msg.role === 'user' ? 'text-white' : ''
+                            }`}
                           >
-                            {msg.content || '...'}
-                          </ReactMarkdown>
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                h1: ({ children }) => (
+                                  <h1
+                                    className={`text-lg font-bold mb-2 mt-3 ${
+                                      msg.role === 'user'
+                                        ? 'text-white'
+                                        : 'text-red-900'
+                                    }`}
+                                  >
+                                    {children}
+                                  </h1>
+                                ),
+                                h2: ({ children }) => (
+                                  <h2
+                                    className={`text-base font-bold mb-2 mt-2 ${
+                                      msg.role === 'user'
+                                        ? 'text-white'
+                                        : 'text-red-900'
+                                    }`}
+                                  >
+                                    {children}
+                                  </h2>
+                                ),
+                                h3: ({ children }) => (
+                                  <h3
+                                    className={`text-sm font-semibold mb-1 mt-2 ${
+                                      msg.role === 'user'
+                                        ? 'text-white'
+                                        : 'text-red-800'
+                                    }`}
+                                  >
+                                    {children}
+                                  </h3>
+                                ),
+                                p: ({ children }) => (
+                                  <p
+                                    className={`mb-2 text-sm leading-relaxed ${
+                                      msg.role === 'user'
+                                        ? 'text-white'
+                                        : 'text-gray-700'
+                                    }`}
+                                  >
+                                    {children}
+                                  </p>
+                                ),
+                                strong: ({ children }) => (
+                                  <strong
+                                    className={`font-semibold ${
+                                      msg.role === 'user'
+                                        ? 'text-white'
+                                        : 'text-red-800'
+                                    }`}
+                                  >
+                                    {children}
+                                  </strong>
+                                ),
+                                em: ({ children }) => (
+                                  <em
+                                    className={`italic ${
+                                      msg.role === 'user'
+                                        ? 'text-white'
+                                        : 'text-gray-600'
+                                    }`}
+                                  >
+                                    {children}
+                                  </em>
+                                ),
+                                code: ({ children }) => (
+                                  <code
+                                    className={`px-1 py-0.5 rounded text-xs font-mono ${
+                                      msg.role === 'user'
+                                        ? 'bg-red-800 text-white'
+                                        : 'bg-red-50 text-red-700'
+                                    }`}
+                                  >
+                                    {children}
+                                  </code>
+                                ),
+                                ul: ({ children }) => (
+                                  <ul className="list-disc list-inside mb-2 space-y-0.5 text-sm">
+                                    {children}
+                                  </ul>
+                                ),
+                                ol: ({ children }) => (
+                                  <ol className="list-decimal list-inside mb-2 space-y-0.5 text-sm">
+                                    {children}
+                                  </ol>
+                                ),
+                                li: ({ children }) => (
+                                  <li
+                                    className={`ml-2 text-sm ${
+                                      msg.role === 'user'
+                                        ? 'text-white'
+                                        : 'text-gray-700'
+                                    }`}
+                                  >
+                                    {children}
+                                  </li>
+                                ),
+                                a: ({ children, href }) => (
+                                  <a
+                                    href={href}
+                                    className={`hover:underline ${
+                                      msg.role === 'user'
+                                        ? 'text-white'
+                                        : 'text-red-600'
+                                    }`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    {children}
+                                  </a>
+                                ),
+                                blockquote: ({ children }) => (
+                                  <blockquote
+                                    className={`border-l-4 pl-4 py-2 my-2 italic ${
+                                      msg.role === 'user'
+                                        ? 'border-white text-white bg-red-800'
+                                        : 'border-red-500 text-gray-700 bg-red-50'
+                                    }`}
+                                  >
+                                    {children}
+                                  </blockquote>
+                                ),
+                              }}
+                            >
+                              {msg.content || '...'}
+                            </ReactMarkdown>
+                          </div>
                         </div>
-                      </div>
-                      {msg.role === 'user' && (
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center ml-3 flex-shrink-0 shadow-lg">
-                          <span className="text-gray-600 font-semibold text-xs">
-                            You
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-
-                {isLoading && !(messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && messages[messages.length - 1]?.content.trim() !== '') && (
-                  <div className="flex justify-start animate-fade-in">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-900 to-red-700 flex items-center justify-center mr-3 flex-shrink-0 shadow-lg">
-                      <MessageCircle className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="bg-white border border-red-100 px-5 py-3 rounded-2xl shadow-md">
-                      <div className="flex items-center gap-3">
-                        <div className="flex gap-2">
-                          <div className="w-2 h-2 bg-red-900 rounded-full animate-bounce" />
-                          <div
-                            className="w-2 h-2 bg-red-900 rounded-full animate-bounce"
-                            style={{ animationDelay: '0.2s' }}
-                          />
-                          <div
-                            className="w-2 h-2 bg-red-900 rounded-full animate-bounce"
-                            style={{ animationDelay: '0.4s' }}
-                          />
-                        </div>
-                        {thinkingStatus !== null && (
-                          <span className="text-xs text-gray-500 italic">
-                            {thinkingStatus === 'thinking' ? 'Berpikir Keras...' : 'Riset Mendalam...'}
-                          </span>
+                        {msg.role === 'user' && (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center ml-3 flex-shrink-0 shadow-lg">
+                            <span className="text-gray-600 font-semibold text-xs">
+                              You
+                            </span>
+                          </div>
                         )}
                       </div>
-                    </div>
-                  </div>
+                    ))
                 )}
+
+                {isLoading &&
+                  !(
+                    messages.length > 0 &&
+                    messages[messages.length - 1]?.role === 'assistant' &&
+                    messages[messages.length - 1]?.content.trim() !== ''
+                  ) && (
+                    <div className="flex justify-start animate-fade-in">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-900 to-red-700 flex items-center justify-center mr-3 flex-shrink-0 shadow-lg">
+                        <MessageCircle className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="bg-white border border-red-100 px-5 py-3 rounded-2xl shadow-md">
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-2">
+                            <div className="w-2 h-2 bg-red-900 rounded-full animate-bounce" />
+                            <div
+                              className="w-2 h-2 bg-red-900 rounded-full animate-bounce"
+                              style={{ animationDelay: '0.2s' }}
+                            />
+                            <div
+                              className="w-2 h-2 bg-red-900 rounded-full animate-bounce"
+                              style={{ animationDelay: '0.4s' }}
+                            />
+                          </div>
+                          {thinkingStatus !== null && (
+                            <span className="text-xs text-gray-500 italic">
+                              {thinkingStatus === 'thinking'
+                                ? 'Berpikir Keras...'
+                                : 'Riset Mendalam...'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
               </div>
             </div>
 
@@ -375,7 +424,10 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                     setInput(e.target.value);
                     const target = e.target as HTMLTextAreaElement;
                     target.style.height = 'auto';
-                    const newHeight = Math.max(48, Math.min(target.scrollHeight, window.innerHeight * 0.28));
+                    const newHeight = Math.max(
+                      48,
+                      Math.min(target.scrollHeight, window.innerHeight * 0.28),
+                    );
                     target.style.height = newHeight + 'px';
                   }}
                   onKeyDown={(e) => {

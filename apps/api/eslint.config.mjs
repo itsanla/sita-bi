@@ -1,12 +1,16 @@
 import globals from "globals";
 import pluginJs from "@eslint/js";
 import tseslint from "typescript-eslint";
+import sonarjs from "eslint-plugin-sonarjs";
+import promisePlugin from "eslint-plugin-promise";
 
 export default tseslint.config(
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,
+  sonarjs.configs.recommended,
+  promisePlugin.configs['flat/recommended'],
   {
     languageOptions: {
       globals: globals.node,
@@ -66,6 +70,17 @@ export default tseslint.config(
       '@typescript-eslint/prefer-ts-expect-error': 'error',
       '@typescript-eslint/sort-type-constituents': 'error',
       '@typescript-eslint/unified-signatures': 'error',
+      
+      // SonarJS - Code Quality
+      'sonarjs/cognitive-complexity': ['warn', 15],
+      'sonarjs/no-duplicate-string': ['warn', { threshold: 3 }],
+      'sonarjs/no-identical-functions': 'warn',
+      'sonarjs/no-unused-collection': 'error',
+      
+      // Promise - Error Handling
+      'promise/catch-or-return': 'error',
+      'promise/always-return': 'error',
+      'promise/no-nesting': 'warn',
     }
   }
 )

@@ -35,7 +35,12 @@ export default function ProtectedRoute({
     if (allowedRoles && user && !canAccess(allowedRoles)) {
       // Redirect ke dashboard sesuai role
       const userRole = user.roles?.[0]?.name;
-      if (userRole === 'jurusan' || userRole === 'prodi_d3' || userRole === 'prodi_d4' || userRole === 'admin') {
+      if (
+        userRole === 'jurusan' ||
+        userRole === 'prodi_d3' ||
+        userRole === 'prodi_d4' ||
+        userRole === 'admin'
+      ) {
         router.push('/dashboard/admin');
       } else if (userRole === 'dosen') {
         router.push('/dashboard/dosen');
@@ -45,7 +50,16 @@ export default function ProtectedRoute({
         router.push('/login');
       }
     }
-  }, [loading, isAuthenticated, user, allowedRoles, requireAuth, redirectTo, router, canAccess]);
+  }, [
+    loading,
+    isAuthenticated,
+    user,
+    allowedRoles,
+    requireAuth,
+    redirectTo,
+    router,
+    canAccess,
+  ]);
 
   if (loading) {
     return (

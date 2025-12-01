@@ -38,7 +38,12 @@ export function RouteGuard({
       const hasAccess = allowedRoles.includes(role);
       if (!hasAccess) {
         // Redirect ke dashboard sesuai role
-        if (role === 'jurusan' || role === 'prodi_d3' || role === 'prodi_d4' || role === 'admin') {
+        if (
+          role === 'jurusan' ||
+          role === 'prodi_d3' ||
+          role === 'prodi_d4' ||
+          role === 'admin'
+        ) {
           router.push('/dashboard/admin');
         } else if (role === 'dosen') {
           router.push('/dashboard/dosen');
@@ -49,7 +54,16 @@ export function RouteGuard({
         }
       }
     }
-  }, [user, loading, role, allowedRoles, requireAuth, redirectTo, router, isJurusan]);
+  }, [
+    user,
+    loading,
+    role,
+    allowedRoles,
+    requireAuth,
+    redirectTo,
+    router,
+    isJurusan,
+  ]);
 
   if (loading) {
     return (
