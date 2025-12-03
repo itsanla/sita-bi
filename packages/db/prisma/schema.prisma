@@ -145,6 +145,10 @@ model User {
   email_verified_at     DateTime?
   password              String
   photo                 String?
+  alamat                String?
+  tanggal_lahir         DateTime?
+  tempat_lahir          String?
+  jenis_kelamin         String?
   remember_token        String?
   failed_login_attempts Int       @default(0)
   lockout_until         DateTime?
@@ -205,6 +209,7 @@ model Mahasiswa {
   nim        String   @unique
   prodi      Prodi
   kelas      String
+  ipk        Float?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -224,6 +229,8 @@ model Dosen {
   user_id         Int      @unique
   nip             String   @unique
   kuota_bimbingan Int      @default(4)
+  bidang_keahlian String?
+  jabatan         String?
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
