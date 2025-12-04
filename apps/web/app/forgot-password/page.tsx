@@ -2,29 +2,39 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Mail, Sparkles, Send, ArrowLeft } from 'lucide-react';
+import { Mail, Sparkles, Send, ArrowLeft, CheckCircle } from 'lucide-react';
 import request from '@/lib/api';
-// import { useRouter } from 'next/navigation'; // Removed unused import
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  // const router = useRouter(); // Removed unused variable
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
+    setSuccess(false);
 
     try {
       await request('/auth/forgot-password', {
         method: 'POST',
         data: { email },
       });
-      // We don't redirect, we just show success message (handled by UI state if needed, currently just an alert)
-      alert('Jika email terdaftar, link reset password akan dikirim.');
+      setSuccess(true);
+      setEmail('');
     } catch (err: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      alert(`Error: ${(err as any).message}`);
+      const errorMessage =
+        (
+          err as {
+            response?: { data?: { message?: string } };
+            message?: string;
+          }
+        ).response?.data?.message ??
+        (err as { message?: string }).message ??
+        'Terjadi kesalahan saat mengirim email reset password';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -56,58 +66,90 @@ export default function ForgotPasswordPage() {
 
           {/* Form */}
           <div className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <label
-                  className="block text-sm font-semibold text-gray-700"
-                  htmlFor="email"
-                >
-                  Email Terdaftar
-                </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-rose-600 transition-colors" />
-                  </div>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-rose-600 focus:ring-4 focus:ring-rose-100 outline-none transition-all duration-200 bg-gray-50 focus:bg-white"
-                    placeholder="email@contoh.com"
-                    required
-                  />
+            {success ? (
+              <div className="text-center space-y-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-2">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Email Terkirim!
+                </h3>
+                <p className="text-gray-600">
+                  Link reset password telah dikirim ke email Anda. Silakan cek
+                  inbox atau folder spam.
+                </p>
+                <div className="pt-4">
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-rose-600 hover:text-rose-700 transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Kembali ke Login
+                  </Link>
                 </div>
               </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="space-y-2">
+                  <label
+                    className="block text-sm font-semibold text-gray-700"
+                    htmlFor="email"
+                  >
+                    Email Terdaftar
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-rose-600 transition-colors" />
+                    </div>
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-rose-600 focus:ring-4 focus:ring-rose-100 outline-none transition-all duration-200 bg-gray-50 focus:bg-white"
+                      placeholder="email@contoh.com"
+                      required
+                    />
+                  </div>
+                </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-700 hover:to-red-800 text-white font-semibold py-3.5 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Memproses...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Kirim Link Reset</span>
-                    <Send className="w-5 h-5" />
-                  </>
+                {error !== '' && (
+                  <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                    <p className="text-red-700 text-sm font-medium">{error}</p>
+                  </div>
                 )}
-              </button>
-            </form>
 
-            <div className="mt-6 text-center">
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-rose-600 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Kembali ke Login
-              </Link>
-            </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-700 hover:to-red-800 text-white font-semibold py-3.5 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Memproses...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Kirim Link Reset</span>
+                      <Send className="w-5 h-5" />
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {!success && (
+              <div className="mt-6 text-center">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-rose-600 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Kembali ke Login
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

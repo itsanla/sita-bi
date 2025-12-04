@@ -20,8 +20,16 @@ initSocket(httpServer);
 
 // Initialize Services
 if (process.env['NODE_ENV'] !== 'test') {
-  // WhatsApp will be initialized manually via /api/whatsapp/qr
-  console.warn('💬 WhatsApp: Not initialized (visit /api/whatsapp/qr to setup)');
+  // Auto-initialize WhatsApp if session exists
+  void (async (): Promise<void> => {
+    try {
+      await whatsappService.initialize();
+    } catch {
+      console.warn(
+        '💬 WhatsApp: Not initialized (visit /api/whatsapp/qr to setup)',
+      );
+    }
+  })();
 
   const schedulerService = new SchedulerService();
   schedulerService.init();
@@ -34,13 +42,13 @@ httpServer.listen(PORT, () => {
 });
 
 // Graceful shutdown handlers
-const gracefulShutdown = async (signal: string) => {
+const gracefulShutdown = async (signal: string): Promise<void> => {
   console.warn(`\n🛑 ${signal} received - Shutting down gracefully...`);
-  
+
   // Stop accepting new connections
   httpServer.close(async () => {
     console.warn('✅ HTTP server closed');
-    
+
     try {
       // Disconnect WhatsApp
       await whatsappService.logout();
@@ -48,7 +56,7 @@ const gracefulShutdown = async (signal: string) => {
     } catch (err) {
       console.error('❌ Error during WhatsApp cleanup:', err);
     }
-    
+
     try {
       // Disconnect database
       await PrismaService.disconnect();
@@ -56,11 +64,11 @@ const gracefulShutdown = async (signal: string) => {
     } catch (err) {
       console.error('❌ Error during database cleanup:', err);
     }
-    
+
     console.warn('👋 Shutdown complete');
     process.exit(0);
   });
-  
+
   // Force shutdown after 10 seconds
   setTimeout(() => {
     console.error('⚠️  Forced shutdown after timeout');
@@ -74,10 +82,10 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 // Handle uncaught errors
 process.on('uncaughtException', (err) => {
   console.error('❌ Uncaught Exception:', err);
-  gracefulShutdown('uncaughtException');
+  void gracefulShutdown('uncaughtException');
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
-  gracefulShutdown('unhandledRejection');
+  void gracefulShutdown('unhandledRejection');
 });

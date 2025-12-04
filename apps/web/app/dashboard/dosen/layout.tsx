@@ -12,10 +12,16 @@ import {
   GraduationCap,
   UserPlus,
   Lock,
+  UserCircle,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard/dosen', icon: LayoutDashboard, label: 'Dashboard' },
+  {
+    href: '/dashboard/dosen/data-diri',
+    icon: UserCircle,
+    label: 'Data Diri',
+  },
   {
     href: '/dashboard/dosen/pengajuan',
     icon: UserPlus,

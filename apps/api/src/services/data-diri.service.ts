@@ -1,7 +1,15 @@
 import type { Prisma, Mahasiswa, Dosen, Role } from '@repo/db';
-import type { UpdateDataDiriDto } from '../dto/data-diri.dto';
+import type {
+  UpdateDataDiriDto,
+  UpdatePasswordDto,
+  RequestEmailOtpDto,
+  VerifyEmailOtpDto,
+} from '../dto/data-diri.dto';
 import { HttpError } from '../middlewares/error.middleware';
 import prisma from '../config/database';
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import { whatsappService } from './whatsapp.service';
 
 interface DataDiriResponse {
   id: number;
@@ -21,6 +29,8 @@ interface DataDiriResponse {
   roles: Role[];
 }
 
+const USER_NOT_FOUND_MESSAGE = 'User tidak ditemukan';
+
 export class DataDiriService {
   async getDataDiri(userId: number): Promise<DataDiriResponse> {
     const user = await prisma.user.findUnique({
@@ -33,7 +43,7 @@ export class DataDiriService {
     });
 
     if (user === null) {
-      throw new HttpError(404, 'User tidak ditemukan');
+      throw new HttpError(404, USER_NOT_FOUND_MESSAGE);
     }
 
     return {
@@ -69,7 +79,7 @@ export class DataDiriService {
     });
 
     if (user === null) {
-      throw new HttpError(404, 'User tidak ditemukan');
+      throw new HttpError(404, USER_NOT_FOUND_MESSAGE);
     }
 
     const userRole = user.roles[0]?.name;
@@ -154,5 +164,113 @@ export class DataDiriService {
         });
       }
     }
+  }
+
+  async updatePassword(userId: number, dto: UpdatePasswordDto): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, password: true },
+    });
+
+    if (user === null) {
+      throw new HttpError(404, USER_NOT_FOUND_MESSAGE);
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      dto.password_lama,
+      user.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new HttpError(400, 'Password lama tidak sesuai');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password_baru, 10);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+  }
+
+  async requestEmailOtp(
+    userId: number,
+    dto: RequestEmailOtpDto,
+  ): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, phone_number: true },
+    });
+
+    if (user === null) {
+      throw new HttpError(404, USER_NOT_FOUND_MESSAGE);
+    }
+
+    const existingEmail = await prisma.user.findUnique({
+      where: { email: dto.email_baru },
+    });
+
+    if (existingEmail !== null) {
+      throw new HttpError(409, 'Email sudah digunakan oleh user lain');
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await prisma.$executeRaw`
+      INSERT INTO email_change_otp (user_id, email_baru, otp, expires_at, created_at)
+      VALUES (${userId}, ${dto.email_baru}, ${otp}, ${expiresAt}, ${new Date()})
+      ON CONFLICT(user_id) DO UPDATE SET
+        email_baru = ${dto.email_baru},
+        otp = ${otp},
+        expires_at = ${expiresAt},
+        created_at = ${new Date()}
+    `;
+
+    const message = `Kode OTP untuk ubah email Anda adalah: *${otp}*\n\nKode berlaku selama 10 menit.\n\nJika Anda tidak meminta perubahan email, abaikan pesan ini.`;
+
+    await whatsappService.sendMessage(user.phone_number, message);
+  }
+
+  async verifyEmailOtp(userId: number, dto: VerifyEmailOtpDto): Promise<void> {
+    const otpRecord = await prisma.$queryRaw<
+      {
+        user_id: number;
+        email_baru: string;
+        otp: string;
+        expires_at: Date;
+      }[]
+    >`
+      SELECT user_id, email_baru, otp, expires_at
+      FROM email_change_otp
+      WHERE user_id = ${userId}
+    `;
+
+    if (otpRecord.length === 0) {
+      throw new HttpError(404, 'OTP tidak ditemukan. Silakan request OTP baru');
+    }
+
+    const record = otpRecord[0];
+
+    if (record.otp !== dto.otp) {
+      throw new HttpError(400, 'Kode OTP tidak valid');
+    }
+
+    if (new Date() > record.expires_at) {
+      throw new HttpError(410, 'Kode OTP sudah kedaluwarsa');
+    }
+
+    if (record.email_baru !== dto.email_baru) {
+      throw new HttpError(400, 'Email tidak sesuai dengan request OTP');
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { email: dto.email_baru },
+    });
+
+    await prisma.$executeRaw`
+      DELETE FROM email_change_otp WHERE user_id = ${userId}
+    `;
   }
 }

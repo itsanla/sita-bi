@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   Upload,
   ScrollText,
+  UserCircle,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,6 +27,7 @@ interface SidebarProps {
 
 const navItems = [
   { href: '/dashboard/admin', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/dashboard/admin/data-diri', icon: UserCircle, label: 'Data Diri' },
   { href: '/dashboard/admin/users', icon: Users, label: 'Manajemen User' },
   { href: '/dashboard/admin/penugasan', icon: BookUser, label: 'Penugasan' },
   {

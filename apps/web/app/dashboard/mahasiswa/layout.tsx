@@ -13,10 +13,16 @@ import {
   CalendarClock,
   Megaphone,
   Lock,
+  UserCircle,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard/mahasiswa', icon: LayoutDashboard, label: 'Dashboard' },
+  {
+    href: '/dashboard/mahasiswa/data-diri',
+    icon: UserCircle,
+    label: 'Data Diri',
+  },
   {
     href: '/dashboard/mahasiswa/tugas-akhir',
     icon: FileText,

@@ -50,7 +50,10 @@ export class AuthService {
     });
 
     if (user == null) {
-      throw new HttpError(401, 'Akun tidak ditemukan. Silakan periksa email/NIM/NIP Anda atau daftar terlebih dahulu.');
+      throw new HttpError(
+        401,
+        'Akun tidak ditemukan. Silakan periksa email/NIM/NIP Anda atau daftar terlebih dahulu.',
+      );
     }
 
     // Check lockout
@@ -79,7 +82,7 @@ export class AuthService {
 
     if (!isPasswordValid) {
       // Increment failed attempts
-      const attempts = Number(user.failed_login_attempts ?? 0) + 1;
+      const attempts = user.failed_login_attempts + 1;
       let lockoutUntil = user.lockout_until;
 
       // Lock if attempts >= 5
@@ -96,14 +99,20 @@ export class AuthService {
       });
 
       if (attempts >= 5) {
-        throw new HttpError(403, 'Akun Anda terkunci karena terlalu banyak percobaan gagal. Coba lagi dalam 15 menit.');
+        throw new HttpError(
+          403,
+          'Akun Anda terkunci karena terlalu banyak percobaan gagal. Coba lagi dalam 15 menit.',
+        );
       }
 
-      throw new HttpError(401, `Password salah. Percobaan ke-${attempts} dari 5.`);
+      throw new HttpError(
+        401,
+        `Password salah. Percobaan ke-${attempts} dari 5.`,
+      );
     }
 
     // Reset failed attempts on success
-    if ((user.failed_login_attempts ?? 0) > 0 || user.lockout_until != null) {
+    if (user.failed_login_attempts > 0 || user.lockout_until != null) {
       await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -118,7 +127,7 @@ export class AuthService {
     );
 
     // Bypass email verification for dosen
-    if (isDosen === false && user.email_verified_at === null) {
+    if (!isDosen && user.email_verified_at === null) {
       throw new HttpError(401, 'Email belum diverifikasi.');
     }
 
@@ -134,7 +143,8 @@ export class AuthService {
       },
     });
 
-    const { password: _, ...userWithoutPassword } = user;
+    // eslint-disable-next-line sonarjs/no-unused-vars
+    const { password: _password, ...userWithoutPassword } = user;
 
     // Return userId instead of JWT token
     return { userId: user.id, user: userWithoutPassword };
@@ -247,8 +257,7 @@ export class AuthService {
     });
 
     if (user === null) {
-      // Don't reveal if user exists
-      return;
+      throw new HttpError(404, 'Email tidak terdaftar dalam sistem.');
     }
 
     const token = crypto.randomBytes(32).toString('hex');
@@ -304,14 +313,21 @@ export class AuthService {
     });
   }
 
-  async getCurrentUser(
-    userId: number,
-  ): Promise<
+  async getCurrentUser(userId: number): Promise<
     Omit<
       User & {
         roles: Role[];
         mahasiswa: Mahasiswa | null;
-        dosen: (Dosen & { assignedMahasiswa?: { id: number; nim: string; name: string; prodi: string }[] }) | null;
+        dosen:
+          | (Dosen & {
+              assignedMahasiswa?: {
+                id: number;
+                nim: string;
+                name: string;
+                prodi: string;
+              }[];
+            })
+          | null;
       },
       'password'
     >
@@ -357,16 +373,19 @@ export class AuthService {
       throw new HttpError(404, 'User tidak ditemukan.');
     }
 
-    const { password: _, ...userWithoutPassword } = user;
+    // eslint-disable-next-line sonarjs/no-unused-vars
+    const { password: _password, ...userWithoutPassword } = user;
 
     // Transform dosen data to include assigned mahasiswa
     if (userWithoutPassword.dosen) {
-      const assignedMahasiswa = userWithoutPassword.dosen.peranDosenTa.map((peran) => ({
-        id: peran.tugasAkhir.mahasiswa.id,
-        nim: peran.tugasAkhir.mahasiswa.nim,
-        name: peran.tugasAkhir.mahasiswa.user.name,
-        prodi: peran.tugasAkhir.mahasiswa.prodi,
-      }));
+      const assignedMahasiswa = userWithoutPassword.dosen.peranDosenTa.map(
+        (peran) => ({
+          id: peran.tugasAkhir.mahasiswa.id,
+          nim: peran.tugasAkhir.mahasiswa.nim,
+          name: peran.tugasAkhir.mahasiswa.user.name,
+          prodi: peran.tugasAkhir.mahasiswa.prodi,
+        }),
+      );
 
       // Remove duplicates
       const uniqueMahasiswa = Array.from(
