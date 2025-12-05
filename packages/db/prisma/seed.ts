@@ -17,6 +17,9 @@ async function main() {
   await prisma.peranDosenTa.deleteMany();
   await prisma.tugasAkhir.deleteMany();
   await prisma.tawaranTopik.deleteMany();
+  await prisma.pengajuanBimbingan.deleteMany();
+  await prisma.pendaftaranSidang.deleteMany();
+  await prisma.periodeTa.deleteMany();
   await prisma.mahasiswa.deleteMany();
   await prisma.dosen.deleteMany();
   await prisma.ruangan.deleteMany();
@@ -209,6 +212,30 @@ async function main() {
     mahasiswaUsers.push(user);
   }
 
+  // Create Periode TA
+  console.log('📅 Creating periode TA...');
+  const periodeAktif = await prisma.periodeTa.create({
+    data: {
+      tahun: 2024,
+      nama: 'Periode TA 2024',
+      status: 'AKTIF',
+      tanggal_buka: new Date('2024-01-01'),
+      dibuka_oleh: admin.id,
+    },
+  });
+
+  const periodeTidakAktif = await prisma.periodeTa.create({
+    data: {
+      tahun: 2023,
+      nama: 'Periode TA 2023',
+      status: 'SELESAI',
+      tanggal_buka: new Date('2023-01-01'),
+      tanggal_tutup: new Date('2023-12-31'),
+      dibuka_oleh: admin.id,
+      ditutup_oleh: admin.id,
+    },
+  });
+
   // Create Tugas Akhir
   console.log('📝 Creating tugas akhir...');
   
@@ -221,6 +248,7 @@ async function main() {
         status: StatusTugasAkhir.DISETUJUI,
         tanggal_pengajuan: new Date(),
         disetujui_oleh: admin.id,
+        periode_ta_id: periodeAktif.id,
       },
     });
   }
@@ -234,6 +262,7 @@ async function main() {
         status: StatusTugasAkhir.BIMBINGAN,
         tanggal_pengajuan: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
         disetujui_oleh: admin.id,
+        periode_ta_id: periodeAktif.id,
       },
     });
 
@@ -260,6 +289,7 @@ async function main() {
         mahasiswa_id: mahasiswaUsers[i].mahasiswa.id,
         judul: `Rancang Bangun ${['Website', 'Aplikasi', 'Platform', 'Dashboard', 'Portal'][i - 10]} ${['E-Commerce', 'E-Learning', 'E-Government', 'E-Health', 'E-Tourism'][i - 10]}`,
         status: StatusTugasAkhir.DRAFT,
+        periode_ta_id: periodeAktif.id,
       },
     });
   }
@@ -377,6 +407,7 @@ async function main() {
   console.log('- Prodi Level: 2 (D3 & D4)');
   console.log(`- Dosen: ${dosenUsers.length}`);
   console.log(`- Mahasiswa: ${mahasiswaUsers.length}`);
+  console.log('- Periode TA: 2 (1 AKTIF, 1 SELESAI)');
   console.log('- Tugas Akhir: 15 (5 DISETUJUI, 5 BIMBINGAN, 5 DRAFT)');
   console.log('- Tawaran Topik: 10');
   console.log('- Pengumuman: 8');

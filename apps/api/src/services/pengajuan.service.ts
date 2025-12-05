@@ -1,4 +1,5 @@
 import { PrismaClient } from '@repo/db';
+import { PengaturanService } from './pengaturan.service';
 
 const JUDUL_DEFAULT = 'Judul Tugas Akhir (Belum Ditentukan)';
 const STATUS_MENUNGGU_KONFIRMASI = 'MENUNGGU_KONFIRMASI';
@@ -116,11 +117,13 @@ export class PengajuanService {
     mahasiswaId: number,
     peran: 'pembimbing1' | 'pembimbing2',
   ): Promise<unknown> {
-    // Cek kuota dosen
-    const dosen = await this.prisma.dosen.findUnique({
-      where: { id: dosenId },
-    });
-    if (!dosen) throw new Error('Dosen tidak ditemukan');
+    // Cek kuota dosen dari pengaturan sistem
+    const pengaturanService = new PengaturanService();
+    const maxPembimbingAktif = await pengaturanService.getPengaturanByKey(
+      'max_pembimbing_aktif',
+    );
+    const kuotaBimbingan =
+      maxPembimbingAktif !== null ? parseInt(maxPembimbingAktif, 10) : 4;
 
     const jumlahBimbingan = await this.prisma.peranDosenTa.count({
       where: {
@@ -129,7 +132,7 @@ export class PengajuanService {
       },
     });
 
-    if (jumlahBimbingan >= dosen.kuota_bimbingan) {
+    if (jumlahBimbingan >= kuotaBimbingan) {
       throw new Error('Kuota bimbingan Anda sudah penuh');
     }
 
@@ -227,7 +230,14 @@ export class PengajuanService {
         throw new Error(ERROR_PENGAJUAN_SUDAH_DIPROSES);
       }
 
-      // Cek kuota dosen
+      // Cek kuota dosen dari pengaturan sistem
+      const pengaturanService = new PengaturanService();
+      const maxPembimbingAktif = await pengaturanService.getPengaturanByKey(
+        'max_pembimbing_aktif',
+      );
+      const kuotaBimbingan =
+        maxPembimbingAktif !== null ? parseInt(maxPembimbingAktif, 10) : 4;
+
       const jumlahBimbingan = await tx.peranDosenTa.count({
         where: {
           dosen_id: pengajuan.dosen_id,
@@ -235,10 +245,7 @@ export class PengajuanService {
         },
       });
 
-      const dosen = await tx.dosen.findUnique({
-        where: { id: pengajuan.dosen_id },
-      });
-      if (jumlahBimbingan >= (dosen?.kuota_bimbingan ?? 4)) {
+      if (jumlahBimbingan >= kuotaBimbingan) {
         throw new Error('Kuota bimbingan dosen sudah penuh');
       }
 
@@ -504,6 +511,13 @@ export class PengajuanService {
 
   // Method untuk mendapatkan list dosen tersedia
   async getAvailableDosen(): Promise<unknown> {
+    const pengaturanService = new PengaturanService();
+    const maxPembimbingAktif = await pengaturanService.getPengaturanByKey(
+      'max_pembimbing_aktif',
+    );
+    const kuotaBimbingan =
+      maxPembimbingAktif !== null ? parseInt(maxPembimbingAktif, 10) : 4;
+
     const dosenList = await this.prisma.dosen.findMany({
       include: {
         user: { select: { id: true, name: true, email: true } },
@@ -517,14 +531,14 @@ export class PengajuanService {
 
     return dosenList.map((d) => {
       const jumlahBimbingan = d.peranDosenTa.length;
-      const available = jumlahBimbingan < d.kuota_bimbingan;
+      const available = jumlahBimbingan < kuotaBimbingan;
 
       return {
         id: d.id,
         user: d.user,
         nip: d.nip,
         prodi: d.prodi,
-        kuota_bimbingan: d.kuota_bimbingan,
+        kuota_bimbingan: kuotaBimbingan,
         jumlah_bimbingan: jumlahBimbingan,
         available,
       };

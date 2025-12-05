@@ -6,6 +6,8 @@ import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
 import { Role } from '../middlewares/auth.middleware';
 import { createTugasAkhirSchema } from '../dto/tugas-akhir.dto';
+import { getMaxSimilaritasPersen } from '../utils/business-rules';
+import { periodeGuard } from '../middlewares/periode.middleware';
 // NOTE: rejectTugasAkhirSchema dan tugasAkhirGuard di-comment karena method terkait belum diimplementasi
 // import { rejectTugasAkhirSchema } from '../dto/tugas-akhir.dto';
 // import { tugasAkhirGuard } from '../middlewares/tugas-akhir.middleware';
@@ -21,10 +23,11 @@ const MSG_USER_ID_NOT_FOUND = 'Akses ditolak: ID pengguna tidak ditemukan.';
 router.post(
   '/check-similarity',
   asyncHandler(authMiddleware),
+  periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   validate(createTugasAkhirSchema),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
-    const SIMILARITY_BLOCK_THRESHOLD = 80;
+    const SIMILARITY_BLOCK_THRESHOLD = await getMaxSimilaritasPersen();
     const { judul } = req.body;
     const results = await tugasAkhirService.checkSimilarity(judul);
 
@@ -37,6 +40,7 @@ router.post(
       data: {
         results,
         isBlocked,
+        threshold: SIMILARITY_BLOCK_THRESHOLD,
       },
     });
   }),
@@ -45,6 +49,7 @@ router.post(
 router.post(
   '/',
   asyncHandler(authMiddleware),
+  periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   validate(createTugasAkhirSchema),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
@@ -178,6 +183,7 @@ router.post(
 router.get(
   '/my-ta',
   asyncHandler(authMiddleware),
+  periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     const userId = req.user?.id;
@@ -196,6 +202,7 @@ router.get(
 router.delete(
   '/my-ta',
   asyncHandler(authMiddleware),
+  periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     const userId = req.user?.id;
@@ -207,12 +214,10 @@ router.delete(
       return;
     }
     await tugasAkhirService.deleteMyTa(userId);
-    response
-      .status(200)
-      .json({
-        status: STATUS_SUKSES,
-        message: 'Tugas Akhir berhasil dihapus.',
-      });
+    response.status(200).json({
+      status: STATUS_SUKSES,
+      message: 'Tugas Akhir berhasil dihapus.',
+    });
   }),
 );
 
@@ -321,6 +326,7 @@ router.patch(
 router.patch(
   '/my-ta/update-judul',
   asyncHandler(authMiddleware),
+  periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   validate(createTugasAkhirSchema),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
@@ -340,6 +346,29 @@ router.patch(
     response
       .status(200)
       .json({ status: STATUS_SUKSES, data: updatedTugasAkhir });
+  }),
+);
+
+router.post(
+  '/:id/validasi-judul',
+  asyncHandler(authMiddleware),
+  periodeGuard(),
+  authorizeRoles([Role.dosen]),
+  asyncHandler(async (req: Request, response: Response): Promise<void> => {
+    const { id } = req.params;
+    const dosenId = req.user?.dosen?.id;
+    if (dosenId === undefined) {
+      response.status(401).json({
+        status: 'gagal',
+        message: 'Dosen tidak ditemukan',
+      });
+      return;
+    }
+    const result = await tugasAkhirService.validasiJudul(
+      parseInt(id, 10),
+      dosenId,
+    );
+    response.status(200).json({ status: STATUS_SUKSES, data: result });
   }),
 );
 

@@ -7,6 +7,7 @@ import { validate } from '../middlewares/validation.middleware';
 import { Role } from '../middlewares/auth.middleware';
 import { createJadwalSchema, paginationSchema } from '../dto/jadwal-sidang.dto';
 import { HttpError } from '../middlewares/error.middleware';
+import { periodeGuard } from '../middlewares/periode.middleware';
 
 const router: Router = Router();
 const jadwalSidangService = new JadwalSidangService();
@@ -65,6 +66,7 @@ router.post(
 router.get(
   '/for-penguji',
   asyncHandler(authMiddleware),
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const dosenId = req.user?.dosen?.id;
@@ -87,6 +89,7 @@ router.get(
 router.get(
   '/for-mahasiswa',
   asyncHandler(authMiddleware),
+  periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req, res): Promise<void> => {
     const mahasiswaId = req.user?.mahasiswa?.id;

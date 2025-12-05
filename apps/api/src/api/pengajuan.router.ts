@@ -3,6 +3,7 @@ import asyncHandler from '../utils/asyncHandler';
 import { PengajuanService } from '../services/pengajuan.service';
 import { authMiddleware, Role } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
+import { periodeGuard } from '../middlewares/periode.middleware';
 
 const MSG_GAGAL = 'gagal';
 const MSG_SUKSES = 'sukses';
@@ -24,6 +25,7 @@ router.use(asyncHandler(authMiddleware));
 // Endpoint untuk mahasiswa mengajukan ke dosen
 router.post(
   '/mahasiswa',
+  periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req, res) => {
     if (typeof req.user?.mahasiswa?.id !== 'number') {
@@ -80,6 +82,7 @@ router.post(
 // Endpoint untuk mendapatkan pengajuan mahasiswa
 router.get(
   '/mahasiswa',
+  periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req, res) => {
     if (typeof req.user?.mahasiswa?.id !== 'number') {
@@ -119,6 +122,7 @@ router.get(
 // Endpoint untuk dosen menawarkan ke mahasiswa
 router.post(
   '/dosen',
+  periodeGuard(),
   authorizeRoles([Role.dosen, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req, res) => {
     if (typeof req.user?.dosen?.id !== 'number') {
@@ -171,6 +175,7 @@ router.post(
 // Endpoint untuk mendapatkan pengajuan dosen
 router.get(
   '/dosen',
+  periodeGuard(),
   authorizeRoles([Role.dosen, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req, res) => {
     if (typeof req.user?.dosen?.id !== 'number') {
@@ -208,6 +213,7 @@ router.get(
 // Endpoint untuk menerima pengajuan
 router.post(
   '/:id/terima',
+  periodeGuard(),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     if (typeof id !== 'string' || id.length === 0) {
@@ -246,6 +252,7 @@ router.post(
 // Endpoint untuk menolak pengajuan
 router.post(
   '/:id/tolak',
+  periodeGuard(),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     if (typeof id !== 'string' || id.length === 0) {
@@ -284,6 +291,7 @@ router.post(
 // Endpoint untuk membatalkan pengajuan
 router.post(
   '/:id/batalkan',
+  periodeGuard(),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     if (typeof id !== 'string' || id.length === 0) {
@@ -322,6 +330,7 @@ router.post(
 // Endpoint untuk mendapatkan list dosen tersedia
 router.get(
   '/dosen-tersedia',
+  periodeGuard(),
   asyncHandler(async (req, res) => {
     try {
       const result = await pengajuanService.getAvailableDosen();
@@ -338,6 +347,7 @@ router.get(
 // Endpoint untuk mendapatkan list mahasiswa tersedia (untuk dosen)
 router.get(
   '/mahasiswa-tersedia',
+  periodeGuard(),
   authorizeRoles([Role.dosen, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req, res) => {
     if (typeof req.user?.dosen?.id !== 'number') {
@@ -364,6 +374,7 @@ router.get(
 // Endpoint untuk mengajukan pelepasan bimbingan
 router.post(
   '/lepaskan',
+  periodeGuard(),
   asyncHandler(async (req, res) => {
     if (typeof req.user?.id !== 'number') {
       res.status(401).json({
@@ -401,6 +412,7 @@ router.post(
 // Endpoint untuk konfirmasi pelepasan bimbingan
 router.post(
   '/lepaskan/:id/konfirmasi',
+  periodeGuard(),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     if (typeof id !== 'string' || id.length === 0) {
@@ -437,6 +449,7 @@ router.post(
 // Endpoint untuk menolak pelepasan bimbingan
 router.post(
   '/lepaskan/:id/tolak',
+  periodeGuard(),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     if (typeof id !== 'string' || id.length === 0) {
@@ -473,6 +486,7 @@ router.post(
 // Endpoint untuk membatalkan pelepasan bimbingan (oleh yang mengajukan)
 router.post(
   '/lepaskan/:id/batalkan',
+  periodeGuard(),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     if (typeof id !== 'string' || id.length === 0) {

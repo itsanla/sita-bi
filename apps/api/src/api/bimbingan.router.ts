@@ -21,6 +21,7 @@ import { BadRequestError } from '../errors/AppError';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { periodeGuard } from '../middlewares/periode.middleware';
 
 const router: Router = Router();
 const bimbinganService = new BimbinganService();
@@ -89,6 +90,7 @@ const ERROR_MSG_NO_FILES = 'Tidak ada file yang diupload';
 
 router.get(
   '/sebagai-dosen',
+  periodeGuard(),
   asyncHandler(async (req, res): Promise<void> => {
     const dosenId = req.user?.dosen?.id;
     if (typeof dosenId !== 'number') {
@@ -116,6 +118,7 @@ router.get(
 
 router.get(
   '/sebagai-mahasiswa',
+  periodeGuard(),
   asyncHandler(async (req, res): Promise<void> => {
     const mahasiswaId = req.user?.mahasiswa?.id;
     if (typeof mahasiswaId !== 'number') {
@@ -130,6 +133,7 @@ router.get(
 
 router.post(
   '/catatan',
+  periodeGuard(),
   authorizeRoles([Role.dosen, Role.mahasiswa]),
   validate(createCatatanSchema),
   asyncHandler(async (req, res): Promise<void> => {
@@ -150,6 +154,7 @@ router.post(
 
 router.post(
   '/sesi/:id/upload',
+  periodeGuard(),
   authorizeRoles([Role.dosen, Role.mahasiswa]),
   (req: Request, res: Response, next: NextFunction): void => {
     upload.array('files', 5)(req, res, (err: unknown): void => {
@@ -219,6 +224,7 @@ router.post(
 // Endpoint baru: Buat sesi kosong
 router.post(
   '/sesi',
+  periodeGuard(),
   authorizeRoles([Role.dosen, Role.mahasiswa]),
   validate(createSesiSchema),
   asyncHandler(async (req, res): Promise<void> => {
@@ -239,6 +245,7 @@ router.post(
 // Endpoint baru: Set jadwal pada sesi yang sudah ada
 router.put(
   '/sesi/:id/jadwal',
+  periodeGuard(),
   authorizeRoles([Role.dosen, Role.mahasiswa]),
   validate(setJadwalSesiSchema),
   asyncHandler(async (req, res): Promise<void> => {
@@ -267,6 +274,7 @@ router.put(
 // Endpoint baru: Konfirmasi bimbingan selesai (hanya dosen)
 router.post(
   '/sesi/:id/konfirmasi',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const userId = req.user?.id;
@@ -289,6 +297,7 @@ router.post(
 
 router.post(
   '/:tugasAkhirId/jadwal',
+  periodeGuard(),
   authorizeRoles([Role.dosen, Role.prodi_d3, Role.prodi_d4, Role.jurusan]),
   validateDosenTugasAkhirAccess,
   validate(setJadwalSchema),
@@ -316,6 +325,7 @@ router.post(
 
 router.post(
   '/sesi/:id/cancel',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const { id } = req.params;
@@ -342,6 +352,7 @@ router.post(
 
 router.post(
   '/sesi/:id/selesaikan',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const { id } = req.params;
@@ -369,6 +380,7 @@ router.post(
 // New endpoints for Smart Scheduling
 router.get(
   '/conflicts',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const dosenId = req.user?.dosen?.id;
@@ -398,6 +410,7 @@ router.get(
 
 router.get(
   '/available-slots',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const dosenId = req.user?.dosen?.id;
@@ -422,6 +435,7 @@ router.get(
 
 router.delete(
   '/sesi/:id',
+  periodeGuard(),
   authorizeRoles([Role.dosen, Role.mahasiswa]),
   asyncHandler(async (req, res): Promise<void> => {
     const userId = req.user?.id;
@@ -444,6 +458,7 @@ router.delete(
 
 router.get(
   '/eligibility/:tugasAkhirId',
+  periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req, res): Promise<void> => {
     const { tugasAkhirId } = req.params;
@@ -460,6 +475,7 @@ router.get(
 
 router.post(
   '/sesi/:id/batalkan-validasi',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const userId = req.user?.id;

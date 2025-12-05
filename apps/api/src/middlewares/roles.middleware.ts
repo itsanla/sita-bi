@@ -1,6 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
 import { Role } from './auth.middleware';
 
+export { Role };
+
 export const authorizeRoles = (allowedRoles: Role[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {

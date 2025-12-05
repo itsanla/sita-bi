@@ -18,6 +18,12 @@ declare global {
         } | null;
         phone_number?: string;
       };
+      periode?: {
+        id: number;
+        tahun: number;
+        nama: string;
+        status: string;
+      };
     }
   }
 }

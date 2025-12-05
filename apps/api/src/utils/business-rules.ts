@@ -1,5 +1,8 @@
 import prisma from '../config/database';
 import { PeranDosen } from '@repo/db';
+import { PengaturanService } from '../services/pengaturan.service';
+
+const pengaturanService = new PengaturanService();
 
 /**
  * Memvalidasi apakah komposisi tim TA valid sesuai aturan.
@@ -22,7 +25,7 @@ export const validateTeamComposition = async (
   const countByRole = currentRoles.reduce<Record<string, number>>(
     (acc, curr) => {
       const currentCount = acc[curr.peran] ?? 0;
-      acc[curr.peran] = Number(currentCount) + 1;
+      acc[curr.peran] = currentCount + 1;
       return acc;
     },
     {},
@@ -48,14 +51,14 @@ export const validateTeamComposition = async (
     // Total pembimbing check (redundant but safe)
     const count1 = countByRole[PeranDosen.pembimbing1] ?? 0;
     const count2 = countByRole[PeranDosen.pembimbing2] ?? 0;
-    const totalPembimbing = Number(count1) + Number(count2);
+    const totalPembimbing = count1 + count2;
     if (totalPembimbing >= 2) {
       throw new Error('Maksimal 2 pembimbing.');
     }
   }
 
   const isPenguji = newRole.startsWith('penguji');
-  if (isPenguji === true) {
+  if (isPenguji) {
     const pengujiRoles = [
       PeranDosen.penguji1,
       PeranDosen.penguji2,
@@ -67,7 +70,7 @@ export const validateTeamComposition = async (
       }
     }
 
-    const roleCount = Number(countByRole[newRole] ?? 0);
+    const roleCount = countByRole[newRole] ?? 0;
     if (roleCount > 0) {
       throw new Error(`Posisi ${newRole} sudah terisi.`);
     }
@@ -78,18 +81,17 @@ export const validateTeamComposition = async (
 
 /**
  * Memvalidasi beban kerja dosen.
- * Aturan: Maksimal bimbing 4 mahasiswa bersamaan.
+ * Aturan: Maksimal bimbing mahasiswa bersamaan sesuai pengaturan sistem.
  * @param dosenId ID Dosen
  */
 export const validateDosenWorkload = async (
   dosenId: number,
 ): Promise<boolean> => {
-  const dosen = await prisma.dosen.findUnique({
-    where: { id: dosenId },
-    select: { kuota_bimbingan: true },
-  });
-
-  if (dosen === null) throw new Error('Dosen tidak ditemukan');
+  const maxPembimbingAktif = await pengaturanService.getPengaturanByKey(
+    'max_pembimbing_aktif',
+  );
+  const kuotaBimbingan =
+    maxPembimbingAktif !== null ? parseInt(maxPembimbingAktif, 10) : 4;
 
   const activeBimbinganCount = await prisma.peranDosenTa.count({
     where: {
@@ -112,11 +114,39 @@ export const validateDosenWorkload = async (
     },
   });
 
-  if (activeBimbinganCount >= dosen.kuota_bimbingan) {
+  if (activeBimbinganCount >= kuotaBimbingan) {
     throw new Error(
-      `Dosen telah mencapai batas kuota bimbingan (${dosen.kuota_bimbingan} mahasiswa).`,
+      `Dosen telah mencapai batas kuota bimbingan (${kuotaBimbingan} mahasiswa).`,
     );
   }
 
   return true;
+};
+
+/**
+ * Mendapatkan nilai pengaturan minimal bimbingan valid dari database
+ */
+export const getMinBimbinganValid = async (): Promise<number> => {
+  const value = await pengaturanService.getPengaturanByKey(
+    'min_bimbingan_valid',
+  );
+  return value !== null ? parseInt(value, 10) : 9;
+};
+
+/**
+ * Mendapatkan nilai pengaturan maksimal similaritas dari database
+ */
+export const getMaxSimilaritasPersen = async (): Promise<number> => {
+  const value = await pengaturanService.getPengaturanByKey(
+    'max_similaritas_persen',
+  );
+  return value !== null ? parseInt(value, 10) : 80;
+};
+
+/**
+ * Mendapatkan daftar ruangan sidang dari database
+ */
+export const getRuanganSidang = async (): Promise<string[]> => {
+  const value = await pengaturanService.getPengaturanByKey('ruangan_sidang');
+  return value !== null ? value.split(',').map((r) => r.trim()) : [];
 };

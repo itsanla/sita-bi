@@ -22,8 +22,14 @@ export default function SimilarityForm({
   onSuccess,
 }: SimilarityFormProps) {
   const [judulMandiri, setJudulMandiri] = useState(initialTitle);
-  const { similarityResults, isBlocked, isChecking, checkSimilarity, reset } =
-    useSimilarityCheck();
+  const {
+    similarityResults,
+    isBlocked,
+    threshold,
+    isChecking,
+    checkSimilarity,
+    reset,
+  } = useSimilarityCheck();
   const { submitTitle, loading: submitting } = useSubmitTitle();
 
   const handleCheckSimilarity = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -180,7 +186,7 @@ export default function SimilarityForm({
                   {/* Colored left border based on similarity */}
                   <div
                     className={`absolute left-0 top-0 bottom-0 w-1 ${
-                      result.similarity >= 80
+                      result.similarity >= threshold
                         ? 'bg-gradient-to-b from-red-500 to-red-600'
                         : result.similarity >= 50
                           ? 'bg-gradient-to-b from-amber-500 to-amber-600'
@@ -193,7 +199,7 @@ export default function SimilarityForm({
                     <div className="flex-shrink-0">
                       <div
                         className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-semibold shadow-sm group-hover/result:scale-105 transition-transform duration-300 ${
-                          result.similarity >= 80
+                          result.similarity >= threshold
                             ? 'bg-red-100 text-red-700'
                             : result.similarity >= 50
                               ? 'bg-amber-100 text-amber-700'
@@ -216,7 +222,7 @@ export default function SimilarityForm({
                       <div className="flex flex-col items-end gap-0.5">
                         <div
                           className={`px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm group-hover/result:scale-105 transition-transform duration-300 ${
-                            result.similarity >= 80
+                            result.similarity >= threshold
                               ? 'bg-gradient-to-r from-red-500 to-red-600 text-white'
                               : result.similarity >= 50
                                 ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white'
@@ -280,7 +286,7 @@ export default function SimilarityForm({
                     <p className="text-red-800 text-sm leading-normal">
                       Judul Anda memiliki tingkat kemiripan{' '}
                       <span className="font-bold bg-red-200 px-2 py-0.5 rounded">
-                        80% atau lebih
+                        {threshold}% atau lebih
                       </span>{' '}
                       dengan judul yang sudah ada dalam sistem.
                     </p>

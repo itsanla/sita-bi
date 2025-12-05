@@ -6,6 +6,7 @@ import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
 import { Role } from '../middlewares/auth.middleware';
 import { createTawaranTopikSchema } from '../dto/tawaran-topik.dto';
+import { periodeGuard } from '../middlewares/periode.middleware';
 
 const router: Router = Router();
 const tawaranTopikService = new TawaranTopikService();
@@ -15,6 +16,7 @@ router.use(asyncHandler(authMiddleware));
 
 router.post(
   '/',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   validate(createTawaranTopikSchema),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
@@ -32,6 +34,7 @@ router.post(
 
 router.get(
   '/',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     if (req.user == null) {
@@ -57,6 +60,7 @@ router.get(
 
 router.get(
   '/available',
+  periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const page =
@@ -77,6 +81,7 @@ router.get(
 
 router.get(
   '/applications',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     if (req.user == null) {
@@ -102,6 +107,7 @@ router.get(
 
 router.post(
   '/applications/:id/approve',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
@@ -125,6 +131,7 @@ router.post(
 
 router.post(
   '/applications/:id/reject',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
@@ -148,6 +155,7 @@ router.post(
 
 router.post(
   '/:id/apply',
+  periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
@@ -169,6 +177,7 @@ router.post(
 
 router.get(
   '/all/with-applications',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const page =

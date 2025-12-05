@@ -6,6 +6,7 @@ import { Role } from '../middlewares/auth.middleware';
 import { BadRequestError } from '../errors/AppError';
 import { DokumenTAService } from '../services/dokumen-ta.service';
 import { UploadService } from '../services/upload.service';
+import { periodeGuard } from '../middlewares/periode.middleware';
 
 const router: Router = Router();
 const dokumenService = new DokumenTAService();
@@ -15,6 +16,7 @@ router.use(asyncHandler(insecureAuthMiddleware));
 
 router.post(
   '/:tugasAkhirId/upload',
+  periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req, res): Promise<void> => {
     const { tugasAkhirId } = req.params;
@@ -38,6 +40,7 @@ router.post(
 
 router.post(
   '/:dokumenId/validasi',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const userId = req.user?.id;

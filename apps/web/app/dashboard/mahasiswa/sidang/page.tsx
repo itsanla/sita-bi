@@ -2,6 +2,7 @@
 
 import { useEffect, useState, FormEvent, ChangeEvent } from 'react';
 import request from '@/lib/api';
+import PeriodeGuard from '@/components/shared/PeriodeGuard';
 import { useAuth } from '../../../../context/AuthContext';
 import {
   UploadCloud,
@@ -296,27 +297,45 @@ export default function PendaftaranSidangPage() {
     );
   };
 
-  if (loading) return <div className="text-center p-8">Loading...</div>;
-  if (error)
-    return <div className="text-center p-8 text-red-600">Error: {error}</div>;
-  if (!tugasAkhir)
+  if (loading) {
     return (
-      <div className="text-center p-8 bg-white rounded-lg shadow-md">
-        No active final project found.
-      </div>
+      <PeriodeGuard>
+        <div className="text-center p-8">Loading...</div>
+      </PeriodeGuard>
     );
+  }
+  if (error) {
+    return (
+      <PeriodeGuard>
+        <div className="text-center p-8 text-red-600">Error: {error}</div>
+      </PeriodeGuard>
+    );
+  }
+  if (!tugasAkhir) {
+    return (
+      <PeriodeGuard>
+        <div className="text-center p-8 bg-white rounded-lg shadow-md">
+          No active final project found.
+        </div>
+      </PeriodeGuard>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-gray-800">Defense Registration</h1>
-      {pendaftaran ? (
-        renderStatus()
-      ) : (
-        <RegistrationForm
-          tugasAkhirId={tugasAkhir.id}
-          onRegistrationSuccess={fetchData}
-        />
-      )}
-    </div>
+    <PeriodeGuard>
+      <div className="space-y-8">
+        <h1 className="text-3xl font-bold text-gray-800">
+          Defense Registration
+        </h1>
+        {pendaftaran ? (
+          renderStatus()
+        ) : (
+          <RegistrationForm
+            tugasAkhirId={tugasAkhir.id}
+            onRegistrationSuccess={fetchData}
+          />
+        )}
+      </div>
+    </PeriodeGuard>
   );
 }

@@ -424,4 +424,37 @@ export class TugasAkhirService {
 
     return updated;
   }
+
+  async validasiJudul(
+    tugasAkhirId: number,
+    dosenId: number,
+  ): Promise<TugasAkhir> {
+    const peranDosen = await this.prisma.peranDosenTa.findFirst({
+      where: {
+        tugas_akhir_id: tugasAkhirId,
+        dosen_id: dosenId,
+      },
+    });
+
+    if (peranDosen === null) {
+      throw new Error('Anda bukan pembimbing untuk tugas akhir ini');
+    }
+
+    const updateData: { judul_divalidasi_p1?: boolean; judul_divalidasi_p2?: boolean } = {};
+    
+    if (peranDosen.peran === 'pembimbing1') {
+      updateData.judul_divalidasi_p1 = true;
+    } else if (peranDosen.peran === 'pembimbing2') {
+      updateData.judul_divalidasi_p2 = true;
+    } else {
+      throw new Error('Hanya pembimbing yang dapat memvalidasi judul');
+    }
+
+    const updated = await this.prisma.tugasAkhir.update({
+      where: { id: tugasAkhirId },
+      data: updateData,
+    });
+
+    return updated;
+  }
 }

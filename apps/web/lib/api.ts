@@ -88,7 +88,11 @@ apiClient.interceptors.response.use(
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           const errorMsg = message.toLowerCase();
-          if (errorMsg.includes('jwt') || errorMsg.includes('token') || errorMsg.includes('invalid')) {
+          if (
+            errorMsg.includes('jwt') ||
+            errorMsg.includes('token') ||
+            errorMsg.includes('invalid')
+          ) {
             // Silent redirect for invalid tokens, no toast
           } else {
             toast.error('Sesi Anda telah berakhir. Silakan login kembali.');
@@ -98,7 +102,10 @@ apiClient.interceptors.response.use(
         break;
 
       case 403:
-        toast.error('Anda tidak memiliki izin untuk melakukan aksi ini.');
+        // Jangan tampilkan notifikasi jika error karena periode ditutup
+        if (!message.toLowerCase().includes('periode')) {
+          toast.error('Anda tidak memiliki izin untuk melakukan aksi ini.');
+        }
         break;
 
       case 404:

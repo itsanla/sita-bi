@@ -27,12 +27,17 @@ import dashboardRouter from './api/dashboard.router';
 import notificationRouter from './api/notification.router';
 import importRouter from './api/import.router';
 import rbacRouter from './api/rbac.router';
+import pengaturanRouter from './api/pengaturan.router';
+import periodeRouter from './api/periode.router';
 import { errorHandler } from './middlewares/error.middleware';
 import { activityLogger } from './middlewares/logger.middleware';
 import { getUploadPath, getApiRoot } from './utils/upload.config';
 import { whatsappService } from './services/whatsapp.service'; // WhatsApp service
 
 const app: express.Express = express();
+
+// Disable x-powered-by header for security
+app.disable('x-powered-by');
 
 // Global Middlewares
 app.use(express.json({ limit: '10mb' }));
@@ -53,8 +58,12 @@ app.use((req, res, next) => {
     }
   }, 30000);
 
-  res.on('finish', () => clearTimeout(timeout));
-  res.on('close', () => clearTimeout(timeout));
+  res.on('finish', () => {
+    clearTimeout(timeout);
+  });
+  res.on('close', () => {
+    clearTimeout(timeout);
+  });
 
   next();
 });
@@ -63,7 +72,7 @@ app.use(activityLogger);
 
 // Explicit CORS configuration
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || '*', // Allow frontend origin from env
+  origin: process.env.FRONTEND_URL ?? '*', // Allow frontend origin from env
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true, // Allow cookies to be sent
 };
@@ -121,6 +130,8 @@ app.use('/api/dashboard', dashboardRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/import', importRouter);
 app.use('/api/rbac', rbacRouter);
+app.use('/api/pengaturan', pengaturanRouter);
+app.use('/api/periode', periodeRouter);
 
 // Error Handling Middleware
 app.use(errorHandler);

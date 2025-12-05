@@ -14,7 +14,7 @@ import {
   GraduationCap,
   UserPlus,
   UserCircle,
-  Shield,
+  Settings,
   FileCheck,
   Award,
   ClipboardList,
@@ -53,13 +53,13 @@ const baseNavItems = [
 const jurusanMenuItems = [
   {
     href: '/dashboard/dosen/fitur-jurusan-1',
-    icon: Shield,
-    label: 'Fitur Jurusan 1',
+    icon: Settings,
+    label: 'Aturan Tugas Akhir',
   },
   {
     href: '/dashboard/dosen/fitur-jurusan-2',
     icon: FileCheck,
-    label: 'Fitur Jurusan 2',
+    label: 'Kelola Periode TA',
   },
 ];
 

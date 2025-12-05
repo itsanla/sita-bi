@@ -160,19 +160,21 @@ model User {
   roles     Role[] // Peran yang dimiliki user
 
   // Relasi Kepemilikan Data
-  logs                   Log[]
-  pengumumanDibuat       Pengumuman[]
-  tawaranTopikDibuat     TawaranTopik[]
-  taDisetujui            TugasAkhir[]             @relation("Approver")
-  taDitolak              TugasAkhir[]             @relation("Rejecter")
-  notifikasi             NotifikasiTA[]
+  logs                        Log[]
+  pengumumanDibuat            Pengumuman[]
+  tawaranTopikDibuat          TawaranTopik[]
+  taDisetujui                 TugasAkhir[]                    @relation("Approver")
+  taDitolak                   TugasAkhir[]                    @relation("Rejecter")
+  notifikasi                  NotifikasiTA[]
   notificationHistory         NotificationHistory[]
   emailTokens                 EmailVerificationToken[]
-  catatanBimbingan            CatatanBimbingan[] // Catatan yang dibuat oleh user ini
+  catatanBimbingan            CatatanBimbingan[]
   historyPenugasan            HistoryPenugasanDosen[]         @relation("AdminAssigner")
   historyPerubahanSidang      HistoryPerubahanSidang[]
   pengumumanDibaca            PengumumanPembaca[]
   pengajuanPelepasanBimbingan PengajuanPelepasanBimbingan[]
+  periodeTaBuka               PeriodeTa[]                     @relation("PeriodePembuka")
+  periodeTaTutup              PeriodeTa[]                     @relation("PeriodePenutup")
 
   @@map("users")
 }
@@ -253,16 +255,18 @@ model Dosen {
 //================================================================================
 
 model TawaranTopik {
-  id          Int       @id @default(autoincrement())
-  user_id     Int
-  judul_topik String
-  deskripsi   String
-  kuota       Int
-  deleted_at  DateTime?
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
+  id             Int       @id @default(autoincrement())
+  user_id        Int
+  periode_ta_id  Int?
+  judul_topik    String
+  deskripsi      String
+  kuota          Int
+  deleted_at     DateTime?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
 
   dosenPencetus User                    @relation(fields: [user_id], references: [id])
+  periodeTa     PeriodeTa?              @relation(fields: [periode_ta_id], references: [id])
   historyTopik  HistoryTopikMahasiswa[]
   tugasAkhir    TugasAkhir[]
 
@@ -284,20 +288,24 @@ model HistoryTopikMahasiswa {
 }
 
 model TugasAkhir {
-  id                Int              @id @default(autoincrement())
-  mahasiswa_id      Int              @unique
-  tawaran_topik_id  Int?
-  judul             String
-  status            StatusTugasAkhir @default(DRAFT)
-  tanggal_pengajuan DateTime?
-  disetujui_oleh    Int?
-  ditolak_oleh      Int?
-  alasan_penolakan  String?
-  created_at        DateTime         @default(now())
-  updated_at        DateTime         @updatedAt
+  id                   Int              @id @default(autoincrement())
+  mahasiswa_id         Int              @unique
+  tawaran_topik_id     Int?
+  periode_ta_id        Int?
+  judul                String
+  judul_divalidasi_p1  Boolean          @default(false)
+  judul_divalidasi_p2  Boolean          @default(false)
+  status               StatusTugasAkhir @default(DRAFT)
+  tanggal_pengajuan    DateTime?
+  disetujui_oleh       Int?
+  ditolak_oleh         Int?
+  alasan_penolakan     String?
+  created_at           DateTime         @default(now())
+  updated_at           DateTime         @updatedAt
 
   mahasiswa             Mahasiswa               @relation(fields: [mahasiswa_id], references: [id])
   tawaranTopik          TawaranTopik?           @relation(fields: [tawaran_topik_id], references: [id])
+  periodeTa             PeriodeTa?              @relation(fields: [periode_ta_id], references: [id])
   approver              User?                   @relation("Approver", fields: [disetujui_oleh], references: [id])
   rejecter              User?                   @relation("Rejecter", fields: [ditolak_oleh], references: [id])
   peranDosenTa          PeranDosenTa[]
@@ -406,6 +414,7 @@ model PengajuanBimbingan {
   id                  Int             @id @default(autoincrement())
   mahasiswa_id        Int
   dosen_id            Int
+  periode_ta_id       Int?
   diinisiasi_oleh     String
   peran_yang_diajukan String // "pembimbing1" atau "pembimbing2"
   status              PengajuanStatus @default(MENUNGGU_PERSETUJUAN_DOSEN)
@@ -414,6 +423,7 @@ model PengajuanBimbingan {
 
   mahasiswa Mahasiswa @relation(fields: [mahasiswa_id], references: [id], onDelete: Cascade)
   dosen     Dosen     @relation(fields: [dosen_id], references: [id], onDelete: Cascade)
+  periodeTa PeriodeTa? @relation(fields: [periode_ta_id], references: [id])
 
   @@unique([mahasiswa_id, dosen_id, peran_yang_diajukan])
   @@map("pengajuan_bimbingan")
@@ -446,6 +456,7 @@ model PengajuanPelepasanBimbingan {
 model PendaftaranSidang {
   id                   Int               @id @default(autoincrement())
   tugas_akhir_id       Int
+  periode_ta_id        Int?
   status_verifikasi    StatusVerifikasi  @default(menunggu_verifikasi)
   status_pembimbing_1  StatusPersetujuan @default(menunggu)
   status_pembimbing_2  StatusPersetujuan @default(menunggu)
@@ -456,6 +467,7 @@ model PendaftaranSidang {
   updated_at           DateTime          @updatedAt
 
   tugasAkhir TugasAkhir              @relation(fields: [tugas_akhir_id], references: [id])
+  periodeTa  PeriodeTa?              @relation(fields: [periode_ta_id], references: [id])
   sidang     Sidang?
   files      PendaftaranSidangFile[]
 
@@ -479,6 +491,7 @@ model Sidang {
   id                    Int         @id @default(autoincrement())
   tugas_akhir_id        Int
   pendaftaran_sidang_id Int?        @unique
+  periode_ta_id         Int?
   jenis_sidang          JenisSidang
   status_hasil          HasilSidang @default(menunggu_penjadwalan)
   is_active             Boolean     @default(true)
@@ -486,11 +499,12 @@ model Sidang {
   created_at            DateTime    @default(now())
   updated_at            DateTime    @updatedAt
 
-  tugasAkhir       TugasAkhir               @relation(fields: [tugas_akhir_id], references: [id])
+  tugasAkhir        TugasAkhir               @relation(fields: [tugas_akhir_id], references: [id])
   pendaftaranSidang PendaftaranSidang?       @relation(fields: [pendaftaran_sidang_id], references: [id])
-  jadwalSidang     JadwalSidang[]
-  nilaiSidang      NilaiSidang[]
-  historyPerubahan HistoryPerubahanSidang[]
+  periodeTa         PeriodeTa?               @relation(fields: [periode_ta_id], references: [id])
+  jadwalSidang      JadwalSidang[]
+  nilaiSidang       NilaiSidang[]
+  historyPerubahan  HistoryPerubahanSidang[]
 
   @@map("sidang")
 }
@@ -709,4 +723,46 @@ model HistoryPenugasanDosen {
   dosen      Dosen      @relation(fields: [dosen_id], references: [id])
 
   @@map("history_penugasan_dosen")
+}
+
+model PengaturanSistem {
+  id                         Int      @id @default(autoincrement())
+  key                        String   @unique
+  value                      String
+  deskripsi                  String?
+  created_at                 DateTime @default(now())
+  updated_at                 DateTime @updatedAt
+
+  @@map("pengaturan_sistem")
+}
+
+enum StatusPeriode {
+  PERSIAPAN
+  AKTIF
+  SELESAI
+}
+
+model PeriodeTa {
+  id                    Int           @id @default(autoincrement())
+  tahun                 Int           @unique
+  nama                  String
+  tanggal_buka          DateTime?
+  tanggal_tutup         DateTime?
+  status                StatusPeriode @default(PERSIAPAN)
+  pengaturan_snapshot   String?       // JSON
+  dibuka_oleh           Int?
+  ditutup_oleh          Int?
+  catatan_penutupan     String?
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
+
+  pembuka               User?         @relation("PeriodePembuka", fields: [dibuka_oleh], references: [id])
+  penutup               User?         @relation("PeriodePenutup", fields: [ditutup_oleh], references: [id])
+  tugasAkhir            TugasAkhir[]
+  tawaranTopik          TawaranTopik[]
+  pengajuanBimbingan    PengajuanBimbingan[]
+  sidang                Sidang[]
+  pendaftaranSidang     PendaftaranSidang[]
+
+  @@map("periode_ta")
 }

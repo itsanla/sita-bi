@@ -6,6 +6,7 @@ import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
 import { Role } from '../middlewares/auth.middleware';
 import { createPenilaianSchema } from '../dto/penilaian.dto';
+import { periodeGuard } from '../middlewares/periode.middleware';
 
 const router: Router = Router();
 const penilaianService = new PenilaianService();
@@ -15,6 +16,7 @@ router.use(asyncHandler(authMiddleware));
 
 router.post(
   '/',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   validate(createPenilaianSchema),
   asyncHandler(async (req, res): Promise<void> => {
@@ -33,6 +35,7 @@ router.post(
 
 router.get(
   '/sidang/:sidangId',
+  periodeGuard(),
   // Accessible by all authenticated users (dosen, mahasiswa, admin)
   // No specific role check here, but still requires authentication
   asyncHandler(async (req, res): Promise<void> => {

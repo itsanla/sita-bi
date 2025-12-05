@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { TableSkeleton } from '@/app/components/Suspense/StreamingSkeleton';
+import PeriodeGuard from '@/components/shared/PeriodeGuard';
 
 // Server Component - tidak perlu 'use client'
 export const dynamic = 'force-dynamic'; // Always fresh data
@@ -28,8 +29,10 @@ async function JadwalSidangContent() {
 // Main page dengan Suspense untuk streaming
 export default function JadwalSidangMahasiswaPage() {
   return (
-    <Suspense fallback={<TableSkeleton rows={8} />}>
-      <JadwalSidangContent />
-    </Suspense>
+    <PeriodeGuard>
+      <Suspense fallback={<TableSkeleton rows={8} />}>
+        <JadwalSidangContent />
+      </Suspense>
+    </PeriodeGuard>
   );
 }

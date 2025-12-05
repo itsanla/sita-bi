@@ -6,6 +6,7 @@ import {
   UnauthorizedError,
   ConflictError,
 } from '../errors/AppError';
+import { getMinBimbinganValid } from '../utils/business-rules';
 
 interface BimbinganForDosen {
   data: {
@@ -121,15 +122,7 @@ export class BimbinganService {
       return null;
     }
 
-    const result = tugasAkhir as TugasAkhirWithBimbingan & {
-      judul_divalidasi_p1: boolean;
-      judul_divalidasi_p2: boolean;
-    };
-    
-    result.judul_divalidasi_p1 = false;
-    result.judul_divalidasi_p2 = false;
-
-    return result;
+    return tugasAkhir as TugasAkhirWithBimbingan;
   }
 
   async createCatatan(
@@ -853,8 +846,10 @@ export class BimbinganService {
     eligible: boolean;
     validBimbinganCount: number;
     isDrafValidated: boolean;
+    minRequired: number;
     message?: string;
   }> {
+    const minRequired = await getMinBimbinganValid();
     const validBimbinganCount =
       await this.repository.countValidBimbingan(tugasAkhirId);
 
@@ -868,12 +863,12 @@ export class BimbinganService {
       latestDokumen.divalidasi_oleh_p1 !== null &&
       latestDokumen.divalidasi_oleh_p2 !== null;
 
-    const eligible = validBimbinganCount >= 9 && isDrafValidated;
+    const eligible = validBimbinganCount >= minRequired && isDrafValidated;
 
     let message = '';
     if (!eligible) {
-      if (validBimbinganCount < 9) {
-        message = `Bimbingan valid baru ${validBimbinganCount}/9. `;
+      if (validBimbinganCount < minRequired) {
+        message = `Bimbingan valid baru ${validBimbinganCount}/${minRequired}. `;
       }
       if (!isDrafValidated) {
         message += 'Draf TA belum divalidasi oleh kedua pembimbing.';
@@ -884,6 +879,7 @@ export class BimbinganService {
       eligible,
       validBimbinganCount,
       isDrafValidated,
+      minRequired,
       message: message || undefined,
     };
   }

@@ -7,6 +7,7 @@ import { validate } from '../middlewares/validation.middleware';
 import { Role } from '../middlewares/auth.middleware';
 import { rejectPendaftaranSchema } from '../dto/pendaftaran-sidang.dto';
 import { uploadSidangFiles } from '../middlewares/upload.middleware';
+import { periodeGuard } from '../middlewares/periode.middleware';
 
 const MSG_GAGAL = 'gagal';
 const MSG_SUKSES = 'sukses';
@@ -20,6 +21,7 @@ router.use(asyncHandler(authMiddleware));
 
 router.post(
   '/',
+  periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   uploadSidangFiles,
   asyncHandler(async (req, res): Promise<void> => {
@@ -43,6 +45,7 @@ router.post(
 
 router.get(
   '/pending-approvals',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const dosenId = req.user?.dosen?.id;
@@ -61,6 +64,7 @@ router.get(
 
 router.post(
   '/:id/approve',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const { id } = req.params;
@@ -89,6 +93,7 @@ router.post(
 
 router.post(
   '/:id/reject',
+  periodeGuard(),
   authorizeRoles([Role.dosen]),
   validate(rejectPendaftaranSchema),
   asyncHandler(async (req, res): Promise<void> => {
@@ -120,6 +125,7 @@ router.post(
 
 router.get(
   '/my-registration',
+  periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req, res): Promise<void> => {
     const mahasiswaId = req.user?.mahasiswa?.id;
@@ -138,6 +144,7 @@ router.get(
 
 router.get(
   '/check-eligibility',
+  periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req, res): Promise<void> => {
     const mahasiswaId = req.user?.mahasiswa?.id;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import request from '@/lib/api';
+import { usePeriodeStatus } from './usePeriodeStatus';
 
 interface TugasAkhir {
   id: number;
@@ -22,6 +23,7 @@ export function useTugasAkhir() {
   const [tugasAkhir, setTugasAkhir] = useState<TugasAkhir | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { status: periodeStatus, loading: periodeLoading } = usePeriodeStatus();
 
   const fetchData = async () => {
     try {
@@ -42,8 +44,12 @@ export function useTugasAkhir() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (!periodeLoading && periodeStatus?.isActive) {
+      fetchData();
+    } else if (!periodeLoading) {
+      setLoading(false);
+    }
+  }, [periodeLoading, periodeStatus?.isActive]);
 
   const deleteTugasAkhir = async () => {
     try {
@@ -121,6 +127,7 @@ export function useSimilarityCheck() {
     SimilarityResult[] | null
   >(null);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [threshold, setThreshold] = useState(80);
   const [isChecking, setIsChecking] = useState(false);
 
   const checkSimilarity = async (judul: string) => {
@@ -132,6 +139,7 @@ export function useSimilarityCheck() {
         data: {
           results: SimilarityResult[];
           isBlocked: boolean;
+          threshold: number;
         };
       }>('/tugas-akhir/check-similarity', {
         method: 'POST',
@@ -139,6 +147,7 @@ export function useSimilarityCheck() {
       });
       setSimilarityResults(response.data.data.results || []);
       setIsBlocked(response.data.data.isBlocked || false);
+      setThreshold(response.data.data.threshold || 80);
     } catch (err: unknown) {
       throw new Error((err as Error).message);
     } finally {
@@ -154,6 +163,7 @@ export function useSimilarityCheck() {
   return {
     similarityResults,
     isBlocked,
+    threshold,
     isChecking,
     checkSimilarity,
     reset,
