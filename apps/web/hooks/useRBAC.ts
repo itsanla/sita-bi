@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import type { RoleName, RBACPermissions } from '../types';
+import type { RoleName, RBACPermissions, User } from '../types';
 
 export function useRBAC(): RBACPermissions & {
   role: RoleName | null;
@@ -11,15 +11,15 @@ export function useRBAC(): RBACPermissions & {
   isDosen: boolean;
   isMahasiswa: boolean;
   isAdmin: boolean;
-  hasRole: (roles: RoleName[]) => boolean;
-  canAccess: (requiredRoles: RoleName[]) => boolean;
-  canAccessMahasiswa: (mahasiswaId: number) => boolean;
-  user: any;
+  hasRole: (_roles: RoleName[]) => boolean;
+  canAccess: (_requiredRoles: RoleName[]) => boolean;
+  canAccessMahasiswa: (_mahasiswaId: number) => boolean;
+  user: User | null;
 } {
   const { user } = useAuth();
 
   return useMemo(() => {
-    if (!user || !user.roles || user.roles.length === 0) {
+    if (!user?.roles?.length) {
       return {
         role: null,
         isJurusan: false,
@@ -41,59 +41,68 @@ export function useRBAC(): RBACPermissions & {
       };
     }
 
-    const role = user.roles[0]?.name || 'mahasiswa';
-    const isJurusan = role === 'jurusan';
-    const isProdi = role === 'prodi_d3' || role === 'prodi_d4';
-    const isDosen = role === 'dosen' || isProdi || isJurusan;
-    const isMahasiswa = role === 'mahasiswa';
-    const isAdmin = role === 'admin';
+    const userRoles = user.roles.map((r) => r.name);
+    const isJurusan = userRoles.includes('jurusan');
+    const isProdi =
+      userRoles.includes('prodi_d3') || userRoles.includes('prodi_d4');
+    const isDosen = userRoles.includes('dosen') || isProdi || isJurusan;
+    const isMahasiswa = userRoles.includes('mahasiswa');
+    const isAdmin = userRoles.includes('admin');
 
-    // Determine prodi scope
+    let role: RoleName;
+    if (isJurusan) {
+      role = 'jurusan';
+    } else if (isProdi) {
+      role =
+        (userRoles.find(
+          (r) => r === 'prodi_d3' || r === 'prodi_d4',
+        ) as RoleName) || 'dosen';
+    } else {
+      role = userRoles[0]?.name || 'mahasiswa';
+    }
+
     let canAccessProdi: 'D3' | 'D4' | null = null;
-    if (role === 'prodi_d3') canAccessProdi = 'D3';
-    if (role === 'prodi_d4') canAccessProdi = 'D4';
-    if (isJurusan) canAccessProdi = null; // Can access both
+    if (userRoles.includes('prodi_d3')) {
+      canAccessProdi = 'D3';
+    } else if (userRoles.includes('prodi_d4')) {
+      canAccessProdi = 'D4';
+    }
 
-    // Determine accessible mahasiswa IDs
     const canAccessMahasiswaIds: number[] = [];
-    if (isDosen && user.dosen?.assignedMahasiswa) {
+    if (isDosen && user.dosen?.assignedMahasiswa?.length) {
       canAccessMahasiswaIds.push(
         ...user.dosen.assignedMahasiswa.map((m) => m.id),
       );
     }
-    if (isMahasiswa && user.mahasiswa) {
+    if (isMahasiswa && user.mahasiswa?.id) {
       canAccessMahasiswaIds.push(user.mahasiswa.id);
     }
 
-    // Permissions
     const canAccessAllData = isJurusan || isAdmin;
     const canManageUsers = isJurusan || isAdmin;
     const canAssignDosen = isJurusan || isProdi || isAdmin;
     const canValidateJudul = isJurusan || isProdi || isAdmin;
     const canViewReports = isJurusan || isProdi || isAdmin;
 
-    // Helper functions
     const canAccess = (requiredRoles: RoleName[]): boolean => {
+      if (!requiredRoles.length) return false;
       if (isAdmin) return true;
-      if (
-        isJurusan &&
-        (requiredRoles.includes('jurusan') ||
+      if (isJurusan) {
+        return (
+          requiredRoles.includes('jurusan') ||
           requiredRoles.includes('prodi_d3') ||
           requiredRoles.includes('prodi_d4') ||
-          requiredRoles.includes('dosen'))
-      ) {
-        return true;
+          requiredRoles.includes('dosen')
+        );
       }
-      if (
-        isProdi &&
-        (requiredRoles.includes(role) || requiredRoles.includes('dosen'))
-      ) {
-        return true;
+      if (isProdi) {
+        return requiredRoles.includes(role) || requiredRoles.includes('dosen');
       }
       return requiredRoles.includes(role);
     };
 
     const canAccessMahasiswa = (mahasiswaId: number): boolean => {
+      if (!mahasiswaId) return false;
       if (canAccessAllData) return true;
       return canAccessMahasiswaIds.includes(mahasiswaId);
     };

@@ -1,7 +1,6 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { LogIn, Mail, Lock, Eye, EyeOff, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -11,7 +10,6 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,26 +38,24 @@ export default function LoginPage() {
         const userRole = user.roles[0]?.name;
         let redirectUrl = '/dashboard/mahasiswa';
 
-        if (
+        if (userRole === 'admin') {
+          redirectUrl = '/dashboard/admin';
+        } else if (
           userRole === 'jurusan' ||
           userRole === 'prodi_d3' ||
           userRole === 'prodi_d4' ||
-          userRole === 'admin'
+          userRole === 'dosen'
         ) {
-          redirectUrl = '/dashboard/admin';
-        } else if (userRole === 'dosen') {
           redirectUrl = '/dashboard/dosen';
         }
 
         // Use window.location for hard reload to reset AuthContext
         window.location.href = redirectUrl;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
       const errorMessage =
-        err.response?.data?.message ||
-        err.message ||
-        'Terjadi kesalahan saat login';
+        err instanceof Error ? err.message : 'Terjadi kesalahan saat login';
       setError(errorMessage);
       setLoading(false);
     }

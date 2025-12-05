@@ -4,6 +4,7 @@ import { ReactNode, useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import UserSidebar from '@/components/shared/UserSidebar';
 import UserFooter from '@/components/shared/UserFooter';
+import { useRBAC } from '@/hooks/useRBAC';
 import {
   LayoutDashboard,
   BookUser,
@@ -13,9 +14,13 @@ import {
   UserPlus,
   Lock,
   UserCircle,
+  Shield,
+  FileCheck,
+  Award,
+  ClipboardList,
 } from 'lucide-react';
 
-const navItems = [
+const baseNavItems = [
   { href: '/dashboard/dosen', icon: LayoutDashboard, label: 'Dashboard' },
   {
     href: '/dashboard/dosen/data-diri',
@@ -45,9 +50,58 @@ const navItems = [
   },
 ];
 
+const jurusanMenuItems = [
+  {
+    href: '/dashboard/dosen/fitur-jurusan-1',
+    icon: Shield,
+    label: 'Fitur Jurusan 1',
+  },
+  {
+    href: '/dashboard/dosen/fitur-jurusan-2',
+    icon: FileCheck,
+    label: 'Fitur Jurusan 2',
+  },
+];
+
+const prodiMenuItems = [
+  {
+    href: '/dashboard/dosen/fitur-prodi-1',
+    icon: Award,
+    label: 'Fitur Prodi 1',
+  },
+  {
+    href: '/dashboard/dosen/fitur-prodi-2',
+    icon: ClipboardList,
+    label: 'Fitur Prodi 2',
+  },
+];
+
 export default function DosenLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
+  const { isJurusan, isProdi } = useRBAC();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const menuSections: Array<{
+    title: string;
+    items: typeof baseNavItems;
+  }> = [];
+
+  if (isJurusan) {
+    menuSections.push({
+      title: 'Menu Jurusan',
+      items: jurusanMenuItems,
+    });
+  } else if (isProdi) {
+    menuSections.push({
+      title: 'Menu Prodi',
+      items: prodiMenuItems,
+    });
+  }
+
+  menuSections.push({
+    title: 'Menu Dosen',
+    items: baseNavItems,
+  });
 
   useEffect(() => {
     const handleResize = () => {
@@ -58,7 +112,13 @@ export default function DosenLayout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const isDosen = user?.roles?.some((role) => role.name === 'dosen');
+  const isDosen = user?.roles?.some(
+    (role) =>
+      role.name === 'dosen' ||
+      role.name === 'prodi_d3' ||
+      role.name === 'prodi_d4' ||
+      role.name === 'jurusan',
+  );
 
   if (loading || !user) {
     return (
@@ -99,8 +159,7 @@ export default function DosenLayout({ children }: { children: ReactNode }) {
       <UserSidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
-        navItems={navItems}
-        menuTitle="Menu Dosen"
+        menuSections={menuSections}
         dashboardHref="/dashboard/dosen"
       />
 

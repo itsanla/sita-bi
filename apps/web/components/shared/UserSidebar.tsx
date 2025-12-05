@@ -13,11 +13,17 @@ interface NavItem {
   label: string;
 }
 
+interface MenuSection {
+  title: string;
+  items: NavItem[];
+}
+
 interface UserSidebarProps {
   sidebarOpen: boolean;
   setSidebarOpen: (_open: boolean) => void;
-  navItems: NavItem[];
-  menuTitle: string;
+  navItems?: NavItem[];
+  menuSections?: MenuSection[];
+  menuTitle?: string;
   dashboardHref: string;
 }
 
@@ -72,7 +78,7 @@ const NavLink = ({
               strokeWidth={isActive ? 2.5 : 2}
             />
           </div>
-          {sidebarOpen && (
+          {!!sidebarOpen && (
             <span className="text-sm font-medium tracking-tight truncate">
               {item.label}
             </span>
@@ -80,7 +86,7 @@ const NavLink = ({
         </Link>
       </li>
 
-      {!sidebarOpen && !isActive && tooltipPos && (
+      {!sidebarOpen && !isActive && !!tooltipPos && (
         <div
           className="fixed ml-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg whitespace-nowrap z-[9999] -translate-y-1/2 pointer-events-none shadow-xl"
           style={{ top: `${tooltipPos.top}px`, left: `${tooltipPos.left}px` }}
@@ -97,6 +103,7 @@ export default function UserSidebar({
   sidebarOpen,
   setSidebarOpen,
   navItems,
+  menuSections,
   menuTitle,
   dashboardHref,
 }: UserSidebarProps) {
@@ -134,7 +141,7 @@ export default function UserSidebar({
       </header>
 
       {/* Backdrop for mobile */}
-      {sidebarOpen && (
+      {!!sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-200"
           onClick={() => setSidebarOpen(false)}
@@ -158,7 +165,7 @@ export default function UserSidebar({
             <Menu className="h-5 w-5" strokeWidth={2} />
           </button>
 
-          {sidebarOpen && (
+          {!!sidebarOpen && (
             <Link
               href={dashboardHref}
               prefetch={true}
@@ -195,7 +202,7 @@ export default function UserSidebar({
             <div className="flex items-center justify-center w-5 h-5 transition-transform duration-150 group-hover:scale-110 group-active:scale-95">
               <Home className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
             </div>
-            {sidebarOpen && (
+            {!!sidebarOpen && (
               <span className="text-sm font-medium tracking-tight">
                 Beranda
               </span>
@@ -211,16 +218,45 @@ export default function UserSidebar({
         </div>
 
         <nav className="flex-1 overflow-y-auto overflow-x-hidden p-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
-          {sidebarOpen && (
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-3">
-              {menuTitle}
-            </p>
+          {menuSections ? (
+            <div className="space-y-4">
+              {menuSections.map((section, idx) => (
+                <div key={idx}>
+                  {!!sidebarOpen && (
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-3">
+                      {section.title}
+                    </p>
+                  )}
+                  <ul className="space-y-0.5">
+                    {section.items.map((item) => (
+                      <NavLink
+                        key={item.href}
+                        item={item}
+                        sidebarOpen={sidebarOpen}
+                      />
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              {!!sidebarOpen && !!menuTitle && (
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-3">
+                  {menuTitle}
+                </p>
+              )}
+              <ul className="space-y-0.5">
+                {navItems?.map((item) => (
+                  <NavLink
+                    key={item.href}
+                    item={item}
+                    sidebarOpen={sidebarOpen}
+                  />
+                ))}
+              </ul>
+            </>
           )}
-          <ul className="space-y-0.5">
-            {navItems.map((item) => (
-              <NavLink key={item.href} item={item} sidebarOpen={sidebarOpen} />
-            ))}
-          </ul>
         </nav>
 
         <div className="border-t border-gray-200/80 p-3 bg-gradient-to-t from-gray-50/50 to-transparent">
@@ -264,7 +300,7 @@ export default function UserSidebar({
             <div className="flex items-center justify-center w-5 h-5 transition-transform duration-150 group-hover:scale-110 group-active:scale-95">
               <LogOut className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
             </div>
-            {sidebarOpen && <span className="tracking-tight">Logout</span>}
+            {!!sidebarOpen && <span className="tracking-tight">Logout</span>}
 
             {!sidebarOpen && (
               <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-50 top-1/2 -translate-y-1/2 shadow-xl">

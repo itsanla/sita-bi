@@ -59,7 +59,7 @@ async function main() {
       phone_number: '081234567891',
       password: hashedPassword,
       email_verified_at: emailVerifiedAt,
-      roles: { connect: [{ name: 'jurusan' }, { name: 'dosen' }] },
+      roles: { connect: { name: 'jurusan' } },
       dosen: {
         create: {
           nip: '197808062009121001',
@@ -78,7 +78,7 @@ async function main() {
       phone_number: '081234567892',
       password: hashedPassword,
       email_verified_at: emailVerifiedAt,
-      roles: { connect: [{ name: 'prodi_d3' }, { name: 'dosen' }] },
+      roles: { connect: { name: 'prodi_d3' } },
       dosen: {
         create: {
           nip: '0002028802',
@@ -97,7 +97,7 @@ async function main() {
       phone_number: '081234567893',
       password: hashedPassword,
       email_verified_at: emailVerifiedAt,
-      roles: { connect: [{ name: 'prodi_d4' }, { name: 'dosen' }] },
+      roles: { connect: { name: 'prodi_d4' } },
       dosen: {
         create: {
           nip: '0003038803',

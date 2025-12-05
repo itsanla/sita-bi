@@ -32,17 +32,21 @@ export default function ProtectedRoute({
       return;
     }
 
-    if (allowedRoles && user && !canAccess(allowedRoles)) {
-      // Redirect ke dashboard sesuai role
+    if (allowedRoles?.length && user && !canAccess(allowedRoles)) {
       const userRole = user.roles?.[0]?.name;
-      if (
+      if (!userRole) {
+        router.push('/login');
+        return;
+      }
+
+      if (userRole === 'admin') {
+        router.push('/dashboard/admin');
+      } else if (
         userRole === 'jurusan' ||
         userRole === 'prodi_d3' ||
         userRole === 'prodi_d4' ||
-        userRole === 'admin'
+        userRole === 'dosen'
       ) {
-        router.push('/dashboard/admin');
-      } else if (userRole === 'dosen') {
         router.push('/dashboard/dosen');
       } else if (userRole === 'mahasiswa') {
         router.push('/dashboard/mahasiswa');
@@ -73,7 +77,7 @@ export default function ProtectedRoute({
     return null;
   }
 
-  if (allowedRoles && user && !canAccess(allowedRoles)) {
+  if (allowedRoles?.length && user && !canAccess(allowedRoles)) {
     return null;
   }
 
