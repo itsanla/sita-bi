@@ -12,6 +12,8 @@ import { createTugasAkhirSchema } from '../dto/tugas-akhir.dto';
 
 const router: Router = Router();
 const tugasAkhirService = new TugasAkhirService();
+const STATUS_SUKSES = 'sukses';
+const MSG_USER_ID_NOT_FOUND = 'Akses ditolak: ID pengguna tidak ditemukan.';
 
 // Apply JWT Auth and Roles Guard globally for this router
 // router.use(authMiddleware);
@@ -31,7 +33,7 @@ router.post(
     );
 
     response.status(200).json({
-      status: 'sukses',
+      status: STATUS_SUKSES,
       data: {
         results,
         isBlocked,
@@ -50,12 +52,12 @@ router.post(
     if (userId === undefined) {
       response.status(401).json({
         status: 'gagal',
-        message: 'Akses ditolak: ID pengguna tidak ditemukan.',
+        message: MSG_USER_ID_NOT_FOUND,
       });
       return;
     }
     const newTugasAkhir = await tugasAkhirService.createFinal(req.body, userId);
-    response.status(201).json({ status: 'sukses', data: newTugasAkhir });
+    response.status(201).json({ status: STATUS_SUKSES, data: newTugasAkhir });
   }),
 );
 
@@ -182,12 +184,12 @@ router.get(
     if (userId === undefined) {
       response.status(401).json({
         status: 'gagal',
-        message: 'Akses ditolak: ID pengguna tidak ditemukan.',
+        message: MSG_USER_ID_NOT_FOUND,
       });
       return;
     }
     const tugasAkhir = await tugasAkhirService.findMyTugasAkhir(userId);
-    response.status(200).json({ status: 'sukses', data: tugasAkhir });
+    response.status(200).json({ status: STATUS_SUKSES, data: tugasAkhir });
   }),
 );
 
@@ -200,14 +202,17 @@ router.delete(
     if (userId === undefined) {
       response.status(401).json({
         status: 'gagal',
-        message: 'Akses ditolak: ID pengguna tidak ditemukan.',
+        message: MSG_USER_ID_NOT_FOUND,
       });
       return;
     }
     await tugasAkhirService.deleteMyTa(userId);
     response
       .status(200)
-      .json({ status: 'sukses', message: 'Tugas Akhir berhasil dihapus.' });
+      .json({
+        status: STATUS_SUKSES,
+        message: 'Tugas Akhir berhasil dihapus.',
+      });
   }),
 );
 
@@ -216,7 +221,7 @@ router.get(
   asyncHandler(authMiddleware),
   asyncHandler(async (_req: Request, response: Response): Promise<void> => {
     const titles = await tugasAkhirService.findAllTitles();
-    response.status(200).json({ status: 'sukses', data: titles });
+    response.status(200).json({ status: STATUS_SUKSES, data: titles });
   }),
 );
 
@@ -230,12 +235,12 @@ router.get(
     if (userId === undefined) {
       response.status(401).json({
         status: 'gagal',
-        message: 'Akses ditolak: ID pengguna tidak ditemukan.',
+        message: MSG_USER_ID_NOT_FOUND,
       });
       return;
     }
     const pendingList = await tugasAkhirService.getPendingForDosen(userId);
-    response.status(200).json({ status: 'sukses', data: pendingList });
+    response.status(200).json({ status: STATUS_SUKSES, data: pendingList });
   }),
 );
 
@@ -264,7 +269,9 @@ router.patch(
       parseInt(id, 10),
       approverId,
     );
-    response.status(200).json({ status: 'sukses', data: approvedTugasAkhir });
+    response
+      .status(200)
+      .json({ status: STATUS_SUKSES, data: approvedTugasAkhir });
   }),
 );
 
@@ -305,7 +312,34 @@ router.patch(
       rejecterId,
       alasan_penolakan,
     );
-    response.status(200).json({ status: 'sukses', data: rejectedTugasAkhir });
+    response
+      .status(200)
+      .json({ status: STATUS_SUKSES, data: rejectedTugasAkhir });
+  }),
+);
+
+router.patch(
+  '/my-ta/update-judul',
+  asyncHandler(authMiddleware),
+  authorizeRoles([Role.mahasiswa]),
+  validate(createTugasAkhirSchema),
+  asyncHandler(async (req: Request, response: Response): Promise<void> => {
+    const userId = req.user?.id;
+    if (userId === undefined) {
+      response.status(401).json({
+        status: 'gagal',
+        message: MSG_USER_ID_NOT_FOUND,
+      });
+      return;
+    }
+    const { judul } = req.body;
+    const updatedTugasAkhir = await tugasAkhirService.updateJudul(
+      userId,
+      judul,
+    );
+    response
+      .status(200)
+      .json({ status: STATUS_SUKSES, data: updatedTugasAkhir });
   }),
 );
 

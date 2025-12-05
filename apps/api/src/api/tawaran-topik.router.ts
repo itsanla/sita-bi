@@ -167,4 +167,24 @@ router.post(
   }),
 );
 
+router.get(
+  '/all/with-applications',
+  authorizeRoles([Role.dosen]),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const page =
+      req.query['page'] != null
+        ? parseInt(req.query['page'] as string)
+        : undefined;
+    const limit =
+      req.query['limit'] != null
+        ? parseInt(req.query['limit'] as string)
+        : undefined;
+    const allTopics = await tawaranTopikService.getAllTopicsWithApplications(
+      page,
+      limit,
+    );
+    res.status(200).json({ status: 'sukses', data: allTopics });
+  }),
+);
+
 export default router;

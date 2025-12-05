@@ -49,7 +49,7 @@ export default function DataDiriAdminPage() {
   const fetchDataDiri = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/data-diri`, {
-        headers: { 'x-user-id': user?.id?.toString() || '' },
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
       });
       const data = await response.json();
       if (data.status === 'sukses') {
@@ -93,7 +93,7 @@ export default function DataDiriAdminPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user?.id?.toString() || '',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify(payload),
       });
@@ -120,7 +120,7 @@ export default function DataDiriAdminPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user?.id?.toString() || '',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify(passwordData),
       });

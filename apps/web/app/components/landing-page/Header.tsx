@@ -34,7 +34,7 @@ export default function Header({
           >
             <div className="relative flex-shrink-0">
               <Image
-                src="https://bing.pnp.ac.id/wp-content/uploads/2025/01/cropped-LOGO-BAHASA-INGGRIS-PNP-TEXT-300x300-1.png"
+                src="/logo-bing.png"
                 alt="PNP Logo"
                 width={40}
                 height={40}
@@ -53,27 +53,31 @@ export default function Header({
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-1">
-            {['hero', 'tawarantopik', 'jadwal', 'pengumuman'].map((section) => (
-              <a
-                key={section}
-                href={`#${section}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  scrollToSection(section);
-                }}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                  activeSection === section
-                    ? 'text-red-600 bg-red-50'
-                    : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
-                }`}
-              >
-                {section === 'hero'
-                  ? 'Home'
-                  : section === 'tawarantopik'
-                    ? 'Topik'
-                    : section.charAt(0).toUpperCase() + section.slice(1)}
-              </a>
-            ))}
+            {['hero', 'tawarantopik', 'jadwal', 'pengumuman'].map((section) => {
+              const getSectionLabel = () => {
+                if (section === 'hero') return 'Home';
+                if (section === 'tawarantopik') return 'Topik';
+                return section.charAt(0).toUpperCase() + section.slice(1);
+              };
+
+              return (
+                <a
+                  key={section}
+                  href={`#${section}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    scrollToSection(section);
+                  }}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                    activeSection === section
+                      ? 'text-red-600 bg-red-50'
+                      : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {getSectionLabel()}
+                </a>
+              );
+            })}
             <a
               href="/dokumentasi"
               className="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 transition-colors duration-200"
@@ -112,28 +116,32 @@ export default function Header({
           <div className="lg:hidden">
             <div className="pt-2 pb-4 space-y-1">
               {['hero', 'tawarantopik', 'jadwal', 'pengumuman'].map(
-                (section) => (
-                  <a
-                    key={section}
-                    href={`#${section}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      scrollToSection(section);
-                      setIsMenuOpen(false);
-                    }}
-                    className={`block px-4 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
-                      activeSection === section
-                        ? 'text-red-600 bg-red-50'
-                        : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    {section === 'hero'
-                      ? 'Home'
-                      : section === 'tawarantopik'
-                        ? 'Tawaran Topik'
-                        : section.charAt(0).toUpperCase() + section.slice(1)}
-                  </a>
-                ),
+                (section) => {
+                  const getMobileSectionLabel = () => {
+                    if (section === 'hero') return 'Home';
+                    if (section === 'tawarantopik') return 'Tawaran Topik';
+                    return section.charAt(0).toUpperCase() + section.slice(1);
+                  };
+
+                  return (
+                    <a
+                      key={section}
+                      href={`#${section}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        scrollToSection(section);
+                        setIsMenuOpen(false);
+                      }}
+                      className={`block px-4 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
+                        activeSection === section
+                          ? 'text-red-600 bg-red-50'
+                          : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      {getMobileSectionLabel()}
+                    </a>
+                  );
+                },
               )}
               <a
                 href="/dokumentasi"

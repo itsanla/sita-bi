@@ -5,6 +5,14 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
 import { Role } from '../middlewares/auth.middleware';
+import { auditLog } from '../middlewares/audit.middleware';
+import { createRateLimiter } from '../middlewares/rate-limit.middleware';
+
+const adminLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 30,
+  message: 'Terlalu banyak permintaan admin. Coba lagi dalam 1 menit.',
+});
 import {
   createDosenSchema,
   updateDosenSchema,
@@ -17,11 +25,13 @@ const usersService = new UsersService();
 
 // Apply JWT Auth and Roles Guard globally for this router
 router.use(asyncHandler(authMiddleware));
+router.use(adminLimiter);
 
 // Bulk delete endpoint - MUST be FIRST before any /:id routes
 router.post(
   '/bulk-delete',
   authorizeRoles([Role.admin, Role.jurusan]),
+  auditLog('BULK_DELETE_USERS', 'users'),
   asyncHandler(async (req, res) => {
     const { ids } = req.body;
     if (!Array.isArray(ids) || ids.length === 0) {
@@ -29,13 +39,14 @@ router.post(
       return;
     }
     const result = await usersService.bulkDeleteUsers(ids);
-    const message = result.failed.length > 0 
-      ? `${result.count} pengguna berhasil dihapus, ${result.failed.length} gagal (terkait dengan data lain).`
-      : `${result.count} pengguna berhasil dihapus.`;
-    res.status(200).json({ 
-      status: 'sukses', 
+    const message =
+      result.failed.length > 0
+        ? `${result.count} pengguna berhasil dihapus, ${result.failed.length} gagal (terkait dengan data lain).`
+        : `${result.count} pengguna berhasil dihapus.`;
+    res.status(200).json({
+      status: 'sukses',
       message,
-      data: result 
+      data: result,
     });
   }),
 );
@@ -43,6 +54,7 @@ router.post(
 router.post(
   '/dosen',
   authorizeRoles([Role.admin, Role.jurusan]),
+  auditLog('CREATE_DOSEN', 'users'),
   validate(createDosenSchema),
   asyncHandler(async (req, res) => {
     const newDosen = await usersService.createDosen(req.body);
@@ -53,6 +65,7 @@ router.post(
 router.post(
   '/mahasiswa',
   authorizeRoles([Role.admin, Role.jurusan]),
+  auditLog('CREATE_MAHASISWA', 'users'),
   validate(createMahasiswaSchema),
   asyncHandler(async (req, res) => {
     const newMahasiswa = await usersService.createMahasiswa(req.body);
@@ -62,7 +75,7 @@ router.post(
 
 router.get(
   '/dosen',
-  // authorizeRoles([Role.admin]),
+  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req, res) => {
     const page =
       req.query['page'] != null
@@ -79,7 +92,7 @@ router.get(
 
 router.get(
   '/mahasiswa-tanpa-pembimbing',
-  // authorizeRoles([Role.dosen]),
+  authorizeRoles([Role.dosen, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req, res) => {
     const page =
       req.query['page'] != null
@@ -117,6 +130,7 @@ router.get(
 router.patch(
   '/dosen/:id',
   authorizeRoles([Role.admin, Role.jurusan]),
+  auditLog('UPDATE_DOSEN', 'users'),
   validate(updateDosenSchema),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
@@ -135,6 +149,7 @@ router.patch(
 router.patch(
   '/mahasiswa/:id',
   authorizeRoles([Role.admin, Role.jurusan]),
+  auditLog('UPDATE_MAHASISWA', 'users'),
   validate(updateMahasiswaSchema),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
@@ -155,6 +170,7 @@ router.patch(
 router.delete(
   '/:id',
   authorizeRoles([Role.admin, Role.jurusan]),
+  auditLog('DELETE_USER', 'users'),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     if (id == null) {

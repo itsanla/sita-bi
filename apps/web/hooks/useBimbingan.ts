@@ -92,7 +92,7 @@ export function useUploadLampiran() {
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token || ''}`,
           },
           body: formData,
         },
@@ -169,6 +169,155 @@ export function useCancelBimbingan() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Gagal membatalkan sesi bimbingan');
+    },
+  });
+}
+
+export function useDeleteSesi() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (bimbinganId: number) => {
+      const response = await api.delete(`/bimbingan/sesi/${bimbinganId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Sesi bimbingan berhasil dihapus');
+      queryClient.invalidateQueries({ queryKey: ['mahasiswaBimbingan'] });
+      queryClient.invalidateQueries({ queryKey: ['dosenBimbinganList'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal menghapus sesi bimbingan');
+    },
+  });
+}
+
+export function useCreateSesi() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (tugasAkhirId: number) => {
+      const response = await api.post('/bimbingan/sesi', {
+        tugas_akhir_id: tugasAkhirId,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Sesi bimbingan baru berhasil dibuat');
+      queryClient.invalidateQueries({ queryKey: ['mahasiswaBimbingan'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal membuat sesi bimbingan');
+    },
+  });
+}
+
+export function useSetJadwalSesi() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      bimbinganId,
+      tanggal_bimbingan,
+      jam_bimbingan,
+      jam_selesai,
+    }: {
+      bimbinganId: number;
+      tanggal_bimbingan: string;
+      jam_bimbingan: string;
+      jam_selesai?: string;
+    }) => {
+      const response = await api.put(`/bimbingan/sesi/${bimbinganId}/jadwal`, {
+        tanggal_bimbingan,
+        jam_bimbingan,
+        jam_selesai,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Jadwal bimbingan berhasil diatur');
+      queryClient.invalidateQueries({ queryKey: ['mahasiswaBimbingan'] });
+      queryClient.invalidateQueries({ queryKey: ['dosenBimbinganList'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal mengatur jadwal bimbingan');
+    },
+  });
+}
+
+export function useAddCatatan() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      bimbingan_ta_id,
+      catatan,
+    }: {
+      bimbingan_ta_id: number;
+      catatan: string;
+    }) => {
+      const response = await api.post('/bimbingan/catatan', {
+        bimbingan_ta_id,
+        catatan,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Catatan berhasil ditambahkan');
+      queryClient.invalidateQueries({ queryKey: ['mahasiswaBimbingan'] });
+      queryClient.invalidateQueries({ queryKey: ['dosenBimbinganList'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal menambahkan catatan');
+    },
+  });
+}
+
+export function useCheckEligibility(tugasAkhirId: number) {
+  return useQuery({
+    queryKey: ['sidangEligibility', tugasAkhirId],
+    queryFn: async () => {
+      const response = await api.get(`/bimbingan/eligibility/${tugasAkhirId}`);
+      return response.data;
+    },
+    enabled: !!tugasAkhirId,
+  });
+}
+
+export function useBatalkanValidasi() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (bimbinganId: number) => {
+      const response = await api.post(
+        `/bimbingan/sesi/${bimbinganId}/batalkan-validasi`,
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Validasi bimbingan berhasil dibatalkan');
+      queryClient.invalidateQueries({ queryKey: ['dosenBimbinganList'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal membatalkan validasi');
+    },
+  });
+}
+
+export function useValidasiDraf() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (dokumenId: number) => {
+      const response = await api.post(`/dokumen-ta/${dokumenId}/validasi`);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Draf TA berhasil divalidasi');
+      queryClient.invalidateQueries({ queryKey: ['dosenBimbinganList'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Gagal memvalidasi draf TA');
     },
   });
 }

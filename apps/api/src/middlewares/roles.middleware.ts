@@ -1,15 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-// import type { Role } from '@repo/types'; // Fix rootDir error
-
-// Define Role locally
-export enum Role {
-  mahasiswa = 'mahasiswa',
-  dosen = 'dosen',
-  admin = 'admin',
-  jurusan = 'jurusan',
-  prodi_d3 = 'prodi_d3',
-  prodi_d4 = 'prodi_d4',
-}
+import { Role } from './auth.middleware';
 
 export const authorizeRoles = (allowedRoles: Role[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -19,7 +9,7 @@ export const authorizeRoles = (allowedRoles: Role[]) => {
     }
 
     // Implement role hierarchy inheritance
-    const userRole = req.user.role as Role;
+    const userRole = req.user.role;
     let hasPermission = false;
 
     // Jurusan has access to everything Dosen and Prodi can do (if included in allowedRoles)

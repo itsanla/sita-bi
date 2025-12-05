@@ -1,18 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { Trash2, BookOpen, Users, CheckCircle2 } from 'lucide-react';
+import { Trash2, BookOpen, Users, CheckCircle2, Edit3 } from 'lucide-react';
 import { useTugasAkhir } from '@/hooks/useTugasAkhir';
 import { getStatusChip } from '@/app/components/ui/StatusChip';
 import PageLoader from '@/app/components/loading/PageLoader';
 import SimilarityForm from './SimilarityForm';
 import RecommendedTopics from './RecommendedTopics';
 import SubmittedTitlesTable from './SubmittedTitlesTable';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 export default function TugasAkhirPage() {
   const { tugasAkhir, loading, error, refetch, deleteTugasAkhir } =
     useTugasAkhir();
   const [selectedTitle, setSelectedTitle] = useState('');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const handleDeleteTugasAkhir = async () => {
     if (
@@ -26,6 +28,23 @@ export default function TugasAkhirPage() {
       alert('Submission successfully deleted.');
     } catch (err) {
       alert(`Error: ${(err as Error).message}`);
+    }
+  };
+
+  const handleEditTitle = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmEdit = async () => {
+    setShowConfirmDialog(false);
+    try {
+      await deleteTugasAkhir();
+      alert(
+        'Judul berhasil dihapus. Silakan ajukan judul baru dengan pengecekan similaritas.',
+      );
+      refetch();
+    } catch (err) {
+      alert(`Gagal: ${(err as Error).message}`);
     }
   };
 
@@ -199,9 +218,20 @@ export default function TugasAkhirPage() {
                 )}
               </div>
 
-              {/* Delete Button */}
-              {tugasAkhir.status === 'DIAJUKAN' && (
-                <div className="flex-shrink-0">
+              {/* Action Buttons */}
+              <div className="flex-shrink-0 flex gap-2">
+                <button
+                  onClick={handleEditTitle}
+                  className="group/btn relative px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center gap-2 overflow-hidden text-sm"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-blue-800 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                  <Edit3
+                    size={16}
+                    className="relative z-10 group-hover/btn:scale-110 transition-transform duration-300"
+                  />
+                  <span className="relative z-10">Ubah Judul</span>
+                </button>
+                {tugasAkhir.status === 'DIAJUKAN' && (
                   <button
                     onClick={handleDeleteTugasAkhir}
                     className="group/btn relative px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-semibold shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center gap-2 overflow-hidden text-sm"
@@ -213,8 +243,8 @@ export default function TugasAkhirPage() {
                     />
                     <span className="relative z-10">Hapus</span>
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -229,6 +259,17 @@ export default function TugasAkhirPage() {
       )}
 
       <SubmittedTitlesTable />
+
+      <ConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        title="Peringatan Ubah Judul"
+        description="Jika Anda mengubah judul tugas akhir, judul saat ini akan dihapus dan Anda perlu mengajukan judul baru dengan pengecekan similaritas. Apakah Anda yakin ingin melanjutkan?"
+        confirmText="Ya, Lanjutkan"
+        cancelText="Batal"
+        onConfirm={handleConfirmEdit}
+        variant="warning"
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import type { Prisma } from '@repo/db';
-import { PrismaClient, StatusBimbingan } from '@repo/db';
+import { PrismaClient } from '@repo/db';
 import { BimbinganRepository } from '../repositories/bimbingan.repository';
 import {
   NotFoundError,
@@ -8,7 +8,7 @@ import {
 } from '../errors/AppError';
 
 interface BimbinganForDosen {
-  data: Array<{
+  data: {
     id: number;
     judul: string;
     status: string;
@@ -16,13 +16,13 @@ interface BimbinganForDosen {
       id: number;
       user: { id: number; name: string; email: string };
     };
-    bimbinganTa: Array<{
+    bimbinganTa: {
       id: number;
       status_bimbingan: string;
       tanggal_bimbingan: Date | null;
       jam_bimbingan: string | null;
-    }>;
-  }>;
+    }[];
+  }[];
   page: number;
   limit: number;
   total: number;
@@ -33,12 +33,12 @@ interface TugasAkhirWithBimbingan {
   id: number;
   mahasiswa_id: number;
   status: string;
-  peranDosenTa: Array<{
+  peranDosenTa: {
     id: number;
     peran: string;
     dosen: { id: number; user: { name: string } };
-  }>;
-  bimbinganTa: Array<{
+  }[];
+  bimbinganTa: {
     id: number;
     status_bimbingan: string;
     tanggal_bimbingan: Date | null;
@@ -46,9 +46,14 @@ interface TugasAkhirWithBimbingan {
     catatan: unknown[];
     lampiran: unknown[];
     historyPerubahan: unknown[];
-  }>;
+  }[];
   pendaftaranSidang: unknown[];
 }
+
+const ERROR_MSG_DOSEN_NOT_FOUND = 'Dosen tidak ditemukan';
+const ERROR_MSG_SESI_NOT_FOUND = 'Sesi bimbingan tidak ditemukan';
+const ERROR_MSG_TA_NOT_FOUND = 'Tugas Akhir tidak ditemukan';
+const ERROR_MSG_PEMBIMBING_NOT_ASSIGNED = 'Pembimbing belum ditugaskan';
 
 export class BimbinganService {
   private repository: BimbinganRepository;
@@ -75,8 +80,8 @@ export class BimbinganService {
         user_id: userId,
         action,
       };
-      if (url) logData.url = url;
-      if (method) logData.method = method;
+      if (url !== undefined && url !== '') logData.url = url;
+      if (method !== undefined && method !== '') logData.method = method;
       await this.repository.createLog(logData);
     } catch (error) {
       console.error('Failed to create log:', error);
@@ -116,7 +121,15 @@ export class BimbinganService {
       return null;
     }
 
-    return tugasAkhir as TugasAkhirWithBimbingan;
+    const result = tugasAkhir as TugasAkhirWithBimbingan & {
+      judul_divalidasi_p1: boolean;
+      judul_divalidasi_p2: boolean;
+    };
+    
+    result.judul_divalidasi_p1 = false;
+    result.judul_divalidasi_p2 = false;
+
+    return result;
   }
 
   async createCatatan(
@@ -126,8 +139,8 @@ export class BimbinganService {
   ): Promise<unknown> {
     const bimbingan = await this.repository.findBimbinganById(bimbinganTaId);
 
-    if (!bimbingan) {
-      throw new NotFoundError('Sesi bimbingan tidak ditemukan');
+    if (bimbingan === null || typeof bimbingan !== 'object') {
+      throw new NotFoundError(ERROR_MSG_SESI_NOT_FOUND);
     }
 
     const isMahasiswa = bimbingan.tugasAkhir.mahasiswa.user.id === authorId;
@@ -175,7 +188,7 @@ export class BimbinganService {
     ]);
 
     for (const bimbingan of bimbinganConflicts) {
-      if (bimbingan.jam_bimbingan) {
+      if (bimbingan.jam_bimbingan !== null && bimbingan.jam_bimbingan !== '') {
         const bStart = this.timeStringToMinutes(bimbingan.jam_bimbingan);
         const bEnd = bStart + 60;
         if (this.isOverlap(startTime, endTime, bStart, bEnd)) {
@@ -212,14 +225,20 @@ export class BimbinganService {
     ]);
 
     for (const b of bimbingan) {
-      if (b.jam_bimbingan) {
+      if (b.jam_bimbingan !== null && b.jam_bimbingan !== '') {
         const start = this.timeStringToMinutes(b.jam_bimbingan);
         busyIntervals.push({ start, end: start + 60 });
       }
     }
 
     for (const s of sidangs) {
-      if (s.waktu_mulai && s.waktu_selesai) {
+      const hasValidWaktu =
+        typeof s.waktu_mulai === 'string' &&
+        s.waktu_mulai !== '' &&
+        typeof s.waktu_selesai === 'string' &&
+        s.waktu_selesai !== '';
+
+      if (hasValidWaktu) {
         busyIntervals.push({
           start: this.timeStringToMinutes(s.waktu_mulai),
           end: this.timeStringToMinutes(s.waktu_selesai),
@@ -259,7 +278,7 @@ export class BimbinganService {
   }
 
   private timeStringToMinutes(time: string): number {
-    if (typeof time !== 'string' || !time) {
+    if (typeof time !== 'string' || time === '') {
       return 0;
     }
     const parts = time.split(':');
@@ -295,10 +314,10 @@ export class BimbinganService {
     jam: string,
   ): Promise<unknown> {
     const dosen = await this.repository.findDosenByUserId(dosenId);
-    if (!dosen) {
-      throw new NotFoundError('Dosen tidak ditemukan');
+    if (dosen === null || typeof dosen !== 'object' || !('user_id' in dosen)) {
+      throw new NotFoundError(ERROR_MSG_DOSEN_NOT_FOUND);
     }
-    const userId = dosen.user_id;
+    const userId = dosen.user_id as number;
 
     return this.prisma
       .$transaction(async (tx: Prisma.TransactionClient) => {
@@ -307,7 +326,14 @@ export class BimbinganService {
           dosenId,
         );
 
-        if (!peranDosen?.peran || !peranDosen.peran.startsWith('pembimbing')) {
+        const hasValidPeran =
+          peranDosen !== null &&
+          typeof peranDosen === 'object' &&
+          'peran' in peranDosen &&
+          typeof peranDosen.peran === 'string' &&
+          peranDosen.peran.startsWith('pembimbing');
+
+        if (!hasValidPeran) {
           throw new UnauthorizedError(
             'Anda bukan pembimbing untuk tugas akhir ini',
           );
@@ -326,7 +352,7 @@ export class BimbinganService {
         });
 
         for (const c of conflicts) {
-          if (c.jam_bimbingan) {
+          if (c.jam_bimbingan !== null && c.jam_bimbingan !== '') {
             const cStart = this.timeStringToMinutes(c.jam_bimbingan);
             const cEnd = cStart + 60;
             if (cStart < endTime && startTime < cEnd) {
@@ -353,7 +379,13 @@ export class BimbinganService {
         });
 
         for (const s of sidangConflicts) {
-          if (s.waktu_mulai && s.waktu_selesai) {
+          const hasValidWaktuSidang =
+            typeof s.waktu_mulai === 'string' &&
+            s.waktu_mulai !== '' &&
+            typeof s.waktu_selesai === 'string' &&
+            s.waktu_selesai !== '';
+
+          if (hasValidWaktuSidang) {
             const sStart = this.timeStringToMinutes(s.waktu_mulai);
             const sEnd = this.timeStringToMinutes(s.waktu_selesai);
             if (sStart < endTime && startTime < sEnd) {
@@ -404,8 +436,7 @@ export class BimbinganService {
           where: { id: bimbinganId },
         });
 
-        if (!bimbingan)
-          throw new NotFoundError('Sesi bimbingan tidak ditemukan');
+        if (!bimbingan) throw new NotFoundError(ERROR_MSG_SESI_NOT_FOUND);
 
         await tx.historyPerubahanJadwal.create({
           data: {
@@ -443,17 +474,17 @@ export class BimbinganService {
     dosenId: number,
   ): Promise<unknown> {
     const dosen = await this.repository.findDosenByUserId(dosenId);
-    if (!dosen) {
-      throw new NotFoundError('Dosen tidak ditemukan');
+    if (dosen === null || typeof dosen !== 'object' || !('user_id' in dosen)) {
+      throw new NotFoundError(ERROR_MSG_DOSEN_NOT_FOUND);
     }
-    const userId = dosen.user_id;
+    const userId = dosen.user_id as number;
 
     const bimbingan = await this.repository.findBimbinganByIdAndDosen(
       bimbinganId,
       dosenId,
     );
 
-    if (!bimbingan) {
+    if (bimbingan === null || typeof bimbingan !== 'object') {
       throw new NotFoundError(
         'Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses',
       );
@@ -474,10 +505,10 @@ export class BimbinganService {
 
   async selesaikanSesi(bimbinganId: number, dosenId: number): Promise<unknown> {
     const dosen = await this.repository.findDosenByUserId(dosenId);
-    if (!dosen) {
-      throw new NotFoundError('Dosen tidak ditemukan');
+    if (dosen === null || typeof dosen !== 'object' || !('user_id' in dosen)) {
+      throw new NotFoundError(ERROR_MSG_DOSEN_NOT_FOUND);
     }
-    const userId = dosen.user_id;
+    const userId = dosen.user_id as number;
 
     return this.prisma
       .$transaction(async (tx: Prisma.TransactionClient) => {
@@ -486,7 +517,7 @@ export class BimbinganService {
           dosenId,
         );
 
-        if (!bimbingan) {
+        if (bimbingan === null || typeof bimbingan !== 'object') {
           throw new NotFoundError(
             'Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses',
           );
@@ -533,10 +564,11 @@ export class BimbinganService {
               data: updateData,
             });
 
-            if (
+            const isValidatedByBoth =
               updatedDokumen.divalidasi_oleh_p1 !== null &&
-              updatedDokumen.divalidasi_oleh_p2 !== null
-            ) {
+              updatedDokumen.divalidasi_oleh_p2 !== null;
+
+            if (isValidatedByBoth) {
               await tx.dokumenTa.update({
                 where: { id: updatedDokumen.id },
                 data: { status_validasi: 'disetujui' },
@@ -563,8 +595,8 @@ export class BimbinganService {
     fileType: string,
   ): Promise<unknown> {
     const bimbingan = await this.repository.findBimbinganById(bimbinganTaId);
-    if (!bimbingan) {
-      throw new NotFoundError('Sesi bimbingan tidak ditemukan');
+    if (bimbingan === null || typeof bimbingan !== 'object') {
+      throw new NotFoundError(ERROR_MSG_SESI_NOT_FOUND);
     }
 
     return this.repository.createLampiran({
@@ -577,11 +609,11 @@ export class BimbinganService {
 
   async addMultipleLampiran(
     bimbinganTaId: number,
-    files: Array<{ path: string; name: string; type: string }>,
+    files: { path: string; name: string; type: string }[],
   ): Promise<unknown[]> {
     const bimbingan = await this.repository.findBimbinganById(bimbinganTaId);
-    if (!bimbingan) {
-      throw new NotFoundError('Sesi bimbingan tidak ditemukan');
+    if (bimbingan === null || typeof bimbingan !== 'object') {
+      throw new NotFoundError(ERROR_MSG_SESI_NOT_FOUND);
     }
 
     const results = [];
@@ -613,19 +645,20 @@ export class BimbinganService {
       include: { peranDosenTa: true },
     });
 
-    if (!tugasAkhir) {
-      throw new NotFoundError('Tugas Akhir tidak ditemukan');
+    if (tugasAkhir === null) {
+      throw new NotFoundError(ERROR_MSG_TA_NOT_FOUND);
     }
 
-    const pembimbing = tugasAkhir.peranDosenTa.find(
-      (p) => p.peran === 'pembimbing1' || p.peran === 'pembimbing2',
+    const pembimbing1 = tugasAkhir.peranDosenTa.find(
+      (p) => p.peran === 'pembimbing1',
     );
 
-    if (!pembimbing) {
+    if (pembimbing1 === undefined) {
       return;
     }
 
-    const existingCount = await this.repository.countBimbinganByTugasAkhir(tugasAkhirId);
+    const existingCount =
+      await this.repository.countBimbinganByTugasAkhir(tugasAkhirId);
     if (existingCount > 0) {
       return;
     }
@@ -633,14 +666,17 @@ export class BimbinganService {
     for (let i = 1; i <= 9; i++) {
       await this.repository.createEmptySesi(
         tugasAkhirId,
-        pembimbing.dosen_id,
-        pembimbing.peran,
+        pembimbing1.dosen_id,
+        'pembimbing1',
         i,
       );
     }
   }
 
-  async createEmptySesi(tugasAkhirId: number, userId: number): Promise<unknown> {
+  async createEmptySesi(
+    tugasAkhirId: number,
+    userId: number,
+  ): Promise<unknown> {
     const tugasAkhir = await this.prisma.tugasAkhir.findUnique({
       where: { id: tugasAkhirId },
       include: {
@@ -649,28 +685,33 @@ export class BimbinganService {
       },
     });
 
-    if (!tugasAkhir) {
-      throw new NotFoundError('Tugas Akhir tidak ditemukan');
+    if (tugasAkhir === null) {
+      throw new NotFoundError(ERROR_MSG_TA_NOT_FOUND);
     }
 
     const isMahasiswa = tugasAkhir.mahasiswa.user_id === userId;
     const pembimbing = tugasAkhir.peranDosenTa.find(
-      (p) => p.dosen.user_id === userId && (p.peran === 'pembimbing1' || p.peran === 'pembimbing2'),
+      (p) =>
+        p.dosen.user_id === userId &&
+        (p.peran === 'pembimbing1' || p.peran === 'pembimbing2'),
     );
 
-    if (!isMahasiswa && !pembimbing) {
-      throw new UnauthorizedError('Anda tidak memiliki akses untuk membuat sesi bimbingan');
+    if (!isMahasiswa && pembimbing === undefined) {
+      throw new UnauthorizedError(
+        'Anda tidak memiliki akses untuk membuat sesi bimbingan',
+      );
     }
 
-    const currentCount = await this.repository.countBimbinganByTugasAkhir(tugasAkhirId);
+    const currentCount =
+      await this.repository.countBimbinganByTugasAkhir(tugasAkhirId);
     const nextSesi = currentCount + 1;
 
     const dosenPembimbing = tugasAkhir.peranDosenTa.find(
       (p) => p.peran === 'pembimbing1' || p.peran === 'pembimbing2',
     );
 
-    if (!dosenPembimbing) {
-      throw new NotFoundError('Pembimbing belum ditugaskan');
+    if (dosenPembimbing === undefined) {
+      throw new NotFoundError(ERROR_MSG_PEMBIMBING_NOT_ASSIGNED);
     }
 
     const newSesi = await this.repository.createEmptySesi(
@@ -680,7 +721,10 @@ export class BimbinganService {
       nextSesi,
     );
 
-    await this.logActivity(userId, `Membuat sesi bimbingan ke-${nextSesi} untuk TA ID ${tugasAkhirId}`);
+    await this.logActivity(
+      userId,
+      `Membuat sesi bimbingan ke-${nextSesi} untuk TA ID ${tugasAkhirId}`,
+    );
 
     return newSesi;
   }
@@ -692,18 +736,33 @@ export class BimbinganService {
     jamMulai: string,
     jamSelesai?: string,
   ): Promise<unknown> {
-    const bimbingan = await this.repository.findBimbinganWithAccess(bimbinganId, userId);
+    const bimbingan = await this.repository.findBimbinganWithAccess(
+      bimbinganId,
+      userId,
+    );
 
-    if (!bimbingan) {
-      throw new NotFoundError('Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses');
+    if (
+      bimbingan === null ||
+      typeof bimbingan !== 'object' ||
+      !('dosen_id' in bimbingan)
+    ) {
+      throw new NotFoundError(
+        'Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses',
+      );
     }
 
     const tanggalDate = new Date(tanggal);
-    const dosenId = bimbingan.dosen_id;
+    const dosenId = bimbingan.dosen_id as number;
 
-    const hasConflict = await this.detectScheduleConflicts(dosenId, tanggalDate, jamMulai);
+    const hasConflict = await this.detectScheduleConflicts(
+      dosenId,
+      tanggalDate,
+      jamMulai,
+    );
     if (hasConflict) {
-      throw new ConflictError('Jadwal konflik dengan bimbingan atau sidang lain');
+      throw new ConflictError(
+        'Jadwal konflik dengan bimbingan atau sidang lain',
+      );
     }
 
     const updated = await this.repository.updateJadwalBimbingan(
@@ -721,23 +780,145 @@ export class BimbinganService {
     return updated;
   }
 
-  async konfirmasiSelesai(bimbinganId: number, dosenUserId: number): Promise<unknown> {
+  async konfirmasiSelesai(
+    bimbinganId: number,
+    dosenUserId: number,
+  ): Promise<unknown> {
     const dosen = await this.repository.findDosenByUserId(dosenUserId);
-    if (!dosen) {
-      throw new NotFoundError('Dosen tidak ditemukan');
+    if (dosen === null || typeof dosen !== 'object' || !('id' in dosen)) {
+      throw new NotFoundError(ERROR_MSG_DOSEN_NOT_FOUND);
     }
 
-    const bimbingan = await this.repository.findBimbinganByIdAndDosen(bimbinganId, dosen.id);
-    if (!bimbingan) {
-      throw new NotFoundError('Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses');
+    const bimbingan = await this.repository.findBimbinganByIdAndDosen(
+      bimbinganId,
+      dosen.id as number,
+    );
+    if (bimbingan === null || typeof bimbingan !== 'object') {
+      throw new NotFoundError(
+        'Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses',
+      );
     }
 
-    if (!bimbingan.tanggal_bimbingan || !bimbingan.jam_bimbingan) {
+    const hasTanggal =
+      'tanggal_bimbingan' in bimbingan && bimbingan.tanggal_bimbingan !== null;
+    const hasJam =
+      'jam_bimbingan' in bimbingan &&
+      bimbingan.jam_bimbingan !== null &&
+      bimbingan.jam_bimbingan !== '';
+
+    if (!hasTanggal || !hasJam) {
       throw new ConflictError('Sesi belum dijadwalkan');
     }
 
-    const result = await this.repository.konfirmasiBimbingan(bimbinganId);
-    await this.logActivity(dosenUserId, `Konfirmasi selesai bimbingan ID ${bimbinganId}`);
+    const result = await this.repository.updateBimbinganStatus(
+      bimbinganId,
+      'selesai',
+    );
+    await this.logActivity(
+      dosenUserId,
+      `Konfirmasi selesai bimbingan ID ${bimbinganId}`,
+    );
+
+    return result;
+  }
+
+  async deleteSesi(bimbinganId: number, userId: number): Promise<void> {
+    const bimbingan = await this.repository.findBimbinganWithAccess(
+      bimbinganId,
+      userId,
+    );
+
+    if (bimbingan === null || typeof bimbingan !== 'object') {
+      throw new NotFoundError(
+        'Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses',
+      );
+    }
+
+    const isSelesai =
+      'status_bimbingan' in bimbingan &&
+      bimbingan.status_bimbingan === 'selesai';
+
+    if (isSelesai) {
+      throw new ConflictError('Tidak dapat menghapus sesi yang sudah selesai');
+    }
+
+    await this.repository.deleteBimbinganSesi(bimbinganId);
+    await this.logActivity(
+      userId,
+      `Menghapus sesi bimbingan ID ${bimbinganId}`,
+    );
+  }
+
+  async checkSidangEligibility(tugasAkhirId: number): Promise<{
+    eligible: boolean;
+    validBimbinganCount: number;
+    isDrafValidated: boolean;
+    message?: string;
+  }> {
+    const validBimbinganCount =
+      await this.repository.countValidBimbingan(tugasAkhirId);
+
+    const latestDokumen =
+      await this.repository.findLatestDokumenTa(tugasAkhirId);
+    const isDrafValidated =
+      latestDokumen !== null &&
+      typeof latestDokumen === 'object' &&
+      'divalidasi_oleh_p1' in latestDokumen &&
+      'divalidasi_oleh_p2' in latestDokumen &&
+      latestDokumen.divalidasi_oleh_p1 !== null &&
+      latestDokumen.divalidasi_oleh_p2 !== null;
+
+    const eligible = validBimbinganCount >= 9 && isDrafValidated;
+
+    let message = '';
+    if (!eligible) {
+      if (validBimbinganCount < 9) {
+        message = `Bimbingan valid baru ${validBimbinganCount}/9. `;
+      }
+      if (!isDrafValidated) {
+        message += 'Draf TA belum divalidasi oleh kedua pembimbing.';
+      }
+    }
+
+    return {
+      eligible,
+      validBimbinganCount,
+      isDrafValidated,
+      message: message || undefined,
+    };
+  }
+
+  async batalkanValidasi(
+    bimbinganId: number,
+    dosenUserId: number,
+  ): Promise<unknown> {
+    const dosen = await this.repository.findDosenByUserId(dosenUserId);
+    if (dosen === null || typeof dosen !== 'object' || !('id' in dosen)) {
+      throw new NotFoundError(ERROR_MSG_DOSEN_NOT_FOUND);
+    }
+
+    const bimbingan = await this.repository.findBimbinganByIdAndDosen(
+      bimbinganId,
+      dosen.id as number,
+    );
+    if (bimbingan === null || typeof bimbingan !== 'object') {
+      throw new NotFoundError(ERROR_MSG_SESI_NOT_FOUND);
+    }
+
+    if (bimbingan.status_bimbingan !== 'selesai') {
+      throw new ConflictError(
+        'Hanya sesi yang sudah selesai yang bisa dibatalkan validasinya',
+      );
+    }
+
+    const result = await this.repository.updateBimbinganStatus(
+      bimbinganId,
+      'dijadwalkan',
+    );
+    await this.logActivity(
+      dosenUserId,
+      `Membatalkan validasi bimbingan ID ${bimbinganId}`,
+    );
 
     return result;
   }

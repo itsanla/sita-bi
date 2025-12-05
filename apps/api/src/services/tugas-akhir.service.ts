@@ -13,6 +13,8 @@ export class SimilarityError extends Error {
 
 export class TugasAkhirService {
   private prisma: PrismaClient;
+  private readonly ERROR_DOSEN_NOT_FOUND = 'Profil dosen tidak ditemukan.';
+  private readonly ERROR_TA_NOT_FOUND = 'Tugas Akhir tidak ditemukan.';
 
   constructor() {
     this.prisma = new PrismaClient();
@@ -47,13 +49,22 @@ export class TugasAkhirService {
       select: { id: true, judul: true },
     });
 
-    if (allTitles.length === 0) {
+    const tawaranTopik = await this.prisma.tawaranTopik.findMany({
+      where: { deleted_at: null },
+      select: { id: true, judul_topik: true },
+    });
+
+    const combinedTitles = [
+      ...allTitles,
+      ...tawaranTopik.map((t) => ({ id: t.id, judul: t.judul_topik })),
+    ];
+
+    if (combinedTitles.length === 0) {
       return [];
     }
 
-    const similarities = await calculateSimilarities(judul, allTitles);
+    const similarities = await calculateSimilarities(judul, combinedTitles);
 
-    // Return top 5 results or any result above 50%
     return similarities.filter((res) => res.similarity > 50).slice(0, 5);
   }
 
@@ -162,20 +173,11 @@ export class TugasAkhirService {
       include: { tugasAkhir: true },
     });
 
-    if (mahasiswa === null || mahasiswa.tugasAkhir === undefined) {
+    if (mahasiswa?.tugasAkhir === undefined) {
       throw new Error('Tugas Akhir not found for this student.');
     }
 
     const { tugasAkhir } = mahasiswa;
-
-    if (
-      tugasAkhir.status !== StatusTugasAkhir.DIAJUKAN &&
-      tugasAkhir.status !== StatusTugasAkhir.DITOLAK
-    ) {
-      throw new Error(
-        `Cannot delete submission with status "${tugasAkhir.status}".`,
-      );
-    }
 
     const deleted = await this.prisma.tugasAkhir.delete({
       where: { id: tugasAkhir.id },
@@ -213,7 +215,7 @@ export class TugasAkhirService {
     });
 
     if (tugasAkhir === null) {
-      throw new Error('Tugas Akhir tidak ditemukan.');
+      throw new Error(this.ERROR_TA_NOT_FOUND);
     }
 
     if (tugasAkhir.status !== StatusTugasAkhir.DIAJUKAN) {
@@ -227,7 +229,7 @@ export class TugasAkhirService {
     });
 
     if (dosen === null) {
-      throw new Error('Profil dosen tidak ditemukan.');
+      throw new Error(this.ERROR_DOSEN_NOT_FOUND);
     }
 
     const isPembimbing = tugasAkhir.peranDosenTa.some(
@@ -236,7 +238,7 @@ export class TugasAkhirService {
         (peran.peran === 'pembimbing1' || peran.peran === 'pembimbing2'),
     );
 
-    if (isPembimbing === false) {
+    if (!isPembimbing) {
       throw new Error(
         'Hanya pembimbing yang dapat menyetujui judul tugas akhir ini.',
       );
@@ -283,7 +285,7 @@ export class TugasAkhirService {
     });
 
     if (tugasAkhir === null) {
-      throw new Error('Tugas Akhir tidak ditemukan.');
+      throw new Error(this.ERROR_TA_NOT_FOUND);
     }
 
     if (tugasAkhir.status !== StatusTugasAkhir.DIAJUKAN) {
@@ -297,7 +299,7 @@ export class TugasAkhirService {
     });
 
     if (dosen === null) {
-      throw new Error('Profil dosen tidak ditemukan.');
+      throw new Error(this.ERROR_DOSEN_NOT_FOUND);
     }
 
     const isPembimbing = tugasAkhir.peranDosenTa.some(
@@ -306,7 +308,7 @@ export class TugasAkhirService {
         (peran.peran === 'pembimbing1' || peran.peran === 'pembimbing2'),
     );
 
-    if (isPembimbing === false) {
+    if (!isPembimbing) {
       throw new Error(
         'Hanya pembimbing yang dapat menolak judul tugas akhir ini.',
       );
@@ -343,7 +345,7 @@ export class TugasAkhirService {
     });
 
     if (dosen === null) {
-      throw new Error('Profil dosen tidak ditemukan.');
+      throw new Error(this.ERROR_DOSEN_NOT_FOUND);
     }
 
     return this.prisma.tugasAkhir.findMany({
@@ -378,5 +380,48 @@ export class TugasAkhirService {
         tanggal_pengajuan: 'asc',
       },
     });
+  }
+
+  async updateJudul(userId: number, judulBaru: string): Promise<TugasAkhir> {
+    const mahasiswa = await this.prisma.mahasiswa.findUnique({
+      where: { user_id: userId },
+      include: { tugasAkhir: true },
+    });
+
+    if (mahasiswa?.tugasAkhir === undefined) {
+      throw new Error(this.ERROR_TA_NOT_FOUND);
+    }
+
+    const { tugasAkhir } = mahasiswa;
+
+    const existingTitle = await this.prisma.tugasAkhir.findFirst({
+      where: {
+        judul: { equals: judulBaru },
+        NOT: { id: tugasAkhir.id },
+      },
+    });
+
+    if (existingTitle !== null) {
+      throw new Error(`Judul "${judulBaru}" sudah pernah diajukan.`);
+    }
+
+    const updated = await this.prisma.tugasAkhir.update({
+      where: { id: tugasAkhir.id },
+      data: {
+        judul: judulBaru,
+        status: StatusTugasAkhir.DIAJUKAN,
+        disetujui_oleh: null,
+        ditolak_oleh: null,
+        alasan_penolakan: null,
+        tanggal_pengajuan: new Date(),
+      },
+    });
+
+    await this.logActivity(
+      userId,
+      `Mengubah judul Tugas Akhir menjadi: "${judulBaru}"`,
+    );
+
+    return updated;
   }
 }

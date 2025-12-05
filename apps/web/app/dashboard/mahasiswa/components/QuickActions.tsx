@@ -27,7 +27,7 @@ export default function QuickActions() {
           `${API_BASE_URL}/dashboard/mahasiswa/system-stats`,
           {
             headers: {
-              'x-user-id': userId,
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
               'Content-Type': 'application/json',
             },
           },

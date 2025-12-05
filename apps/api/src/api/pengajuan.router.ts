@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import asyncHandler from '../utils/asyncHandler';
 import { PengajuanService } from '../services/pengajuan.service';
-import { authMiddleware } from '../middlewares/auth.middleware';
+import { authMiddleware, Role } from '../middlewares/auth.middleware';
+import { authorizeRoles } from '../middlewares/roles.middleware';
 
 const MSG_GAGAL = 'gagal';
 const MSG_SUKSES = 'sukses';
-const MSG_UNAUTHORIZED = 'Unauthorized';
+const MSG_UNAUTHORIZED = 'Akses ditolak';
 const MSG_TERJADI_KESALAHAN = 'Terjadi kesalahan';
 const MSG_ID_PENGAJUAN_DIPERLUKAN = 'ID pengajuan diperlukan';
 const MSG_ID_PELEPASAN_DIPERLUKAN = 'ID pelepasan diperlukan';
@@ -23,6 +24,7 @@ router.use(asyncHandler(authMiddleware));
 // Endpoint untuk mahasiswa mengajukan ke dosen
 router.post(
   '/mahasiswa',
+  authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req, res) => {
     if (typeof req.user?.mahasiswa?.id !== 'number') {
       res.status(401).json({
@@ -34,6 +36,10 @@ router.post(
 
     const mahasiswaId = req.user.mahasiswa.id;
     const { dosenId, peran } = req.body;
+
+    console.log('Request body:', req.body);
+    console.log('dosenId:', dosenId, 'type:', typeof dosenId);
+    console.log('peran:', peran);
 
     if (dosenId === undefined || dosenId === null) {
       res.status(400).json({
@@ -74,6 +80,7 @@ router.post(
 // Endpoint untuk mendapatkan pengajuan mahasiswa
 router.get(
   '/mahasiswa',
+  authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req, res) => {
     if (typeof req.user?.mahasiswa?.id !== 'number') {
       res.status(401).json({
@@ -112,6 +119,7 @@ router.get(
 // Endpoint untuk dosen menawarkan ke mahasiswa
 router.post(
   '/dosen',
+  authorizeRoles([Role.dosen, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req, res) => {
     if (typeof req.user?.dosen?.id !== 'number') {
       res.status(401).json({
@@ -163,6 +171,7 @@ router.post(
 // Endpoint untuk mendapatkan pengajuan dosen
 router.get(
   '/dosen',
+  authorizeRoles([Role.dosen, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req, res) => {
     if (typeof req.user?.dosen?.id !== 'number') {
       res.status(401).json({
@@ -329,6 +338,7 @@ router.get(
 // Endpoint untuk mendapatkan list mahasiswa tersedia (untuk dosen)
 router.get(
   '/mahasiswa-tersedia',
+  authorizeRoles([Role.dosen, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req, res) => {
     if (typeof req.user?.dosen?.id !== 'number') {
       res.status(401).json({

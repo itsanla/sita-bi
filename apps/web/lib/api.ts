@@ -22,7 +22,17 @@ apiClient.interceptors.request.use(
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
       if (token && config.headers) {
-        config.headers['x-user-id'] = token;
+        // Check if token is old format (numeric userId) or invalid
+        if (/^\d+$/.test(token) || token.split('.').length !== 3) {
+          // Old format or malformed JWT detected, clear it
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
+        } else {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
       }
     }
     return config;
@@ -75,9 +85,14 @@ apiClient.interceptors.response.use(
           typeof window !== 'undefined' &&
           !window.location.pathname.includes('/login')
         ) {
-          toast.error('Sesi Anda telah berakhir. Silakan login kembali.');
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          const errorMsg = message.toLowerCase();
+          if (errorMsg.includes('jwt') || errorMsg.includes('token') || errorMsg.includes('invalid')) {
+            // Silent redirect for invalid tokens, no toast
+          } else {
+            toast.error('Sesi Anda telah berakhir. Silakan login kembali.');
+          }
           window.location.href = '/login';
         }
         break;

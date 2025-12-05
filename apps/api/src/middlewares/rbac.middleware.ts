@@ -3,15 +3,21 @@ import { Role } from './auth.middleware';
 import prisma from '../config/database';
 
 // Scope validation untuk Kaprodi
+import { ERROR_MESSAGES } from '../utils/error-messages';
+
 export const validateProdiScope = (requiredProdi?: 'D3' | 'D4') => {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     if (!req.user) {
-      res.status(401).json({ message: 'Unauthorized' });
+      res.status(401).json({ message: ERROR_MESSAGES.UNAUTHORIZED });
       return;
     }
 
     const userRole = req.user.role;
-    
+
     // Kajur bypass scope check
     if (userRole === Role.jurusan || userRole === Role.admin) {
       next();
@@ -21,14 +27,18 @@ export const validateProdiScope = (requiredProdi?: 'D3' | 'D4') => {
     // Kaprodi must have matching prodi
     if (userRole === Role.prodi_d3 || userRole === Role.prodi_d4) {
       const userProdi = req.user.dosen?.prodi;
-      
-      if (!userProdi) {
-        res.status(403).json({ message: 'Forbidden: Prodi scope not defined' });
+
+      if (userProdi == null) {
+        res.status(403).json({ message: ERROR_MESSAGES.PRODI_SCOPE_DENIED });
         return;
       }
 
       if (requiredProdi && userProdi !== requiredProdi) {
-        res.status(403).json({ message: `Forbidden: Access limited to ${requiredProdi} only` });
+        res
+          .status(403)
+          .json({
+            message: `${ERROR_MESSAGES.PRODI_SCOPE_DENIED} ${requiredProdi}`,
+          });
         return;
       }
 
@@ -37,7 +47,7 @@ export const validateProdiScope = (requiredProdi?: 'D3' | 'D4') => {
     }
 
     // Dosen tidak punya scope prodi untuk operasi ini
-    res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
+    res.status(403).json({ message: ERROR_MESSAGES.FORBIDDEN });
   };
 };
 
@@ -55,22 +65,32 @@ export const validateDosenMahasiswaRelation = async (
   const userRole = req.user.role;
 
   // Kajur & Kaprodi bypass relationship check
-  if (userRole === Role.jurusan || userRole === Role.prodi_d3 || userRole === Role.prodi_d4 || userRole === Role.admin) {
+  if (
+    userRole === Role.jurusan ||
+    userRole === Role.prodi_d3 ||
+    userRole === Role.prodi_d4 ||
+    userRole === Role.admin
+  ) {
     next();
     return;
   }
 
   // Dosen must have relationship with mahasiswa
   if (userRole === Role.dosen) {
-    const mahasiswaId = parseInt(req.params['mahasiswaId'] || req.body['mahasiswa_id'] || (req.query['mahasiswa_id'] as string) || '0');
-    
-    if (!mahasiswaId) {
+    const mahasiswaId = parseInt(
+      req.params['mahasiswaId'] ??
+        req.body.mahasiswa_id ??
+        (req.query['mahasiswa_id'] as string | undefined) ??
+        '0',
+    );
+
+    if (mahasiswaId === 0) {
       res.status(400).json({ message: 'Mahasiswa ID required' });
       return;
     }
 
     const dosenId = req.user.dosen?.id;
-    if (!dosenId) {
+    if (dosenId == null) {
       res.status(403).json({ message: 'Forbidden: Dosen profile not found' });
       return;
     }
@@ -88,7 +108,9 @@ export const validateDosenMahasiswaRelation = async (
     });
 
     if (!tugasAkhir) {
-      res.status(403).json({ message: 'Forbidden: You are not assigned to this student' });
+      res
+        .status(403)
+        .json({ message: 'Forbidden: You are not assigned to this student' });
       return;
     }
 
@@ -113,21 +135,31 @@ export const validateDosenTugasAkhirAccess = async (
   const userRole = req.user.role;
 
   // Kajur & Kaprodi bypass
-  if (userRole === Role.jurusan || userRole === Role.prodi_d3 || userRole === Role.prodi_d4 || userRole === Role.admin) {
+  if (
+    userRole === Role.jurusan ||
+    userRole === Role.prodi_d3 ||
+    userRole === Role.prodi_d4 ||
+    userRole === Role.admin
+  ) {
     next();
     return;
   }
 
   if (userRole === Role.dosen) {
-    const tugasAkhirId = parseInt(req.params['tugasAkhirId'] || req.params['id'] || (req.body['tugas_akhir_id'] as string) || '0');
-    
-    if (!tugasAkhirId) {
+    const tugasAkhirId = parseInt(
+      req.params['tugasAkhirId'] ??
+        req.params['id'] ??
+        (req.body.tugas_akhir_id as string | undefined) ??
+        '0',
+    );
+
+    if (tugasAkhirId === 0) {
       res.status(400).json({ message: 'Tugas Akhir ID required' });
       return;
     }
 
     const dosenId = req.user.dosen?.id;
-    if (!dosenId) {
+    if (dosenId == null) {
       res.status(403).json({ message: 'Forbidden: Dosen profile not found' });
       return;
     }
@@ -140,7 +172,9 @@ export const validateDosenTugasAkhirAccess = async (
     });
 
     if (!assignment) {
-      res.status(403).json({ message: 'Forbidden: You are not assigned to this thesis' });
+      res
+        .status(403)
+        .json({ message: 'Forbidden: You are not assigned to this thesis' });
       return;
     }
 
@@ -152,7 +186,9 @@ export const validateDosenTugasAkhirAccess = async (
 };
 
 // Check pembimbing capacity (max 4)
-export const validatePembimbingCapacity = async (dosenId: number): Promise<{ isValid: boolean; current: number; message?: string }> => {
+export const validatePembimbingCapacity = async (
+  dosenId: number,
+): Promise<{ isValid: boolean; current: number; message?: string }> => {
   const count = await prisma.peranDosenTa.count({
     where: {
       dosen_id: dosenId,

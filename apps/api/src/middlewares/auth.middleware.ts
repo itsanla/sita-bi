@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-// import type { Role } from '@repo/types'; // Avoid importing outside rootDir to fix build error
+import jwt from 'jsonwebtoken';
 import prisma from '../config/database';
 
 // Define Role locally to avoid rootDir error
@@ -13,8 +13,8 @@ export enum Role {
 }
 
 /**
- * Simple auth middleware using x-user-id header
- * User ID is stored in localStorage and sent via header
+ * JWT auth middleware
+ * Verifies JWT token from Authorization header
  */
 export const authMiddleware = async (
   req: Request,
@@ -22,68 +22,44 @@ export const authMiddleware = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const userId = req.headers['x-user-id'];
+    const authHeader = req.headers.authorization;
 
-    if (userId == null || typeof userId !== 'string') {
-      res.status(401).json({ message: 'Unauthorized: No user ID provided' });
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({ message: 'Unauthorized: No token provided' });
       return;
     }
 
-    const userIdNum = parseInt(userId, 10);
-    if (isNaN(userIdNum)) {
-      res.status(401).json({ message: 'Unauthorized: Invalid user ID' });
-      return;
-    }
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || 'your-secret-key',
+    ) as {
+      userId: number;
+      email: string;
+      role: string;
+      dosen?: { id: number; nip: string; prodi: string } | null;
+      mahasiswa?: { id: number; nim: string } | null;
+    };
 
-    // Fetch user from database
-    const user = await prisma.user.findUnique({
-      where: { id: userIdNum },
-      include: {
-        dosen: true,
-        mahasiswa: true,
-        roles: true,
-      },
-    });
-
-    if (user == null) {
-      res.status(401).json({ message: 'Unauthorized: User not found' });
-      return;
-    }
-
-    if (user.roles.length === 0) {
-      res.status(401).json({ message: 'Unauthorized: User has no roles' });
-      return;
-    }
-
-    const userRole = user.roles[0];
-    if (userRole == null) {
-      res.status(401).json({ message: 'Unauthorized: User role not found' });
-      return;
-    }
-
+    // Use data from JWT payload (no database query needed)
     req.user = {
-      id: user.id,
-      email: user.email,
-      role: userRole.name as Role,
-      dosen:
-        user.dosen != null
-          ? {
-              id: user.dosen.id,
-              nip: user.dosen.nip,
-              prodi: user.dosen.prodi,
-            }
-          : null,
-      mahasiswa:
-        user.mahasiswa != null
-          ? {
-              id: user.mahasiswa.id,
-              nim: user.mahasiswa.nim,
-            }
-          : null,
+      id: decoded.userId,
+      email: decoded.email,
+      role: decoded.role as Role,
+      dosen: decoded.dosen || null,
+      mahasiswa: decoded.mahasiswa || null,
     };
 
     next();
   } catch (error: unknown) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      res.status(401).json({ message: 'Unauthorized: Invalid token' });
+      return;
+    }
+    if (error instanceof jwt.TokenExpiredError) {
+      res.status(401).json({ message: 'Unauthorized: Token expired' });
+      return;
+    }
     console.error('Auth Middleware Error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }

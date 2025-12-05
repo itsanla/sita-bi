@@ -1,8 +1,17 @@
 'use client';
 
-import { BookMarked, PlusCircle, User, Users2, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import {
+  BookMarked,
+  PlusCircle,
+  User,
+  Users2,
+  Sparkles,
+  CheckCircle2,
+} from 'lucide-react';
 import { useRecommendedTopics } from '@/hooks/useTugasAkhir';
 import SkeletonCard from '@/app/components/loading/SkeletonCard';
+import request from '@/lib/api';
 
 interface RecommendedTopicsProps {
   onSelectTitle: (_title: string) => void;
@@ -11,7 +20,8 @@ interface RecommendedTopicsProps {
 export default function RecommendedTopics({
   onSelectTitle,
 }: RecommendedTopicsProps) {
-  const { recommendedTitles, loading } = useRecommendedTopics();
+  const { recommendedTitles, loading, refetch } = useRecommendedTopics();
+  const [applying, setApplying] = useState<number | null>(null);
 
   if (loading) {
     return (
@@ -137,15 +147,44 @@ export default function RecommendedTopics({
                 </div>
               </div>
 
-              {/* Action Button */}
-              <div className="flex-shrink-0 flex items-center">
+              {/* Action Buttons */}
+              <div className="flex-shrink-0 flex flex-col items-center gap-2">
+                <button
+                  onClick={async () => {
+                    if (applying !== null) return;
+                    if (
+                      !confirm('Apakah Anda yakin ingin mengambil topik ini?')
+                    )
+                      return;
+                    setApplying(topic.id);
+                    try {
+                      await request(`/tawaran-topik/${topic.id}/apply`, {
+                        method: 'POST',
+                      });
+                      alert('Berhasil mengajukan topik!');
+                      refetch();
+                    } catch (err) {
+                      alert(`Gagal: ${(err as Error).message}`);
+                    } finally {
+                      setApplying(null);
+                    }
+                  }}
+                  disabled={applying === topic.id}
+                  className="group/btn relative bg-gradient-to-br from-green-600 to-emerald-600 text-white px-6 py-4 rounded-2xl font-bold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 flex flex-col items-center gap-2 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-green-700 to-emerald-700 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                  <CheckCircle2 className="relative h-6 w-6 group-hover/btn:scale-110 transition-transform duration-300" />
+                  <span className="relative text-sm">
+                    {applying === topic.id ? 'Mengajukan...' : 'Ambil Topik'}
+                  </span>
+                </button>
                 <button
                   onClick={() => onSelectTitle(topic.judul_topik)}
-                  className="group/btn relative bg-gradient-to-br from-maroon-900 to-maroon-800 text-white px-6 py-4 rounded-2xl font-bold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 flex flex-col items-center gap-2 overflow-hidden"
+                  className="group/btn relative bg-gradient-to-br from-maroon-900 to-maroon-800 text-white px-6 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-2 overflow-hidden text-sm"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-maroon-800 to-maroon-900 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
-                  <PlusCircle className="relative h-6 w-6 group-hover/btn:rotate-90 transition-transform duration-500" />
-                  <span className="relative text-sm">Gunakan Topik</span>
+                  <PlusCircle className="relative h-4 w-4 group-hover/btn:rotate-90 transition-transform duration-500" />
+                  <span className="relative">Gunakan Judul</span>
                 </button>
               </div>
             </div>

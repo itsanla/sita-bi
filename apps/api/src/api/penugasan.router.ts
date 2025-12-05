@@ -9,13 +9,19 @@ import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
 import { Role } from '../middlewares/auth.middleware';
 import { assignPembimbingSchema } from '../dto/penugasan.dto';
-import { validateTeamComposition } from '../utils/rbac-helpers';
+import {
+  validateTeamComposition,
+  validatePengujiAssignment,
+  validateNoOverlap,
+} from '../utils/rbac-helpers';
+import { auditLog } from '../middlewares/audit.middleware';
+
+const MSG_GAGAL = 'gagal';
+const MSG_SUKSES = 'sukses';
+const MSG_VALIDASI_GAGAL = 'Validasi gagal';
 
 const router: Router = Router();
 const penugasanService = new PenugasanService();
-
-// Apply JWT Auth and Roles Guard globally for this router
-// router.use(authMiddleware);
 
 router.get(
   '/dosen-load',
@@ -23,7 +29,7 @@ router.get(
   authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const loadData = await penugasanService.getDosenLoad();
-    res.status(200).json({ status: 'sukses', data: loadData });
+    res.status(200).json({ status: MSG_SUKSES, data: loadData });
   }),
 );
 
@@ -32,6 +38,8 @@ router.get(
   asyncHandler(authMiddleware),
   authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const userRole = req.user?.role;
+    const userProdi = req.user?.dosen?.prodi;
     const page =
       req.query['page'] != null
         ? parseInt(req.query['page'] as string)
@@ -41,8 +49,13 @@ router.get(
         ? parseInt(req.query['limit'] as string)
         : undefined;
     const unassignedTugasAkhir =
-      await penugasanService.findUnassignedTugasAkhir(page, limit);
-    res.status(200).json({ status: 'sukses', data: unassignedTugasAkhir });
+      await penugasanService.findUnassignedTugasAkhir(
+        page,
+        limit,
+        userRole,
+        userProdi,
+      );
+    res.status(200).json({ status: MSG_SUKSES, data: unassignedTugasAkhir });
   }),
 );
 
@@ -50,24 +63,23 @@ router.post(
   '/:tugasAkhirId/assign',
   asyncHandler(authMiddleware),
   authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
+  auditLog('ASSIGN_PEMBIMBING', 'penugasan'),
   validate(assignPembimbingSchema),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { tugasAkhirId } = req.params;
     if (tugasAkhirId == null) {
       res
         .status(400)
-        .json({ status: 'gagal', message: 'ID Tugas Akhir diperlukan' });
+        .json({ status: MSG_GAGAL, message: 'ID Tugas Akhir diperlukan' });
       return;
     }
 
-    // Admin ID from token
     if (req.user?.id == null) {
-      res.status(401).json({ status: 'gagal', message: 'Unauthorized' });
+      res.status(401).json({ status: MSG_GAGAL, message: 'Unauthorized' });
       return;
     }
     const adminId = req.user.id;
 
-    // Validate team composition & capacity
     const validation = await validateTeamComposition(
       req.body.pembimbing1Id,
       req.body.pembimbing2Id,
@@ -75,8 +87,8 @@ router.post(
 
     if (!validation.isValid) {
       res.status(400).json({
-        status: 'gagal',
-        message: 'Validasi gagal',
+        status: MSG_GAGAL,
+        message: MSG_VALIDASI_GAGAL,
         errors: validation.errors,
       });
       return;
@@ -87,7 +99,7 @@ router.post(
       req.body,
       adminId,
     );
-    res.status(200).json({ status: 'sukses', data: assignedPembimbing });
+    res.status(200).json({ status: MSG_SUKSES, data: assignedPembimbing });
   }),
 );
 
@@ -95,35 +107,33 @@ router.post(
   '/:tugasAkhirId/assign-penguji',
   asyncHandler(authMiddleware),
   authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
+  auditLog('ASSIGN_PENGUJI', 'penugasan'),
   validate(assignPengujiSchema),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { tugasAkhirId } = req.params;
     if (tugasAkhirId == null) {
       res
         .status(400)
-        .json({ status: 'gagal', message: 'ID Tugas Akhir diperlukan' });
+        .json({ status: MSG_GAGAL, message: 'ID Tugas Akhir diperlukan' });
       return;
     }
 
     if (req.user?.id == null) {
-      res.status(401).json({ status: 'gagal', message: 'Unauthorized' });
+      res.status(401).json({ status: MSG_GAGAL, message: 'Unauthorized' });
       return;
     }
     const adminId = req.user.id;
 
-    // Validate penguji uniqueness
-    const validation = await validateTeamComposition(
-      0, // No pembimbing validation for penguji
-      undefined,
+    const validation = validatePengujiAssignment(
       req.body.penguji1Id,
       req.body.penguji2Id,
       req.body.penguji3Id,
     );
 
-    if (!validation.isValid) {
+    if (!validation.valid) {
       res.status(400).json({
-        status: 'gagal',
-        message: 'Validasi gagal',
+        status: MSG_GAGAL,
+        message: MSG_VALIDASI_GAGAL,
         errors: validation.errors,
       });
       return;
@@ -134,7 +144,18 @@ router.post(
       req.body,
       adminId,
     );
-    res.status(200).json({ status: 'sukses', data: assigned });
+
+    const overlapCheck = await validateNoOverlap(parseInt(tugasAkhirId, 10));
+    if (!overlapCheck.valid) {
+      res.status(400).json({
+        status: MSG_GAGAL,
+        message: MSG_VALIDASI_GAGAL,
+        errors: overlapCheck.errors,
+      });
+      return;
+    }
+
+    res.status(200).json({ status: MSG_SUKSES, data: assigned });
   }),
 );
 

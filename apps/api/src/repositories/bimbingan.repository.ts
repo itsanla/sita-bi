@@ -1,9 +1,17 @@
-import { PrismaClient, type Prisma, StatusTugasAkhir } from '@repo/db';
+import type { PrismaClient } from '@repo/db';
+import { type Prisma, StatusTugasAkhir } from '@repo/db';
 
 export class BimbinganRepository {
   constructor(private prisma: PrismaClient) {}
 
-  async findTugasAkhirForDosen(dosenId: number, page: number, limit: number) {
+  async findTugasAkhirForDosen(
+    dosenId: number,
+    page: number,
+    limit: number,
+  ): Promise<{
+    data: unknown[];
+    total: number;
+  }> {
     const whereClause: Prisma.TugasAkhirWhereInput = {
       peranDosenTa: {
         some: {
@@ -30,7 +38,14 @@ export class BimbinganRepository {
         where: whereClause,
         include: {
           mahasiswa: { include: { user: true } },
-          bimbinganTa: { orderBy: { created_at: 'desc' } },
+          peranDosenTa: { include: { dosen: { include: { user: true } } } },
+          bimbinganTa: {
+            include: {
+              catatan: { include: { author: true } },
+              lampiran: true,
+            },
+            orderBy: { sesi_ke: 'asc' },
+          },
         },
         skip: (page - 1) * limit,
         take: limit,
@@ -40,7 +55,9 @@ export class BimbinganRepository {
     return { data, total };
   }
 
-  async findTugasAkhirForMahasiswa(mahasiswaId: number) {
+  async findTugasAkhirForMahasiswa(
+    mahasiswaId: number,
+  ): Promise<unknown | null> {
     return this.prisma.tugasAkhir.findFirst({
       where: {
         mahasiswa_id: mahasiswaId,
@@ -63,15 +80,21 @@ export class BimbinganRepository {
             catatan: { include: { author: true } },
             historyPerubahan: true,
             lampiran: true,
+            dosen: { include: { user: true } },
           },
-          orderBy: { created_at: 'desc' },
+          orderBy: { sesi_ke: 'asc' },
         },
         pendaftaranSidang: { orderBy: { created_at: 'desc' } },
+        dokumenTa: {
+          where: { tipe_dokumen: 'bimbingan' },
+          orderBy: { version: 'desc' },
+          take: 1,
+        },
       },
     });
   }
 
-  async findBimbinganById(id: number) {
+  async findBimbinganById(id: number): Promise<unknown | null> {
     return this.prisma.bimbinganTA.findUnique({
       where: { id },
       include: {
@@ -85,7 +108,10 @@ export class BimbinganRepository {
     });
   }
 
-  async findBimbinganByIdAndDosen(id: number, dosenId: number) {
+  async findBimbinganByIdAndDosen(
+    id: number,
+    dosenId: number,
+  ): Promise<unknown | null> {
     return this.prisma.bimbinganTA.findFirst({
       where: { id, dosen_id: dosenId },
       include: { tugasAkhir: true },
@@ -96,7 +122,7 @@ export class BimbinganRepository {
     bimbinganTaId: number,
     authorId: number,
     catatan: string,
-  ) {
+  ): Promise<unknown> {
     return this.prisma.catatanBimbingan.create({
       data: {
         bimbingan_ta_id: bimbinganTaId,
@@ -107,7 +133,10 @@ export class BimbinganRepository {
     });
   }
 
-  async findBimbinganConflicts(dosenId: number, tanggal: Date) {
+  async findBimbinganConflicts(
+    dosenId: number,
+    tanggal: Date,
+  ): Promise<unknown[]> {
     return this.prisma.bimbinganTA.findMany({
       where: {
         dosen_id: dosenId,
@@ -117,7 +146,10 @@ export class BimbinganRepository {
     });
   }
 
-  async findSidangConflicts(dosenId: number, tanggal: Date) {
+  async findSidangConflicts(
+    dosenId: number,
+    tanggal: Date,
+  ): Promise<unknown[]> {
     return this.prisma.jadwalSidang.findMany({
       where: {
         tanggal,
@@ -132,7 +164,10 @@ export class BimbinganRepository {
     });
   }
 
-  async findPeranDosenTa(tugasAkhirId: number, dosenId: number) {
+  async findPeranDosenTa(
+    tugasAkhirId: number,
+    dosenId: number,
+  ): Promise<unknown | null> {
     return this.prisma.peranDosenTa.findFirst({
       where: { tugas_akhir_id: tugasAkhirId, dosen_id: dosenId },
       include: {
@@ -149,7 +184,7 @@ export class BimbinganRepository {
     peran: string;
     tanggal_bimbingan: Date;
     jam_bimbingan: string;
-  }) {
+  }): Promise<unknown> {
     return this.prisma.bimbinganTA.create({
       data: {
         ...data,
@@ -158,14 +193,16 @@ export class BimbinganRepository {
     });
   }
 
-  async updateBimbinganStatus(id: number, status: string) {
+  async updateBimbinganStatus(id: number, status: string): Promise<unknown> {
     return this.prisma.bimbinganTA.update({
       where: { id },
-      data: { status_bimbingan: status as any },
+      data: {
+        status_bimbingan: status as 'dibatalkan' | 'dijadwalkan' | 'selesai',
+      },
     });
   }
 
-  async konfirmasiBimbingan(id: number) {
+  async konfirmasiBimbingan(id: number): Promise<unknown> {
     return this.prisma.bimbinganTA.update({
       where: { id },
       data: {
@@ -180,25 +217,28 @@ export class BimbinganRepository {
     file_path: string;
     file_name: string;
     file_type: string;
-  }) {
+  }): Promise<unknown> {
     return this.prisma.bimbinganLampiran.create({ data });
   }
 
-  async findLatestDokumenTa(tugasAkhirId: number) {
+  async findLatestDokumenTa(tugasAkhirId: number): Promise<unknown | null> {
     return this.prisma.dokumenTa.findFirst({
       where: { tugas_akhir_id: tugasAkhirId },
       orderBy: { version: 'desc' },
     });
   }
 
-  async updateDokumenTa(id: number, data: Prisma.DokumenTaUpdateInput) {
+  async updateDokumenTa(
+    id: number,
+    data: Prisma.DokumenTaUpdateInput,
+  ): Promise<unknown> {
     return this.prisma.dokumenTa.update({
       where: { id },
       data,
     });
   }
 
-  async findDosenByUserId(userId: number) {
+  async findDosenByUserId(userId: number): Promise<unknown | null> {
     return this.prisma.dosen.findUnique({
       where: { user_id: userId },
     });
@@ -209,7 +249,7 @@ export class BimbinganRepository {
     action: string;
     url?: string;
     method?: string;
-  }) {
+  }): Promise<unknown> {
     return this.prisma.log.create({
       data: {
         user_id: data.user_id,
@@ -222,7 +262,12 @@ export class BimbinganRepository {
     });
   }
 
-  async createEmptySesi(tugasAkhirId: number, dosenId: number, peran: string, sesiKe: number) {
+  async createEmptySesi(
+    tugasAkhirId: number,
+    dosenId: number,
+    peran: string,
+    sesiKe: number,
+  ): Promise<unknown> {
     return this.prisma.bimbinganTA.create({
       data: {
         tugas_akhir_id: tugasAkhirId,
@@ -234,13 +279,33 @@ export class BimbinganRepository {
     });
   }
 
-  async countBimbinganByTugasAkhir(tugasAkhirId: number) {
+  async countBimbinganByTugasAkhir(tugasAkhirId: number): Promise<number> {
     return this.prisma.bimbinganTA.count({
       where: { tugas_akhir_id: tugasAkhirId },
     });
   }
 
-  async updateJadwalBimbingan(id: number, tanggal: Date, jamMulai: string, jamSelesai?: string) {
+  async countValidBimbingan(tugasAkhirId: number): Promise<number> {
+    return this.prisma.bimbinganTA.count({
+      where: {
+        tugas_akhir_id: tugasAkhirId,
+        status_bimbingan: 'selesai',
+      },
+    });
+  }
+
+  async deleteBimbinganSesi(id: number): Promise<unknown> {
+    return this.prisma.bimbinganTA.delete({
+      where: { id },
+    });
+  }
+
+  async updateJadwalBimbingan(
+    id: number,
+    tanggal: Date,
+    jamMulai: string,
+    jamSelesai?: string,
+  ): Promise<unknown> {
     return this.prisma.bimbinganTA.update({
       where: { id },
       data: {
@@ -252,7 +317,10 @@ export class BimbinganRepository {
     });
   }
 
-  async findBimbinganWithAccess(id: number, userId: number) {
+  async findBimbinganWithAccess(
+    id: number,
+    userId: number,
+  ): Promise<unknown | null> {
     return this.prisma.bimbinganTA.findFirst({
       where: {
         id,

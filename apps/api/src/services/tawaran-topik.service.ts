@@ -64,7 +64,19 @@ export class TawaranTopikService {
       where: whereClause,
       include: {
         dosenPencetus: {
-          select: { name: true },
+          select: { name: true, email: true },
+        },
+        historyTopik: {
+          where: { status: 'disetujui' },
+          include: {
+            mahasiswa: {
+              include: {
+                user: {
+                  select: { name: true, email: true },
+                },
+              },
+            },
+          },
         },
       },
       orderBy: { created_at: 'desc' },
@@ -177,6 +189,51 @@ export class TawaranTopikService {
           select: { judul_topik: true },
         },
       },
+      orderBy: { created_at: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return {
+      data: data,
+      total: total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getAllTopicsWithApplications(
+    page = 1,
+    limit = 50,
+  ): Promise<{
+    data: unknown[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const whereClause = { deleted_at: null };
+    const total = await this.prisma.tawaranTopik.count({ where: whereClause });
+    const data = await this.prisma.tawaranTopik.findMany({
+      where: whereClause,
+      include: {
+        dosenPencetus: {
+          select: { name: true, email: true },
+        },
+        historyTopik: {
+          include: {
+            mahasiswa: {
+              include: {
+                user: {
+                  select: { name: true, email: true },
+                },
+              },
+            },
+          },
+          orderBy: { created_at: 'desc' },
+        },
+      },
+      orderBy: { created_at: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
     });

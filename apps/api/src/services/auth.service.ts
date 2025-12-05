@@ -7,6 +7,7 @@ import type {
 } from '../dto/auth.dto';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { HttpError } from '../middlewares/error.middleware';
 import { EmailService } from './email.service';
 import prisma from '../config/database';
@@ -22,7 +23,7 @@ export class AuthService {
     dto: LoginDto,
     meta?: { ip?: string; userAgent?: string },
   ): Promise<{
-    userId: number;
+    token: string;
     user: Omit<
       User & {
         roles: Role[];
@@ -146,8 +147,30 @@ export class AuthService {
     // eslint-disable-next-line sonarjs/no-unused-vars
     const { password: _password, ...userWithoutPassword } = user;
 
-    // Return userId instead of JWT token
-    return { userId: user.id, user: userWithoutPassword };
+    // Generate JWT token with full user data (no DB query needed in middleware)
+    const token = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.roles[0]?.name,
+        dosen: user.dosen
+          ? {
+              id: user.dosen.id,
+              nip: user.dosen.nip,
+              prodi: user.dosen.prodi,
+            }
+          : null,
+        mahasiswa: user.mahasiswa
+          ? {
+              id: user.mahasiswa.id,
+              nim: user.mahasiswa.nim,
+            }
+          : null,
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+    );
+
+    return { token, user: userWithoutPassword };
   }
 
   async register(dto: RegisterDto): Promise<void> {

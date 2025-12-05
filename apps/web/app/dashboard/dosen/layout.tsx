@@ -4,6 +4,7 @@ import { ReactNode, useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import UserSidebar from '@/components/shared/UserSidebar';
 import UserFooter from '@/components/shared/UserFooter';
+import Unauthorized from '@/components/shared/Unauthorized';
 import { useRBAC } from '@/hooks/useRBAC';
 import {
   LayoutDashboard,
@@ -12,7 +13,6 @@ import {
   ClipboardCheck,
   GraduationCap,
   UserPlus,
-  Lock,
   UserCircle,
   Shield,
   FileCheck,
@@ -137,21 +137,7 @@ export default function DosenLayout({ children }: { children: ReactNode }) {
   }
 
   if (!isDosen) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="text-center p-8 bg-white rounded-xl shadow-lg border border-gray-200 max-w-md">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Lock className="w-8 h-8 text-red-900" />
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
-            Unauthorized Access
-          </h2>
-          <p className="text-sm text-gray-600">
-            This dashboard is for lecturers only.
-          </p>
-        </div>
-      </div>
-    );
+    return <Unauthorized message="Dashboard ini hanya untuk dosen." />;
   }
 
   return (

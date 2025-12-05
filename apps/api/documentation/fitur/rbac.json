@@ -1,0 +1,520 @@
+{
+  "fitur": "RBAC (Role-Based Access Control)",
+  "versi": "1.0.2",
+  "terakhir_diperbarui": "2024-12-05",
+  "deskripsi": "Sistem kontrol akses berbasis peran dengan hierarki, scope validation, dan audit logging untuk aplikasi SITA-BI",
+  
+  "konsep_dasar": {
+    "role_vs_fungsi": {
+      "role": {
+        "definisi": "Level hierarki organisasi dalam struktur akademik",
+        "jenis": ["admin", "jurusan", "prodi_d3", "prodi_d4", "dosen", "mahasiswa"],
+        "penyimpanan": "Tabel roles di database",
+        "karakteristik": "Satu user hanya memiliki satu role utama"
+      },
+      "fungsi": {
+        "definisi": "Tugas spesifik dosen dalam tugas akhir mahasiswa",
+        "jenis": ["pembimbing1", "pembimbing2", "penguji1", "penguji2", "penguji3"],
+        "penyimpanan": "Tabel peran_dosen_ta di database",
+        "karakteristik": "Satu dosen bisa memiliki banyak fungsi di TA berbeda"
+      }
+    },
+    
+    "hierarki_role": {
+      "deskripsi": "Role dosen memiliki hierarki dengan inheritance akses",
+      "struktur": "jurusan → prodi_d3/prodi_d4 → dosen",
+      "inheritance": {
+        "jurusan": ["prodi_d3", "prodi_d4", "dosen"],
+        "prodi_d3": ["dosen"],
+        "prodi_d4": ["dosen"],
+        "dosen": [],
+        "admin": ["bypass_all"]
+      }
+    }
+  },
+  
+  "role_detail": {
+    "admin": {
+      "deskripsi": "Administrator sistem dengan akses penuh",
+      "akses": [
+        "Bypass semua validasi scope dan relationship",
+        "Manage users (create, update, delete)",
+        "Import/export data",
+        "View semua logs",
+        "Akses semua endpoint"
+      ],
+      "batasan": [],
+      "rate_limit": "30 requests/menit"
+    },
+    
+    "jurusan": {
+      "deskripsi": "Ketua Jurusan dengan akses ke semua prodi",
+      "akses": [
+        "Inherit semua akses prodi_d3 dan prodi_d4",
+        "Inherit semua akses dosen",
+        "Manage users (create, update, delete)",
+        "Assign pembimbing dan penguji untuk semua prodi",
+        "Approve/reject tugas akhir semua prodi",
+        "View data mahasiswa semua prodi",
+        "Export reports semua prodi"
+      ],
+      "batasan": [],
+      "scope": "Semua prodi (D3 dan D4)",
+      "database": {
+        "wajib_punya_profil_dosen": true,
+        "field_dosen": {
+          "prodi": "null (akses semua prodi)",
+          "level_hierarki": "jurusan"
+        }
+      }
+    },
+    
+    "prodi_d3": {
+      "deskripsi": "Ketua Program Studi D3",
+      "akses": [
+        "Inherit semua akses dosen",
+        "Assign pembimbing dan penguji untuk prodi D3",
+        "Approve/reject tugas akhir prodi D3",
+        "View data mahasiswa prodi D3",
+        "Export reports prodi D3"
+      ],
+      "batasan": [
+        "Hanya akses data prodi D3",
+        "Tidak bisa akses data prodi D4"
+      ],
+      "scope": "Prodi D3 saja",
+      "database": {
+        "wajib_punya_profil_dosen": true,
+        "field_dosen": {
+          "prodi": "D3",
+          "level_hierarki": "kaprodi"
+        }
+      }
+    },
+    
+    "prodi_d4": {
+      "deskripsi": "Ketua Program Studi D4",
+      "akses": [
+        "Inherit semua akses dosen",
+        "Assign pembimbing dan penguji untuk prodi D4",
+        "Approve/reject tugas akhir prodi D4",
+        "View data mahasiswa prodi D4",
+        "Export reports prodi D4"
+      ],
+      "batasan": [
+        "Hanya akses data prodi D4",
+        "Tidak bisa akses data prodi D3"
+      ],
+      "scope": "Prodi D4 saja",
+      "database": {
+        "wajib_punya_profil_dosen": true,
+        "field_dosen": {
+          "prodi": "D4",
+          "level_hierarki": "kaprodi"
+        }
+      }
+    },
+    
+    "dosen": {
+      "deskripsi": "Dosen biasa yang membimbing/menguji mahasiswa",
+      "akses": [
+        "View mahasiswa yang dibimbing/diuji",
+        "Manage bimbingan (jadwal, catatan, konfirmasi)",
+        "Approve/reject pendaftaran sidang mahasiswa bimbingan",
+        "View dashboard dan reports (limited)",
+        "Dapat fungsi: pembimbing1/2, penguji1/2/3"
+      ],
+      "batasan": [
+        "Hanya akses mahasiswa yang ditugaskan",
+        "Maksimal 4 mahasiswa sebagai pembimbing aktif",
+        "Tidak bisa assign dosen lain",
+        "Tidak bisa approve tugas akhir"
+      ],
+      "scope": "Mahasiswa yang ditugaskan saja",
+      "validasi_kapasitas": {
+        "max_pembimbing": 4,
+        "status_dihitung": ["BIMBINGAN", "REVISI", "DISETUJUI"]
+      },
+      "database": {
+        "wajib_punya_profil_dosen": true,
+        "field_dosen": {
+          "prodi": "null",
+          "level_hierarki": "dosen_biasa"
+        }
+      }
+    },
+    
+    "mahasiswa": {
+      "deskripsi": "Mahasiswa yang mengerjakan tugas akhir",
+      "akses": [
+        "Create dan manage tugas akhir sendiri",
+        "View bimbingan sendiri",
+        "Upload dokumen bimbingan",
+        "Daftar sidang",
+        "View jadwal sidang sendiri",
+        "Ajukan/batalkan pengajuan pembimbing"
+      ],
+      "batasan": [
+        "Hanya akses data sendiri",
+        "Tidak bisa view data mahasiswa lain",
+        "Tidak bisa assign pembimbing sendiri"
+      ],
+      "scope": "Data sendiri saja"
+    }
+  },
+  
+  "middleware": {
+    "urutan_eksekusi": [
+      "1. authMiddleware - Verifikasi token dan load user",
+      "2. rateLimiter - Batasi jumlah request",
+      "3. authorizeRoles - Cek role yang diizinkan",
+      "4. auditLog - Catat aktivitas admin",
+      "5. validate - Validasi input",
+      "6. validateProdiScope - Validasi scope prodi (opsional)",
+      "7. validateDosenMahasiswaRelation - Validasi relasi (opsional)",
+      "8. Business logic"
+    ],
+    
+    "detail": {
+      "authMiddleware": {
+        "file": "apps/api/src/middlewares/auth.middleware.ts",
+        "fungsi": "Autentikasi user menggunakan x-user-id header",
+        "output": "req.user dengan data user, role, dosen, mahasiswa"
+      },
+      
+      "authorizeRoles": {
+        "file": "apps/api/src/middlewares/roles.middleware.ts",
+        "fungsi": "Otorisasi berdasarkan role dengan inheritance",
+        "parameter": "allowedRoles: Role[]",
+        "contoh": "authorizeRoles([Role.admin, Role.jurusan])"
+      },
+      
+      "validateProdiScope": {
+        "file": "apps/api/src/middlewares/rbac.middleware.ts",
+        "fungsi": "Validasi kaprodi hanya akses prodi mereka",
+        "parameter": "requiredProdi?: 'D3' | 'D4'",
+        "bypass": ["admin", "jurusan"]
+      },
+      
+      "validateDosenMahasiswaRelation": {
+        "file": "apps/api/src/middlewares/rbac.middleware.ts",
+        "fungsi": "Validasi dosen hanya akses mahasiswa bimbingannya",
+        "bypass": ["admin", "jurusan", "prodi_d3", "prodi_d4"]
+      },
+      
+      "validateDosenTugasAkhirAccess": {
+        "file": "apps/api/src/middlewares/rbac.middleware.ts",
+        "fungsi": "Validasi dosen hanya akses TA yang ditugaskan",
+        "bypass": ["admin", "jurusan", "prodi_d3", "prodi_d4"]
+      },
+      
+      "auditLog": {
+        "file": "apps/api/src/middlewares/audit.middleware.ts",
+        "fungsi": "Catat semua aktivitas admin ke database",
+        "data_dicatat": ["user_id", "action", "module", "entity_id", "ip_address", "user_agent", "url", "method", "details"]
+      }
+    }
+  },
+  
+  "validasi_bisnis": {
+    "validatePembimbingCapacity": {
+      "deskripsi": "Validasi kapasitas pembimbing maksimal 4 mahasiswa",
+      "file": "apps/api/src/middlewares/rbac.middleware.ts",
+      "aturan": {
+        "max_mahasiswa": 4,
+        "peran_dihitung": ["pembimbing1", "pembimbing2"],
+        "status_dihitung": ["BIMBINGAN", "REVISI", "DISETUJUI"]
+      }
+    },
+    
+    "validatePembimbingAssignment": {
+      "deskripsi": "Validasi assignment pembimbing",
+      "file": "apps/api/src/utils/rbac-helpers.ts",
+      "aturan": [
+        "Pembimbing 1 dan Pembimbing 2 harus berbeda",
+        "Cek kapasitas masing-masing pembimbing"
+      ]
+    },
+    
+    "validatePengujiAssignment": {
+      "deskripsi": "Validasi assignment penguji",
+      "file": "apps/api/src/utils/rbac-helpers.ts",
+      "aturan": [
+        "Semua penguji harus berbeda",
+        "Minimal 1 penguji harus dipilih"
+      ]
+    },
+    
+    "validateNoOverlap": {
+      "deskripsi": "Validasi pembimbing tidak boleh jadi penguji di TA yang sama",
+      "file": "apps/api/src/utils/rbac-helpers.ts",
+      "aturan": [
+        "Cek overlap antara pembimbing dan penguji",
+        "Jika ada overlap, tolak assignment"
+      ]
+    }
+  },
+  
+  "rate_limiting": {
+    "login": {
+      "window": "15 menit",
+      "max_requests": 5,
+      "message": "Terlalu banyak percobaan login. Coba lagi dalam 15 menit."
+    },
+    "auth_operations": {
+      "window": "1 jam",
+      "max_requests": 10,
+      "message": "Terlalu banyak permintaan. Coba lagi dalam 1 jam.",
+      "endpoints": ["register", "forgot-password", "reset-password"]
+    },
+    "admin_operations": {
+      "window": "1 menit",
+      "max_requests": 30,
+      "message": "Terlalu banyak permintaan admin. Coba lagi dalam 1 menit."
+    }
+  },
+  
+  "audit_logging": {
+    "deskripsi": "Semua aktivitas admin dicatat ke database untuk audit trail",
+    "tabel": "logs",
+    "aktivitas_dicatat": [
+      "CREATE_DOSEN",
+      "CREATE_MAHASISWA",
+      "UPDATE_DOSEN",
+      "UPDATE_MAHASISWA",
+      "DELETE_USER",
+      "BULK_DELETE_USERS",
+      "ASSIGN_PEMBIMBING",
+      "ASSIGN_PENGUJI"
+    ],
+    "data_dicatat": {
+      "user_id": "ID user yang melakukan aksi",
+      "action": "Jenis aksi yang dilakukan",
+      "module": "Module/fitur yang diakses",
+      "entity_id": "ID entitas yang dimodifikasi",
+      "ip_address": "IP address user",
+      "user_agent": "Browser/client user",
+      "url": "URL endpoint yang diakses",
+      "method": "HTTP method (GET/POST/PATCH/DELETE)",
+      "details": "Detail request (body, params, query)",
+      "level": "Level log (INFO/WARN/ERROR/DEBUG)",
+      "created_at": "Timestamp"
+    }
+  },
+  
+  "error_messages": {
+    "file": "apps/api/src/utils/error-messages.ts",
+    "standardisasi": {
+      "UNAUTHORIZED": "Akses ditolak: Anda tidak memiliki izin",
+      "FORBIDDEN": "Akses ditolak: Izin tidak mencukupi",
+      "NOT_FOUND": "Data tidak ditemukan",
+      "INVALID_INPUT": "Input tidak valid",
+      "DOSEN_NOT_FOUND": "Profil dosen tidak ditemukan",
+      "MAHASISWA_NOT_FOUND": "Profil mahasiswa tidak ditemukan",
+      "CAPACITY_EXCEEDED": "Kapasitas pembimbing sudah penuh",
+      "OVERLAP_DETECTED": "Dosen tidak boleh menjadi pembimbing dan penguji di TA yang sama",
+      "VALIDATION_FAILED": "Validasi gagal",
+      "PRODI_SCOPE_DENIED": "Akses ditolak: Hanya untuk prodi"
+    }
+  },
+  
+  "database_schema": {
+    "tabel_role": {
+      "nama": "roles",
+      "kolom": {
+        "id": "Primary key",
+        "name": "Nama role (mahasiswa/dosen/admin/jurusan/prodi_d3/prodi_d4)",
+        "guard_name": "Guard name (default: api)",
+        "created_at": "Timestamp",
+        "updated_at": "Timestamp"
+      },
+      "relasi": "Many-to-many dengan users"
+    },
+    
+    "tabel_dosen": {
+      "nama": "dosen",
+      "kolom_baru": {
+        "prodi": "Enum Prodi (D3/D4) - untuk kaprodi, null untuk dosen biasa",
+        "level_hierarki": "String (jurusan/kaprodi/dosen_biasa) - level dalam hierarki"
+      },
+      "catatan": "Field prodi dan level_hierarki ditambahkan untuk mendukung scope validation"
+    },
+    
+    "tabel_peran_dosen_ta": {
+      "nama": "peran_dosen_ta",
+      "kolom": {
+        "id": "Primary key",
+        "tugas_akhir_id": "Foreign key ke tugas_akhir",
+        "dosen_id": "Foreign key ke dosen",
+        "peran": "Enum PeranDosen (pembimbing1/pembimbing2/penguji1/penguji2/penguji3)",
+        "created_at": "Timestamp",
+        "updated_at": "Timestamp"
+      },
+      "constraint": "Unique (tugas_akhir_id, peran) - satu TA hanya punya satu pembimbing1, dst"
+    }
+  },
+  
+  "frontend_integration": {
+    "useRBAC_hook": {
+      "file": "apps/web/hooks/useRBAC.ts",
+      "return": {
+        "role": "Role user saat ini",
+        "isJurusan": "Boolean",
+        "isProdi": "Boolean",
+        "isDosen": "Boolean (termasuk jurusan dan prodi)",
+        "isMahasiswa": "Boolean",
+        "isAdmin": "Boolean",
+        "canAccessAllData": "Boolean",
+        "canAccessProdi": "D3 | D4 | null",
+        "canAccessMahasiswaIds": "number[]",
+        "canManageUsers": "Boolean",
+        "canAssignDosen": "Boolean",
+        "canValidateJudul": "Boolean",
+        "canViewReports": "Boolean",
+        "hasRole": "Function untuk cek role",
+        "canAccess": "Function untuk cek akses",
+        "canAccessMahasiswa": "Function untuk cek akses mahasiswa",
+        "user": "User object"
+      }
+    },
+    
+    "rbac_utils": {
+      "file": "apps/web/lib/rbac-utils.ts",
+      "fungsi": [
+        "validatePembimbingSelection - Validasi pemilihan pembimbing di form",
+        "validatePengujiSelection - Validasi pemilihan penguji di form"
+      ]
+    }
+  },
+  
+  "contoh_penggunaan": {
+    "endpoint_dengan_role_sederhana": {
+      "kode": "router.get('/mahasiswa', asyncHandler(authMiddleware), authorizeRoles([Role.admin, Role.jurusan]), asyncHandler(async (req, res) => { ... }))",
+      "penjelasan": "Hanya admin dan jurusan yang bisa akses endpoint ini"
+    },
+    
+    "endpoint_dengan_scope_validation": {
+      "kode": "router.get('/unassigned', asyncHandler(authMiddleware), authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]), asyncHandler(async (req, res) => { const userRole = req.user?.role; const userProdi = req.user?.dosen?.prodi; ... }))",
+      "penjelasan": "Kaprodi hanya bisa lihat TA unassigned dari prodi mereka"
+    },
+    
+    "endpoint_dengan_audit_log": {
+      "kode": "router.post('/dosen', asyncHandler(authMiddleware), authorizeRoles([Role.admin, Role.jurusan]), auditLog('CREATE_DOSEN', 'users'), validate(createDosenSchema), asyncHandler(async (req, res) => { ... }))",
+      "penjelasan": "Aktivitas create dosen dicatat ke audit log"
+    },
+    
+    "endpoint_dengan_rate_limit": {
+      "kode": "router.post('/login', loginLimiter, validate(loginSchema), asyncHandler(async (req, res) => { ... }))",
+      "penjelasan": "Login dibatasi 5 kali per 15 menit per IP"
+    }
+  },
+  
+  "best_practices": {
+    "1_role_hierarchy": "Gunakan inheritance untuk menghindari duplikasi permission",
+    "2_separation_of_concerns": "Pisahkan role (organisasi) dengan fungsi (tugas)",
+    "3_least_privilege": "Berikan akses minimal yang dibutuhkan",
+    "4_defense_in_depth": "Gunakan multiple layer security (auth, rate limit, authorize, scope, relationship)",
+    "5_audit_logging": "Catat semua aktivitas admin untuk audit trail",
+    "6_rate_limiting": "Batasi request untuk mencegah abuse",
+    "7_explicit_checks": "Gunakan explicit null checks, hindari non-null assertion",
+    "8_standardized_errors": "Gunakan error messages yang konsisten",
+    "9_middleware_order": "Ikuti urutan: auth → rate limit → authorize → audit → validate → business logic",
+    "10_single_source_of_truth": "Gunakan satu definisi Role enum, hindari duplikasi"
+  },
+  
+  "testing": {
+    "unit_test": "Test setiap middleware secara terpisah",
+    "integration_test": "Test flow lengkap dari auth sampai business logic",
+    "security_test": [
+      "Test bypass authorization",
+      "Test privilege escalation",
+      "Test scope violation",
+      "Test rate limiting",
+      "Test SQL injection di audit log"
+    ]
+  },
+  
+  "maintenance": {
+    "menambah_role_baru": [
+      "1. Tambah enum di auth.middleware.ts",
+      "2. Update hierarki di roles.middleware.ts",
+      "3. Tambah permission di useRBAC.ts",
+      "4. Update dokumentasi ini"
+    ],
+    "menambah_endpoint_baru": [
+      "1. Tambah authMiddleware",
+      "2. Tambah rate limiter jika perlu",
+      "3. Tambah authorizeRoles dengan role yang sesuai",
+      "4. Tambah auditLog jika admin operation",
+      "5. Tambah validate untuk input",
+      "6. Tambah scope/relationship validation jika perlu"
+    ],
+    "troubleshooting": {
+      "403_forbidden": "Cek role user dan allowedRoles di endpoint",
+      "401_unauthorized": "Cek token dan authMiddleware",
+      "429_too_many_requests": "User kena rate limit, tunggu sesuai window",
+      "scope_denied": "Kaprodi akses data prodi lain, cek field prodi di dosen"
+    }
+  },
+  
+  "file_terkait": {
+    "backend": [
+      "apps/api/src/middlewares/auth.middleware.ts",
+      "apps/api/src/middlewares/roles.middleware.ts",
+      "apps/api/src/middlewares/rbac.middleware.ts",
+      "apps/api/src/middlewares/audit.middleware.ts",
+      "apps/api/src/middlewares/rate-limit.middleware.ts",
+      "apps/api/src/utils/rbac-helpers.ts",
+      "apps/api/src/utils/error-messages.ts",
+      "apps/api/src/api/rbac.router.ts",
+      "apps/api/src/api/auth.router.ts",
+      "apps/api/src/services/auth.service.ts",
+      "apps/api/src/dto/auth.dto.ts"
+    ],
+    "frontend": [
+      "apps/web/hooks/useRBAC.ts",
+      "apps/web/lib/rbac-utils.ts",
+      "apps/web/components/shared/Unauthorized.tsx",
+      "apps/web/context/AuthContext.tsx"
+    ],
+    "database": [
+      "packages/db/prisma/schema.prisma"
+    ]
+  },
+  
+  "changelog": [
+    {
+      "versi": "1.0.2",
+      "tanggal": "2024-12-05",
+      "perubahan": [
+        "Perbaiki enum PeranDosen: hapus penguji4, hanya penguji1/2/3",
+        "Update dokumentasi sesuai requirement: 3 penguji bukan 4"
+      ]
+    },
+    {
+      "versi": "1.0.1",
+      "tanggal": "2024-12-05",
+      "perubahan": [
+        "Fix bug di useRBAC.ts line 61 (userRoles[0]?.name → userRoles[0])",
+        "Verifikasi semua informasi sesuai implementasi"
+      ]
+    },
+    {
+      "versi": "1.0.0",
+      "tanggal": "2024-12-05",
+      "perubahan": [
+        "Implementasi role hierarchy dengan inheritance",
+        "Tambah scope validation untuk kaprodi",
+        "Tambah relationship validation untuk dosen",
+        "Tambah audit logging untuk admin operations",
+        "Tambah rate limiting untuk auth dan admin endpoints",
+        "Tambah validasi kapasitas pembimbing (max 4)",
+        "Tambah validasi overlap pembimbing-penguji",
+        "Standardisasi error messages",
+        "Tambah field prodi dan level_hierarki di tabel dosen",
+        "Hapus duplicate Role enum",
+        "Hapus file unused (UnauthorizedAccess.tsx)"
+      ]
+    }
+  ]
+}

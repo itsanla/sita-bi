@@ -58,7 +58,7 @@ export function useRBAC(): RBACPermissions & {
           (r) => r === 'prodi_d3' || r === 'prodi_d4',
         ) as RoleName) || 'dosen';
     } else {
-      role = userRoles[0]?.name || 'mahasiswa';
+      role = (userRoles[0] as RoleName) || 'mahasiswa';
     }
 
     let canAccessProdi: 'D3' | 'D4' | null = null;

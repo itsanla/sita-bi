@@ -67,11 +67,12 @@ export function useRecommendedTopics() {
     setLoading(true);
     try {
       const topicsResponse = await request<{
-        data: { topics: TawaranTopik[] };
+        data: TawaranTopik[];
       }>('/tawaran-topik/available');
-      setRecommendedTitles(topicsResponse.data.data.topics || []);
+      const data = topicsResponse.data;
+      setRecommendedTitles(Array.isArray(data) ? data : []);
     } catch {
-      // Silently fail for recommended topics
+      setRecommendedTitles([]);
     } finally {
       setLoading(false);
     }
@@ -81,7 +82,7 @@ export function useRecommendedTopics() {
     fetchRecommendedTitles();
   }, []);
 
-  return { recommendedTitles, loading };
+  return { recommendedTitles, loading, refetch: fetchRecommendedTitles };
 }
 
 export function useAllTitles() {

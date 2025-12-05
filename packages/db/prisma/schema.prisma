@@ -49,7 +49,6 @@ enum PeranDosen {
   penguji1
   penguji2
   penguji3
-  penguji4
 }
 
 enum JenisSidang {
@@ -228,6 +227,8 @@ model Dosen {
   id              Int      @id @default(autoincrement())
   user_id         Int      @unique
   nip             String   @unique
+  prodi           Prodi?   // Prodi untuk kaprodi D3/D4
+  level_hierarki  String?  // "jurusan" | "kaprodi" | "dosen_biasa"
   kuota_bimbingan Int      @default(4)
   bidang_keahlian String?
   jabatan         String?

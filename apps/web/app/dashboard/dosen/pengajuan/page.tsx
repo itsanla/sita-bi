@@ -110,7 +110,7 @@ export default function PengajuanDosenPage() {
     queryKey: ['mahasiswa-tersedia', user?.id],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/pengajuan/mahasiswa-tersedia`, {
-        headers: { 'x-user-id': user?.id?.toString() || '' },
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
       });
       return res.json();
     },
@@ -122,7 +122,7 @@ export default function PengajuanDosenPage() {
     queryKey: [QUERY_KEY_PENGAJUAN_DOSEN, user?.id],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/pengajuan/dosen`, {
-        headers: { 'x-user-id': user?.id?.toString() || '' },
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
       });
       return res.json();
     },
@@ -160,7 +160,7 @@ export default function PengajuanDosenPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user?.id?.toString() || '',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({ mahasiswaId, peran }),
       });
@@ -224,7 +224,7 @@ export default function PengajuanDosenPage() {
         `${API_BASE_URL}/pengajuan/${pengajuanId}/${action}`,
         {
           method: 'POST',
-          headers: { 'x-user-id': user?.id?.toString() || '' },
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         },
       );
       return res.json();
@@ -295,7 +295,7 @@ export default function PengajuanDosenPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user?.id?.toString() || '',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({ peranDosenTaId }),
       });
@@ -348,7 +348,7 @@ export default function PengajuanDosenPage() {
         `${API_BASE_URL}/pengajuan/lepaskan/${pengajuanId}/${action}`,
         {
           method: 'POST',
-          headers: { 'x-user-id': user?.id?.toString() || '' },
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         },
       );
       return res.json();

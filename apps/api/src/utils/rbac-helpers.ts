@@ -27,7 +27,7 @@ export async function canAccessMahasiswa(
     return mahasiswa.prodi === context.prodi;
   }
 
-  if (context.role === Role.dosen && context.dosenId) {
+  if (context.role === Role.dosen && context.dosenId != null) {
     const assignment = await prisma.peranDosenTa.findFirst({
       where: {
         dosen_id: context.dosenId,
@@ -40,7 +40,7 @@ export async function canAccessMahasiswa(
     return !!assignment;
   }
 
-  if (context.role === Role.mahasiswa && context.mahasiswaId) {
+  if (context.role === Role.mahasiswa && context.mahasiswaId != null) {
     return context.mahasiswaId === targetMahasiswaId;
   }
 
@@ -69,18 +69,20 @@ export async function canAccessTugasAkhir(
     return tugasAkhir.mahasiswa.prodi === context.prodi;
   }
 
-  if (context.role === Role.dosen && context.dosenId) {
+  if (context.role === Role.dosen && context.dosenId != null) {
     return tugasAkhir.peranDosenTa.some((p) => p.dosen_id === context.dosenId);
   }
 
-  if (context.role === Role.mahasiswa && context.mahasiswaId) {
+  if (context.role === Role.mahasiswa && context.mahasiswaId != null) {
     return tugasAkhir.mahasiswa.id === context.mahasiswaId;
   }
 
   return false;
 }
 
-export async function getFilteredMahasiswaQuery(context: RBACContext) {
+export async function getFilteredMahasiswaQuery(
+  context: RBACContext,
+): Promise<Record<string, unknown>> {
   if (context.role === Role.jurusan || context.role === Role.admin) {
     return {};
   }
@@ -89,7 +91,7 @@ export async function getFilteredMahasiswaQuery(context: RBACContext) {
     return { prodi: context.prodi };
   }
 
-  if (context.role === Role.dosen && context.dosenId) {
+  if (context.role === Role.dosen && context.dosenId != null) {
     return {
       tugasAkhir: {
         peranDosenTa: {
@@ -101,7 +103,7 @@ export async function getFilteredMahasiswaQuery(context: RBACContext) {
     };
   }
 
-  if (context.role === Role.mahasiswa && context.mahasiswaId) {
+  if (context.role === Role.mahasiswa && context.mahasiswaId != null) {
     return { id: context.mahasiswaId };
   }
 
@@ -137,19 +139,23 @@ export async function validatePembimbingAssignment(
 ): Promise<{ valid: boolean; errors: string[] }> {
   const errors: string[] = [];
 
-  if (pembimbing2Id && pembimbing1Id === pembimbing2Id) {
+  if (pembimbing2Id != null && pembimbing1Id === pembimbing2Id) {
     errors.push('Pembimbing 1 dan Pembimbing 2 harus berbeda');
   }
 
   const capacity1 = await getDosenCapacity(pembimbing1Id);
   if (capacity1.available === 0) {
-    errors.push(`Pembimbing 1 sudah mencapai kapasitas maksimal (${capacity1.current}/${capacity1.max})`);
+    errors.push(
+      `Pembimbing 1 sudah mencapai kapasitas maksimal (${capacity1.current}/${capacity1.max})`,
+    );
   }
 
-  if (pembimbing2Id) {
+  if (pembimbing2Id != null) {
     const capacity2 = await getDosenCapacity(pembimbing2Id);
     if (capacity2.available === 0) {
-      errors.push(`Pembimbing 2 sudah mencapai kapasitas maksimal (${capacity2.current}/${capacity2.max})`);
+      errors.push(
+        `Pembimbing 2 sudah mencapai kapasitas maksimal (${capacity2.current}/${capacity2.max})`,
+      );
     }
   }
 
@@ -162,7 +168,9 @@ export function validatePengujiAssignment(
   penguji3Id?: number,
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
-  const pengujiIds = [penguji1Id, penguji2Id, penguji3Id].filter((id) => id !== undefined);
+  const pengujiIds = [penguji1Id, penguji2Id, penguji3Id].filter(
+    (id) => id !== undefined,
+  );
 
   const uniqueIds = new Set(pengujiIds);
   if (uniqueIds.size !== pengujiIds.length) {
@@ -177,4 +185,37 @@ export async function validateTeamComposition(
   pembimbing2Id?: number,
 ): Promise<{ isValid: boolean; errors: string[] }> {
   return validatePembimbingAssignment(pembimbing1Id, pembimbing2Id);
+}
+
+export async function validateNoOverlap(
+  tugasAkhirId: number,
+): Promise<{ valid: boolean; errors: string[] }> {
+  const errors: string[] = [];
+
+  const peranDosen = await prisma.peranDosenTa.findMany({
+    where: { tugas_akhir_id: tugasAkhirId },
+    select: { dosen_id: true, peran: true },
+  });
+
+  const pembimbingIds = peranDosen
+    .filter((p) => p.peran === 'pembimbing1' || p.peran === 'pembimbing2')
+    .map((p) => p.dosen_id);
+
+  const pengujiIds = peranDosen
+    .filter(
+      (p) =>
+        p.peran === 'penguji1' ||
+        p.peran === 'penguji2' ||
+        p.peran === 'penguji3',
+    )
+    .map((p) => p.dosen_id);
+
+  const overlap = pembimbingIds.some((id) => pengujiIds.includes(id));
+  if (overlap) {
+    errors.push(
+      'Dosen tidak boleh menjadi pembimbing dan penguji di TA yang sama',
+    );
+  }
+
+  return { valid: errors.length === 0, errors };
 }

@@ -11,8 +11,13 @@ import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validateDosenTugasAkhirAccess } from '../middlewares/rbac.middleware';
 import { validate } from '../middlewares/validation.middleware';
 import { Role } from '../middlewares/auth.middleware';
-import { createCatatanSchema, setJadwalSchema, createSesiSchema, setJadwalSesiSchema } from '../dto/bimbingan.dto';
-import { NotFoundError, BadRequestError } from '../errors/AppError';
+import {
+  createCatatanSchema,
+  setJadwalSchema,
+  createSesiSchema,
+  setJadwalSesiSchema,
+} from '../dto/bimbingan.dto';
+import { BadRequestError } from '../errors/AppError';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -31,6 +36,7 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (_req, file, cb) => {
+    // NOSONAR: Using Date.now() with random for unique filename generation is safe here
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
     cb(null, `${uniqueSuffix}-${sanitizedName}`);
@@ -74,18 +80,28 @@ const upload = multer({
 // Apply JWT Auth and Roles Guard globally for this router
 router.use(asyncHandler(insecureAuthMiddleware));
 
+const ERROR_MSG_NO_DOSEN = 'Pengguna tidak memiliki profil dosen';
+const ERROR_MSG_NO_MAHASISWA = 'Pengguna tidak memiliki profil mahasiswa';
+const ERROR_MSG_NO_USER_ID = 'ID pengguna tidak ditemukan';
+const ERROR_MSG_NO_SESI_ID = 'ID Sesi diperlukan';
+const ERROR_MSG_NO_TA_ID = 'ID Tugas Akhir diperlukan';
+const ERROR_MSG_NO_FILES = 'Tidak ada file yang diupload';
+
 router.get(
   '/sebagai-dosen',
   asyncHandler(async (req, res): Promise<void> => {
     const dosenId = req.user?.dosen?.id;
-    if (!dosenId) {
-      throw new BadRequestError('Pengguna tidak memiliki profil dosen');
+    if (typeof dosenId !== 'number') {
+      throw new BadRequestError(ERROR_MSG_NO_DOSEN);
     }
 
-    const page = req.query['page']
+    const hasPageQuery = req.query['page'] !== undefined;
+    const page = hasPageQuery
       ? Math.max(1, parseInt(req.query['page'] as string, 10))
       : 1;
-    const limit = req.query['limit']
+
+    const hasLimitQuery = req.query['limit'] !== undefined;
+    const limit = hasLimitQuery
       ? Math.min(100, Math.max(1, parseInt(req.query['limit'] as string, 10)))
       : 20;
 
@@ -102,8 +118,8 @@ router.get(
   '/sebagai-mahasiswa',
   asyncHandler(async (req, res): Promise<void> => {
     const mahasiswaId = req.user?.mahasiswa?.id;
-    if (!mahasiswaId) {
-      throw new BadRequestError('Pengguna tidak memiliki profil mahasiswa');
+    if (typeof mahasiswaId !== 'number') {
+      throw new BadRequestError(ERROR_MSG_NO_MAHASISWA);
     }
 
     const bimbingan =
@@ -118,8 +134,8 @@ router.post(
   validate(createCatatanSchema),
   asyncHandler(async (req, res): Promise<void> => {
     const userId = req.user?.id;
-    if (!userId) {
-      throw new BadRequestError('ID pengguna tidak ditemukan');
+    if (typeof userId !== 'number') {
+      throw new BadRequestError(ERROR_MSG_NO_USER_ID);
     }
 
     const { bimbingan_ta_id, catatan } = req.body;
@@ -136,8 +152,10 @@ router.post(
   '/sesi/:id/upload',
   authorizeRoles([Role.dosen, Role.mahasiswa]),
   (req: Request, res: Response, next: NextFunction): void => {
-    upload.array('files', 5)(req, res, (err): void => {
-      if (err instanceof multer.MulterError) {
+    upload.array('files', 5)(req, res, (err: unknown): void => {
+      const isMulterError = err instanceof multer.MulterError;
+
+      if (isMulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
           res.status(400).json({
             status: 'gagal',
@@ -157,8 +175,16 @@ router.post(
           .json({ status: 'gagal', message: `Upload error: ${err.message}` });
         return;
       }
-      if (err) {
-        res.status(400).json({ status: 'gagal', message: err.message });
+      const hasErrorMessage =
+        err !== null &&
+        err !== undefined &&
+        typeof err === 'object' &&
+        'message' in err;
+
+      if (hasErrorMessage) {
+        const errorMessage =
+          typeof err.message === 'string' ? err.message : 'Unknown error';
+        res.status(400).json({ status: 'gagal', message: errorMessage });
         return;
       }
       next();
@@ -166,15 +192,17 @@ router.post(
   },
   asyncHandler(async (req, res): Promise<void> => {
     const { id } = req.params;
-    if (!id) {
-      throw new BadRequestError('ID Sesi diperlukan');
+    if (typeof id !== 'string' || id === '') {
+      throw new BadRequestError(ERROR_MSG_NO_SESI_ID);
     }
 
-    if (!req.files || (Array.isArray(req.files) && req.files.length === 0)) {
-      throw new BadRequestError('Tidak ada file yang diupload');
+    const hasValidFiles = Array.isArray(req.files) && req.files.length > 0;
+
+    if (!hasValidFiles) {
+      throw new BadRequestError(ERROR_MSG_NO_FILES);
     }
 
-    const files = req.files as Express.Multer.File[];
+    const files = req.files;
     const results = await bimbinganService.addMultipleLampiran(
       parseInt(id, 10),
       files.map((f) => ({
@@ -195,12 +223,15 @@ router.post(
   validate(createSesiSchema),
   asyncHandler(async (req, res): Promise<void> => {
     const userId = req.user?.id;
-    if (!userId) {
-      throw new BadRequestError('ID pengguna tidak ditemukan');
+    if (typeof userId !== 'number') {
+      throw new BadRequestError(ERROR_MSG_NO_USER_ID);
     }
 
     const { tugas_akhir_id } = req.body;
-    const newSesi = await bimbinganService.createEmptySesi(tugas_akhir_id, userId);
+    const newSesi = await bimbinganService.createEmptySesi(
+      tugas_akhir_id,
+      userId,
+    );
     res.status(201).json({ status: 'sukses', data: newSesi });
   }),
 );
@@ -212,13 +243,13 @@ router.put(
   validate(setJadwalSesiSchema),
   asyncHandler(async (req, res): Promise<void> => {
     const userId = req.user?.id;
-    if (!userId) {
-      throw new BadRequestError('ID pengguna tidak ditemukan');
+    if (typeof userId !== 'number') {
+      throw new BadRequestError(ERROR_MSG_NO_USER_ID);
     }
 
     const { id } = req.params;
-    if (!id) {
-      throw new BadRequestError('ID Sesi diperlukan');
+    if (typeof id !== 'string' || id === '') {
+      throw new BadRequestError(ERROR_MSG_NO_SESI_ID);
     }
 
     const { tanggal_bimbingan, jam_bimbingan, jam_selesai } = req.body;
@@ -239,16 +270,19 @@ router.post(
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const userId = req.user?.id;
-    if (!userId) {
-      throw new BadRequestError('ID pengguna tidak ditemukan');
+    if (typeof userId !== 'number') {
+      throw new BadRequestError(ERROR_MSG_NO_USER_ID);
     }
 
     const { id } = req.params;
-    if (!id) {
-      throw new BadRequestError('ID Sesi diperlukan');
+    if (typeof id !== 'string' || id === '') {
+      throw new BadRequestError(ERROR_MSG_NO_SESI_ID);
     }
 
-    const result = await bimbinganService.konfirmasiSelesai(parseInt(id, 10), userId);
+    const result = await bimbinganService.konfirmasiSelesai(
+      parseInt(id, 10),
+      userId,
+    );
     res.status(200).json({ status: 'sukses', data: result });
   }),
 );
@@ -260,13 +294,13 @@ router.post(
   validate(setJadwalSchema),
   asyncHandler(async (req, res): Promise<void> => {
     const { tugasAkhirId } = req.params;
-    if (!tugasAkhirId) {
-      throw new BadRequestError('ID Tugas Akhir diperlukan');
+    if (typeof tugasAkhirId !== 'string' || tugasAkhirId === '') {
+      throw new BadRequestError(ERROR_MSG_NO_TA_ID);
     }
 
     const dosenId = req.user?.dosen?.id;
-    if (!dosenId) {
-      throw new BadRequestError('Pengguna tidak memiliki profil dosen');
+    if (typeof dosenId !== 'number') {
+      throw new BadRequestError(ERROR_MSG_NO_DOSEN);
     }
 
     const { tanggal_bimbingan, jam_bimbingan } = req.body;
@@ -285,13 +319,13 @@ router.post(
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const { id } = req.params;
-    if (!id) {
-      throw new BadRequestError('ID Sesi diperlukan');
+    if (typeof id !== 'string' || id === '') {
+      throw new BadRequestError(ERROR_MSG_NO_SESI_ID);
     }
 
     const dosenId = req.user?.dosen?.id;
-    if (!dosenId) {
-      throw new BadRequestError('Pengguna tidak memiliki profil dosen');
+    if (typeof dosenId !== 'number') {
+      throw new BadRequestError(ERROR_MSG_NO_DOSEN);
     }
 
     const result = await bimbinganService.cancelBimbingan(
@@ -311,13 +345,13 @@ router.post(
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const { id } = req.params;
-    if (!id) {
-      throw new BadRequestError('ID Sesi diperlukan');
+    if (typeof id !== 'string' || id === '') {
+      throw new BadRequestError(ERROR_MSG_NO_SESI_ID);
     }
 
     const dosenId = req.user?.dosen?.id;
-    if (!dosenId) {
-      throw new BadRequestError('Pengguna tidak memiliki profil dosen');
+    if (typeof dosenId !== 'number') {
+      throw new BadRequestError(ERROR_MSG_NO_DOSEN);
     }
 
     const result = await bimbinganService.selesaikanSesi(
@@ -338,17 +372,18 @@ router.get(
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const dosenId = req.user?.dosen?.id;
-    if (!dosenId) {
-      throw new BadRequestError('Pengguna tidak memiliki profil dosen');
+    if (typeof dosenId !== 'number') {
+      throw new BadRequestError(ERROR_MSG_NO_DOSEN);
     }
 
     const { tanggal, jam } = req.query;
-    if (
-      typeof tanggal !== 'string' ||
-      !tanggal ||
-      typeof jam !== 'string' ||
-      !jam
-    ) {
+    const hasValidParams =
+      typeof tanggal === 'string' &&
+      tanggal !== '' &&
+      typeof jam === 'string' &&
+      jam !== '';
+
+    if (!hasValidParams) {
       throw new BadRequestError('Parameter tanggal dan jam diperlukan');
     }
 
@@ -366,12 +401,14 @@ router.get(
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const dosenId = req.user?.dosen?.id;
-    if (!dosenId) {
-      throw new BadRequestError('Pengguna tidak memiliki profil dosen');
+    if (typeof dosenId !== 'number') {
+      throw new BadRequestError(ERROR_MSG_NO_DOSEN);
     }
 
     const { tanggal } = req.query;
-    if (typeof tanggal !== 'string' || !tanggal) {
+    const isValidTanggal = typeof tanggal === 'string' && tanggal !== '';
+
+    if (!isValidTanggal) {
       throw new BadRequestError('Parameter tanggal diperlukan');
     }
 
@@ -380,6 +417,70 @@ router.get(
       tanggal,
     );
     res.status(200).json({ status: 'sukses', data: slots });
+  }),
+);
+
+router.delete(
+  '/sesi/:id',
+  authorizeRoles([Role.dosen, Role.mahasiswa]),
+  asyncHandler(async (req, res): Promise<void> => {
+    const userId = req.user?.id;
+    if (typeof userId !== 'number') {
+      throw new BadRequestError(ERROR_MSG_NO_USER_ID);
+    }
+
+    const { id } = req.params;
+    if (typeof id !== 'string' || id === '') {
+      throw new BadRequestError(ERROR_MSG_NO_SESI_ID);
+    }
+
+    await bimbinganService.deleteSesi(parseInt(id, 10), userId);
+    res.status(200).json({
+      status: 'sukses',
+      message: 'Sesi bimbingan berhasil dihapus',
+    });
+  }),
+);
+
+router.get(
+  '/eligibility/:tugasAkhirId',
+  authorizeRoles([Role.mahasiswa]),
+  asyncHandler(async (req, res): Promise<void> => {
+    const { tugasAkhirId } = req.params;
+    if (typeof tugasAkhirId !== 'string' || tugasAkhirId === '') {
+      throw new BadRequestError(ERROR_MSG_NO_TA_ID);
+    }
+
+    const eligibility = await bimbinganService.checkSidangEligibility(
+      parseInt(tugasAkhirId, 10),
+    );
+    res.status(200).json({ status: 'sukses', data: eligibility });
+  }),
+);
+
+router.post(
+  '/sesi/:id/batalkan-validasi',
+  authorizeRoles([Role.dosen]),
+  asyncHandler(async (req, res): Promise<void> => {
+    const userId = req.user?.id;
+    if (typeof userId !== 'number') {
+      throw new BadRequestError(ERROR_MSG_NO_USER_ID);
+    }
+
+    const { id } = req.params;
+    if (typeof id !== 'string' || id === '') {
+      throw new BadRequestError(ERROR_MSG_NO_SESI_ID);
+    }
+
+    const result = await bimbinganService.batalkanValidasi(
+      parseInt(id, 10),
+      userId,
+    );
+    res.status(200).json({
+      status: 'sukses',
+      message: 'Validasi bimbingan berhasil dibatalkan',
+      data: result,
+    });
   }),
 );
 

@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import bimbinganRouter from './api/bimbingan.router';
+import dokumenTARouter from './api/dokumen-ta.router';
+import uploadRouter from './api/upload.router';
 import jadwalSidangRouter from './api/jadwal-sidang.router';
 import laporanRouter from './api/laporan.router';
 import reportRouter from './api/report.router';
@@ -41,19 +43,19 @@ app.use((req, res, next) => {
   // Set timeout for all requests (30 seconds)
   req.setTimeout(30000);
   res.setTimeout(30000);
-  
+
   const timeout = setTimeout(() => {
     if (!res.headersSent) {
       res.status(408).json({
         status: 'error',
-        message: 'Request timeout - server took too long to respond'
+        message: 'Request timeout - server took too long to respond',
       });
     }
   }, 30000);
-  
+
   res.on('finish', () => clearTimeout(timeout));
   res.on('close', () => clearTimeout(timeout));
-  
+
   next();
 });
 
@@ -94,6 +96,8 @@ app.get('/health', (_req, res) => {
 // API Routes
 app.use('/api/auth', authRouter);
 app.use('/api/bimbingan', bimbinganRouter);
+app.use('/api/dokumen-ta', dokumenTARouter);
+app.use('/api/upload', uploadRouter);
 app.use('/api/jadwal-sidang', jadwalSidangRouter);
 app.use('/api/laporan', laporanRouter);
 app.use('/api/reports', reportRouter);

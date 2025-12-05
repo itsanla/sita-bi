@@ -98,7 +98,7 @@ export default function PengajuanMahasiswaPage() {
     queryKey: ['dosen-tersedia', user?.id],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/pengajuan/dosen-tersedia`, {
-        headers: { 'x-user-id': user?.id?.toString() || '' },
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
       });
       return res.json();
     },
@@ -110,7 +110,7 @@ export default function PengajuanMahasiswaPage() {
     queryKey: ['pengajuan-mahasiswa', user?.id],
     queryFn: async () => {
       const res = await fetch(`${API_BASE_URL}/pengajuan/mahasiswa`, {
-        headers: { 'x-user-id': user?.id?.toString() || '' },
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
       });
       return res.json();
     },
@@ -131,21 +131,24 @@ export default function PengajuanMahasiswaPage() {
 
   const ajukanMutation = useMutation({
     mutationFn: async ({
-      _dosenId,
+      dosenId,
       peran,
     }: {
-      _dosenId: number;
+      dosenId: number;
       peran: string;
     }) => {
+      console.log('Sending data:', { dosenId, peran });
       const res = await fetch(`${API_BASE_URL}/pengajuan/mahasiswa`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user?.id?.toString() || '',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({ dosenId: _dosenId, peran }),
+        body: JSON.stringify({ dosenId, peran }),
       });
-      return res.json();
+      const data = await res.json();
+      console.log('Response:', data);
+      return data;
     },
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: ['pengajuan-mahasiswa'] });
@@ -176,6 +179,11 @@ export default function PengajuanMahasiswaPage() {
 
   const handleAjukan = useCallback(
     (dosenId: number, dosenName: string) => {
+      console.log('handleAjukan called with:', { dosenId, dosenName, selectedPeran });
+      if (!dosenId) {
+        toast.error('Error', { description: 'ID dosen tidak valid' });
+        return;
+      }
       setConfirmDialog({
         open: true,
         title: 'Konfirmasi Pengajuan Pembimbing',
@@ -200,7 +208,7 @@ export default function PengajuanMahasiswaPage() {
         `${API_BASE_URL}/pengajuan/${pengajuanId}/${action}`,
         {
           method: 'POST',
-          headers: { 'x-user-id': user?.id?.toString() || '' },
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         },
       );
       return res.json();
@@ -269,7 +277,7 @@ export default function PengajuanMahasiswaPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user?.id?.toString() || '',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({ peranDosenTaId }),
       });
@@ -314,7 +322,7 @@ export default function PengajuanMahasiswaPage() {
         `${API_BASE_URL}/pengajuan/lepaskan/${pengajuanId}/batalkan`,
         {
           method: 'POST',
-          headers: { 'x-user-id': user?.id?.toString() || '' },
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         },
       );
       return res.json();
@@ -350,7 +358,7 @@ export default function PengajuanMahasiswaPage() {
         `${API_BASE_URL}/pengajuan/lepaskan/${pengajuanId}/${action}`,
         {
           method: 'POST',
-          headers: { 'x-user-id': user?.id?.toString() || '' },
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         },
       );
       return res.json();

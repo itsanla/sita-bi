@@ -18,7 +18,7 @@ export default function LoginPage() {
 
     try {
       const response = await api.post<{
-        userId: number;
+        token: string;
         user: {
           id: number;
           name: string;
@@ -27,11 +27,10 @@ export default function LoginPage() {
         };
       }>('/auth/login', { identifier, password });
 
-      const userId = response.data?.data?.userId;
+      const token = response.data?.data?.token;
       const user = response.data?.data?.user;
 
-      if (userId && user) {
-        const token = String(userId);
+      if (token && user) {
         localStorage.setItem('token', token);
 
         // Redirect based on role with hard reload
