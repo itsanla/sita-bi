@@ -16,6 +16,9 @@ interface Periode {
 }
 
 export default function KelolaPeriodePage() {
+  const ERROR_MESSAGE_DEFAULT = 'Gagal memproses periode';
+  const PERIODE_UPDATED_EVENT = 'periode-updated';
+
   const { isJurusan, role } = useRBAC();
   const [loading, setLoading] = useState(true);
   const [periodes, setPeriodes] = useState<Periode[]>([]);
@@ -26,8 +29,9 @@ export default function KelolaPeriodePage() {
 
   useEffect(() => {
     if (isJurusan) {
-      fetchPeriodes();
+      void fetchPeriodes();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isJurusan]);
 
   const fetchPeriodes = async () => {
@@ -41,9 +45,12 @@ export default function KelolaPeriodePage() {
     }
   };
 
-
-
   const handleBukaPeriode = async (langsung: boolean) => {
+    if (!tahunBaru || tahunBaru < 2000 || tahunBaru > 2100) {
+      toast.error('Tahun tidak valid');
+      return;
+    }
+
     const msg = langsung
       ? `Buka Periode TA ${tahunBaru} sekarang?`
       : `Simpan jadwal pembukaan Periode TA ${tahunBaru}?`;
@@ -54,7 +61,13 @@ export default function KelolaPeriodePage() {
       let tanggalBukaISO;
       if (!langsung && tanggalBuka) {
         const datetime = `${tanggalBuka}T${jamBuka || '08:00'}:00+07:00`;
-        tanggalBukaISO = new Date(datetime).toISOString();
+        const tanggalBukaDate = new Date(datetime);
+        if (tanggalBukaDate < new Date()) {
+          toast.error('Tanggal pembukaan tidak boleh di masa lalu');
+          setProcessing(false);
+          return;
+        }
+        tanggalBukaISO = tanggalBukaDate.toISOString();
       }
 
       await api.post('/periode/buka', {
@@ -68,11 +81,11 @@ export default function KelolaPeriodePage() {
       );
       setTanggalBuka('');
       setJamBuka('08:00');
-      fetchPeriodes();
-      window.dispatchEvent(new Event('periode-updated'));
+      void fetchPeriodes();
+      window.dispatchEvent(new Event(PERIODE_UPDATED_EVENT));
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || 'Gagal membuka periode');
+      toast.error(err.response?.data?.message || ERROR_MESSAGE_DEFAULT);
     } finally {
       setProcessing(false);
     }
@@ -86,11 +99,11 @@ export default function KelolaPeriodePage() {
     try {
       await api.post(`/periode/${id}/tutup`, { catatan });
       toast.success(`Periode TA ${tahun} berhasil ditutup`);
-      fetchPeriodes();
-      window.dispatchEvent(new Event('periode-updated'));
+      void fetchPeriodes();
+      window.dispatchEvent(new Event(PERIODE_UPDATED_EVENT));
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || 'Gagal menutup periode');
+      toast.error(err.response?.data?.message || ERROR_MESSAGE_DEFAULT);
     } finally {
       setProcessing(false);
     }
@@ -103,11 +116,11 @@ export default function KelolaPeriodePage() {
     try {
       await api.delete(`/periode/${id}`);
       toast.success(`Periode TA ${tahun} berhasil dihapus`);
-      fetchPeriodes();
-      window.dispatchEvent(new Event('periode-updated'));
+      void fetchPeriodes();
+      window.dispatchEvent(new Event(PERIODE_UPDATED_EVENT));
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || 'Gagal menghapus periode');
+      toast.error(err.response?.data?.message || ERROR_MESSAGE_DEFAULT);
     } finally {
       setProcessing(false);
     }
@@ -120,11 +133,11 @@ export default function KelolaPeriodePage() {
     try {
       await api.post(`/periode/${id}/buka-sekarang`);
       toast.success(`Periode TA ${tahun} berhasil dibuka`);
-      fetchPeriodes();
-      window.dispatchEvent(new Event('periode-updated'));
+      void fetchPeriodes();
+      window.dispatchEvent(new Event(PERIODE_UPDATED_EVENT));
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || 'Gagal membuka periode');
+      toast.error(err.response?.data?.message || ERROR_MESSAGE_DEFAULT);
     } finally {
       setProcessing(false);
     }
@@ -137,11 +150,11 @@ export default function KelolaPeriodePage() {
     try {
       await api.delete(`/periode/${id}/batalkan-jadwal`);
       toast.success('Jadwal pembukaan dibatalkan');
-      fetchPeriodes();
-      window.dispatchEvent(new Event('periode-updated'));
+      void fetchPeriodes();
+      window.dispatchEvent(new Event(PERIODE_UPDATED_EVENT));
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || 'Gagal membatalkan jadwal');
+      toast.error(err.response?.data?.message || ERROR_MESSAGE_DEFAULT);
     } finally {
       setProcessing(false);
     }
@@ -264,7 +277,7 @@ export default function KelolaPeriodePage() {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => handleBukaPeriode(true)}
+                onClick={() => void handleBukaPeriode(true)}
                 disabled={processing}
                 className="flex items-center space-x-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -273,7 +286,7 @@ export default function KelolaPeriodePage() {
               </button>
               {tanggalBuka && (
                 <button
-                  onClick={() => handleBukaPeriode(false)}
+                  onClick={() => void handleBukaPeriode(false)}
                   disabled={processing}
                   className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -350,7 +363,7 @@ export default function KelolaPeriodePage() {
                   <div className="flex gap-2">
                     {periode.status === 'AKTIF' && (
                       <button
-                        onClick={() => handleTutupPeriode(periode.id, periode.tahun)}
+                        onClick={() => void handleTutupPeriode(periode.id, periode.tahun)}
                         disabled={processing}
                         className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
                       >
@@ -361,7 +374,7 @@ export default function KelolaPeriodePage() {
                     {periode.status === 'PERSIAPAN' && (
                       <>
                         <button
-                          onClick={() => handleBukaSekarang(periode.id, periode.tahun)}
+                          onClick={() => void handleBukaSekarang(periode.id, periode.tahun)}
                           disabled={processing}
                           className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                         >
@@ -369,7 +382,7 @@ export default function KelolaPeriodePage() {
                           <span>Buka Sekarang</span>
                         </button>
                         <button
-                          onClick={() => handleBatalkanJadwal(periode.id, periode.tahun)}
+                          onClick={() => void handleBatalkanJadwal(periode.id, periode.tahun)}
                           disabled={processing}
                           className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50"
                         >
@@ -380,7 +393,7 @@ export default function KelolaPeriodePage() {
                     )}
                     {periode.status === 'SELESAI' && (
                       <button
-                        onClick={() => handleHapusPeriode(periode.id, periode.tahun)}
+                        onClick={() => void handleHapusPeriode(periode.id, periode.tahun)}
                         disabled={processing}
                         className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
                       >

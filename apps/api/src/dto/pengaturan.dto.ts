@@ -25,10 +25,10 @@ export const updatePengaturanSchema = z.object({
     .int('Durasi harus bilangan bulat')
     .min(30, 'Minimal 30 menit')
     .optional(),
-  batas_revisi_hari: z
+  jeda_sidang_menit: z
     .number()
-    .int('Batas revisi harus bilangan bulat')
-    .min(1, 'Minimal 1 hari')
+    .int('Jeda harus bilangan bulat')
+    .min(0, 'Minimal 0 menit')
     .optional(),
 });
 

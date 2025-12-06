@@ -52,9 +52,9 @@ const baseNavItems = [
 
 const jurusanMenuItems = [
   {
-    href: '/dashboard/dosen/fitur-jurusan-1',
+    href: '/dashboard/dosen/aturan-umum',
     icon: Settings,
-    label: 'Aturan Tugas Akhir',
+    label: 'Aturan Umum',
   },
   {
     href: '/dashboard/dosen/kelola-periode',

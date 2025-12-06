@@ -11,6 +11,16 @@ interface PeriodeTa {
 }
 
 export class PeriodeService {
+  private static readonly PERIODE_NOT_FOUND = 'Periode tidak ditemukan';
+  private static readonly PERIODE_ALREADY_EXISTS = 'Periode untuk tahun ini sudah ada';
+  private static readonly PERIODE_ALREADY_ACTIVE = 'Sudah ada periode yang aktif';
+  private static readonly INVALID_DATE = 'Tanggal pembukaan tidak boleh di masa lalu';
+  private static readonly ONLY_ACTIVE_CAN_CLOSE = 'Hanya periode aktif yang bisa ditutup';
+  private static readonly CANNOT_DELETE_ACTIVE = 'Tidak dapat menghapus periode yang sedang aktif';
+  private static readonly PERIODE_ALREADY_ACTIVE_STATUS = 'Periode sudah aktif';
+  private static readonly ONLY_PERSIAPAN_CAN_OPEN = 'Hanya periode dengan status PERSIAPAN yang dapat dibuka';
+  private static readonly CANNOT_CANCEL_ACTIVE = 'Tidak dapat membatalkan jadwal periode yang sudah aktif';
+  
   private static activePeriodeCache: PeriodeTa | null = null;
   private static cacheTime = 0;
   private static CACHE_TTL = 60000; // 1 menit
@@ -55,23 +65,39 @@ export class PeriodeService {
     });
   }
 
-  async bukaPeriode(tahun: number, userId: number, tanggalBuka?: string): Promise<PeriodeTa> {
+  async bukaPeriode(
+    tahun: number,
+    userId: number,
+    tanggalBuka?: string,
+  ): Promise<PeriodeTa> {
     const existing = await prisma.periodeTa.findUnique({
       where: { tahun },
     });
 
     if (existing !== null) {
-      throw new Error('Periode untuk tahun ini sudah ada');
+      throw new Error(PeriodeService.PERIODE_ALREADY_EXISTS);
     }
 
-    if (!tanggalBuka) {
+    const isScheduled = tanggalBuka !== undefined && tanggalBuka.length > 0;
+    let tanggalBukaDate: Date;
+
+    if (isScheduled) {
+      tanggalBukaDate = new Date(tanggalBuka);
+      if (Number.isNaN(tanggalBukaDate.getTime())) {
+        throw new Error('Format tanggal tidak valid');
+      }
+      if (tanggalBukaDate <= new Date()) {
+        throw new Error(PeriodeService.INVALID_DATE);
+      }
+    } else {
       const activeCount = await prisma.periodeTa.count({
         where: { status: 'AKTIF' },
       });
 
       if (activeCount > 0) {
-        throw new Error('Sudah ada periode yang aktif');
+        throw new Error(PeriodeService.PERIODE_ALREADY_ACTIVE);
       }
+      tanggalBukaDate = new Date();
     }
 
     const pengaturan = await prisma.pengaturanSistem.findMany();
@@ -84,8 +110,8 @@ export class PeriodeService {
       data: {
         tahun,
         nama: `Periode TA ${tahun}`,
-        status: tanggalBuka ? 'PERSIAPAN' : 'AKTIF',
-        tanggal_buka: tanggalBuka ? new Date(tanggalBuka) : new Date(),
+        status: isScheduled ? 'PERSIAPAN' : 'AKTIF',
+        tanggal_buka: tanggalBukaDate,
         dibuka_oleh: userId,
         pengaturan_snapshot: JSON.stringify(snapshot),
       },
@@ -105,11 +131,11 @@ export class PeriodeService {
     });
 
     if (periode === null) {
-      throw new Error('Periode tidak ditemukan');
+      throw new Error(PeriodeService.PERIODE_NOT_FOUND);
     }
 
     if (periode.status !== 'AKTIF') {
-      throw new Error('Hanya periode aktif yang bisa ditutup');
+      throw new Error(PeriodeService.ONLY_ACTIVE_CAN_CLOSE);
     }
 
     const updated = await prisma.periodeTa.update({
@@ -118,7 +144,7 @@ export class PeriodeService {
         status: 'SELESAI',
         tanggal_tutup: new Date(),
         ditutup_oleh: userId,
-        catatan_penutupan: catatan,
+        catatan_penutupan: catatan ?? null,
       },
     });
 
@@ -131,19 +157,36 @@ export class PeriodeService {
     PeriodeService.cacheTime = 0;
   }
 
-  async setJadwalBuka(periodeId: number, tanggalBuka: string): Promise<PeriodeTa> {
+  async setJadwalBuka(
+    periodeId: number,
+    tanggalBuka: string,
+  ): Promise<PeriodeTa> {
     const periode = await prisma.periodeTa.findUnique({
       where: { id: periodeId },
     });
 
     if (periode === null) {
-      throw new Error('Periode tidak ditemukan');
+      throw new Error(PeriodeService.PERIODE_NOT_FOUND);
+    }
+
+    if (periode.status === 'AKTIF') {
+      throw new Error('Tidak dapat mengubah jadwal periode yang sudah aktif');
+    }
+
+    const tanggalBukaDate = new Date(tanggalBuka);
+    if (Number.isNaN(tanggalBukaDate.getTime())) {
+      throw new Error('Format tanggal tidak valid');
+    }
+
+    if (tanggalBukaDate <= new Date()) {
+      throw new Error(PeriodeService.INVALID_DATE);
     }
 
     const updated = await prisma.periodeTa.update({
       where: { id: periodeId },
       data: {
-        tanggal_buka: new Date(tanggalBuka),
+        tanggal_buka: tanggalBukaDate,
+        status: 'PERSIAPAN',
       },
     });
 
@@ -157,7 +200,7 @@ export class PeriodeService {
     tanggalBuka: Date | null;
   }> {
     const periodeAktif = await this.getActivePeriode();
-    
+
     if (periodeAktif) {
       return {
         isActive: true,
@@ -197,7 +240,8 @@ export class PeriodeService {
 
     if (
       periode?.pengaturan_snapshot !== null &&
-      periode?.pengaturan_snapshot !== undefined
+      periode?.pengaturan_snapshot !== undefined &&
+      periode.pengaturan_snapshot.length > 0
     ) {
       const snapshot = JSON.parse(periode.pengaturan_snapshot) as Record<
         string,
@@ -218,14 +262,22 @@ export class PeriodeService {
   async hapusPeriode(periodeId: number): Promise<void> {
     const periode = await prisma.periodeTa.findUnique({
       where: { id: periodeId },
+      include: {
+        tugasAkhir: { select: { id: true } },
+        sidang: { select: { id: true } },
+      },
     });
 
     if (periode === null) {
-      throw new Error('Periode tidak ditemukan');
+      throw new Error(PeriodeService.PERIODE_NOT_FOUND);
     }
 
     if (periode.status === 'AKTIF') {
-      throw new Error('Tidak dapat menghapus periode yang sedang aktif');
+      throw new Error(PeriodeService.CANNOT_DELETE_ACTIVE);
+    }
+
+    if (periode.tugasAkhir.length > 0 || periode.sidang.length > 0) {
+      throw new Error('Tidak dapat menghapus periode yang memiliki data terkait');
     }
 
     await prisma.periodeTa.delete({
@@ -241,11 +293,15 @@ export class PeriodeService {
     });
 
     if (periode === null) {
-      throw new Error('Periode tidak ditemukan');
+      throw new Error(PeriodeService.PERIODE_NOT_FOUND);
     }
 
     if (periode.status === 'AKTIF') {
-      throw new Error('Periode sudah aktif');
+      throw new Error(PeriodeService.PERIODE_ALREADY_ACTIVE_STATUS);
+    }
+
+    if (periode.status !== 'PERSIAPAN') {
+      throw new Error(PeriodeService.ONLY_PERSIAPAN_CAN_OPEN);
     }
 
     const activeCount = await prisma.periodeTa.count({
@@ -253,7 +309,7 @@ export class PeriodeService {
     });
 
     if (activeCount > 0) {
-      throw new Error('Sudah ada periode yang aktif');
+      throw new Error(PeriodeService.PERIODE_ALREADY_ACTIVE);
     }
 
     const updated = await prisma.periodeTa.update({
@@ -274,11 +330,15 @@ export class PeriodeService {
     });
 
     if (periode === null) {
-      throw new Error('Periode tidak ditemukan');
+      throw new Error(PeriodeService.PERIODE_NOT_FOUND);
     }
 
     if (periode.status === 'AKTIF') {
-      throw new Error('Tidak dapat membatalkan jadwal periode yang sudah aktif');
+      throw new Error(PeriodeService.CANNOT_CANCEL_ACTIVE);
+    }
+
+    if (periode.status !== 'PERSIAPAN') {
+      throw new Error('Hanya periode dengan status PERSIAPAN yang dapat dibatalkan');
     }
 
     await prisma.periodeTa.delete({

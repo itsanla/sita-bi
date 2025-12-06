@@ -17,7 +17,7 @@ export class PengaturanService {
         setting.key === 'min_bimbingan_valid' ||
         setting.key === 'max_pembimbing_aktif' ||
         setting.key === 'durasi_sidang_menit' ||
-        setting.key === 'batas_revisi_hari'
+        setting.key === 'jeda_sidang_menit'
       ) {
         result[setting.key] = parseInt(setting.value, 10);
       } else {
@@ -122,19 +122,19 @@ export class PengaturanService {
       );
     }
 
-    if (data.batas_revisi_hari !== undefined) {
+    if (data.jeda_sidang_menit !== undefined) {
       updates.push(
         prisma.pengaturanSistem.upsert({
-          where: { key: 'batas_revisi_hari' },
+          where: { key: 'jeda_sidang_menit' },
           update: {
-            value: data.batas_revisi_hari.toString(),
+            value: data.jeda_sidang_menit.toString(),
             updated_at: new Date(),
           },
           create: {
-            key: 'batas_revisi_hari',
-            value: data.batas_revisi_hari.toString(),
+            key: 'jeda_sidang_menit',
+            value: data.jeda_sidang_menit.toString(),
             deskripsi:
-              'Batas waktu pengumpulan revisi setelah sidang (dalam hari)',
+              'Waktu jeda antar sidang dalam menit',
           },
         }),
       );

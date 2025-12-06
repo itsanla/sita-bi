@@ -31,37 +31,37 @@ export default function PeriodeNotActive({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-gray-200 p-6 sm:p-8 text-center mx-4">
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-md">
-            <AlertCircle className="w-8 h-8 text-white" strokeWidth={2.5} />
+    <div className="min-h-screen flex items-center justify-center px-4 py-6">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-gray-200 p-6 sm:p-8 text-center">
+        <div className="flex justify-center mb-4 sm:mb-6">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-md">
+            <AlertCircle className="w-7 h-7 sm:w-8 sm:h-8 text-white" strokeWidth={2.5} />
           </div>
         </div>
 
-        <h2 className="text-2xl font-bold text-gray-700 mb-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-700 mb-2 sm:mb-3">
           Periode TA Belum Dibuka
         </h2>
 
-        <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+        <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6 leading-relaxed">
           Sistem Informasi Tugas Akhir saat ini belum dibuka oleh Ketua Jurusan.
         </p>
 
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-6 mb-6 shadow-sm">
-          <div className="flex items-center justify-center gap-2 text-blue-700 mb-4">
-            <Calendar className="w-5 h-5" />
-            <span className="text-sm font-semibold uppercase tracking-wide">Jadwal Pembukaan</span>
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
+          <div className="flex items-center justify-center gap-2 text-blue-700 mb-3 sm:mb-4">
+            <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-sm font-semibold uppercase tracking-wide">Jadwal Pembukaan</span>
           </div>
           <div className="text-gray-900 font-bold">
             {formatDate(tanggalBuka).split(' Pukul ').map((part, i) => (
-              <p key={i} className={i === 0 ? 'text-xl mb-1' : 'text-lg text-blue-900'}>
+              <p key={i} className={i === 0 ? 'text-lg sm:text-xl mb-1' : 'text-base sm:text-lg text-blue-900'}>
                 {i === 1 ? `Pukul ${part}` : part}
               </p>
             ))}
           </div>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+        <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
           <p className="text-xs text-gray-600">
             Silakan hubungi Ketua Jurusan untuk informasi lebih lanjut.
           </p>

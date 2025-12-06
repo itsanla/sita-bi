@@ -79,7 +79,7 @@ apiClient.interceptors.response.use(
 
     switch (status) {
       case 400:
-        toast.error(`Data tidak valid: ${message}`);
+        // Don't show toast here, let the component handle it
         break;
 
       case 401:
@@ -123,7 +123,7 @@ apiClient.interceptors.response.use(
         break;
 
       case 422:
-        toast.error(`Validasi gagal: ${message}`);
+        // Don't show toast here, let the component handle it
         break;
 
       case 429:
