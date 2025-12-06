@@ -68,9 +68,15 @@ export default function MahasiswaLayout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+    if (!loading && !user) {
+      window.location.href = '/login';
+    }
+  }, [loading, user]);
+
   const isMahasiswa = user?.roles?.some((role) => role.name === 'mahasiswa');
 
-  if (loading || !user) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
@@ -84,6 +90,10 @@ export default function MahasiswaLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   if (!isMahasiswa) {

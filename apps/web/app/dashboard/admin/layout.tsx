@@ -61,7 +61,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!loading && user && !isAdmin) {
+    if (!loading && !user) {
+      window.location.href = '/login';
+    } else if (!loading && user && !isAdmin) {
       const userRole = user.roles?.[0]?.name;
       if (userRole === 'dosen') {
         router.replace('/dashboard/dosen');
@@ -73,7 +75,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     }
   }, [loading, user, isAdmin, router]);
 
-  if (loading || !user) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
@@ -87,6 +89,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   if (!loading && user && !isAdmin) {

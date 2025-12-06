@@ -57,7 +57,7 @@ const jurusanMenuItems = [
     label: 'Aturan Tugas Akhir',
   },
   {
-    href: '/dashboard/dosen/fitur-jurusan-2',
+    href: '/dashboard/dosen/kelola-periode',
     icon: FileCheck,
     label: 'Kelola Periode TA',
   },
@@ -120,7 +120,13 @@ export default function DosenLayout({ children }: { children: ReactNode }) {
       role.name === 'jurusan',
   );
 
-  if (loading || !user) {
+  useEffect(() => {
+    if (!loading && !user) {
+      window.location.href = '/login';
+    }
+  }, [loading, user]);
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
@@ -134,6 +140,10 @@ export default function DosenLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   if (!isDosen) {

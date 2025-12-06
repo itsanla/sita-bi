@@ -69,11 +69,11 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
     process.exit(0);
   });
 
-  // Force shutdown after 10 seconds
+  // Force shutdown after 3 seconds for faster restart in dev
   setTimeout(() => {
     console.error('⚠️  Forced shutdown after timeout');
     process.exit(1);
-  }, 10000);
+  }, 3000);
 };
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

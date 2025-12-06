@@ -100,6 +100,7 @@ export default function BimbinganPage() {
       setTugasAkhir(response.data?.data || null);
     } catch (err) {
       console.error(err);
+      setTugasAkhir(null);
     } finally {
       setLoading(false);
     }

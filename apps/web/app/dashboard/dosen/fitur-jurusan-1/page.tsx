@@ -38,7 +38,15 @@ export default function AturanTugasAkhirPage() {
   const fetchPengaturan = async () => {
     try {
       const response = await api.get<Pengaturan>('/pengaturan');
-      setPengaturan(response.data.data);
+      const data = response.data.data;
+      setPengaturan({
+        max_similaritas_persen: data.max_similaritas_persen ?? 80,
+        min_bimbingan_valid: data.min_bimbingan_valid ?? 9,
+        ruangan_sidang: data.ruangan_sidang ?? [],
+        max_pembimbing_aktif: data.max_pembimbing_aktif ?? 4,
+        durasi_sidang_menit: data.durasi_sidang_menit ?? 90,
+        batas_revisi_hari: data.batas_revisi_hari ?? 30,
+      });
     } catch {
       toast.error('Gagal memuat pengaturan');
     } finally {
@@ -62,7 +70,7 @@ export default function AturanTugasAkhirPage() {
     if (ruanganBaru.trim()) {
       setPengaturan({
         ...pengaturan,
-        ruangan_sidang: [...pengaturan.ruangan_sidang, ruanganBaru.trim()],
+        ruangan_sidang: [...(pengaturan.ruangan_sidang || []), ruanganBaru.trim()],
       });
       setRuanganBaru('');
     }
@@ -71,7 +79,7 @@ export default function AturanTugasAkhirPage() {
   const handleHapusRuangan = (index: number) => {
     setPengaturan({
       ...pengaturan,
-      ruangan_sidang: pengaturan.ruangan_sidang.filter((_, i) => i !== index),
+      ruangan_sidang: (pengaturan.ruangan_sidang || []).filter((_, i) => i !== index),
     });
   };
 
@@ -316,12 +324,12 @@ export default function AturanTugasAkhirPage() {
               </button>
             </div>
             <div className="space-y-2">
-              {pengaturan.ruangan_sidang.length === 0 ? (
+              {(pengaturan.ruangan_sidang || []).length === 0 ? (
                 <p className="text-sm text-gray-500 text-center py-4">
                   Belum ada ruangan. Tambahkan ruangan baru di atas.
                 </p>
               ) : (
-                pengaturan.ruangan_sidang.map((ruangan, index) => (
+                (pengaturan.ruangan_sidang || []).map((ruangan, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"

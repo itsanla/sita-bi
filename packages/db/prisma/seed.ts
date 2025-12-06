@@ -219,7 +219,7 @@ async function main() {
       tahun: 2024,
       nama: 'Periode TA 2024',
       status: 'AKTIF',
-      tanggal_buka: new Date('2024-01-01'),
+      tanggal_buka: new Date('2024-01-01T08:00:00+07:00'),
       dibuka_oleh: admin.id,
     },
   });
@@ -229,10 +229,20 @@ async function main() {
       tahun: 2023,
       nama: 'Periode TA 2023',
       status: 'SELESAI',
-      tanggal_buka: new Date('2023-01-01'),
-      tanggal_tutup: new Date('2023-12-31'),
+      tanggal_buka: new Date('2023-01-01T08:00:00+07:00'),
+      tanggal_tutup: new Date('2023-12-31T17:00:00+07:00'),
       dibuka_oleh: admin.id,
       ditutup_oleh: admin.id,
+    },
+  });
+
+  const periodePersiapan = await prisma.periodeTa.create({
+    data: {
+      tahun: 2025,
+      nama: 'Periode TA 2025',
+      status: 'PERSIAPAN',
+      tanggal_buka: new Date('2025-02-01T08:00:00+07:00'),
+      dibuka_oleh: admin.id,
     },
   });
 
@@ -407,7 +417,7 @@ async function main() {
   console.log('- Prodi Level: 2 (D3 & D4)');
   console.log(`- Dosen: ${dosenUsers.length}`);
   console.log(`- Mahasiswa: ${mahasiswaUsers.length}`);
-  console.log('- Periode TA: 2 (1 AKTIF, 1 SELESAI)');
+  console.log('- Periode TA: 3 (1 AKTIF, 1 SELESAI, 1 PERSIAPAN)');
   console.log('- Tugas Akhir: 15 (5 DISETUJUI, 5 BIMBINGAN, 5 DRAFT)');
   console.log('- Tawaran Topik: 10');
   console.log('- Pengumuman: 8');

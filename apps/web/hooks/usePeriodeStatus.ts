@@ -25,9 +25,13 @@ export function usePeriodeStatus() {
       try {
         const response = await api.get('/periode/status');
         const data = response.data?.data || response.data;
-        setStatus(data);
+        const processedData = {
+          isActive: data.isActive || false,
+          periode: data.periode || null,
+          tanggalBuka: data.tanggalBuka || data.periode?.tanggal_buka || null,
+        };
+        setStatus(processedData);
       } catch (error) {
-        console.error('Failed to fetch periode status:', error);
         setStatus({ isActive: false, periode: null, tanggalBuka: null });
       } finally {
         setLoading(false);
@@ -35,6 +39,13 @@ export function usePeriodeStatus() {
     };
 
     fetchStatus();
+
+    const handlePeriodeUpdate = () => {
+      fetchStatus();
+    };
+
+    window.addEventListener('periode-updated', handlePeriodeUpdate);
+    return () => window.removeEventListener('periode-updated', handlePeriodeUpdate);
   }, []);
 
   return { status, loading };

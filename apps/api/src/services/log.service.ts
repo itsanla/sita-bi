@@ -29,7 +29,19 @@ export class LogService {
     this.prisma = new PrismaClient();
   }
 
-  async create(data: CreateLogDto): Promise<Log> {
+  async create(data: CreateLogDto): Promise<Log | null> {
+    // Jika ada user_id, cek apakah user masih ada di database
+    if (data.user_id != null) {
+      const userExists = await this.prisma.user.findUnique({
+        where: { id: data.user_id },
+        select: { id: true },
+      });
+      // Jika user tidak ada, jangan buat log (database mungkin di-reset)
+      if (!userExists) {
+        return null;
+      }
+    }
+
     return this.prisma.log.create({
       data: {
         user_id: data.user_id ?? null,

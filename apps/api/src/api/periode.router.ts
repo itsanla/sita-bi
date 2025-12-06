@@ -118,4 +118,51 @@ router.post(
   }),
 );
 
+router.delete(
+  '/:id',
+  asyncHandler(authMiddleware),
+  authorizeRoles([Role.admin, Role.jurusan]),
+  auditLog('HAPUS_PERIODE', 'periode'),
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    await periodeService.hapusPeriode(parseInt(id, 10));
+    res.json({
+      status: 'sukses',
+      message: 'Periode berhasil dihapus',
+    });
+  }),
+);
+
+router.post(
+  '/:id/buka-sekarang',
+  asyncHandler(authMiddleware),
+  authorizeRoles([Role.admin, Role.jurusan]),
+  auditLog('BUKA_PERIODE_SEKARANG', 'periode'),
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const periode = await periodeService.bukaSekarang(parseInt(id, 10));
+    res.json({
+      status: 'sukses',
+      message: `Periode TA ${periode.tahun} berhasil dibuka`,
+      data: periode,
+    });
+  }),
+);
+
+router.delete(
+  '/:id/batalkan-jadwal',
+  asyncHandler(authMiddleware),
+  authorizeRoles([Role.admin, Role.jurusan]),
+  auditLog('BATALKAN_JADWAL_PERIODE', 'periode'),
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const periode = await periodeService.batalkanJadwal(parseInt(id, 10));
+    res.json({
+      status: 'sukses',
+      message: 'Jadwal pembukaan periode dibatalkan',
+      data: periode,
+    });
+  }),
+);
+
 export default router;

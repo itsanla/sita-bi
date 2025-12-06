@@ -10,7 +10,7 @@ import { ApiResponse } from '../types';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api`,
-  timeout: 30000,
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -22,9 +22,7 @@ apiClient.interceptors.request.use(
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
       if (token && config.headers) {
-        // Check if token is old format (numeric userId) or invalid
         if (/^\d+$/.test(token) || token.split('.').length !== 3) {
-          // Old format or malformed JWT detected, clear it
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           if (!window.location.pathname.includes('/login')) {
@@ -35,6 +33,11 @@ apiClient.interceptors.request.use(
         }
       }
     }
+    
+    if (config.url?.includes('/similarity') || config.url?.includes('/check-similarity')) {
+      config.timeout = 60000;
+    }
+    
     return config;
   },
   (error: AxiosError) => {
@@ -80,24 +83,14 @@ apiClient.interceptors.response.use(
         break;
 
       case 401:
-        // Don't redirect on login page
         if (
           typeof window !== 'undefined' &&
           !window.location.pathname.includes('/login')
         ) {
           localStorage.removeItem('token');
           localStorage.removeItem('user');
-          const errorMsg = message.toLowerCase();
-          if (
-            errorMsg.includes('jwt') ||
-            errorMsg.includes('token') ||
-            errorMsg.includes('invalid')
-          ) {
-            // Silent redirect for invalid tokens, no toast
-          } else {
-            toast.error('Sesi Anda telah berakhir. Silakan login kembali.');
-          }
           window.location.href = '/login';
+          return Promise.reject(new Error('Unauthorized'));
         }
         break;
 
@@ -109,7 +102,20 @@ apiClient.interceptors.response.use(
         break;
 
       case 404:
-        toast.error('Data tidak ditemukan.');
+        // Handle user not found (database reset)
+        if (message.toLowerCase().includes('user tidak ditemukan')) {
+          if (
+            typeof window !== 'undefined' &&
+            !window.location.pathname.includes('/login')
+          ) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            toast.error('Sesi Anda tidak valid. Silakan login kembali.');
+            window.location.href = '/login';
+          }
+        } else {
+          toast.error('Data tidak ditemukan.');
+        }
         break;
 
       case 409:

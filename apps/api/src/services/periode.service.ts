@@ -64,14 +64,14 @@ export class PeriodeService {
       throw new Error('Periode untuk tahun ini sudah ada');
     }
 
-    const activeCount = await prisma.periodeTa.count({
-      where: { status: 'AKTIF' },
-    });
+    if (!tanggalBuka) {
+      const activeCount = await prisma.periodeTa.count({
+        where: { status: 'AKTIF' },
+      });
 
-    if (activeCount > 0) {
-      throw new Error(
-        'Sudah ada periode yang aktif. Tutup periode aktif terlebih dahulu',
-      );
+      if (activeCount > 0) {
+        throw new Error('Sudah ada periode yang aktif');
+      }
     }
 
     const pengaturan = await prisma.pengaturanSistem.findMany();
@@ -156,11 +156,33 @@ export class PeriodeService {
     periode: PeriodeTa | null;
     tanggalBuka: Date | null;
   }> {
-    const periode = await this.getActivePeriode();
+    const periodeAktif = await this.getActivePeriode();
+    
+    if (periodeAktif) {
+      return {
+        isActive: true,
+        periode: periodeAktif,
+        tanggalBuka: periodeAktif.tanggal_buka,
+      };
+    }
+
+    const periodePersiapan = await prisma.periodeTa.findFirst({
+      where: { status: 'PERSIAPAN' },
+      select: {
+        id: true,
+        tahun: true,
+        nama: true,
+        status: true,
+        tanggal_buka: true,
+        tanggal_tutup: true,
+      },
+      orderBy: { tanggal_buka: 'asc' },
+    });
+
     return {
-      isActive: periode !== null && periode.status === 'AKTIF',
-      periode,
-      tanggalBuka: periode?.tanggal_buka ?? null,
+      isActive: false,
+      periode: periodePersiapan,
+      tanggalBuka: periodePersiapan?.tanggal_buka ?? null,
     };
   }
 
@@ -191,5 +213,79 @@ export class PeriodeService {
     });
 
     return global?.value ?? null;
+  }
+
+  async hapusPeriode(periodeId: number): Promise<void> {
+    const periode = await prisma.periodeTa.findUnique({
+      where: { id: periodeId },
+    });
+
+    if (periode === null) {
+      throw new Error('Periode tidak ditemukan');
+    }
+
+    if (periode.status === 'AKTIF') {
+      throw new Error('Tidak dapat menghapus periode yang sedang aktif');
+    }
+
+    await prisma.periodeTa.delete({
+      where: { id: periodeId },
+    });
+
+    this.invalidateCache();
+  }
+
+  async bukaSekarang(periodeId: number): Promise<PeriodeTa> {
+    const periode = await prisma.periodeTa.findUnique({
+      where: { id: periodeId },
+    });
+
+    if (periode === null) {
+      throw new Error('Periode tidak ditemukan');
+    }
+
+    if (periode.status === 'AKTIF') {
+      throw new Error('Periode sudah aktif');
+    }
+
+    const activeCount = await prisma.periodeTa.count({
+      where: { status: 'AKTIF' },
+    });
+
+    if (activeCount > 0) {
+      throw new Error('Sudah ada periode yang aktif');
+    }
+
+    const updated = await prisma.periodeTa.update({
+      where: { id: periodeId },
+      data: {
+        status: 'AKTIF',
+        tanggal_buka: new Date(),
+      },
+    });
+
+    this.invalidateCache();
+    return updated;
+  }
+
+  async batalkanJadwal(periodeId: number): Promise<PeriodeTa> {
+    const periode = await prisma.periodeTa.findUnique({
+      where: { id: periodeId },
+    });
+
+    if (periode === null) {
+      throw new Error('Periode tidak ditemukan');
+    }
+
+    if (periode.status === 'AKTIF') {
+      throw new Error('Tidak dapat membatalkan jadwal periode yang sudah aktif');
+    }
+
+    await prisma.periodeTa.delete({
+      where: { id: periodeId },
+    });
+
+    this.invalidateCache();
+    return periode;
   }
 }

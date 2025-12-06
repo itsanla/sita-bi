@@ -1,7 +1,7 @@
 'use client';
 
 import { useRBAC } from '@/hooks/useRBAC';
-import { Calendar, Lock, Play, StopCircle, CheckCircle } from 'lucide-react';
+import { Calendar, Lock, Play, StopCircle, CheckCircle, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -21,6 +21,8 @@ export default function KelolaPeriodePage() {
   const [periodes, setPeriodes] = useState<Periode[]>([]);
   const [tahunBaru, setTahunBaru] = useState(new Date().getFullYear() + 1);
   const [processing, setProcessing] = useState(false);
+  const [tanggalBuka, setTanggalBuka] = useState('');
+  const [jamBuka, setJamBuka] = useState('08:00');
 
   useEffect(() => {
     if (isJurusan) {
@@ -39,22 +41,35 @@ export default function KelolaPeriodePage() {
     }
   };
 
-  const [tanggalBuka, setTanggalBuka] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const handleBukaPeriode = async () => {
-    if (!confirm(`Buka Periode TA ${tahunBaru}?`)) return;
+
+  const handleBukaPeriode = async (langsung: boolean) => {
+    const msg = langsung
+      ? `Buka Periode TA ${tahunBaru} sekarang?`
+      : `Simpan jadwal pembukaan Periode TA ${tahunBaru}?`;
+    if (!confirm(msg)) return;
 
     setProcessing(true);
     try {
+      let tanggalBukaISO;
+      if (!langsung && tanggalBuka) {
+        const datetime = `${tanggalBuka}T${jamBuka || '08:00'}:00+07:00`;
+        tanggalBukaISO = new Date(datetime).toISOString();
+      }
+
       await api.post('/periode/buka', {
         tahun: tahunBaru,
-        tanggal_buka: tanggalBuka || undefined,
+        tanggal_buka: langsung ? undefined : tanggalBukaISO,
       });
-      toast.success(`Periode TA ${tahunBaru} berhasil dibuka`);
+      toast.success(
+        langsung
+          ? `Periode TA ${tahunBaru} berhasil dibuka`
+          : 'Jadwal pembukaan berhasil disimpan',
+      );
       setTanggalBuka('');
-      setShowDatePicker(false);
+      setJamBuka('08:00');
       fetchPeriodes();
+      window.dispatchEvent(new Event('periode-updated'));
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       toast.error(err.response?.data?.message || 'Gagal membuka periode');
@@ -72,9 +87,61 @@ export default function KelolaPeriodePage() {
       await api.post(`/periode/${id}/tutup`, { catatan });
       toast.success(`Periode TA ${tahun} berhasil ditutup`);
       fetchPeriodes();
+      window.dispatchEvent(new Event('periode-updated'));
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       toast.error(err.response?.data?.message || 'Gagal menutup periode');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleHapusPeriode = async (id: number, tahun: number) => {
+    if (!confirm(`Hapus Periode TA ${tahun}? Tindakan ini tidak dapat dibatalkan.`)) return;
+
+    setProcessing(true);
+    try {
+      await api.delete(`/periode/${id}`);
+      toast.success(`Periode TA ${tahun} berhasil dihapus`);
+      fetchPeriodes();
+      window.dispatchEvent(new Event('periode-updated'));
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Gagal menghapus periode');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleBukaSekarang = async (id: number, tahun: number) => {
+    if (!confirm(`Buka Periode TA ${tahun} sekarang?`)) return;
+
+    setProcessing(true);
+    try {
+      await api.post(`/periode/${id}/buka-sekarang`);
+      toast.success(`Periode TA ${tahun} berhasil dibuka`);
+      fetchPeriodes();
+      window.dispatchEvent(new Event('periode-updated'));
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Gagal membuka periode');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleBatalkanJadwal = async (id: number, tahun: number) => {
+    if (!confirm(`Batalkan jadwal pembukaan Periode TA ${tahun}?`)) return;
+
+    setProcessing(true);
+    try {
+      await api.delete(`/periode/${id}/batalkan-jadwal`);
+      toast.success('Jadwal pembukaan dibatalkan');
+      fetchPeriodes();
+      window.dispatchEvent(new Event('periode-updated'));
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Gagal membatalkan jadwal');
     } finally {
       setProcessing(false);
     }
@@ -160,7 +227,7 @@ export default function KelolaPeriodePage() {
             Buka Periode Baru
           </h2>
           <div className="space-y-4">
-            <div className="flex items-center space-x-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Tahun Akademik
@@ -169,10 +236,10 @@ export default function KelolaPeriodePage() {
                   type="number"
                   value={tahunBaru}
                   onChange={(e) => setTahunBaru(parseInt(e.target.value))}
-                  className="w-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
                 />
               </div>
-              <div className="flex-1">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Tanggal Pembukaan (Opsional)
                 </label>
@@ -183,20 +250,38 @@ export default function KelolaPeriodePage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Jam Pembukaan (Opsional)
+                </label>
+                <input
+                  type="time"
+                  value={jamBuka}
+                  onChange={(e) => setJamBuka(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+                />
+              </div>
             </div>
-            <p className="text-xs text-gray-500">
-              Kosongkan tanggal untuk membuka periode sekarang juga
-            </p>
-            <button
-              onClick={handleBukaPeriode}
-              disabled={processing}
-              className="flex items-center space-x-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Play className="w-4 h-4" />
-              <span>
-                {processing ? 'Membuka...' : `Buka Periode TA ${tahunBaru}`}
-              </span>
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleBukaPeriode(true)}
+                disabled={processing}
+                className="flex items-center space-x-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Play className="w-4 h-4" />
+                <span>{processing ? 'Proses...' : `Buka Periode ${tahunBaru} Sekarang`}</span>
+              </button>
+              {tanggalBuka && (
+                <button
+                  onClick={() => handleBukaPeriode(false)}
+                  disabled={processing}
+                  className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>{processing ? 'Proses...' : 'Simpan Jadwal Pembukaan'}</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -208,11 +293,10 @@ export default function KelolaPeriodePage() {
         <div className="space-y-3">
           {periodes.map((periode) => {
             const getStatusClass = () => {
-              if (periode.status === 'AKTIF')
-                return 'border-green-500 bg-green-50';
-              if (periode.status === 'SELESAI')
-                return 'border-gray-300 bg-gray-50';
-              return 'border-yellow-500 bg-yellow-50';
+              if (periode.status === 'AKTIF') return 'border-green-500 bg-green-50';
+              if (periode.status === 'SELESAI') return 'border-gray-300 bg-gray-50';
+              if (periode.status === 'PERSIAPAN') return 'border-yellow-500 bg-yellow-50';
+              return 'border-gray-300 bg-gray-50';
             };
 
             return (
@@ -246,25 +330,65 @@ export default function KelolaPeriodePage() {
                       {periode.tanggal_buka !== null && (
                         <p className="text-xs text-gray-500">
                           Dibuka:{' '}
-                          {new Date(periode.tanggal_buka).toLocaleDateString(
+                          {new Date(periode.tanggal_buka).toLocaleString(
                             'id-ID',
+                            { timeZone: 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'short' }
+                          )}
+                        </p>
+                      )}
+                      {periode.tanggal_tutup !== null && (
+                        <p className="text-xs text-gray-500">
+                          Ditutup:{' '}
+                          {new Date(periode.tanggal_tutup).toLocaleString(
+                            'id-ID',
+                            { timeZone: 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'short' }
                           )}
                         </p>
                       )}
                     </div>
                   </div>
-                  {periode.status === 'AKTIF' && (
-                    <button
-                      onClick={() =>
-                        handleTutupPeriode(periode.id, periode.tahun)
-                      }
-                      disabled={processing}
-                      className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                    >
-                      <StopCircle className="w-4 h-4" />
-                      <span>Tutup Periode</span>
-                    </button>
-                  )}
+                  <div className="flex gap-2">
+                    {periode.status === 'AKTIF' && (
+                      <button
+                        onClick={() => handleTutupPeriode(periode.id, periode.tahun)}
+                        disabled={processing}
+                        className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                      >
+                        <StopCircle className="w-4 h-4" />
+                        <span>Tutup</span>
+                      </button>
+                    )}
+                    {periode.status === 'PERSIAPAN' && (
+                      <>
+                        <button
+                          onClick={() => handleBukaSekarang(periode.id, periode.tahun)}
+                          disabled={processing}
+                          className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                        >
+                          <Play className="w-4 h-4" />
+                          <span>Buka Sekarang</span>
+                        </button>
+                        <button
+                          onClick={() => handleBatalkanJadwal(periode.id, periode.tahun)}
+                          disabled={processing}
+                          className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          <span>Batalkan</span>
+                        </button>
+                      </>
+                    )}
+                    {periode.status === 'SELESAI' && (
+                      <button
+                        onClick={() => handleHapusPeriode(periode.id, periode.tahun)}
+                        disabled={processing}
+                        className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        <span>Hapus</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
