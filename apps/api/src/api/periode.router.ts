@@ -8,6 +8,7 @@ import { auditLog } from '../middlewares/audit.middleware';
 
 const router = Router();
 const periodeService = new PeriodeService();
+const INVALID_PERIODE_ID = 'ID periode tidak valid';
 
 router.get(
   '/',
@@ -76,11 +77,12 @@ router.post(
       userId,
       tanggal_buka,
     );
-    
-    const message = tanggal_buka
-      ? `Jadwal pembukaan Periode TA ${tahun} berhasil disimpan`
-      : `Periode TA ${tahun} berhasil dibuka`;
-    
+
+    const message =
+      tanggal_buka !== undefined && tanggal_buka.length > 0
+        ? `Jadwal pembukaan Periode TA ${tahun} berhasil disimpan`
+        : `Periode TA ${tahun} berhasil dibuka`;
+
     res.status(201).json({
       status: 'sukses',
       message,
@@ -98,7 +100,7 @@ router.patch(
     const { id } = req.params;
     const { tanggal_buka } = req.body as { tanggal_buka: string };
 
-    if (!tanggal_buka || typeof tanggal_buka !== 'string') {
+    if (typeof tanggal_buka !== 'string' || tanggal_buka.length === 0) {
       res.status(400).json({
         status: 'gagal',
         message: 'Tanggal pembukaan harus diisi',
@@ -110,15 +112,12 @@ router.patch(
     if (Number.isNaN(periodeId)) {
       res.status(400).json({
         status: 'gagal',
-        message: 'ID periode tidak valid',
+        message: INVALID_PERIODE_ID,
       });
       return;
     }
 
-    const periode = await periodeService.setJadwalBuka(
-      periodeId,
-      tanggal_buka,
-    );
+    const periode = await periodeService.setJadwalBuka(periodeId, tanggal_buka);
     res.json({
       status: 'sukses',
       message: 'Jadwal pembukaan periode berhasil diatur',
@@ -149,7 +148,7 @@ router.post(
     if (Number.isNaN(periodeId)) {
       res.status(400).json({
         status: 'gagal',
-        message: 'ID periode tidak valid',
+        message: INVALID_PERIODE_ID,
       });
       return;
     }
@@ -174,12 +173,12 @@ router.delete(
   auditLog('HAPUS_PERIODE', 'periode'),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
-    
+
     const periodeId = parseInt(id, 10);
     if (Number.isNaN(periodeId)) {
       res.status(400).json({
         status: 'gagal',
-        message: 'ID periode tidak valid',
+        message: INVALID_PERIODE_ID,
       });
       return;
     }
@@ -199,12 +198,12 @@ router.post(
   auditLog('BUKA_PERIODE_SEKARANG', 'periode'),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
-    
+
     const periodeId = parseInt(id, 10);
     if (Number.isNaN(periodeId)) {
       res.status(400).json({
         status: 'gagal',
-        message: 'ID periode tidak valid',
+        message: INVALID_PERIODE_ID,
       });
       return;
     }
@@ -225,12 +224,12 @@ router.delete(
   auditLog('BATALKAN_JADWAL_PERIODE', 'periode'),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
-    
+
     const periodeId = parseInt(id, 10);
     if (Number.isNaN(periodeId)) {
       res.status(400).json({
         status: 'gagal',
-        message: 'ID periode tidak valid',
+        message: INVALID_PERIODE_ID,
       });
       return;
     }
@@ -240,6 +239,19 @@ router.delete(
       status: 'sukses',
       message: 'Jadwal pembukaan periode dibatalkan',
       data: periode,
+    });
+  }),
+);
+
+router.get(
+  '/riwayat',
+  asyncHandler(authMiddleware),
+  authorizeRoles([Role.admin, Role.jurusan]),
+  asyncHandler(async (req, res) => {
+    const riwayat = await periodeService.getRiwayatPeriode();
+    res.json({
+      status: 'sukses',
+      data: riwayat,
     });
   }),
 );

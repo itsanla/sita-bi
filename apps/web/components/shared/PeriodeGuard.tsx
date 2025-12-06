@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 import { usePeriodeStatus } from '@/hooks/usePeriodeStatus';
 import { useAuth } from '@/context/AuthContext';
 import PeriodeNotActive from './PeriodeNotActive';
@@ -13,17 +13,27 @@ interface PeriodeGuardProps {
 export default function PeriodeGuard({ children }: PeriodeGuardProps) {
   const { status, loading } = usePeriodeStatus();
   const { user } = useAuth();
+  const wasInactiveRef = useRef(false);
+
+  useEffect(() => {
+    if (status !== null) {
+      if (!status.isActive) {
+        wasInactiveRef.current = true;
+      } else if (wasInactiveRef.current && status.isActive) {
+        wasInactiveRef.current = false;
+        window.location.reload();
+      }
+    }
+  }, [status]);
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
-  // Admin dan Jurusan bypass periode guard
   if (user?.role === 'admin' || user?.role === 'jurusan') {
     return <>{children}</>;
   }
 
-  // Jika periode tidak aktif, tampilkan peringatan
   if (!status?.isActive) {
     return <PeriodeNotActive tanggalBuka={status?.tanggalBuka} />;
   }

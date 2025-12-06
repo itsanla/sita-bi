@@ -35,7 +35,10 @@ export default function PeriodeNotActive({
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-gray-200 p-6 sm:p-8 text-center">
         <div className="flex justify-center mb-4 sm:mb-6">
           <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-md">
-            <AlertCircle className="w-7 h-7 sm:w-8 sm:h-8 text-white" strokeWidth={2.5} />
+            <AlertCircle
+              className="w-7 h-7 sm:w-8 sm:h-8 text-white"
+              strokeWidth={2.5}
+            />
           </div>
         </div>
 
@@ -50,14 +53,25 @@ export default function PeriodeNotActive({
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
           <div className="flex items-center justify-center gap-2 text-blue-700 mb-3 sm:mb-4">
             <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="text-xs sm:text-sm font-semibold uppercase tracking-wide">Jadwal Pembukaan</span>
+            <span className="text-xs sm:text-sm font-semibold uppercase tracking-wide">
+              Jadwal Pembukaan
+            </span>
           </div>
           <div className="text-gray-900 font-bold">
-            {formatDate(tanggalBuka).split(' Pukul ').map((part, i) => (
-              <p key={i} className={i === 0 ? 'text-lg sm:text-xl mb-1' : 'text-base sm:text-lg text-blue-900'}>
-                {i === 1 ? `Pukul ${part}` : part}
-              </p>
-            ))}
+            {formatDate(tanggalBuka)
+              .split(' Pukul ')
+              .map((part, i) => (
+                <p
+                  key={i}
+                  className={
+                    i === 0
+                      ? 'text-lg sm:text-xl mb-1'
+                      : 'text-base sm:text-lg text-blue-900'
+                  }
+                >
+                  {i === 1 ? `Pukul ${part}` : part}
+                </p>
+              ))}
           </div>
         </div>
 

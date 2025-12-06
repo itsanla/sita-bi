@@ -12,15 +12,22 @@ interface PeriodeTa {
 
 export class PeriodeService {
   private static readonly PERIODE_NOT_FOUND = 'Periode tidak ditemukan';
-  private static readonly PERIODE_ALREADY_EXISTS = 'Periode untuk tahun ini sudah ada';
-  private static readonly PERIODE_ALREADY_ACTIVE = 'Sudah ada periode yang aktif';
-  private static readonly INVALID_DATE = 'Tanggal pembukaan tidak boleh di masa lalu';
-  private static readonly ONLY_ACTIVE_CAN_CLOSE = 'Hanya periode aktif yang bisa ditutup';
-  private static readonly CANNOT_DELETE_ACTIVE = 'Tidak dapat menghapus periode yang sedang aktif';
+  private static readonly PERIODE_ALREADY_EXISTS =
+    'Periode untuk tahun ini sudah ada';
+  private static readonly PERIODE_ALREADY_ACTIVE =
+    'Sudah ada periode yang aktif';
+  private static readonly INVALID_DATE =
+    'Tanggal pembukaan tidak boleh di masa lalu';
+  private static readonly ONLY_ACTIVE_CAN_CLOSE =
+    'Hanya periode aktif yang bisa ditutup';
+  private static readonly CANNOT_DELETE_ACTIVE =
+    'Tidak dapat menghapus periode yang sedang aktif';
   private static readonly PERIODE_ALREADY_ACTIVE_STATUS = 'Periode sudah aktif';
-  private static readonly ONLY_PERSIAPAN_CAN_OPEN = 'Hanya periode dengan status PERSIAPAN yang dapat dibuka';
-  private static readonly CANNOT_CANCEL_ACTIVE = 'Tidak dapat membatalkan jadwal periode yang sudah aktif';
-  
+  private static readonly ONLY_PERSIAPAN_CAN_OPEN =
+    'Hanya periode dengan status PERSIAPAN yang dapat dibuka';
+  private static readonly CANNOT_CANCEL_ACTIVE =
+    'Tidak dapat membatalkan jadwal periode yang sudah aktif';
+
   private static activePeriodeCache: PeriodeTa | null = null;
   private static cacheTime = 0;
   private static CACHE_TTL = 60000; // 1 menit
@@ -277,7 +284,9 @@ export class PeriodeService {
     }
 
     if (periode.tugasAkhir.length > 0 || periode.sidang.length > 0) {
-      throw new Error('Tidak dapat menghapus periode yang memiliki data terkait');
+      throw new Error(
+        'Tidak dapat menghapus periode yang memiliki data terkait',
+      );
     }
 
     await prisma.periodeTa.delete({
@@ -324,6 +333,25 @@ export class PeriodeService {
     return updated;
   }
 
+  async getRiwayatPeriode(): Promise<
+    Array<{
+      id: number;
+      action: string;
+      details: string | null;
+      user: { name: string } | null;
+      created_at: Date;
+    }>
+  > {
+    const logs = await prisma.log.findMany({
+      where: { module: 'periode' },
+      include: { user: { select: { name: true } } },
+      orderBy: { created_at: 'desc' },
+      take: 50,
+    });
+
+    return logs;
+  }
+
   async batalkanJadwal(periodeId: number): Promise<PeriodeTa> {
     const periode = await prisma.periodeTa.findUnique({
       where: { id: periodeId },
@@ -338,7 +366,9 @@ export class PeriodeService {
     }
 
     if (periode.status !== 'PERSIAPAN') {
-      throw new Error('Hanya periode dengan status PERSIAPAN yang dapat dibatalkan');
+      throw new Error(
+        'Hanya periode dengan status PERSIAPAN yang dapat dibatalkan',
+      );
     }
 
     await prisma.periodeTa.delete({

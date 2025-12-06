@@ -29,6 +29,15 @@ export class SchedulerService {
         console.error('Error in log cleanup:', err);
       });
     });
+
+    // Check periode scheduled activation every 1 minute (very lightweight)
+    cron.schedule('* * * * *', () => {
+      this.checkPeriodeActivation().catch((err: unknown) => {
+        console.error('Error in periode activation check:', err);
+      });
+    });
+
+    console.warn('✅ Scheduler initialized');
   }
 
   async runDailyReminders(): Promise<void> {
@@ -201,6 +210,48 @@ export class SchedulerService {
       },
     });
 
-    console.log(`Cleaned up ${deleted.count} old logs (older than 90 days)`);
+    console.warn(`Cleaned up ${deleted.count} old logs (older than 90 days)`);
+  }
+
+  async checkPeriodeActivation(): Promise<void> {
+    try {
+      const now = new Date();
+
+      await this.prisma.$transaction(async (tx) => {
+        const activeCount = await tx.periodeTa.count({
+          where: { status: 'AKTIF' },
+        });
+
+        if (activeCount > 0) {
+          return;
+        }
+
+        const periodeToActivate = await tx.periodeTa.findFirst({
+          where: {
+            status: 'PERSIAPAN',
+            tanggal_buka: {
+              lte: now,
+            },
+          },
+          orderBy: {
+            tanggal_buka: 'asc',
+          },
+        });
+
+        if (periodeToActivate !== null) {
+          await tx.periodeTa.update({
+            where: { id: periodeToActivate.id },
+            data: {
+              status: 'AKTIF',
+            },
+          });
+          console.warn(
+            `✅ Periode TA ${periodeToActivate.tahun} otomatis diaktifkan`,
+          );
+        }
+      });
+    } catch (error) {
+      console.error('Error in checkPeriodeActivation:', error);
+    }
   }
 }
