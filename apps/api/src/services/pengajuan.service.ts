@@ -697,6 +697,52 @@ export class PengajuanService {
         },
       });
 
+      // Reset data bimbingan terkait dosen ini
+      const tugasAkhirId = pengajuan.peranDosenTa.tugas_akhir_id;
+      const dosenId = pengajuan.peranDosenTa.dosen_id;
+
+      // Hapus semua bimbingan dengan dosen ini
+      await tx.bimbinganTA.deleteMany({
+        where: {
+          tugas_akhir_id: tugasAkhirId,
+          dosen_id: dosenId,
+        },
+      });
+
+      // Reset validasi judul jika dosen adalah pembimbing yang memvalidasi
+      const updateData: { judul_divalidasi_p1?: boolean; judul_divalidasi_p2?: boolean } = {};
+      if (pengajuan.peranDosenTa.peran === 'pembimbing1') {
+        updateData.judul_divalidasi_p1 = false;
+      } else if (pengajuan.peranDosenTa.peran === 'pembimbing2') {
+        updateData.judul_divalidasi_p2 = false;
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        await tx.tugasAkhir.update({
+          where: { id: tugasAkhirId },
+          data: updateData,
+        });
+      }
+
+      // Reset validasi dokumen TA
+      if (pengajuan.peranDosenTa.peran === 'pembimbing1') {
+        await tx.dokumenTa.updateMany({
+          where: {
+            tugas_akhir_id: tugasAkhirId,
+            divalidasi_oleh_p1: dosenId,
+          },
+          data: { divalidasi_oleh_p1: null },
+        });
+      } else if (pengajuan.peranDosenTa.peran === 'pembimbing2') {
+        await tx.dokumenTa.updateMany({
+          where: {
+            tugas_akhir_id: tugasAkhirId,
+            divalidasi_oleh_p2: dosenId,
+          },
+          data: { divalidasi_oleh_p2: null },
+        });
+      }
+
       // Hapus peran dosen
       await tx.peranDosenTa.delete({
         where: { id: pengajuan.peran_dosen_ta_id },

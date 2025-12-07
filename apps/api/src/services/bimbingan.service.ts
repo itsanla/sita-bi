@@ -7,6 +7,7 @@ import {
   ConflictError,
 } from '../errors/AppError';
 import { getMinBimbinganValid } from '../utils/business-rules';
+import { getAturanValidasi, isDrafValid } from '../utils/aturan-validasi';
 
 interface BimbinganForDosen {
   data: {
@@ -856,13 +857,18 @@ export class BimbinganService {
 
     const latestDokumen =
       await this.repository.findLatestDokumenTa(tugasAkhirId);
+
+    const aturanValidasi = await getAturanValidasi();
     const isDrafValidated =
       latestDokumen !== null &&
       typeof latestDokumen === 'object' &&
       'divalidasi_oleh_p1' in latestDokumen &&
       'divalidasi_oleh_p2' in latestDokumen &&
-      latestDokumen.divalidasi_oleh_p1 !== null &&
-      latestDokumen.divalidasi_oleh_p2 !== null;
+      isDrafValid(
+        aturanValidasi.mode_validasi_draf,
+        latestDokumen.divalidasi_oleh_p1 as number | null,
+        latestDokumen.divalidasi_oleh_p2 as number | null,
+      );
 
     const eligible = validBimbinganCount >= minRequired && isDrafValidated;
 
@@ -872,7 +878,7 @@ export class BimbinganService {
         message = `Bimbingan valid baru ${validBimbinganCount}/${minRequired}. `;
       }
       if (!isDrafValidated) {
-        message += 'Draf TA belum divalidasi oleh kedua pembimbing.';
+        message += 'Draf TA belum divalidasi sesuai aturan.';
       }
     }
 

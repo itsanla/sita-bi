@@ -5,6 +5,14 @@ module.exports = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     '../../packages/ui/src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  safelist: [
+    {
+      pattern: /^(bg|text|border|from|to|via)-(red|blue|green|yellow|amber|orange|purple|pink|gray|slate)-(50|100|200|300|400|500|600|700|800|900)$/,
+    },
+    {
+      pattern: /^bg-gradient-to-(r|l|t|b|tr|tl|br|bl)$/,
+    },
+  ],
   theme: {
     extend: {
       colors: {

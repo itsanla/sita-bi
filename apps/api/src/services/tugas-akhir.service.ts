@@ -429,6 +429,9 @@ export class TugasAkhirService {
     tugasAkhirId: number,
     dosenId: number,
   ): Promise<TugasAkhir> {
+    const { getAturanValidasi, isJudulValid } =
+      await import('../utils/aturan-validasi');
+
     const peranDosen = await this.prisma.peranDosenTa.findFirst({
       where: {
         tugas_akhir_id: tugasAkhirId,
@@ -440,20 +443,124 @@ export class TugasAkhirService {
       throw new Error('Anda bukan pembimbing untuk tugas akhir ini');
     }
 
-    const updateData: { judul_divalidasi_p1?: boolean; judul_divalidasi_p2?: boolean } = {};
-    
+    if (
+      peranDosen.peran !== 'pembimbing1' &&
+      peranDosen.peran !== 'pembimbing2'
+    ) {
+      throw new Error('Hanya pembimbing yang dapat memvalidasi judul');
+    }
+
+    // Get aturan validasi
+    const aturan = await getAturanValidasi();
+    const modeValidasi = aturan.mode_validasi_judul;
+
+    // Get current validation status
+    const tugasAkhir = await this.prisma.tugasAkhir.findUnique({
+      where: { id: tugasAkhirId },
+    });
+
+    if (!tugasAkhir) {
+      throw new Error(this.ERROR_TA_NOT_FOUND);
+    }
+
+    // Check if this specific pembimbing already validated
+    if (peranDosen.peran === 'pembimbing1' && tugasAkhir.judul_divalidasi_p1) {
+      throw new Error('Anda sudah memvalidasi judul ini');
+    }
+    if (peranDosen.peran === 'pembimbing2' && tugasAkhir.judul_divalidasi_p2) {
+      throw new Error('Anda sudah memvalidasi judul ini');
+    }
+
+    // Check if allowed to validate based on mode
+    if (
+      modeValidasi === 'PEMBIMBING_1_SAJA' &&
+      peranDosen.peran !== 'pembimbing1'
+    ) {
+      throw new Error(
+        'Hanya Pembimbing 1 yang dapat memvalidasi judul sesuai aturan',
+      );
+    }
+
+    const updateData: {
+      judul_divalidasi_p1?: boolean;
+      judul_divalidasi_p2?: boolean;
+    } = {};
+
     if (peranDosen.peran === 'pembimbing1') {
       updateData.judul_divalidasi_p1 = true;
     } else if (peranDosen.peran === 'pembimbing2') {
       updateData.judul_divalidasi_p2 = true;
-    } else {
-      throw new Error('Hanya pembimbing yang dapat memvalidasi judul');
     }
 
     const updated = await this.prisma.tugasAkhir.update({
       where: { id: tugasAkhirId },
       data: updateData,
     });
+
+    await this.logActivity(
+      dosenId,
+      `Memvalidasi judul TA: "${tugasAkhir.judul}"`,
+    );
+
+    return updated;
+  }
+
+  async batalkanValidasiJudul(
+    tugasAkhirId: number,
+    dosenId: number,
+  ): Promise<TugasAkhir> {
+    const peranDosen = await this.prisma.peranDosenTa.findFirst({
+      where: {
+        tugas_akhir_id: tugasAkhirId,
+        dosen_id: dosenId,
+      },
+    });
+
+    if (peranDosen === null) {
+      throw new Error('Anda bukan pembimbing untuk tugas akhir ini');
+    }
+
+    if (
+      peranDosen.peran !== 'pembimbing1' &&
+      peranDosen.peran !== 'pembimbing2'
+    ) {
+      throw new Error('Hanya pembimbing yang dapat membatalkan validasi judul');
+    }
+
+    const tugasAkhir = await this.prisma.tugasAkhir.findUnique({
+      where: { id: tugasAkhirId },
+    });
+
+    if (!tugasAkhir) {
+      throw new Error(this.ERROR_TA_NOT_FOUND);
+    }
+
+    const updateData: {
+      judul_divalidasi_p1?: boolean;
+      judul_divalidasi_p2?: boolean;
+    } = {};
+
+    if (peranDosen.peran === 'pembimbing1') {
+      if (!tugasAkhir.judul_divalidasi_p1) {
+        throw new Error('Anda belum memvalidasi judul ini');
+      }
+      updateData.judul_divalidasi_p1 = false;
+    } else if (peranDosen.peran === 'pembimbing2') {
+      if (!tugasAkhir.judul_divalidasi_p2) {
+        throw new Error('Anda belum memvalidasi judul ini');
+      }
+      updateData.judul_divalidasi_p2 = false;
+    }
+
+    const updated = await this.prisma.tugasAkhir.update({
+      where: { id: tugasAkhirId },
+      data: updateData,
+    });
+
+    await this.logActivity(
+      dosenId,
+      `Membatalkan validasi judul TA: "${tugasAkhir.judul}"`,
+    );
 
     return updated;
   }

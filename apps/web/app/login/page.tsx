@@ -11,6 +11,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Clear token saat halaman login dimuat
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -51,10 +58,12 @@ export default function LoginPage() {
         // Use window.location for hard reload to reset AuthContext
         window.location.href = redirectUrl;
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error('Login error:', err);
-      const errorMessage =
-        err instanceof Error ? err.message : 'Terjadi kesalahan saat login';
+      const errorMessage = 
+        err.response?.data?.message || 
+        err.message || 
+        'Terjadi kesalahan saat login';
       setError(errorMessage);
       setLoading(false);
     }

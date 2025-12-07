@@ -66,4 +66,32 @@ router.post(
   }),
 );
 
+router.post(
+  '/:dokumenId/batalkan-validasi',
+  periodeGuard(),
+  authorizeRoles([Role.dosen]),
+  asyncHandler(async (req, res): Promise<void> => {
+    const userId = req.user?.id;
+    if (typeof userId !== 'number') {
+      throw new BadRequestError('ID pengguna tidak ditemukan');
+    }
+
+    const { dokumenId } = req.params;
+    if (typeof dokumenId !== 'string' || dokumenId === '') {
+      throw new BadRequestError('ID Dokumen diperlukan');
+    }
+
+    const result = await dokumenService.batalkanValidasiDokumen(
+      parseInt(dokumenId, 10),
+      userId,
+    );
+
+    res.status(200).json({
+      status: 'sukses',
+      message: 'Validasi dokumen berhasil dibatalkan',
+      data: result,
+    });
+  }),
+);
+
 export default router;

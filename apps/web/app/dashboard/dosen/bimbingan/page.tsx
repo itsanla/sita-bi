@@ -17,6 +17,7 @@ import {
   Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAturanValidasi } from '@/hooks/useAturanValidasi';
 
 interface Dosen {
   id: number;
@@ -73,6 +74,8 @@ interface TugasAkhir {
 }
 
 export default function DosenBimbinganPage() {
+  const { aturan, getValidasiJudulMessage, getValidasiDrafMessage, isJudulValid, isDrafValid } =
+    useAturanValidasi();
   const { user } = useAuth();
   const { status: periodeStatus, loading: periodeLoading } = usePeriodeStatus();
   const [mahasiswaList, setMahasiswaList] = useState<TugasAkhir[]>([]);
@@ -87,7 +90,15 @@ export default function DosenBimbinganPage() {
       const response = await request<{ data: { data: TugasAkhir[] } }>(
         '/bimbingan/sebagai-dosen',
       );
-      setMahasiswaList(response.data?.data?.data || []);
+      const data = response.data?.data?.data || [];
+      console.log('[Dosen Bimbingan] Data mahasiswa:', data);
+      if (data[0]) {
+        console.log(
+          '[Dosen Bimbingan] dokumenTa mahasiswa pertama:',
+          data[0].dokumenTa,
+        );
+      }
+      setMahasiswaList(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -109,8 +120,26 @@ export default function DosenBimbinganPage() {
       await request.post(`/tugas-akhir/${tugasAkhirId}/validasi-judul`, {});
       toast.success('Judul berhasil divalidasi');
       fetchData();
-    } catch {
-      toast.error('Gagal validasi judul');
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || 'Gagal validasi judul';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleBatalkanValidasiJudul = async (tugasAkhirId: number) => {
+    if (!confirm('Batalkan validasi judul tugas akhir ini?')) return;
+    try {
+      await request.post(
+        `/tugas-akhir/${tugasAkhirId}/batalkan-validasi-judul`,
+        {},
+      );
+      toast.success('Validasi judul berhasil dibatalkan');
+      fetchData();
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || 'Gagal batalkan validasi judul';
+      toast.error(errorMessage);
     }
   };
 
@@ -120,8 +149,23 @@ export default function DosenBimbinganPage() {
       await request.post(`/dokumen-ta/${dokumenId}/validasi`, {});
       toast.success('Draf berhasil divalidasi');
       fetchData();
-    } catch {
-      toast.error('Gagal validasi draf');
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || 'Gagal validasi draf';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleBatalkanValidasiDraf = async (dokumenId: number) => {
+    if (!confirm('Batalkan validasi draf tugas akhir ini?')) return;
+    try {
+      await request.post(`/dokumen-ta/${dokumenId}/batalkan-validasi`, {});
+      toast.success('Validasi draf berhasil dibatalkan');
+      fetchData();
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || 'Gagal batalkan validasi draf';
+      toast.error(errorMessage);
     }
   };
 
@@ -176,6 +220,26 @@ export default function DosenBimbinganPage() {
     )?.peran || '';
 
   const tugasAkhir = mahasiswaList[selectedMahasiswa];
+  
+  // Cek apakah dosen boleh validasi berdasarkan aturan
+  const canValidateJudul = () => {
+    if (aturan.mode_validasi_judul === 'PEMBIMBING_1_SAJA') {
+      return currentDosenPeran === 'pembimbing1';
+    }
+    return true; // SALAH_SATU atau KEDUA_PEMBIMBING, semua bisa validasi
+  };
+  
+  const canValidateDraf = () => {
+    if (aturan.mode_validasi_draf === 'PEMBIMBING_1_SAJA') {
+      return currentDosenPeran === 'pembimbing1';
+    }
+    return true;
+  };
+  
+  const isDrafValidatedByRule = tugasAkhir?.dokumenTa?.[0] ? isDrafValid(
+    tugasAkhir.dokumenTa[0].divalidasi_oleh_p1,
+    tugasAkhir.dokumenTa[0].divalidasi_oleh_p2,
+  ) : false;
 
   return (
     <PeriodeGuard>
@@ -293,8 +357,7 @@ export default function DosenBimbinganPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      {tugasAkhir.dokumenTa?.[0]?.divalidasi_oleh_p1 &&
-                      tugasAkhir.dokumenTa?.[0]?.divalidasi_oleh_p2 ? (
+                      {isDrafValidatedByRule ? (
                         <CheckCircle className="text-green-600" size={20} />
                       ) : (
                         <XCircle className="text-red-600" size={20} />
@@ -302,10 +365,9 @@ export default function DosenBimbinganPage() {
                       <span className="text-sm">
                         Validasi Draf Tugas Akhir:{' '}
                         <span className="font-bold">
-                          {tugasAkhir.dokumenTa?.[0]?.divalidasi_oleh_p1 &&
-                          tugasAkhir.dokumenTa?.[0]?.divalidasi_oleh_p2
-                            ? 'Lengkap'
-                            : 'Belum Lengkap'}
+                          {isDrafValidatedByRule
+                            ? 'Valid'
+                            : 'Belum Valid'}
                         </span>
                       </span>
                     </div>
@@ -317,44 +379,118 @@ export default function DosenBimbinganPage() {
             {/* Komponen 2: Validasi Judul */}
             <div className="bg-white p-6 rounded-lg shadow">
               <h2 className="text-xl font-bold mb-4">Judul Tugas Akhir</h2>
-              <div className="p-4 bg-gray-50 rounded-lg border">
-                <p className="text-sm font-semibold text-gray-700 mb-3">
-                  {tugasAkhir.judul}
-                </p>
-                {!!(
-                  (currentDosenPeran === 'pembimbing1' &&
-                    tugasAkhir.judul_divalidasi_p1) ||
-                  (currentDosenPeran === 'pembimbing2' &&
-                    tugasAkhir.judul_divalidasi_p2)
-                ) && (
-                  <div className="p-3 rounded-lg border bg-green-50 border-green-200">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="text-green-600" size={18} />
-                      <span className="text-sm font-semibold text-green-800">
-                        Anda telah memvalidasi judul ini
-                      </span>
+              <div className="space-y-3">
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-semibold">Aturan Validasi:</span> {getValidasiJudulMessage()}
+                  </p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg border">
+                  <p className="text-sm font-semibold text-gray-700 mb-3">
+                    {tugasAkhir.judul}
+                  </p>
+                  
+                  {aturan.mode_validasi_judul === 'KEDUA_PEMBIMBING' && (
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div className={`p-3 rounded-lg border ${
+                        tugasAkhir.judul_divalidasi_p1
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-yellow-50 border-yellow-200'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          {tugasAkhir.judul_divalidasi_p1 ? (
+                            <CheckCircle className="text-green-600" size={18} />
+                          ) : (
+                            <AlertCircle className="text-yellow-600" size={18} />
+                          )}
+                          <span className="text-sm font-semibold">
+                            {tugasAkhir.judul_divalidasi_p1
+                              ? 'Divalidasi Pembimbing 1'
+                              : 'Belum Divalidasi Pembimbing 1'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className={`p-3 rounded-lg border ${
+                        tugasAkhir.judul_divalidasi_p2
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-yellow-50 border-yellow-200'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          {tugasAkhir.judul_divalidasi_p2 ? (
+                            <CheckCircle className="text-green-600" size={18} />
+                          ) : (
+                            <AlertCircle className="text-yellow-600" size={18} />
+                          )}
+                          <span className="text-sm font-semibold">
+                            {tugasAkhir.judul_divalidasi_p2
+                              ? 'Divalidasi Pembimbing 2'
+                              : 'Belum Divalidasi Pembimbing 2'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
-                {((currentDosenPeran === 'pembimbing1' &&
-                  !tugasAkhir.judul_divalidasi_p1) ||
-                  (currentDosenPeran === 'pembimbing2' &&
-                    !tugasAkhir.judul_divalidasi_p2)) && (
-                  <button
-                    onClick={() => handleValidasiJudul(tugasAkhir.id)}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                  >
-                    <FileCheck size={16} />
-                    Validasi Judul
-                  </button>
-                )}
+                  )}
+
+                  {!!(
+                    (currentDosenPeran === 'pembimbing1' &&
+                      tugasAkhir.judul_divalidasi_p1) ||
+                    (currentDosenPeran === 'pembimbing2' &&
+                      tugasAkhir.judul_divalidasi_p2)
+                  ) && (
+                    <div className="p-3 rounded-lg border bg-green-50 border-green-200 mb-3">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="text-green-600" size={18} />
+                        <span className="text-sm font-semibold text-green-800">
+                          Anda telah memvalidasi judul ini
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {((currentDosenPeran === 'pembimbing1' &&
+                    !tugasAkhir.judul_divalidasi_p1) ||
+                    (currentDosenPeran === 'pembimbing2' &&
+                      !tugasAkhir.judul_divalidasi_p2)) && (
+                    <>
+                      <button
+                        onClick={() => handleValidasiJudul(tugasAkhir.id)}
+                        disabled={!canValidateJudul()}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        <FileCheck size={16} />
+                        Validasi Judul
+                      </button>
+                      {!canValidateJudul() && (
+                        <p className="text-xs text-red-600 mt-2">
+                          Hanya Pembimbing 1 yang dapat memvalidasi judul sesuai aturan saat ini
+                        </p>
+                      )}
+                    </>
+                  )}
+                  {((currentDosenPeran === 'pembimbing1' &&
+                    tugasAkhir.judul_divalidasi_p1) ||
+                    (currentDosenPeran === 'pembimbing2' &&
+                      tugasAkhir.judul_divalidasi_p2)) && (
+                    <button
+                      onClick={() => handleBatalkanValidasiJudul(tugasAkhir.id)}
+                      className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                    >
+                      <XCircle size={16} />
+                      Batalkan Validasi Judul
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Komponen 3: Draf TA */}
-            {!!tugasAkhir.dokumenTa?.[0] && (
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h2 className="text-xl font-bold mb-4">Draf Tugas Akhir</h2>
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h2 className="text-xl font-bold mb-4">Draf Tugas Akhir</h2>
+              <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  <span className="font-semibold">Aturan Validasi:</span> {getValidasiDrafMessage()}
+                </p>
+              </div>
+              {tugasAkhir.dokumenTa?.[0] ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
                     <div className="flex items-center gap-3">
@@ -383,20 +519,45 @@ export default function DosenBimbinganPage() {
                         !tugasAkhir.dokumenTa[0].divalidasi_oleh_p1) ||
                         (currentDosenPeran === 'pembimbing2' &&
                           !tugasAkhir.dokumenTa[0].divalidasi_oleh_p2)) && (
+                        <>
+                          <button
+                            onClick={() =>
+                              handleValidasiDraf(tugasAkhir.dokumenTa[0].id)
+                            }
+                            disabled={!canValidateDraf()}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            title={!canValidateDraf() ? 'Hanya Pembimbing 1 yang dapat memvalidasi draf' : ''}
+                          >
+                            <FileCheck size={14} />
+                            Validasi
+                          </button>
+                          {!canValidateDraf() && (
+                            <span className="text-xs text-red-600">
+                              Hanya P1
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {((currentDosenPeran === 'pembimbing1' &&
+                        tugasAkhir.dokumenTa[0].divalidasi_oleh_p1) ||
+                        (currentDosenPeran === 'pembimbing2' &&
+                          tugasAkhir.dokumenTa[0].divalidasi_oleh_p2)) && (
                         <button
                           onClick={() =>
-                            handleValidasiDraf(tugasAkhir.dokumenTa[0].id)
+                            handleBatalkanValidasiDraf(
+                              tugasAkhir.dokumenTa[0].id,
+                            )
                           }
-                          className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                          className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded text-xs hover:bg-red-700"
                         >
-                          <FileCheck size={14} />
-                          Validasi
+                          <XCircle size={14} />
+                          Batalkan
                         </button>
                       )}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-3 mb-3">
                     <div
                       className={`p-3 rounded-lg border ${
                         tugasAkhir.dokumenTa[0].divalidasi_oleh_p1
@@ -438,9 +599,38 @@ export default function DosenBimbinganPage() {
                       </div>
                     </div>
                   </div>
+                  {isDrafValidatedByRule ? (
+                    <div className="p-3 rounded-lg border bg-green-50 border-green-200">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="text-green-600" size={18} />
+                        <span className="text-sm font-semibold text-green-800">
+                          Draf telah divalidasi sesuai aturan
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="text-yellow-600" size={18} />
+                        <span className="text-sm font-semibold text-yellow-800">
+                          Draf belum divalidasi sesuai aturan
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                  <FileText className="mx-auto text-gray-400 mb-3" size={48} />
+                  <p className="text-gray-500 mb-2">
+                    Belum ada draf TA yang diupload
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Mahasiswa belum mengupload draf Tugas Akhir
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* Komponen 4: Sesi Bimbingan */}
             <div className="bg-white p-6 rounded-lg shadow">

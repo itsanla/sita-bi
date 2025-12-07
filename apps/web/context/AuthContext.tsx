@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         localStorage.removeItem('token');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch user profile:', handleApiError(error));
       setUser(null);
       localStorage.removeItem('token');

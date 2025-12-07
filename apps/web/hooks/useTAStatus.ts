@@ -26,7 +26,10 @@ export function useTAStatus() {
       const response = await api.get('/bimbingan/sebagai-mahasiswa');
       const tugasAkhir = response.data?.data;
 
+      console.log('[useTAStatus] Tugas Akhir data:', tugasAkhir);
+
       if (!tugasAkhir) {
+        console.log('[useTAStatus] No tugas akhir found');
         setStatus({
           hasTA: false,
           hasPembimbing: false,
@@ -43,15 +46,38 @@ export function useTAStatus() {
       const isJudulValidated =
         tugasAkhir.judul_divalidasi_p1 || tugasAkhir.judul_divalidasi_p2;
 
-      const validBimbinganCount =
-        tugasAkhir.bimbinganTa?.filter(
-          (b: { status_bimbingan: string }) => b.status_bimbingan === 'selesai',
-        ).length || 0;
-      const latestDokumen = tugasAkhir.dokumenTa?.[0];
-      const isDrafValidatedP1 = !!latestDokumen?.divalidasi_oleh_p1;
-      const isDrafValidatedP2 = !!latestDokumen?.divalidasi_oleh_p2;
-      const isEligibleForSidang =
-        validBimbinganCount >= 9 && isDrafValidatedP1 && isDrafValidatedP2;
+      // Fetch eligibility from backend API
+      let isEligibleForSidang = false;
+      try {
+        const eligibilityResponse = await api.get(`/bimbingan/eligibility/${tugasAkhir.id}`);
+        isEligibleForSidang = eligibilityResponse.data?.data?.eligible || false;
+        console.log('[useTAStatus] Eligibility from backend:', eligibilityResponse.data?.data);
+      } catch (error) {
+        console.error('[useTAStatus] Failed to fetch eligibility:', error);
+        // Fallback to old logic if API fails
+        const validBimbinganCount =
+          tugasAkhir.bimbinganTa?.filter(
+            (b: { status_bimbingan: string }) => b.status_bimbingan === 'selesai',
+          ).length || 0;
+        const latestDokumen = tugasAkhir.dokumenTa?.[0];
+        const isDrafValidatedP1 = !!latestDokumen?.divalidasi_oleh_p1;
+        const isDrafValidatedP2 = !!latestDokumen?.divalidasi_oleh_p2;
+        isEligibleForSidang =
+          validBimbinganCount >= 9 && isDrafValidatedP1 && isDrafValidatedP2;
+        console.log('[useTAStatus] Fallback eligibility calculation:', {
+          validBimbinganCount,
+          isDrafValidatedP1,
+          isDrafValidatedP2,
+          isEligibleForSidang,
+        });
+      }
+
+      console.log('[useTAStatus] Final status:', {
+        hasTA: true,
+        hasPembimbing,
+        isJudulValidated,
+        isEligibleForSidang,
+      });
 
       setStatus({
         hasTA: true,

@@ -28,6 +28,10 @@ export default function TAGuard({
   const { user, loading: authLoading } = useAuth();
   const { status, loading: taLoading } = useTAStatus();
 
+  console.log('[TAGuard] Props:', { requireTA, requirePembimbing, requireJudulValidated, requireEligibleForSidang });
+  console.log('[TAGuard] Status:', status);
+  console.log('[TAGuard] Loading:', { authLoading, taLoading });
+
   if (authLoading || taLoading) {
     return <LoadingSpinner />;
   }
@@ -49,14 +53,17 @@ export default function TAGuard({
   }
 
   if (requireEligibleForSidang && !status?.isEligibleForSidang) {
+    console.log('[TAGuard] BLOCKED: Not eligible for sidang');
     return (
       <TANotAllowed
         type="custom"
         customTitle="Belum Memenuhi Syarat Sidang"
-        customMessage="Anda belum memenuhi syarat untuk mendaftar sidang. Pastikan Anda telah menyelesaikan minimal 9 bimbingan dan draf TA Anda telah divalidasi oleh kedua pembimbing."
+        customMessage="Anda belum memenuhi syarat untuk mendaftar sidang. Pastikan Anda telah menyelesaikan minimal 9 bimbingan dan draf TA Anda telah divalidasi sesuai aturan."
       />
     );
   }
+
+  console.log('[TAGuard] PASSED: Rendering children');
 
   if (customMessage) {
     return (

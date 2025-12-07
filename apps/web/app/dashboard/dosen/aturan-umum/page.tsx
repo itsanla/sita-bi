@@ -14,6 +14,8 @@ interface Pengaturan {
   max_pembimbing_aktif: number;
   durasi_sidang_menit: number;
   jeda_sidang_menit: number;
+  mode_validasi_judul?: string;
+  mode_validasi_draf?: string;
 }
 
 export default function AturanTugasAkhirPage() {
@@ -28,6 +30,8 @@ export default function AturanTugasAkhirPage() {
     max_pembimbing_aktif: 4,
     durasi_sidang_menit: 90,
     jeda_sidang_menit: 15,
+    mode_validasi_judul: 'KEDUA_PEMBIMBING',
+    mode_validasi_draf: 'KEDUA_PEMBIMBING',
   });
   const [originalPengaturan, setOriginalPengaturan] = useState<Pengaturan>({
     max_similaritas_persen: 80,
@@ -36,6 +40,8 @@ export default function AturanTugasAkhirPage() {
     max_pembimbing_aktif: 4,
     durasi_sidang_menit: 90,
     jeda_sidang_menit: 15,
+    mode_validasi_judul: 'KEDUA_PEMBIMBING',
+    mode_validasi_draf: 'KEDUA_PEMBIMBING',
   });
   const [ruanganBaru, setRuanganBaru] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
@@ -47,7 +53,8 @@ export default function AturanTugasAkhirPage() {
   }, [isJurusan]);
 
   useEffect(() => {
-    const changed = JSON.stringify(pengaturan) !== JSON.stringify(originalPengaturan);
+    const changed =
+      JSON.stringify(pengaturan) !== JSON.stringify(originalPengaturan);
     setHasChanges(changed);
   }, [pengaturan, originalPengaturan]);
 
@@ -65,7 +72,11 @@ export default function AturanTugasAkhirPage() {
         const link = target.closest('a');
         if (link && link.href && !link.href.includes('#')) {
           e.preventDefault();
-          if (confirm('Anda memiliki perubahan yang belum disimpan. Yakin ingin meninggalkan halaman?')) {
+          if (
+            confirm(
+              'Anda memiliki perubahan yang belum disimpan. Yakin ingin meninggalkan halaman?',
+            )
+          ) {
             window.location.href = link.href;
           }
         }
@@ -82,8 +93,13 @@ export default function AturanTugasAkhirPage() {
 
   const fetchPengaturan = async () => {
     try {
-      const response = await api.get<Pengaturan>('/pengaturan');
-      const data = response.data.data;
+      const [pengaturanRes, aturanValidasiRes] = await Promise.all([
+        api.get<Pengaturan>('/pengaturan'),
+        api.get<any>('/aturan-validasi'),
+      ]);
+      const data = pengaturanRes.data.data;
+      const aturanValidasi = aturanValidasiRes.data.data;
+      console.log('Aturan Validasi Response:', aturanValidasi);
       const settings = {
         max_similaritas_persen: data.max_similaritas_persen ?? 80,
         min_bimbingan_valid: data.min_bimbingan_valid ?? 9,
@@ -91,10 +107,16 @@ export default function AturanTugasAkhirPage() {
         max_pembimbing_aktif: data.max_pembimbing_aktif ?? 4,
         durasi_sidang_menit: data.durasi_sidang_menit ?? 90,
         jeda_sidang_menit: data.jeda_sidang_menit ?? 15,
+        mode_validasi_judul:
+          aturanValidasi?.mode_validasi_judul ?? 'KEDUA_PEMBIMBING',
+        mode_validasi_draf:
+          aturanValidasi?.mode_validasi_draf ?? 'KEDUA_PEMBIMBING',
       };
+      console.log('Settings:', settings);
       setPengaturan(settings);
       setOriginalPengaturan(settings);
-    } catch {
+    } catch (error) {
+      console.error('Error fetching pengaturan:', error);
       toast.error('Gagal memuat pengaturan');
     } finally {
       setLoading(false);
@@ -104,18 +126,32 @@ export default function AturanTugasAkhirPage() {
   const handleSimpan = async () => {
     setSaving(true);
     try {
-      await api.patch('/pengaturan', pengaturan);
+      const { mode_validasi_judul, mode_validasi_draf, ...pengaturanData } =
+        pengaturan;
+      console.log('Saving aturan validasi:', { mode_validasi_judul, mode_validasi_draf });
+      const results = await Promise.all([
+        api.patch('/pengaturan', pengaturanData),
+        api.put('/aturan-validasi', {
+          mode_validasi_judul,
+          mode_validasi_draf,
+        }),
+      ]);
+      console.log('Save results:', results);
       toast.success('Pengaturan berhasil disimpan');
       setOriginalPengaturan(pengaturan);
       setHasChanges(false);
+      await fetchPengaturan();
     } catch (error: any) {
+      console.error('Error saving:', error);
       const errors = error.response?.data?.errors;
       if (errors && errors.length > 0) {
         errors.forEach((err: { message: string }) => {
           toast.error(err.message);
         });
       } else {
-        toast.error(error.response?.data?.message || 'Gagal menyimpan pengaturan');
+        toast.error(
+          error.response?.data?.message || 'Gagal menyimpan pengaturan',
+        );
       }
     } finally {
       setSaving(false);
@@ -126,7 +162,10 @@ export default function AturanTugasAkhirPage() {
     if (ruanganBaru.trim()) {
       setPengaturan({
         ...pengaturan,
-        ruangan_sidang: [...(pengaturan.ruangan_sidang || []), ruanganBaru.trim()],
+        ruangan_sidang: [
+          ...(pengaturan.ruangan_sidang || []),
+          ruanganBaru.trim(),
+        ],
       });
       setRuanganBaru('');
     }
@@ -135,7 +174,9 @@ export default function AturanTugasAkhirPage() {
   const handleHapusRuangan = (index: number) => {
     setPengaturan({
       ...pengaturan,
-      ruangan_sidang: (pengaturan.ruangan_sidang || []).filter((_, i) => i !== index),
+      ruangan_sidang: (pengaturan.ruangan_sidang || []).filter(
+        (_, i) => i !== index,
+      ),
     });
   };
 
@@ -265,7 +306,8 @@ export default function AturanTugasAkhirPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
               />
               <p className="text-sm text-gray-500">
-                Jumlah minimal bimbingan yang harus diselesaikan sebelum mahasiswa dapat mendaftar sidang
+                Jumlah minimal bimbingan yang harus diselesaikan sebelum
+                mahasiswa dapat mendaftar sidang
               </p>
             </div>
             <div className="space-y-2">
@@ -285,7 +327,73 @@ export default function AturanTugasAkhirPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
               />
               <p className="text-sm text-gray-500">
-                Jumlah maksimal mahasiswa yang dapat dibimbing oleh satu dosen secara bersamaan
+                Jumlah maksimal mahasiswa yang dapat dibimbing oleh satu dosen
+                secara bersamaan
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Aturan Validasi */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">
+            Aturan Validasi
+          </h2>
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-xs text-amber-800">
+              <span className="font-semibold">Catatan:</span> Perubahan aturan validasi hanya berlaku untuk validasi baru. 
+              Validasi yang sudah dilakukan sebelumnya tetap dianggap valid (grandfathering policy).
+            </p>
+          </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Validasi Judul Tugas Akhir
+              </label>
+              <select
+                value={pengaturan.mode_validasi_judul}
+                onChange={(e) =>
+                  setPengaturan({
+                    ...pengaturan,
+                    mode_validasi_judul: e.target.value,
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+              >
+                <option value="SALAH_SATU">Salah Satu Pembimbing</option>
+                <option value="KEDUA_PEMBIMBING">Harus Kedua Pembimbing</option>
+                <option value="PEMBIMBING_1_SAJA">Pembimbing 1 Saja</option>
+              </select>
+              <p className="text-sm text-gray-500">
+                Menentukan siapa yang harus memvalidasi judul tugas akhir
+              </p>
+              <p className="text-xs text-blue-600 font-medium">
+                Saat ini: {pengaturan.mode_validasi_judul === 'SALAH_SATU' ? 'Salah Satu Pembimbing' : pengaturan.mode_validasi_judul === 'KEDUA_PEMBIMBING' ? 'Harus Kedua Pembimbing' : 'Pembimbing 1 Saja'}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Validasi Draf Tugas Akhir
+              </label>
+              <select
+                value={pengaturan.mode_validasi_draf}
+                onChange={(e) =>
+                  setPengaturan({
+                    ...pengaturan,
+                    mode_validasi_draf: e.target.value,
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+              >
+                <option value="SALAH_SATU">Salah Satu Pembimbing</option>
+                <option value="KEDUA_PEMBIMBING">Harus Kedua Pembimbing</option>
+                <option value="PEMBIMBING_1_SAJA">Pembimbing 1 Saja</option>
+              </select>
+              <p className="text-sm text-gray-500">
+                Menentukan siapa yang harus memvalidasi draf tugas akhir
+              </p>
+              <p className="text-xs text-blue-600 font-medium">
+                Saat ini: {pengaturan.mode_validasi_draf === 'SALAH_SATU' ? 'Salah Satu Pembimbing' : pengaturan.mode_validasi_draf === 'KEDUA_PEMBIMBING' ? 'Harus Kedua Pembimbing' : 'Pembimbing 1 Saja'}
               </p>
             </div>
           </div>
@@ -334,7 +442,8 @@ export default function AturanTugasAkhirPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
               />
               <p className="text-sm text-gray-500">
-                Jeda waktu setelah sidang selesai sebelum sidang berikutnya dimulai
+                Jeda waktu setelah sidang selesai sebelum sidang berikutnya
+                dimulai
               </p>
             </div>
             <div className="space-y-2">

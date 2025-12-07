@@ -22,11 +22,14 @@ export function startPeriodeCronJob(): void {
           console.warn(
             `[CRON] Periode ${periode.tahun} berhasil dibuka otomatis`,
           );
-        } catch (error) {
-          console.error(
-            `[CRON] Gagal membuka periode ${periode.tahun}:`,
-            error,
-          );
+        } catch (error: any) {
+          // Silent jika error karena sudah ada periode aktif
+          if (!error.message?.includes('Sudah ada periode yang aktif')) {
+            console.error(
+              `[CRON] Gagal membuka periode ${periode.tahun}:`,
+              error.message,
+            );
+          }
         }
       }
     } catch (error) {

@@ -725,6 +725,12 @@ model HistoryPenugasanDosen {
   @@map("history_penugasan_dosen")
 }
 
+enum ModeValidasi {
+  SALAH_SATU
+  KEDUA_PEMBIMBING
+  PEMBIMBING_1_SAJA
+}
+
 model PengaturanSistem {
   id                         Int      @id @default(autoincrement())
   key                        String   @unique
@@ -734,6 +740,16 @@ model PengaturanSistem {
   updated_at                 DateTime @updatedAt
 
   @@map("pengaturan_sistem")
+}
+
+model AturanValidasi {
+  id                      Int          @id @default(autoincrement())
+  mode_validasi_judul     ModeValidasi @default(KEDUA_PEMBIMBING)
+  mode_validasi_draf      ModeValidasi @default(KEDUA_PEMBIMBING)
+  created_at              DateTime     @default(now())
+  updated_at              DateTime     @updatedAt
+
+  @@map("aturan_validasi")
 }
 
 enum StatusPeriode {

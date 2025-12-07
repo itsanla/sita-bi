@@ -46,6 +46,11 @@ export class BimbinganRepository {
             },
             orderBy: { sesi_ke: 'asc' },
           },
+          dokumenTa: {
+            where: { tipe_dokumen: 'bimbingan' },
+            orderBy: { version: 'desc' },
+            take: 1,
+          },
         },
         skip: (page - 1) * limit,
         take: limit,

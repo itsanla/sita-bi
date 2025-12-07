@@ -372,4 +372,27 @@ router.post(
   }),
 );
 
+router.post(
+  '/:id/batalkan-validasi-judul',
+  asyncHandler(authMiddleware),
+  periodeGuard(),
+  authorizeRoles([Role.dosen]),
+  asyncHandler(async (req: Request, response: Response): Promise<void> => {
+    const { id } = req.params;
+    const dosenId = req.user?.dosen?.id;
+    if (dosenId === undefined) {
+      response.status(401).json({
+        status: 'gagal',
+        message: 'Dosen tidak ditemukan',
+      });
+      return;
+    }
+    const result = await tugasAkhirService.batalkanValidasiJudul(
+      parseInt(id, 10),
+      dosenId,
+    );
+    response.status(200).json({ status: STATUS_SUKSES, data: result });
+  }),
+);
+
 export default router;

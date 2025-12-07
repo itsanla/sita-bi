@@ -68,7 +68,7 @@ export default function TANotAllowed({
               strokeWidth={2.5}
             />
           ),
-          bgColorClass: 'bg-gradient-to-br from-orange-400 to-orange-600',
+          bgColorClass: 'bg-gradient-to-br from-amber-400 to-amber-600',
           title: customTitle || 'Akses Ditolak',
           message: customMessage || 'Anda tidak memiliki akses ke fitur ini.',
           actionText: 'Hubungi administrator untuk informasi lebih lanjut.',
@@ -81,7 +81,7 @@ export default function TANotAllowed({
               strokeWidth={2.5}
             />
           ),
-          bgColorClass: 'bg-gradient-to-br from-orange-400 to-orange-600',
+          bgColorClass: 'bg-gradient-to-br from-amber-400 to-amber-600',
           title: 'Akses Ditolak',
           message: 'Anda tidak memiliki akses ke fitur ini.',
           actionText: 'Hubungi administrator untuk informasi lebih lanjut.',
@@ -91,29 +91,12 @@ export default function TANotAllowed({
 
   const config = getConfig();
 
-  const getBgStyle = () => {
-    if (type === 'no-ta')
-      return {
-        background: 'linear-gradient(to bottom right, #f87171, #dc2626)',
-      };
-    if (type === 'no-pembimbing')
-      return {
-        background: 'linear-gradient(to bottom right, #fbbf24, #d97706)',
-      };
-    if (type === 'judul-not-validated')
-      return {
-        background: 'linear-gradient(to bottom right, #60a5fa, #2563eb)',
-      };
-    return { background: 'linear-gradient(to bottom right, #fb923c, #ea580c)' };
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-6">
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-gray-200 p-6 sm:p-8 text-center">
         <div className="flex justify-center mb-4 sm:mb-6">
           <div
-            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center shadow-md"
-            style={{ ...getBgStyle(), color: 'white' }}
+            className={`w-14 h-14 sm:w-16 sm:h-16 ${config.bgColorClass} rounded-full flex items-center justify-center shadow-md`}
           >
             {config.icon}
           </div>

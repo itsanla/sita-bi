@@ -109,11 +109,7 @@ export default function KelolaPeriodePage() {
     const now = Date.now();
     const timeUntilOpen = targetTime - now;
 
-    if (timeUntilOpen <= 0) {
-      fetchPeriodes().catch(() => {});
-      return;
-    }
-
+    if (timeUntilOpen <= 0) return;
     if (timeUntilOpen > 3600000) return;
 
     const timeoutId = setTimeout(() => {
@@ -123,7 +119,7 @@ export default function KelolaPeriodePage() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [isJurusan, periodes]);
+  }, [isJurusan]);
 
   useEffect(() => {
     const handlePeriodeUpdate = () => {
