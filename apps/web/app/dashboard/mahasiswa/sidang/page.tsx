@@ -230,17 +230,13 @@ export default function PendaftaranSidangPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  console.log('[Sidang Page] Component rendered');
-
   const fetchData = async () => {
     try {
       setLoading(true);
       setError('');
-      console.log('[Sidang Page] Fetching tugas akhir data...');
       const taResponse = await request<{ data: TugasAkhir | null }>(
         '/bimbingan/sebagai-mahasiswa',
       );
-      console.log('[Sidang Page] Tugas akhir response:', taResponse.data?.data);
       setTugasAkhir(taResponse.data?.data || null);
       if (taResponse.data?.data) {
         try {
@@ -325,9 +321,6 @@ export default function PendaftaranSidangPage() {
       </PeriodeGuard>
     );
   }
-
-  console.log('[Sidang Page] Rendering with tugasAkhir:', tugasAkhir);
-  console.log('[Sidang Page] Rendering with pendaftaran:', pendaftaran);
 
   return (
     <PeriodeGuard>

@@ -1,0 +1,46 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+dist
+.next
+.turbo
+
+# Development
+.git
+.gitignore
+.env.local
+.env.development
+*.log
+
+# Testing
+coverage
+.nyc_output
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads (will be mounted as volume)
+uploads
+.wwebjs_auth
+
+# Database
+*.db
+*.db-journal
+
+# Documentation
+README.md
+DEPLOYMENT.md
+docs
+
+# CI/CD
+.github
+.gitlab-ci.yml

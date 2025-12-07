@@ -49,14 +49,19 @@ httpServer.listen(PORT, () => {
 const gracefulShutdown = async (signal: string): Promise<void> => {
   console.warn(`\n🛑 ${signal} received - Shutting down gracefully...`);
 
+  const isDev = process.env['NODE_ENV'] === 'development';
+  const shutdownTimeout = isDev ? 500 : 3000; // Faster in dev
+
   // Stop accepting new connections
   httpServer.close(async () => {
     console.warn('✅ HTTP server closed');
 
     try {
-      // Disconnect WhatsApp
-      await whatsappService.logout();
-      console.warn('✅ WhatsApp disconnected');
+      // Skip WhatsApp cleanup in dev for faster restart
+      if (!isDev) {
+        await whatsappService.logout();
+        console.warn('✅ WhatsApp disconnected');
+      }
     } catch (err) {
       console.error('❌ Error during WhatsApp cleanup:', err);
     }
@@ -73,11 +78,11 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
     process.exit(0);
   });
 
-  // Force shutdown after 3 seconds for faster restart in dev
+  // Force shutdown after timeout
   setTimeout(() => {
     console.error('⚠️  Forced shutdown after timeout');
     process.exit(1);
-  }, 3000);
+  }, shutdownTimeout);
 };
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

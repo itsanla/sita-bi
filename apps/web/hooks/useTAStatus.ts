@@ -26,10 +26,7 @@ export function useTAStatus() {
       const response = await api.get('/bimbingan/sebagai-mahasiswa');
       const tugasAkhir = response.data?.data;
 
-      console.log('[useTAStatus] Tugas Akhir data:', tugasAkhir);
-
       if (!tugasAkhir) {
-        console.log('[useTAStatus] No tugas akhir found');
         setStatus({
           hasTA: false,
           hasPembimbing: false,
@@ -51,9 +48,7 @@ export function useTAStatus() {
       try {
         const eligibilityResponse = await api.get(`/bimbingan/eligibility/${tugasAkhir.id}`);
         isEligibleForSidang = eligibilityResponse.data?.data?.eligible || false;
-        console.log('[useTAStatus] Eligibility from backend:', eligibilityResponse.data?.data);
-      } catch (error) {
-        console.error('[useTAStatus] Failed to fetch eligibility:', error);
+      } catch {
         // Fallback to old logic if API fails
         const validBimbinganCount =
           tugasAkhir.bimbinganTa?.filter(
@@ -64,20 +59,7 @@ export function useTAStatus() {
         const isDrafValidatedP2 = !!latestDokumen?.divalidasi_oleh_p2;
         isEligibleForSidang =
           validBimbinganCount >= 9 && isDrafValidatedP1 && isDrafValidatedP2;
-        console.log('[useTAStatus] Fallback eligibility calculation:', {
-          validBimbinganCount,
-          isDrafValidatedP1,
-          isDrafValidatedP2,
-          isEligibleForSidang,
-        });
       }
-
-      console.log('[useTAStatus] Final status:', {
-        hasTA: true,
-        hasPembimbing,
-        isJudulValidated,
-        isEligibleForSidang,
-      });
 
       setStatus({
         hasTA: true,

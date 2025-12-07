@@ -24,7 +24,6 @@ router.get(
       });
     }
 
-    console.log('[GET /aturan-validasi] Returning:', aturan);
     res.json({ status: 'sukses', data: aturan });
   }),
 );
@@ -34,7 +33,6 @@ router.put(
   authorizeRoles([Role.jurusan]),
   asyncHandler(async (req, res) => {
     const { mode_validasi_judul, mode_validasi_draf } = req.body;
-    console.log('[PUT /aturan-validasi] Request body:', req.body);
 
     if (!mode_validasi_judul || !mode_validasi_draf) {
       throw new BadRequestError('Mode validasi harus diisi');
@@ -67,7 +65,6 @@ router.put(
       });
     }
 
-    console.log('[PUT /aturan-validasi] Updated:', aturan);
     res.json({ status: 'sukses', data: aturan });
   }),
 );

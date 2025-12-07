@@ -89,18 +89,33 @@ app.use('/uploads', express.static(uploadsPath));
 console.warn('⚠️  WhatsApp not connected - Server running without WhatsApp');
 
 // Health check endpoint
-app.get('/health', (_req, res) => {
-  const whatsappStatus = whatsappService.getStatus();
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uploadsPath: uploadsPath,
-    apiRoot: getApiRoot(),
-    whatsapp: {
-      isReady: whatsappStatus.isReady,
-      hasQR: whatsappStatus.hasQR,
-    },
-  });
+app.get('/health', async (_req, res) => {
+  try {
+    const whatsappStatus = whatsappService.getStatus();
+    
+    // Check database connectivity
+    const { PrismaService } = await import('./config/prisma');
+    await PrismaService.getClient().$queryRaw`SELECT 1`;
+    
+    res.json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      uploadsPath: uploadsPath,
+      apiRoot: getApiRoot(),
+      database: 'connected',
+      whatsapp: {
+        isReady: whatsappStatus.isReady,
+        hasQR: whatsappStatus.hasQR,
+      },
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      error: 'Service unavailable',
+      database: 'disconnected',
+    });
+  }
 });
 
 // API Routes
