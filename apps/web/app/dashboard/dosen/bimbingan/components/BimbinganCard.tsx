@@ -149,7 +149,7 @@ export default function BimbinganCard({
           </span>
           <span className="text-sm">
             <span className="font-semibold">Bimbingan Valid:</span>{' '}
-            {validBimbinganCount}/9
+            {validBimbinganCount} sesi
           </span>
         </div>
       </div>

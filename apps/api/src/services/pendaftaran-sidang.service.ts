@@ -51,6 +51,13 @@ export class PendaftaranSidangService {
       minBimbingan: number;
     };
   }> {
+    const minBimbinganSetting = await this.prisma.pengaturanSistem.findUnique({
+      where: { key: 'min_bimbingan_valid' },
+    });
+    const minBimbingan = minBimbinganSetting
+      ? parseInt(minBimbinganSetting.value, 10)
+      : 9;
+
     const tugasAkhir = await this.prisma.tugasAkhir.findFirst({
       where: { mahasiswa_id: mahasiswaId },
       include: {
@@ -68,7 +75,7 @@ export class PendaftaranSidangService {
         details: {
           tugasAkhirApproved: false,
           bimbinganCount: 0,
-          minBimbingan: 9,
+          minBimbingan,
         },
       };
     }
@@ -80,12 +87,10 @@ export class PendaftaranSidangService {
       );
     }
 
-    // Get Pembimbing IDs
     const pembimbingIds = tugasAkhir.peranDosenTa
       .filter((p) => p.peran === 'pembimbing1' || p.peran === 'pembimbing2')
       .map((p) => p.dosen_id);
 
-    // Count confirmed bimbingan
     const bimbinganCount = await this.prisma.bimbinganTA.count({
       where: {
         tugas_akhir_id: tugasAkhir.id,
@@ -94,10 +99,10 @@ export class PendaftaranSidangService {
       },
     });
 
-    if (bimbinganCount < 9) {
+    if (bimbinganCount < minBimbingan) {
       isEligible = false;
       reasons.push(
-        `Bimbingan terkonfirmasi baru ${bimbinganCount}/9 sesi (Minimal 9)`,
+        `Bimbingan terkonfirmasi baru ${bimbinganCount}/${minBimbingan} sesi (Minimal ${minBimbingan})`,
       );
     }
 
@@ -107,7 +112,7 @@ export class PendaftaranSidangService {
       details: {
         tugasAkhirApproved: tugasAkhir.status === 'DISETUJUI',
         bimbinganCount,
-        minBimbingan: 9,
+        minBimbingan,
       },
     };
   }

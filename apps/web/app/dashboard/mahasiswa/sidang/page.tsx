@@ -3,6 +3,7 @@
 import { useEffect, useState, FormEvent, ChangeEvent } from 'react';
 import request from '@/lib/api';
 import PeriodeGuard from '@/components/shared/PeriodeGuard';
+import TAGuard from '@/components/shared/TAGuard';
 import { useAuth } from '../../../../context/AuthContext';
 import {
   UploadCloud,
@@ -323,19 +324,21 @@ export default function PendaftaranSidangPage() {
 
   return (
     <PeriodeGuard>
-      <div className="space-y-8">
-        <h1 className="text-3xl font-bold text-gray-800">
-          Defense Registration
-        </h1>
-        {pendaftaran ? (
-          renderStatus()
-        ) : (
-          <RegistrationForm
-            tugasAkhirId={tugasAkhir.id}
-            onRegistrationSuccess={fetchData}
-          />
-        )}
-      </div>
+      <TAGuard requireEligibleForSidang>
+        <div className="space-y-8">
+          <h1 className="text-3xl font-bold text-gray-800">
+            Defense Registration
+          </h1>
+          {pendaftaran ? (
+            renderStatus()
+          ) : (
+            <RegistrationForm
+              tugasAkhirId={tugasAkhir.id}
+              onRegistrationSuccess={fetchData}
+            />
+          )}
+        </div>
+      </TAGuard>
     </PeriodeGuard>
   );
 }

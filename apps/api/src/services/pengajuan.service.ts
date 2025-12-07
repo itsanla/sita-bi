@@ -295,7 +295,7 @@ export class PengajuanService {
           data: { status: 'BIMBINGAN' },
         });
 
-        // Auto-create 9 sesi bimbingan
+        // Auto-create sesi bimbingan sesuai pengaturan
         try {
           const { BimbinganService } = await import('./bimbingan.service');
           const bimbinganService = new BimbinganService();

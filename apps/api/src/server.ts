@@ -5,6 +5,7 @@ import { initSocket } from './socket';
 import { whatsappService } from './services/whatsapp.service';
 import { SchedulerService } from './services/scheduler.service';
 import { PrismaService } from './config/prisma';
+import { startPeriodeCronJob } from './jobs/periode.cron';
 
 const PORT = process.env['PORT'] ?? 3000;
 
@@ -33,6 +34,9 @@ if (process.env['NODE_ENV'] !== 'test') {
 
   const schedulerService = new SchedulerService();
   schedulerService.init();
+
+  // Start periode auto-open cron job
+  startPeriodeCronJob();
 }
 
 httpServer.listen(PORT, () => {

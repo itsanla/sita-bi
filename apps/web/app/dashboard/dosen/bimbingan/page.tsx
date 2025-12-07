@@ -207,7 +207,7 @@ export default function DosenBimbinganPage() {
                 <ul className="space-y-1 text-sm text-blue-800">
                   <li className="flex items-center gap-2">
                     <CheckCircle size={16} />
-                    Minimal 9 sesi bimbingan valid
+                    Minimal bimbingan valid sesuai aturan jurusan
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle size={16} />
@@ -278,23 +278,18 @@ export default function DosenBimbinganPage() {
                   </h3>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      {tugasAkhir.bimbinganTa.filter(
-                        (b) => b.status_bimbingan === 'selesai',
-                      ).length >= 9 ? (
-                        <CheckCircle className="text-green-600" size={20} />
-                      ) : (
-                        <XCircle className="text-red-600" size={20} />
-                      )}
+                      <AlertCircle className="text-blue-600" size={20} />
                       <span className="text-sm">
-                        Minimal 9 Bimbingan Valid:{' '}
+                        Bimbingan Valid:{' '}
                         <span className="font-bold">
                           {
                             tugasAkhir.bimbinganTa.filter(
                               (b) => b.status_bimbingan === 'selesai',
                             ).length
-                          }
-                          /9
-                        </span>
+                          }{' '}
+                          sesi
+                        </span>{' '}
+                        (Cek syarat di dashboard mahasiswa)
                       </span>
                     </div>
                     <div className="flex items-center gap-2">

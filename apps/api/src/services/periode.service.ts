@@ -1,5 +1,7 @@
 import prisma from '../config/database';
 import type { StatusPeriode } from '@repo/db';
+import { parseWIBToUTC, getCurrentWIB, isDateInPast } from '../utils/timezone';
+import { getSocketIO } from '../socket';
 
 interface PeriodeTa {
   id: number;
@@ -27,10 +29,14 @@ export class PeriodeService {
     'Hanya periode dengan status PERSIAPAN yang dapat dibuka';
   private static readonly CANNOT_CANCEL_ACTIVE =
     'Tidak dapat membatalkan jadwal periode yang sudah aktif';
+  private static readonly PERIODE_OVERLAP =
+    'Jadwal periode bertabrakan dengan periode lain yang aktif atau dijadwalkan';
+  private static readonly HAS_ACTIVE_TA =
+    'Tidak dapat menutup periode karena masih ada Tugas Akhir yang belum selesai';
 
   private static activePeriodeCache: PeriodeTa | null = null;
   private static cacheTime = 0;
-  private static CACHE_TTL = 60000; // 1 menit
+  private static CACHE_TTL = 60000;
 
   async getActivePeriode(): Promise<PeriodeTa | null> {
     const now = Date.now();
@@ -89,12 +95,25 @@ export class PeriodeService {
     let tanggalBukaDate: Date;
 
     if (isScheduled) {
-      tanggalBukaDate = new Date(tanggalBuka);
-      if (Number.isNaN(tanggalBukaDate.getTime())) {
-        throw new Error('Format tanggal tidak valid');
-      }
-      if (tanggalBukaDate <= new Date()) {
+      tanggalBukaDate = parseWIBToUTC(tanggalBuka);
+      if (isDateInPast(tanggalBukaDate)) {
         throw new Error(PeriodeService.INVALID_DATE);
+      }
+
+      const overlap = await prisma.periodeTa.findFirst({
+        where: {
+          OR: [
+            { status: 'AKTIF' },
+            {
+              status: 'PERSIAPAN',
+              tanggal_buka: { lte: tanggalBukaDate },
+            },
+          ],
+        },
+      });
+
+      if (overlap !== null) {
+        throw new Error(PeriodeService.PERIODE_OVERLAP);
       }
     } else {
       const activeCount = await prisma.periodeTa.count({
@@ -104,7 +123,7 @@ export class PeriodeService {
       if (activeCount > 0) {
         throw new Error(PeriodeService.PERIODE_ALREADY_ACTIVE);
       }
-      tanggalBukaDate = new Date();
+      tanggalBukaDate = getCurrentWIB();
     }
 
     const pengaturan = await prisma.pengaturanSistem.findMany();
@@ -125,6 +144,7 @@ export class PeriodeService {
     });
 
     this.invalidateCache();
+    this.emitPeriodeUpdate();
     return periode;
   }
 
@@ -135,6 +155,14 @@ export class PeriodeService {
   ): Promise<PeriodeTa> {
     const periode = await prisma.periodeTa.findUnique({
       where: { id: periodeId },
+      include: {
+        tugasAkhir: {
+          where: {
+            status: { notIn: ['SELESAI', 'DITOLAK'] },
+          },
+          select: { id: true },
+        },
+      },
     });
 
     if (periode === null) {
@@ -145,23 +173,35 @@ export class PeriodeService {
       throw new Error(PeriodeService.ONLY_ACTIVE_CAN_CLOSE);
     }
 
+    if (periode.tugasAkhir.length > 0) {
+      throw new Error(PeriodeService.HAS_ACTIVE_TA);
+    }
+
     const updated = await prisma.periodeTa.update({
       where: { id: periodeId },
       data: {
         status: 'SELESAI',
-        tanggal_tutup: new Date(),
+        tanggal_tutup: getCurrentWIB(),
         ditutup_oleh: userId,
         catatan_penutupan: catatan ?? null,
       },
     });
 
     this.invalidateCache();
+    this.emitPeriodeUpdate();
     return updated;
   }
 
   invalidateCache(): void {
     PeriodeService.activePeriodeCache = null;
     PeriodeService.cacheTime = 0;
+  }
+
+  emitPeriodeUpdate(): void {
+    const io = getSocketIO();
+    if (io) {
+      io.emit('periode:updated');
+    }
   }
 
   async setJadwalBuka(
@@ -180,13 +220,27 @@ export class PeriodeService {
       throw new Error('Tidak dapat mengubah jadwal periode yang sudah aktif');
     }
 
-    const tanggalBukaDate = new Date(tanggalBuka);
-    if (Number.isNaN(tanggalBukaDate.getTime())) {
-      throw new Error('Format tanggal tidak valid');
+    const tanggalBukaDate = parseWIBToUTC(tanggalBuka);
+
+    if (isDateInPast(tanggalBukaDate)) {
+      throw new Error(PeriodeService.INVALID_DATE);
     }
 
-    if (tanggalBukaDate <= new Date()) {
-      throw new Error(PeriodeService.INVALID_DATE);
+    const overlap = await prisma.periodeTa.findFirst({
+      where: {
+        id: { not: periodeId },
+        OR: [
+          { status: 'AKTIF' },
+          {
+            status: 'PERSIAPAN',
+            tanggal_buka: { lte: tanggalBukaDate },
+          },
+        ],
+      },
+    });
+
+    if (overlap !== null) {
+      throw new Error(PeriodeService.PERIODE_OVERLAP);
     }
 
     const updated = await prisma.periodeTa.update({
@@ -198,6 +252,7 @@ export class PeriodeService {
     });
 
     this.invalidateCache();
+    this.emitPeriodeUpdate();
     return updated;
   }
 
@@ -294,6 +349,7 @@ export class PeriodeService {
     });
 
     this.invalidateCache();
+    this.emitPeriodeUpdate();
   }
 
   async bukaSekarang(periodeId: number): Promise<PeriodeTa> {
@@ -325,22 +381,23 @@ export class PeriodeService {
       where: { id: periodeId },
       data: {
         status: 'AKTIF',
-        tanggal_buka: new Date(),
+        tanggal_buka: getCurrentWIB(),
       },
     });
 
     this.invalidateCache();
+    this.emitPeriodeUpdate();
     return updated;
   }
 
   async getRiwayatPeriode(): Promise<
-    Array<{
+    {
       id: number;
       action: string;
       details: string | null;
       user: { name: string } | null;
       created_at: Date;
-    }>
+    }[]
   > {
     const logs = await prisma.log.findMany({
       where: { module: 'periode' },
@@ -376,6 +433,7 @@ export class PeriodeService {
     });
 
     this.invalidateCache();
+    this.emitPeriodeUpdate();
     return periode;
   }
 }

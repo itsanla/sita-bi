@@ -656,7 +656,8 @@ export class BimbinganService {
       return;
     }
 
-    for (let i = 1; i <= 9; i++) {
+    const minBimbingan = await getMinBimbinganValid();
+    for (let i = 1; i <= minBimbingan; i++) {
       await this.repository.createEmptySesi(
         tugasAkhirId,
         pembimbing1.dosen_id,

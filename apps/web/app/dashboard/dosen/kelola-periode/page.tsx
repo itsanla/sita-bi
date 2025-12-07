@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import io from 'socket.io-client';
 import {
   PERIODE_STATUS,
   PERIODE_MESSAGES,
@@ -119,13 +120,8 @@ export default function KelolaPeriodePage() {
       fetchPeriodes().catch(() => {});
     }, timeUntilOpen);
 
-    const intervalId = setInterval(() => {
-      fetchPeriodes().catch(() => {});
-    }, 15000);
-
     return () => {
       clearTimeout(timeoutId);
-      clearInterval(intervalId);
     };
   }, [isJurusan, periodes]);
 
@@ -137,6 +133,27 @@ export default function KelolaPeriodePage() {
     window.addEventListener(PERIODE_UPDATED_EVENT, handlePeriodeUpdate);
     return () =>
       window.removeEventListener(PERIODE_UPDATED_EVENT, handlePeriodeUpdate);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const socketUrl =
+      process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+    const socket = io(socketUrl);
+
+    socket.on('connect', () => {
+      console.warn('[WebSocket] Terhubung ke pembaruan periode');
+    });
+
+    socket.on('periode:updated', () => {
+      console.warn('[WebSocket] Periode diperbarui, memuat ulang...');
+      fetchPeriodes().catch(() => {});
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const handleTutupPeriode = (id: number, tahun: number) => {

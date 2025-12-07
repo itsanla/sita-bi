@@ -26,13 +26,13 @@ export default function BukaPeriodeForm({
 
     let tanggalBukaISO: string | undefined;
     if (!langsung && tanggalBuka) {
-      const datetime = `${tanggalBuka}T${jamBuka || '08:00'}:00+07:00`;
+      const datetime = `${tanggalBuka}T${jamBuka || '08:00'}:00`;
       const tanggalBukaDate = new Date(datetime);
       if (tanggalBukaDate < new Date()) {
         toast.error(PERIODE_MESSAGES.ERROR_PAST_DATE);
         return;
       }
-      tanggalBukaISO = tanggalBukaDate.toISOString();
+      tanggalBukaISO = datetime;
     }
 
     await onSubmit(tahunBaru, tanggalBukaISO);
