@@ -56,6 +56,8 @@ const ERROR_MSG_DOSEN_NOT_FOUND = 'Dosen tidak ditemukan';
 const ERROR_MSG_SESI_NOT_FOUND = 'Sesi bimbingan tidak ditemukan';
 const ERROR_MSG_TA_NOT_FOUND = 'Tugas Akhir tidak ditemukan';
 const ERROR_MSG_PEMBIMBING_NOT_ASSIGNED = 'Pembimbing belum ditugaskan';
+const ERROR_MSG_NO_ACCESS =
+  'Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses';
 
 export class BimbinganService {
   private repository: BimbinganRepository;
@@ -479,9 +481,7 @@ export class BimbinganService {
     );
 
     if (bimbingan === null || typeof bimbingan !== 'object') {
-      throw new NotFoundError(
-        'Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses',
-      );
+      throw new NotFoundError(ERROR_MSG_NO_ACCESS);
     }
 
     const result = await this.repository.updateBimbinganStatus(
@@ -512,9 +512,7 @@ export class BimbinganService {
         );
 
         if (bimbingan === null || typeof bimbingan !== 'object') {
-          throw new NotFoundError(
-            'Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses',
-          );
+          throw new NotFoundError(ERROR_MSG_NO_ACCESS);
         }
 
         if (bimbingan.status_bimbingan !== 'dijadwalkan') {
@@ -741,9 +739,7 @@ export class BimbinganService {
       typeof bimbingan !== 'object' ||
       !('dosen_id' in bimbingan)
     ) {
-      throw new NotFoundError(
-        'Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses',
-      );
+      throw new NotFoundError(ERROR_MSG_NO_ACCESS);
     }
 
     const tanggalDate = new Date(tanggal);
@@ -789,9 +785,7 @@ export class BimbinganService {
       dosen.id as number,
     );
     if (bimbingan === null || typeof bimbingan !== 'object') {
-      throw new NotFoundError(
-        'Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses',
-      );
+      throw new NotFoundError(ERROR_MSG_NO_ACCESS);
     }
 
     const hasTanggal =
@@ -824,9 +818,7 @@ export class BimbinganService {
     );
 
     if (bimbingan === null || typeof bimbingan !== 'object') {
-      throw new NotFoundError(
-        'Sesi bimbingan tidak ditemukan atau Anda tidak memiliki akses',
-      );
+      throw new NotFoundError(ERROR_MSG_NO_ACCESS);
     }
 
     const isSelesai =

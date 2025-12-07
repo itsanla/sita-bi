@@ -108,9 +108,16 @@ function useBimbinganData() {
 
 // eslint-disable-next-line sonarjs/cognitive-complexity
 export default function BimbinganPage() {
+  const PEMBIMBING_1 = 'pembimbing1';
+  const PEMBIMBING_2 = 'pembimbing2';
+
   const { tugasAkhir, loading, fetchData } = useBimbinganData();
-  const { aturan, getValidasiJudulMessage, getValidasiDrafMessage, isJudulValid, isDrafValid } =
-    useAturanValidasi();
+  const {
+    getValidasiJudulMessage,
+    getValidasiDrafMessage,
+    isJudulValid,
+    isDrafValid,
+  } = useAturanValidasi();
   const [selectedSesi, setSelectedSesi] = useState<number | null>(null);
   const [newCatatan, setNewCatatan] = useState('');
   const [uploadingDraf, setUploadingDraf] = useState(false);
@@ -268,10 +275,12 @@ export default function BimbinganPage() {
   const latestDokumen = tugasAkhir.dokumenTa[0];
   const isDrafValidatedP1 = !!latestDokumen?.divalidasi_oleh_p1;
   const isDrafValidatedP2 = !!latestDokumen?.divalidasi_oleh_p2;
-  const isDrafValidatedByRule = latestDokumen ? isDrafValid(
-    latestDokumen.divalidasi_oleh_p1,
-    latestDokumen.divalidasi_oleh_p2,
-  ) : false;
+  const isDrafValidatedByRule = latestDokumen
+    ? isDrafValid(
+        latestDokumen.divalidasi_oleh_p1,
+        latestDokumen.divalidasi_oleh_p2,
+      )
+    : false;
 
   const minBimbingan = eligibilityData?.data?.minRequired || 9;
   const allSesi = Array.from({ length: minBimbingan }, (_, i) => {
@@ -344,9 +353,7 @@ export default function BimbinganPage() {
                     <span className="text-sm">
                       Validasi Draf Tugas Akhir:{' '}
                       <span className="font-bold">
-                        {isDrafValidatedByRule
-                          ? 'Valid'
-                          : 'Belum Valid'}
+                        {isDrafValidatedByRule ? 'Valid' : 'Belum Valid'}
                       </span>
                     </span>
                   </div>
@@ -366,20 +373,23 @@ export default function BimbinganPage() {
             <div className="space-y-3">
               <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-sm text-blue-800">
-                  <span className="font-semibold">Aturan Validasi:</span> {getValidasiJudulMessage()}
+                  <span className="font-semibold">Aturan Validasi:</span>{' '}
+                  {getValidasiJudulMessage()}
                 </p>
               </div>
               <div className="p-4 bg-gray-50 rounded-lg border">
                 <p className="text-sm font-semibold text-gray-700 mb-3">
                   {tugasAkhir.judul}
                 </p>
-                
+
                 <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div className={`p-3 rounded-lg border ${
-                    tugasAkhir.judul_divalidasi_p1
-                      ? 'bg-green-50 border-green-200'
-                      : 'bg-yellow-50 border-yellow-200'
-                  }`}>
+                  <div
+                    className={`p-3 rounded-lg border ${
+                      tugasAkhir.judul_divalidasi_p1
+                        ? 'bg-green-50 border-green-200'
+                        : 'bg-yellow-50 border-yellow-200'
+                    }`}
+                  >
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         {tugasAkhir.judul_divalidasi_p1 ? (
@@ -392,20 +402,30 @@ export default function BimbinganPage() {
                         </span>
                       </div>
                       <span className="text-xs text-gray-600 ml-6">
-                        {tugasAkhir.peranDosenTa.find(p => p.peran === 'pembimbing1')?.dosen.user.name || '-'}
+                        {tugasAkhir.peranDosenTa.find(
+                          (p) => p.peran === PEMBIMBING_1,
+                        )?.dosen.user.name || '-'}
                       </span>
-                      <span className={`text-xs font-medium ml-6 ${
-                        tugasAkhir.judul_divalidasi_p1 ? 'text-green-700' : 'text-yellow-700'
-                      }`}>
-                        {tugasAkhir.judul_divalidasi_p1 ? '✓ Sudah Validasi' : '⏳ Belum Validasi'}
+                      <span
+                        className={`text-xs font-medium ml-6 ${
+                          tugasAkhir.judul_divalidasi_p1
+                            ? 'text-green-700'
+                            : 'text-yellow-700'
+                        }`}
+                      >
+                        {tugasAkhir.judul_divalidasi_p1
+                          ? '✓ Sudah Validasi'
+                          : '⏳ Belum Validasi'}
                       </span>
                     </div>
                   </div>
-                  <div className={`p-3 rounded-lg border ${
-                    tugasAkhir.judul_divalidasi_p2
-                      ? 'bg-green-50 border-green-200'
-                      : 'bg-yellow-50 border-yellow-200'
-                  }`}>
+                  <div
+                    className={`p-3 rounded-lg border ${
+                      tugasAkhir.judul_divalidasi_p2
+                        ? 'bg-green-50 border-green-200'
+                        : 'bg-yellow-50 border-yellow-200'
+                    }`}
+                  >
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         {tugasAkhir.judul_divalidasi_p2 ? (
@@ -418,12 +438,20 @@ export default function BimbinganPage() {
                         </span>
                       </div>
                       <span className="text-xs text-gray-600 ml-6">
-                        {tugasAkhir.peranDosenTa.find(p => p.peran === 'pembimbing2')?.dosen.user.name || '-'}
+                        {tugasAkhir.peranDosenTa.find(
+                          (p) => p.peran === PEMBIMBING_2,
+                        )?.dosen.user.name || '-'}
                       </span>
-                      <span className={`text-xs font-medium ml-6 ${
-                        tugasAkhir.judul_divalidasi_p2 ? 'text-green-700' : 'text-yellow-700'
-                      }`}>
-                        {tugasAkhir.judul_divalidasi_p2 ? '✓ Sudah Validasi' : '⏳ Belum Validasi'}
+                      <span
+                        className={`text-xs font-medium ml-6 ${
+                          tugasAkhir.judul_divalidasi_p2
+                            ? 'text-green-700'
+                            : 'text-yellow-700'
+                        }`}
+                      >
+                        {tugasAkhir.judul_divalidasi_p2
+                          ? '✓ Sudah Validasi'
+                          : '⏳ Belum Validasi'}
                       </span>
                     </div>
                   </div>
@@ -443,7 +471,8 @@ export default function BimbinganPage() {
                     <div className="flex items-center gap-2">
                       <AlertCircle className="text-red-600" size={18} />
                       <span className="text-sm font-semibold text-red-800">
-                        Menunggu validasi judul sesuai aturan sebelum dapat melanjutkan
+                        Menunggu validasi judul sesuai aturan sebelum dapat
+                        melanjutkan
                       </span>
                     </div>
                   </div>
@@ -459,7 +488,8 @@ export default function BimbinganPage() {
             <h2 className="text-xl font-bold mb-4">Draf Tugas Akhir</h2>
             <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm text-blue-800">
-                <span className="font-semibold">Aturan Validasi:</span> {getValidasiDrafMessage()}
+                <span className="font-semibold">Aturan Validasi:</span>{' '}
+                {getValidasiDrafMessage()}
               </p>
             </div>
             {latestDokumen ? (

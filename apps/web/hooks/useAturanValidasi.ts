@@ -19,7 +19,7 @@ export function useAturanValidasi() {
     const fetchAturan = async () => {
       try {
         const response = await request.get('/aturan-validasi');
-        console.log('useAturanValidasi response:', response.data);
+
         const data = response.data?.data || response.data;
         setAturan({
           mode_validasi_judul: data.mode_validasi_judul || 'KEDUA_PEMBIMBING',

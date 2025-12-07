@@ -74,8 +74,15 @@ interface TugasAkhir {
 }
 
 export default function DosenBimbinganPage() {
-  const { aturan, getValidasiJudulMessage, getValidasiDrafMessage, isJudulValid, isDrafValid } =
-    useAturanValidasi();
+  const PEMBIMBING_1 = 'pembimbing1';
+  const PEMBIMBING_2 = 'pembimbing2';
+
+  const {
+    aturan,
+    getValidasiJudulMessage,
+    getValidasiDrafMessage,
+    isDrafValid,
+  } = useAturanValidasi();
   const { user } = useAuth();
   const { status: periodeStatus, loading: periodeLoading } = usePeriodeStatus();
   const [mahasiswaList, setMahasiswaList] = useState<TugasAkhir[]>([]);
@@ -91,13 +98,7 @@ export default function DosenBimbinganPage() {
         '/bimbingan/sebagai-dosen',
       );
       const data = response.data?.data?.data || [];
-      console.log('[Dosen Bimbingan] Data mahasiswa:', data);
-      if (data[0]) {
-        console.log(
-          '[Dosen Bimbingan] dokumenTa mahasiswa pertama:',
-          data[0].dokumenTa,
-        );
-      }
+
       setMahasiswaList(data);
     } catch (err) {
       console.error(err);
@@ -120,9 +121,10 @@ export default function DosenBimbinganPage() {
       await request.post(`/tugas-akhir/${tugasAkhirId}/validasi-judul`, {});
       toast.success('Judul berhasil divalidasi');
       fetchData();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const errorMessage =
-        error.response?.data?.message || 'Gagal validasi judul';
+        (error as any)?.response?.data?.message || 'Gagal validasi judul';
       toast.error(errorMessage);
     }
   };
@@ -136,9 +138,11 @@ export default function DosenBimbinganPage() {
       );
       toast.success('Validasi judul berhasil dibatalkan');
       fetchData();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const errorMessage =
-        error.response?.data?.message || 'Gagal batalkan validasi judul';
+        (error as any)?.response?.data?.message ||
+        'Gagal batalkan validasi judul';
       toast.error(errorMessage);
     }
   };
@@ -149,9 +153,10 @@ export default function DosenBimbinganPage() {
       await request.post(`/dokumen-ta/${dokumenId}/validasi`, {});
       toast.success('Draf berhasil divalidasi');
       fetchData();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const errorMessage =
-        error.response?.data?.message || 'Gagal validasi draf';
+        (error as any)?.response?.data?.message || 'Gagal validasi draf';
       toast.error(errorMessage);
     }
   };
@@ -162,9 +167,11 @@ export default function DosenBimbinganPage() {
       await request.post(`/dokumen-ta/${dokumenId}/batalkan-validasi`, {});
       toast.success('Validasi draf berhasil dibatalkan');
       fetchData();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const errorMessage =
-        error.response?.data?.message || 'Gagal batalkan validasi draf';
+        (error as any)?.response?.data?.message ||
+        'Gagal batalkan validasi draf';
       toast.error(errorMessage);
     }
   };
@@ -220,26 +227,28 @@ export default function DosenBimbinganPage() {
     )?.peran || '';
 
   const tugasAkhir = mahasiswaList[selectedMahasiswa];
-  
+
   // Cek apakah dosen boleh validasi berdasarkan aturan
   const canValidateJudul = () => {
     if (aturan.mode_validasi_judul === 'PEMBIMBING_1_SAJA') {
-      return currentDosenPeran === 'pembimbing1';
+      return currentDosenPeran === PEMBIMBING_1;
     }
     return true; // SALAH_SATU atau KEDUA_PEMBIMBING, semua bisa validasi
   };
-  
+
   const canValidateDraf = () => {
     if (aturan.mode_validasi_draf === 'PEMBIMBING_1_SAJA') {
-      return currentDosenPeran === 'pembimbing1';
+      return currentDosenPeran === PEMBIMBING_1;
     }
     return true;
   };
-  
-  const isDrafValidatedByRule = tugasAkhir?.dokumenTa?.[0] ? isDrafValid(
-    tugasAkhir.dokumenTa[0].divalidasi_oleh_p1,
-    tugasAkhir.dokumenTa[0].divalidasi_oleh_p2,
-  ) : false;
+
+  const isDrafValidatedByRule = tugasAkhir?.dokumenTa?.[0]
+    ? isDrafValid(
+        tugasAkhir.dokumenTa[0].divalidasi_oleh_p1,
+        tugasAkhir.dokumenTa[0].divalidasi_oleh_p2,
+      )
+    : false;
 
   return (
     <PeriodeGuard>
@@ -365,9 +374,7 @@ export default function DosenBimbinganPage() {
                       <span className="text-sm">
                         Validasi Draf Tugas Akhir:{' '}
                         <span className="font-bold">
-                          {isDrafValidatedByRule
-                            ? 'Valid'
-                            : 'Belum Valid'}
+                          {isDrafValidatedByRule ? 'Valid' : 'Belum Valid'}
                         </span>
                       </span>
                     </div>
@@ -382,26 +389,32 @@ export default function DosenBimbinganPage() {
               <div className="space-y-3">
                 <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                   <p className="text-sm text-blue-800">
-                    <span className="font-semibold">Aturan Validasi:</span> {getValidasiJudulMessage()}
+                    <span className="font-semibold">Aturan Validasi:</span>{' '}
+                    {getValidasiJudulMessage()}
                   </p>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-lg border">
                   <p className="text-sm font-semibold text-gray-700 mb-3">
                     {tugasAkhir.judul}
                   </p>
-                  
+
                   {aturan.mode_validasi_judul === 'KEDUA_PEMBIMBING' && (
                     <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div className={`p-3 rounded-lg border ${
-                        tugasAkhir.judul_divalidasi_p1
-                          ? 'bg-green-50 border-green-200'
-                          : 'bg-yellow-50 border-yellow-200'
-                      }`}>
+                      <div
+                        className={`p-3 rounded-lg border ${
+                          tugasAkhir.judul_divalidasi_p1
+                            ? 'bg-green-50 border-green-200'
+                            : 'bg-yellow-50 border-yellow-200'
+                        }`}
+                      >
                         <div className="flex items-center gap-2">
                           {tugasAkhir.judul_divalidasi_p1 ? (
                             <CheckCircle className="text-green-600" size={18} />
                           ) : (
-                            <AlertCircle className="text-yellow-600" size={18} />
+                            <AlertCircle
+                              className="text-yellow-600"
+                              size={18}
+                            />
                           )}
                           <span className="text-sm font-semibold">
                             {tugasAkhir.judul_divalidasi_p1
@@ -410,16 +423,21 @@ export default function DosenBimbinganPage() {
                           </span>
                         </div>
                       </div>
-                      <div className={`p-3 rounded-lg border ${
-                        tugasAkhir.judul_divalidasi_p2
-                          ? 'bg-green-50 border-green-200'
-                          : 'bg-yellow-50 border-yellow-200'
-                      }`}>
+                      <div
+                        className={`p-3 rounded-lg border ${
+                          tugasAkhir.judul_divalidasi_p2
+                            ? 'bg-green-50 border-green-200'
+                            : 'bg-yellow-50 border-yellow-200'
+                        }`}
+                      >
                         <div className="flex items-center gap-2">
                           {tugasAkhir.judul_divalidasi_p2 ? (
                             <CheckCircle className="text-green-600" size={18} />
                           ) : (
-                            <AlertCircle className="text-yellow-600" size={18} />
+                            <AlertCircle
+                              className="text-yellow-600"
+                              size={18}
+                            />
                           )}
                           <span className="text-sm font-semibold">
                             {tugasAkhir.judul_divalidasi_p2
@@ -432,9 +450,9 @@ export default function DosenBimbinganPage() {
                   )}
 
                   {!!(
-                    (currentDosenPeran === 'pembimbing1' &&
+                    (currentDosenPeran === PEMBIMBING_1 &&
                       tugasAkhir.judul_divalidasi_p1) ||
-                    (currentDosenPeran === 'pembimbing2' &&
+                    (currentDosenPeran === PEMBIMBING_2 &&
                       tugasAkhir.judul_divalidasi_p2)
                   ) && (
                     <div className="p-3 rounded-lg border bg-green-50 border-green-200 mb-3">
@@ -446,9 +464,9 @@ export default function DosenBimbinganPage() {
                       </div>
                     </div>
                   )}
-                  {((currentDosenPeran === 'pembimbing1' &&
+                  {((currentDosenPeran === PEMBIMBING_1 &&
                     !tugasAkhir.judul_divalidasi_p1) ||
-                    (currentDosenPeran === 'pembimbing2' &&
+                    (currentDosenPeran === PEMBIMBING_2 &&
                       !tugasAkhir.judul_divalidasi_p2)) && (
                     <>
                       <button
@@ -461,15 +479,18 @@ export default function DosenBimbinganPage() {
                       </button>
                       {!canValidateJudul() && (
                         <p className="text-xs text-red-600 mt-2">
-                          Hanya Pembimbing 1 yang dapat memvalidasi judul sesuai aturan saat ini
+                          Hanya Pembimbing 1 yang dapat memvalidasi judul sesuai
+                          aturan saat ini
                         </p>
                       )}
                     </>
                   )}
-                  {((currentDosenPeran === 'pembimbing1' &&
-                    tugasAkhir.judul_divalidasi_p1) ||
-                    (currentDosenPeran === 'pembimbing2' &&
-                      tugasAkhir.judul_divalidasi_p2)) && (
+                  {!!(
+                    (currentDosenPeran === PEMBIMBING_1 &&
+                      tugasAkhir.judul_divalidasi_p1) ||
+                    (currentDosenPeran === PEMBIMBING_2 &&
+                      tugasAkhir.judul_divalidasi_p2)
+                  ) && (
                     <button
                       onClick={() => handleBatalkanValidasiJudul(tugasAkhir.id)}
                       className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
@@ -487,7 +508,8 @@ export default function DosenBimbinganPage() {
               <h2 className="text-xl font-bold mb-4">Draf Tugas Akhir</h2>
               <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-sm text-blue-800">
-                  <span className="font-semibold">Aturan Validasi:</span> {getValidasiDrafMessage()}
+                  <span className="font-semibold">Aturan Validasi:</span>{' '}
+                  {getValidasiDrafMessage()}
                 </p>
               </div>
               {tugasAkhir.dokumenTa?.[0] ? (
@@ -515,9 +537,9 @@ export default function DosenBimbinganPage() {
                         <Eye size={14} />
                         Lihat
                       </button>
-                      {((currentDosenPeran === 'pembimbing1' &&
+                      {((currentDosenPeran === PEMBIMBING_1 &&
                         !tugasAkhir.dokumenTa[0].divalidasi_oleh_p1) ||
-                        (currentDosenPeran === 'pembimbing2' &&
+                        (currentDosenPeran === PEMBIMBING_2 &&
                           !tugasAkhir.dokumenTa[0].divalidasi_oleh_p2)) && (
                         <>
                           <button
@@ -526,7 +548,11 @@ export default function DosenBimbinganPage() {
                             }
                             disabled={!canValidateDraf()}
                             className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                            title={!canValidateDraf() ? 'Hanya Pembimbing 1 yang dapat memvalidasi draf' : ''}
+                            title={
+                              !canValidateDraf()
+                                ? 'Hanya Pembimbing 1 yang dapat memvalidasi draf'
+                                : ''
+                            }
                           >
                             <FileCheck size={14} />
                             Validasi
@@ -538,10 +564,12 @@ export default function DosenBimbinganPage() {
                           )}
                         </>
                       )}
-                      {((currentDosenPeran === 'pembimbing1' &&
-                        tugasAkhir.dokumenTa[0].divalidasi_oleh_p1) ||
-                        (currentDosenPeran === 'pembimbing2' &&
-                          tugasAkhir.dokumenTa[0].divalidasi_oleh_p2)) && (
+                      {!!(
+                        (currentDosenPeran === PEMBIMBING_1 &&
+                          tugasAkhir.dokumenTa[0].divalidasi_oleh_p1) ||
+                        (currentDosenPeran === PEMBIMBING_2 &&
+                          tugasAkhir.dokumenTa[0].divalidasi_oleh_p2)
+                      ) && (
                         <button
                           onClick={() =>
                             handleBatalkanValidasiDraf(
