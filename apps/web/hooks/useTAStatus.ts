@@ -37,9 +37,10 @@ export function useTAStatus() {
         return;
       }
 
-      const hasPembimbing =
-        Array.isArray(tugasAkhir.peranDosenTa) &&
-        tugasAkhir.peranDosenTa.length > 0;
+      const pembimbingList = tugasAkhir.peranDosenTa?.filter(
+        (p: { peran: string }) => p.peran === 'pembimbing1' || p.peran === 'pembimbing2'
+      ) || [];
+      const hasPembimbing = pembimbingList.length >= 2;
       const isJudulValidated =
         tugasAkhir.judul_divalidasi_p1 || tugasAkhir.judul_divalidasi_p2;
 

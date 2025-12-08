@@ -42,24 +42,27 @@ export default function PendaftaranSidangPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [pendaftaranRes, pengaturanRes] = await Promise.all([
-        request<{ data: PendaftaranSidang | null }>(
-          '/pendaftaran-sidang/my-registration',
-        ),
-        request<{ data: { syarat_pendaftaran_sidang?: SyaratSidang[] } }>(
-          '/pengaturan',
-        ),
-      ]);
+      const pendaftaranRes = await request<{ data: PendaftaranSidang | null }>(
+        '/pendaftaran-sidang/my-registration',
+      );
       setPendaftaran(pendaftaranRes.data?.data || null);
-      setSyaratSidang(
-        pengaturanRes.data?.data?.syarat_pendaftaran_sidang || [
+
+      try {
+        const pengaturanRes = await request<{
+          data: { syarat_pendaftaran_sidang?: SyaratSidang[] };
+        }>('/pengaturan');
+        setSyaratSidang(
+          pengaturanRes.data?.data?.syarat_pendaftaran_sidang || [],
+        );
+      } catch {
+        setSyaratSidang([
           { key: 'NASKAH_TA', label: 'Naskah TA' },
           { key: 'TOEIC', label: 'Sertifikat TOEIC' },
           { key: 'RAPOR', label: 'Transkrip Nilai' },
           { key: 'IJAZAH_SLTA', label: 'Ijazah SLTA' },
           { key: 'BEBAS_JURUSAN', label: 'Surat Bebas Jurusan' },
-        ],
-      );
+        ]);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -149,7 +152,7 @@ export default function PendaftaranSidangPage() {
   if (loading) {
     return (
       <PeriodeGuard>
-        <TAGuard requirePembimbing>
+        <TAGuard requireEligibleForSidang>
           <div className="text-center p-8">Memuat...</div>
         </TAGuard>
       </PeriodeGuard>
@@ -160,7 +163,7 @@ export default function PendaftaranSidangPage() {
 
   return (
     <PeriodeGuard>
-      <TAGuard requirePembimbing>
+      <TAGuard requireEligibleForSidang>
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-lg shadow">
             <h1 className="text-2xl font-bold mb-4">
