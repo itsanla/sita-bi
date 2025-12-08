@@ -7,6 +7,11 @@ import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
+interface SyaratSidang {
+  key: string;
+  label: string;
+}
+
 interface Pengaturan {
   max_similaritas_persen: number;
   min_bimbingan_valid: number;
@@ -16,6 +21,7 @@ interface Pengaturan {
   jeda_sidang_menit: number;
   mode_validasi_judul?: string;
   mode_validasi_draf?: string;
+  syarat_pendaftaran_sidang?: SyaratSidang[];
 }
 
 export default function AturanTugasAkhirPage() {
@@ -32,6 +38,7 @@ export default function AturanTugasAkhirPage() {
     jeda_sidang_menit: 15,
     mode_validasi_judul: 'KEDUA_PEMBIMBING',
     mode_validasi_draf: 'KEDUA_PEMBIMBING',
+    syarat_pendaftaran_sidang: [],
   });
   const [originalPengaturan, setOriginalPengaturan] = useState<Pengaturan>({
     max_similaritas_persen: 80,
@@ -42,8 +49,10 @@ export default function AturanTugasAkhirPage() {
     jeda_sidang_menit: 15,
     mode_validasi_judul: 'KEDUA_PEMBIMBING',
     mode_validasi_draf: 'KEDUA_PEMBIMBING',
+    syarat_pendaftaran_sidang: [],
   });
   const [ruanganBaru, setRuanganBaru] = useState('');
+  const [syaratBaru, setSyaratBaru] = useState({ key: '', label: '' });
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
@@ -111,6 +120,13 @@ export default function AturanTugasAkhirPage() {
           aturanValidasi?.mode_validasi_judul ?? 'KEDUA_PEMBIMBING',
         mode_validasi_draf:
           aturanValidasi?.mode_validasi_draf ?? 'KEDUA_PEMBIMBING',
+        syarat_pendaftaran_sidang: data.syarat_pendaftaran_sidang ?? [
+          { key: 'NASKAH_TA', label: 'Naskah TA' },
+          { key: 'TOEIC', label: 'Sertifikat TOEIC' },
+          { key: 'RAPOR', label: 'Transkrip Nilai' },
+          { key: 'IJAZAH_SLTA', label: 'Ijazah SLTA' },
+          { key: 'BEBAS_JURUSAN', label: 'Surat Bebas Jurusan' },
+        ],
       };
       console.log('Settings:', settings);
       setPengaturan(settings);
@@ -128,7 +144,10 @@ export default function AturanTugasAkhirPage() {
     try {
       const { mode_validasi_judul, mode_validasi_draf, ...pengaturanData } =
         pengaturan;
-      console.log('Saving aturan validasi:', { mode_validasi_judul, mode_validasi_draf });
+      console.log('Saving aturan validasi:', {
+        mode_validasi_judul,
+        mode_validasi_draf,
+      });
       const results = await Promise.all([
         api.patch('/pengaturan', pengaturanData),
         api.put('/aturan-validasi', {
@@ -177,6 +196,28 @@ export default function AturanTugasAkhirPage() {
       ruangan_sidang: (pengaturan.ruangan_sidang || []).filter(
         (_, i) => i !== index,
       ),
+    });
+  };
+
+  const handleTambahSyarat = () => {
+    if (syaratBaru.key.trim() && syaratBaru.label.trim()) {
+      setPengaturan({
+        ...pengaturan,
+        syarat_pendaftaran_sidang: [
+          ...(pengaturan.syarat_pendaftaran_sidang || []),
+          { key: syaratBaru.key.trim(), label: syaratBaru.label.trim() },
+        ],
+      });
+      setSyaratBaru({ key: '', label: '' });
+    }
+  };
+
+  const handleHapusSyarat = (index: number) => {
+    setPengaturan({
+      ...pengaturan,
+      syarat_pendaftaran_sidang: (
+        pengaturan.syarat_pendaftaran_sidang || []
+      ).filter((_, i) => i !== index),
     });
   };
 
@@ -341,8 +382,9 @@ export default function AturanTugasAkhirPage() {
           </h2>
           <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
             <p className="text-xs text-amber-800">
-              <span className="font-semibold">Catatan:</span> Perubahan aturan validasi hanya berlaku untuk validasi baru. 
-              Validasi yang sudah dilakukan sebelumnya tetap dianggap valid (grandfathering policy).
+              <span className="font-semibold">Catatan:</span> Perubahan aturan
+              validasi hanya berlaku untuk validasi baru. Validasi yang sudah
+              dilakukan sebelumnya tetap dianggap valid (grandfathering policy).
             </p>
           </div>
           <div className="space-y-4">
@@ -368,7 +410,12 @@ export default function AturanTugasAkhirPage() {
                 Menentukan siapa yang harus memvalidasi judul tugas akhir
               </p>
               <p className="text-xs text-blue-600 font-medium">
-                Saat ini: {pengaturan.mode_validasi_judul === 'SALAH_SATU' ? 'Salah Satu Pembimbing' : pengaturan.mode_validasi_judul === 'KEDUA_PEMBIMBING' ? 'Harus Kedua Pembimbing' : 'Pembimbing 1 Saja'}
+                Saat ini:{' '}
+                {pengaturan.mode_validasi_judul === 'SALAH_SATU'
+                  ? 'Salah Satu Pembimbing'
+                  : pengaturan.mode_validasi_judul === 'KEDUA_PEMBIMBING'
+                    ? 'Harus Kedua Pembimbing'
+                    : 'Pembimbing 1 Saja'}
               </p>
             </div>
             <div className="space-y-2">
@@ -393,7 +440,12 @@ export default function AturanTugasAkhirPage() {
                 Menentukan siapa yang harus memvalidasi draf tugas akhir
               </p>
               <p className="text-xs text-blue-600 font-medium">
-                Saat ini: {pengaturan.mode_validasi_draf === 'SALAH_SATU' ? 'Salah Satu Pembimbing' : pengaturan.mode_validasi_draf === 'KEDUA_PEMBIMBING' ? 'Harus Kedua Pembimbing' : 'Pembimbing 1 Saja'}
+                Saat ini:{' '}
+                {pengaturan.mode_validasi_draf === 'SALAH_SATU'
+                  ? 'Salah Satu Pembimbing'
+                  : pengaturan.mode_validasi_draf === 'KEDUA_PEMBIMBING'
+                    ? 'Harus Kedua Pembimbing'
+                    : 'Pembimbing 1 Saja'}
               </p>
             </div>
           </div>
@@ -405,6 +457,75 @@ export default function AturanTugasAkhirPage() {
             Aturan Sidang
           </h2>
           <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Syarat Pendaftaran Sidang
+              </label>
+              <p className="text-sm text-gray-500 mb-2">
+                Daftar dokumen yang harus diupload mahasiswa untuk mendaftar
+                sidang
+              </p>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={syaratBaru.key}
+                    onChange={(e) =>
+                      setSyaratBaru({ ...syaratBaru, key: e.target.value })
+                    }
+                    placeholder="Key (contoh: NASKAH_TA)"
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+                  />
+                  <input
+                    type="text"
+                    value={syaratBaru.label}
+                    onChange={(e) =>
+                      setSyaratBaru({ ...syaratBaru, label: e.target.value })
+                    }
+                    placeholder="Label (contoh: Naskah TA)"
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+                  />
+                </div>
+                <button
+                  onClick={handleTambahSyarat}
+                  className="flex items-center space-x-2 px-4 py-2 bg-red-900 text-white rounded-lg hover:bg-red-800 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Tambah Syarat</span>
+                </button>
+              </div>
+              <div className="space-y-2 mt-2">
+                {(pengaturan.syarat_pendaftaran_sidang || []).length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    Belum ada syarat. Tambahkan syarat baru di atas.
+                  </p>
+                ) : (
+                  (pengaturan.syarat_pendaftaran_sidang || []).map(
+                    (syarat, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div>
+                          <span className="text-sm font-medium text-gray-900">
+                            {syarat.label}
+                          </span>
+                          <span className="text-xs text-gray-500 ml-2">
+                            ({syarat.key})
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleHapusSyarat(index)}
+                          className="text-red-600 hover:text-red-800 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ),
+                  )
+                )}
+              </div>
+            </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Durasi Sidang (Menit)

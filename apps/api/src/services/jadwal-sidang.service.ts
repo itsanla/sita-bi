@@ -9,7 +9,7 @@ import type {
   Dosen,
   Prisma,
 } from '@repo/db';
-import { PeranDosen, StatusPersetujuan, StatusVerifikasi } from '@repo/db';
+import { PeranDosen } from '@repo/db';
 import type { CreateJadwalDto } from '../dto/jadwal-sidang.dto';
 import { prisma } from '../config/prisma';
 import { HttpError } from '../middlewares/error.middleware';
@@ -41,10 +41,13 @@ export class JadwalSidangService {
     totalPages: number;
   }> {
     const whereClause = {
-      status_pembimbing_1: StatusPersetujuan.disetujui,
-      status_pembimbing_2: StatusPersetujuan.disetujui,
-      status_verifikasi: StatusVerifikasi.disetujui,
+      is_submitted: true,
       sidang: null,
+      tugasAkhir: {
+        mahasiswa: {
+          siap_sidang: true,
+        },
+      },
     };
 
     const total = await this.prisma.pendaftaranSidang.count({

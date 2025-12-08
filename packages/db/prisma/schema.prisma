@@ -205,14 +205,15 @@ model Permission {
 
 /// Profil khusus untuk Mahasiswa, berisi data akademik.
 model Mahasiswa {
-  id         Int      @id @default(autoincrement())
-  user_id    Int      @unique
-  nim        String   @unique
-  prodi      Prodi
-  kelas      String
-  ipk        Float?
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  user_id     Int      @unique
+  nim         String   @unique
+  prodi       Prodi
+  kelas       String
+  ipk         Float?
+  siap_sidang Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
   // Relasi
   user                   User                     @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -454,17 +455,12 @@ model PengajuanPelepasanBimbingan {
 //================================================================================
 
 model PendaftaranSidang {
-  id                   Int               @id @default(autoincrement())
-  tugas_akhir_id       Int
-  periode_ta_id        Int?
-  status_verifikasi    StatusVerifikasi  @default(menunggu_verifikasi)
-  status_pembimbing_1  StatusPersetujuan @default(menunggu)
-  status_pembimbing_2  StatusPersetujuan @default(menunggu)
-  catatan_admin        String?
-  catatan_pembimbing_1 String?
-  catatan_pembimbing_2 String?
-  created_at           DateTime          @default(now())
-  updated_at           DateTime          @updatedAt
+  id             Int      @id @default(autoincrement())
+  tugas_akhir_id Int
+  periode_ta_id  Int?
+  is_submitted   Boolean  @default(false)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
 
   tugasAkhir TugasAkhir              @relation(fields: [tugas_akhir_id], references: [id])
   periodeTa  PeriodeTa?              @relation(fields: [periode_ta_id], references: [id])
@@ -479,7 +475,7 @@ model PendaftaranSidangFile {
   pendaftaran_sidang_id Int
   file_path             String
   original_name         String
-  tipe_dokumen          TipeDokumenSidang
+  tipe_dokumen          String
   created_at            DateTime          @default(now())
 
   pendaftaran PendaftaranSidang @relation(fields: [pendaftaran_sidang_id], references: [id], onDelete: Cascade)

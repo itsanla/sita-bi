@@ -12,6 +12,8 @@ export class PengaturanService {
     for (const setting of settings) {
       if (setting.key === 'ruangan_sidang') {
         result[setting.key] = setting.value.split(',').map((r) => r.trim());
+      } else if (setting.key === 'syarat_pendaftaran_sidang') {
+        result[setting.key] = JSON.parse(setting.value);
       } else if (
         setting.key === 'max_similaritas_persen' ||
         setting.key === 'min_bimbingan_valid' ||
@@ -135,6 +137,23 @@ export class PengaturanService {
             value: data.jeda_sidang_menit.toString(),
             deskripsi:
               'Waktu jeda antar sidang dalam menit',
+          },
+        }),
+      );
+    }
+
+    if (data.syarat_pendaftaran_sidang !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'syarat_pendaftaran_sidang' },
+          update: {
+            value: JSON.stringify(data.syarat_pendaftaran_sidang),
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'syarat_pendaftaran_sidang',
+            value: JSON.stringify(data.syarat_pendaftaran_sidang),
+            deskripsi: 'Daftar dokumen yang harus diupload untuk pendaftaran sidang',
           },
         }),
       );

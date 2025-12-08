@@ -30,6 +30,15 @@ export const updatePengaturanSchema = z.object({
     .int('Jeda harus bilangan bulat')
     .min(0, 'Minimal 0 menit')
     .optional(),
+  syarat_pendaftaran_sidang: z
+    .array(
+      z.object({
+        key: z.string().min(1),
+        label: z.string().min(1),
+      })
+    )
+    .min(1, 'Minimal harus ada 1 syarat')
+    .optional(),
 });
 
 export type UpdatePengaturanDto = z.infer<typeof updatePengaturanSchema>;

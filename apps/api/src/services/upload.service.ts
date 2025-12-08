@@ -33,6 +33,11 @@ const UPLOAD_CONFIGS: Record<string, UploadConfig> = {
     maxSize: 10 * 1024 * 1024,
     destination: 'uploads/sidang',
   },
+  'sidang-files': {
+    allowedTypes: ['application/pdf'],
+    maxSize: 10 * 1024 * 1024,
+    destination: 'uploads/sidang-files',
+  },
 };
 
 export class UploadService {

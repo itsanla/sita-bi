@@ -167,11 +167,8 @@ export class DashboardService {
     let sidangStatus = 'Belum Daftar';
     let sidangTanggal = null;
 
-    if (pendaftaranSidang) {
-      sidangStatus =
-        pendaftaranSidang.status_verifikasi === 'disetujui'
-          ? 'Terdaftar'
-          : 'Menunggu Verifikasi';
+    if (pendaftaranSidang?.is_submitted) {
+      sidangStatus = 'Terdaftar';
 
       const jadwalSidang = pendaftaranSidang.sidang?.jadwalSidang?.[0];
       if (jadwalSidang?.tanggal) {
