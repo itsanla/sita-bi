@@ -3,7 +3,7 @@
 import { AlertCircle, UserX, FileX, CheckCircle } from 'lucide-react';
 
 interface TANotAllowedProps {
-  type: 'no-ta' | 'no-pembimbing' | 'judul-not-validated' | 'custom';
+  type: 'no-ta' | 'no-pembimbing' | 'judul-not-validated' | 'not-registered-sidang' | 'registered-sidang-info' | 'custom';
   customMessage?: string;
   customTitle?: string;
 }
@@ -59,6 +59,36 @@ export default function TANotAllowed({
             'Judul Tugas Akhir Anda belum divalidasi oleh pembimbing. Validasi judul diperlukan untuk melanjutkan ke tahap berikutnya.',
           actionText:
             'Tunggu pembimbing memvalidasi judul Anda atau hubungi pembimbing untuk konfirmasi.',
+        };
+      case 'not-registered-sidang':
+        return {
+          icon: (
+            <AlertCircle
+              className="w-7 h-7 sm:w-8 sm:h-8 text-white"
+              strokeWidth={2.5}
+            />
+          ),
+          bgColorClass: 'bg-gradient-to-br from-red-400 to-red-600',
+          title: 'Belum Mendaftar Sidang',
+          message:
+            'Anda belum mendaftar sidang.',
+          actionText:
+            'Silakan daftar sidang terlebih dahulu melalui menu Pendaftaran Sidang.',
+        };
+      case 'registered-sidang-info':
+        return {
+          icon: (
+            <CheckCircle
+              className="w-7 h-7 sm:w-8 sm:h-8 text-white"
+              strokeWidth={2.5}
+            />
+          ),
+          bgColorClass: 'bg-gradient-to-br from-green-400 to-green-600',
+          title: 'Sudah Mendaftar Sidang',
+          message:
+            'Anda sudah mendaftar sidang, jadwal sidang anda akan muncul dihalaman ini saat telah di atur jurusan.',
+          actionText:
+            'Tunggu pengumuman jadwal sidang dari jurusan.',
         };
       case 'custom':
         return {

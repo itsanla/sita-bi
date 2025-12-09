@@ -21,6 +21,11 @@ interface Pengaturan {
   jeda_sidang_menit: number;
   mode_validasi_judul?: string;
   mode_validasi_draf?: string;
+  validasi_pendaftaran_sidang_aktif?: boolean;
+  validasi_pembimbing_1?: boolean;
+  validasi_pembimbing_2?: boolean;
+  validasi_prodi?: boolean;
+  validasi_jurusan?: boolean;
   syarat_pendaftaran_sidang?: SyaratSidang[];
 }
 
@@ -38,6 +43,11 @@ export default function AturanTugasAkhirPage() {
     jeda_sidang_menit: 15,
     mode_validasi_judul: 'KEDUA_PEMBIMBING',
     mode_validasi_draf: 'KEDUA_PEMBIMBING',
+    validasi_pendaftaran_sidang_aktif: false,
+    validasi_pembimbing_1: false,
+    validasi_pembimbing_2: false,
+    validasi_prodi: false,
+    validasi_jurusan: false,
     syarat_pendaftaran_sidang: [],
   });
   const [originalPengaturan, setOriginalPengaturan] = useState<Pengaturan>({
@@ -49,6 +59,11 @@ export default function AturanTugasAkhirPage() {
     jeda_sidang_menit: 15,
     mode_validasi_judul: 'KEDUA_PEMBIMBING',
     mode_validasi_draf: 'KEDUA_PEMBIMBING',
+    validasi_pendaftaran_sidang_aktif: false,
+    validasi_pembimbing_1: false,
+    validasi_pembimbing_2: false,
+    validasi_prodi: false,
+    validasi_jurusan: false,
     syarat_pendaftaran_sidang: [],
   });
   const [ruanganBaru, setRuanganBaru] = useState('');
@@ -120,6 +135,12 @@ export default function AturanTugasAkhirPage() {
           aturanValidasi?.mode_validasi_judul ?? 'KEDUA_PEMBIMBING',
         mode_validasi_draf:
           aturanValidasi?.mode_validasi_draf ?? 'KEDUA_PEMBIMBING',
+        validasi_pendaftaran_sidang_aktif:
+          data.validasi_pendaftaran_sidang_aktif ?? false,
+        validasi_pembimbing_1: data.validasi_pembimbing_1 ?? false,
+        validasi_pembimbing_2: data.validasi_pembimbing_2 ?? false,
+        validasi_prodi: data.validasi_prodi ?? false,
+        validasi_jurusan: data.validasi_jurusan ?? false,
         syarat_pendaftaran_sidang: data.syarat_pendaftaran_sidang ?? [
           { key: 'NASKAH_TA', label: 'Naskah TA' },
           { key: 'TOEIC', label: 'Sertifikat TOEIC' },
@@ -457,6 +478,141 @@ export default function AturanTugasAkhirPage() {
             Aturan Sidang
           </h2>
           <div className="space-y-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Mode Validasi Pendaftaran Sidang
+                </label>
+                <select
+                  value={
+                    pengaturan.validasi_pendaftaran_sidang_aktif
+                      ? 'dengan_validasi'
+                      : 'tanpa_validasi'
+                  }
+                  onChange={(e) => {
+                    const aktif = e.target.value === 'dengan_validasi';
+                    if (!aktif) {
+                      setPengaturan({
+                        ...pengaturan,
+                        validasi_pendaftaran_sidang_aktif: false,
+                        validasi_pembimbing_1: false,
+                        validasi_pembimbing_2: false,
+                        validasi_prodi: false,
+                        validasi_jurusan: false,
+                      });
+                    } else {
+                      setPengaturan({
+                        ...pengaturan,
+                        validasi_pendaftaran_sidang_aktif: true,
+                      });
+                    }
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+                >
+                  <option value="tanpa_validasi">
+                    Tanpa Validasi (Otomatis)
+                  </option>
+                  <option value="dengan_validasi">Dengan Validasi</option>
+                </select>
+                <p className="text-sm text-gray-500">
+                  Pilih apakah pendaftaran sidang memerlukan validasi atau
+                  otomatis disetujui
+                </p>
+              </div>
+
+              {pengaturan.validasi_pendaftaran_sidang_aktif && (
+                <div className="space-y-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    Pilih Validator (bisa kombinasi):
+                  </p>
+
+                  <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50">
+                    <span className="text-sm font-medium text-gray-700">
+                      Validasi Pembimbing 1
+                    </span>
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={pengaturan.validasi_pembimbing_1 || false}
+                        onChange={(e) =>
+                          setPengaturan({
+                            ...pengaturan,
+                            validasi_pembimbing_1: e.target.checked,
+                          })
+                        }
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-900"></div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50">
+                    <span className="text-sm font-medium text-gray-700">
+                      Validasi Pembimbing 2
+                    </span>
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={pengaturan.validasi_pembimbing_2 || false}
+                        onChange={(e) =>
+                          setPengaturan({
+                            ...pengaturan,
+                            validasi_pembimbing_2: e.target.checked,
+                          })
+                        }
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-900"></div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50">
+                    <span className="text-sm font-medium text-gray-700">
+                      Validasi Prodi
+                    </span>
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={pengaturan.validasi_prodi || false}
+                        onChange={(e) =>
+                          setPengaturan({
+                            ...pengaturan,
+                            validasi_prodi: e.target.checked,
+                          })
+                        }
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-900"></div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50">
+                    <span className="text-sm font-medium text-gray-700">
+                      Validasi Jurusan
+                    </span>
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={pengaturan.validasi_jurusan || false}
+                        onChange={(e) =>
+                          setPengaturan({
+                            ...pengaturan,
+                            validasi_jurusan: e.target.checked,
+                          })
+                        }
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-900"></div>
+                    </div>
+                  </label>
+
+                  <p className="text-xs text-amber-600 mt-2">
+                    ⚠️ Minimal pilih 1 validator jika menggunakan mode "Dengan
+                    Validasi"
+                  </p>
+                </div>
+              )}
+            </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Syarat Pendaftaran Sidang

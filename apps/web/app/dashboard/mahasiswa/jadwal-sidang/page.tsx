@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { TableSkeleton } from '@/app/components/Suspense/StreamingSkeleton';
 import PeriodeGuard from '@/components/shared/PeriodeGuard';
+import TAGuard from '@/components/shared/TAGuard';
 
 // Server Component - tidak perlu 'use client'
 export const dynamic = 'force-dynamic'; // Always fresh data
@@ -30,9 +31,11 @@ async function JadwalSidangContent() {
 export default function JadwalSidangMahasiswaPage() {
   return (
     <PeriodeGuard>
-      <Suspense fallback={<TableSkeleton rows={8} />}>
-        <JadwalSidangContent />
-      </Suspense>
+      <TAGuard requireSiapSidang showSiapSidangInfo>
+        <Suspense fallback={<TableSkeleton rows={8} />}>
+          <JadwalSidangContent />
+        </Suspense>
+      </TAGuard>
     </PeriodeGuard>
   );
 }

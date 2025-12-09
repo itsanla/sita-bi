@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import request from '@/lib/api';
 import PeriodeGuard from '@/components/shared/PeriodeGuard';
 import TAGuard from '@/components/shared/TAGuard';
-import { Upload, FileText, Eye } from 'lucide-react';
+import { Upload, FileText, Eye, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PendaftaranSidangFile {
@@ -128,6 +128,17 @@ export default function PendaftaranSidangPage() {
     window.open(`/uploads/sidang-files/${fileName}`, '_blank');
   };
 
+  const handleDeleteFile = async (fileId: number, label: string) => {
+    if (!confirm(`Hapus ${label}?`)) return;
+    try {
+      await request.delete(`/pendaftaran-sidang/file/${fileId}`);
+      toast.success(`${label} berhasil dihapus`);
+      fetchData();
+    } catch {
+      toast.error('Gagal menghapus file');
+    }
+  };
+
   const getFileByType = (tipe: string) => {
     return pendaftaran?.files?.find((f) => f.tipe_dokumen === tipe);
   };
@@ -144,6 +155,20 @@ export default function PendaftaranSidangPage() {
       fetchData();
     } catch {
       toast.error('Gagal mendaftar sidang');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!confirm('Apakah Anda yakin ingin membatalkan pendaftaran sidang?')) return;
+    try {
+      setIsSubmitting(true);
+      await request.post('/pendaftaran-sidang/cancel', {});
+      toast.success('Pendaftaran sidang dibatalkan');
+      fetchData();
+    } catch {
+      toast.error('Gagal membatalkan pendaftaran');
     } finally {
       setIsSubmitting(false);
     }
@@ -176,11 +201,30 @@ export default function PendaftaranSidangPage() {
 
           {isTerdaftar && (
             <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-              <p className="text-green-800 font-semibold text-lg">
-                ✓ Anda sudah terdaftar sidang
-              </p>
-              <p className="text-green-700 text-sm mt-1">
-                Jadwal sidang akan diumumkan kemudian
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-green-800 font-semibold text-lg">
+                    ✓ Anda sudah terdaftar sidang
+                  </p>
+                  <p className="text-green-700 text-sm mt-1">
+                    Jadwal sidang akan diumumkan kemudian
+                  </p>
+                </div>
+                <button
+                  onClick={handleCancel}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400 text-sm"
+                >
+                  Batalkan Pendaftaran
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isTerdaftar && (
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <p className="text-blue-800 text-sm">
+                ℹ️ Jika ingin mengubah file PDF yang sudah diupload, batalkan pendaftaran sidang terlebih dahulu.
               </p>
             </div>
           )}
@@ -214,24 +258,49 @@ export default function PendaftaranSidangPage() {
                             </p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleViewFile(existingFile.file_path)}
-                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                          <Eye size={16} />
-                          Lihat PDF
-                        </button>
+                        <div className="flex gap-2">
+                          {!isTerdaftar && (
+                            <>
+                              <label className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
+                                <Edit size={16} />
+                                Ubah
+                                <input
+                                  type="file"
+                                  accept=".pdf"
+                                  className="hidden"
+                                  onChange={(e) =>
+                                    handleFileSelect(e, syarat.key, syarat.label)
+                                  }
+                                />
+                              </label>
+                              <button
+                                onClick={() => handleDeleteFile(existingFile.id, syarat.label)}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                              >
+                                <Trash2 size={16} />
+                                Hapus
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => handleViewFile(existingFile.file_path)}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                          >
+                            <Eye size={16} />
+                            Lihat
+                          </button>
+                        </div>
                       </div>
                     ) : isUploading ? (
                       <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                         <p className="text-sm text-yellow-700">Mengupload...</p>
                       </div>
+                    ) : isTerdaftar ? (
+                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-sm text-gray-600">Batalkan pendaftaran untuk upload file</p>
+                      </div>
                     ) : (
-                      <label
-                        className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-red-800 text-white rounded hover:bg-red-900 ${
-                          isTerdaftar ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
-                      >
+                      <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-red-800 text-white rounded hover:bg-red-900">
                         <Upload size={16} />
                         Upload {syarat.label}
                         <input
@@ -241,7 +310,6 @@ export default function PendaftaranSidangPage() {
                           onChange={(e) =>
                             handleFileSelect(e, syarat.key, syarat.label)
                           }
-                          disabled={isTerdaftar}
                         />
                       </label>
                     )}

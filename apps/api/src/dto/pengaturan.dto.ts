@@ -35,10 +35,15 @@ export const updatePengaturanSchema = z.object({
       z.object({
         key: z.string().min(1),
         label: z.string().min(1),
-      })
+      }),
     )
     .min(1, 'Minimal harus ada 1 syarat')
     .optional(),
+  validasi_pendaftaran_sidang_aktif: z.boolean().optional(),
+  validasi_pembimbing_1: z.boolean().optional(),
+  validasi_pembimbing_2: z.boolean().optional(),
+  validasi_prodi: z.boolean().optional(),
+  validasi_jurusan: z.boolean().optional(),
 });
 
 export type UpdatePengaturanDto = z.infer<typeof updatePengaturanSchema>;

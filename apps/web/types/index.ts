@@ -23,6 +23,7 @@ export interface User {
     nim: string;
     prodi: string;
     kelas: string;
+    siap_sidang?: boolean;
   } | null;
   dosen?: {
     id: number;

@@ -22,6 +22,14 @@ export class PengaturanService {
         setting.key === 'jeda_sidang_menit'
       ) {
         result[setting.key] = parseInt(setting.value, 10);
+      } else if (
+        setting.key === 'validasi_pendaftaran_sidang_aktif' ||
+        setting.key === 'validasi_pembimbing_1' ||
+        setting.key === 'validasi_pembimbing_2' ||
+        setting.key === 'validasi_prodi' ||
+        setting.key === 'validasi_jurusan'
+      ) {
+        result[setting.key] = setting.value === 'true';
       } else {
         result[setting.key] = setting.value;
       }
@@ -135,8 +143,7 @@ export class PengaturanService {
           create: {
             key: 'jeda_sidang_menit',
             value: data.jeda_sidang_menit.toString(),
-            deskripsi:
-              'Waktu jeda antar sidang dalam menit',
+            deskripsi: 'Waktu jeda antar sidang dalam menit',
           },
         }),
       );
@@ -153,7 +160,93 @@ export class PengaturanService {
           create: {
             key: 'syarat_pendaftaran_sidang',
             value: JSON.stringify(data.syarat_pendaftaran_sidang),
-            deskripsi: 'Daftar dokumen yang harus diupload untuk pendaftaran sidang',
+            deskripsi:
+              'Daftar dokumen yang harus diupload untuk pendaftaran sidang',
+          },
+        }),
+      );
+    }
+
+    if (data.validasi_pendaftaran_sidang_aktif !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'validasi_pendaftaran_sidang_aktif' },
+          update: {
+            value: data.validasi_pendaftaran_sidang_aktif.toString(),
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'validasi_pendaftaran_sidang_aktif',
+            value: data.validasi_pendaftaran_sidang_aktif.toString(),
+            deskripsi: 'Apakah validasi pendaftaran sidang aktif',
+          },
+        }),
+      );
+    }
+
+    if (data.validasi_pembimbing_1 !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'validasi_pembimbing_1' },
+          update: {
+            value: data.validasi_pembimbing_1.toString(),
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'validasi_pembimbing_1',
+            value: data.validasi_pembimbing_1.toString(),
+            deskripsi: 'Validasi oleh pembimbing 1',
+          },
+        }),
+      );
+    }
+
+    if (data.validasi_pembimbing_2 !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'validasi_pembimbing_2' },
+          update: {
+            value: data.validasi_pembimbing_2.toString(),
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'validasi_pembimbing_2',
+            value: data.validasi_pembimbing_2.toString(),
+            deskripsi: 'Validasi oleh pembimbing 2',
+          },
+        }),
+      );
+    }
+
+    if (data.validasi_prodi !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'validasi_prodi' },
+          update: {
+            value: data.validasi_prodi.toString(),
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'validasi_prodi',
+            value: data.validasi_prodi.toString(),
+            deskripsi: 'Validasi oleh prodi',
+          },
+        }),
+      );
+    }
+
+    if (data.validasi_jurusan !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'validasi_jurusan' },
+          update: {
+            value: data.validasi_jurusan.toString(),
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'validasi_jurusan',
+            value: data.validasi_jurusan.toString(),
+            deskripsi: 'Validasi oleh jurusan',
           },
         }),
       );

@@ -27,14 +27,23 @@ export class TugasAkhirService {
     method?: string,
   ): Promise<void> {
     try {
+      const userExists = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!userExists) {
+        console.error(`Cannot create log: User ${userId} not found`);
+        return;
+      }
+
       await this.prisma.log.create({
         data: {
           user_id: userId,
           action,
           url: url ?? null,
           method: method ?? null,
-          ip_address: '127.0.0.1', // Placeholder
-          user_agent: 'System', // Placeholder
+          ip_address: '127.0.0.1',
+          user_agent: 'System',
         },
       });
     } catch (error) {

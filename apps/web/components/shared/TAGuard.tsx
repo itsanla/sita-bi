@@ -12,6 +12,8 @@ interface TAGuardProps {
   requirePembimbing?: boolean;
   requireJudulValidated?: boolean;
   requireEligibleForSidang?: boolean;
+  requireSiapSidang?: boolean;
+  showSiapSidangInfo?: boolean;
   customMessage?: string;
   customTitle?: string;
 }
@@ -22,6 +24,8 @@ export default function TAGuard({
   requirePembimbing = false,
   requireJudulValidated = false,
   requireEligibleForSidang = false,
+  requireSiapSidang = false,
+  showSiapSidangInfo = false,
   customMessage,
   customTitle,
 }: TAGuardProps) {
@@ -56,6 +60,14 @@ export default function TAGuard({
         customMessage="Anda belum memenuhi syarat untuk mendaftar sidang. Pastikan Anda telah menyelesaikan minimal 9 bimbingan dan draf TA Anda telah divalidasi sesuai aturan."
       />
     );
+  }
+
+  if (requireSiapSidang && !user?.mahasiswa?.siap_sidang) {
+    return <TANotAllowed type="not-registered-sidang" />;
+  }
+
+  if (showSiapSidangInfo && user?.mahasiswa?.siap_sidang) {
+    return <TANotAllowed type="registered-sidang-info" />;
   }
 
   if (customMessage) {

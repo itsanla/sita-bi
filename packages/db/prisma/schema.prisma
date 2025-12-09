@@ -455,12 +455,19 @@ model PengajuanPelepasanBimbingan {
 //================================================================================
 
 model PendaftaranSidang {
-  id             Int      @id @default(autoincrement())
-  tugas_akhir_id Int
-  periode_ta_id  Int?
-  is_submitted   Boolean  @default(false)
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  id                      Int       @id @default(autoincrement())
+  tugas_akhir_id          Int
+  periode_ta_id           Int?
+  is_submitted            Boolean   @default(false)
+  status_validasi         String?   @default("pending")
+  divalidasi_pembimbing_1 Boolean   @default(false)
+  divalidasi_pembimbing_2 Boolean   @default(false)
+  divalidasi_prodi        Boolean   @default(false)
+  divalidasi_jurusan      Boolean   @default(false)
+  validated_at            DateTime?
+  validated_by            Int?
+  created_at              DateTime  @default(now())
+  updated_at              DateTime  @updatedAt
 
   tugasAkhir TugasAkhir              @relation(fields: [tugas_akhir_id], references: [id])
   periodeTa  PeriodeTa?              @relation(fields: [periode_ta_id], references: [id])
