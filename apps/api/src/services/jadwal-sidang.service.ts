@@ -137,6 +137,7 @@ export class JadwalSidangService {
       where: { status: 'AKTIF' },
     });
 
+    // Cek dosen yang bentrok jadwal di tanggal yang sama
     const dosenBusy = await prisma.jadwalSidang.findMany({
       where: {
         tanggal: slot.tanggal,
@@ -169,12 +170,18 @@ export class JadwalSidangService {
       });
     });
 
+    // Cek kuota dosen (hanya yang sudah dijadwalkan)
     const dosenKuota = await prisma.peranDosenTa.groupBy({
       by: ['dosen_id'],
       where: {
         peran: { in: ['penguji1', 'penguji2', 'penguji3'] },
         tugasAkhir: {
           periode_ta_id: periodeAktif?.id,
+          sidang: {
+            some: {
+              status_hasil: 'dijadwalkan', // Hanya hitung yang sudah dijadwalkan
+            },
+          },
         },
       },
       _count: { dosen_id: true },
@@ -213,13 +220,14 @@ export class JadwalSidangService {
     console.log('[BACKEND] 🚀 Starting generateJadwalOtomatis...');
     
     const pengaturan = await this.getPengaturan();
-    const ruanganIds = await this.getRuanganIds(pengaturan.ruangan_sidang);
-
-    if (ruanganIds.length === 0) {
-      console.error('[BACKEND] ❌ No ruangan available');
-      throw new Error('Tidak ada ruangan tersedia. Pastikan ruangan sudah diatur di menu Aturan Umum.');
+    
+    // 🧠 SMART DIAGNOSTIC SYSTEM
+    const diagnostic = await this.runSmartDiagnostic(pengaturan);
+    if (!diagnostic.success) {
+      throw new Error(JSON.stringify(diagnostic.error));
     }
-
+    
+    const ruanganIds = await this.getRuanganIds(pengaturan.ruangan_sidang);
     console.log('[BACKEND] 🏢 Ruangan IDs:', ruanganIds);
 
     // Cari mahasiswa siap sidang
@@ -305,7 +313,7 @@ export class JadwalSidangService {
       console.log('[BACKEND] 👨‍🏫 Pembimbing IDs:', pembimbingIds);
       let scheduled = false;
 
-      for (let dayOffset = 0; dayOffset < 30 && !scheduled; dayOffset++) {
+      for (let dayOffset = 0; !scheduled && dayOffset < 365; dayOffset++) {
         const tanggal = new Date(startDate);
         tanggal.setDate(tanggal.getDate() + dayOffset);
         console.log('[BACKEND] 📅 Trying date:', tanggal.toISOString().split('T')[0], 'offset:', dayOffset);
@@ -347,6 +355,9 @@ export class JadwalSidangService {
                   waktu_selesai: slot.waktu_selesai,
                   ruangan_id: slot.ruangan_id,
                 },
+                include: {
+                  ruangan: true,
+                },
               });
 
               await tx.peranDosenTa.createMany({
@@ -380,7 +391,7 @@ export class JadwalSidangService {
                 tx.dosen.findUnique({ where: { id: pengujiIds[2] }, include: { user: true } }),
               ]);
 
-              return { ketua, anggota1, anggota2 };
+              return { ketua, anggota1, anggota2, jadwal };
             });
 
             const pembimbing1 = sidang.tugasAkhir.peranDosenTa.find(
@@ -404,6 +415,7 @@ export class JadwalSidangService {
               anggota2: pengujiData.anggota2?.user.name || '-',
               hari_tanggal: `${hari}, ${tanggalStr}`,
               pukul: `${slot.waktu_mulai} - ${slot.waktu_selesai}`,
+              ruangan: pengujiData.jadwal.ruangan.nama_ruangan,
             });
 
             console.log('[BACKEND] ✅ Mahasiswa scheduled:', sidang.tugasAkhir.mahasiswa.nim);
@@ -416,16 +428,175 @@ export class JadwalSidangService {
       }
 
       if (!scheduled) {
-        console.error('[BACKEND] ❌ Failed to schedule:', sidang.tugasAkhir.mahasiswa.nim);
+        console.error('[BACKEND] ❌ Failed to schedule after 365 days:', sidang.tugasAkhir.mahasiswa.nim);
         throw new Error(
-          `Gagal menjadwalkan mahasiswa ${sidang.tugasAkhir.mahasiswa.user.name} (${sidang.tugasAkhir.mahasiswa.nim}). Tidak ada slot atau dosen tersedia dalam 30 hari ke depan. Periksa: (1) Jumlah ruangan, (2) Ketersediaan dosen, (3) Kuota dosen, (4) Hari libur.`
+          JSON.stringify({
+            status: 'TIDAK_ADA_SLOT',
+            masalah: `Tidak dapat menjadwalkan mahasiswa ${sidang.tugasAkhir.mahasiswa.user.name} (${sidang.tugasAkhir.mahasiswa.nim}) dalam 365 hari ke depan.`,
+            saran: 'Tambah ruangan sidang atau perbesar jam operasional sidang di menu Aturan Umum.',
+            detail: {
+              mahasiswa: sidang.tugasAkhir.mahasiswa.user.name,
+              nim: sidang.tugasAkhir.mahasiswa.nim,
+              ruanganCount: ruanganIds.length,
+              jamOperasional: `${pengaturan.jam_mulai_sidang} - ${pengaturan.jam_selesai_sidang}`,
+            },
+          })
         );
       }
     }
 
     console.log('[BACKEND] 🎉 All mahasiswa scheduled successfully!');
     console.log('[BACKEND] 📊 Total results:', results.length);
+    console.log('[BACKEND] 🎉 All mahasiswa scheduled successfully!');
+    console.log('[BACKEND] 📊 Total results:', results.length);
     return results;
+  }
+
+  private async runSmartDiagnostic(pengaturan: PengaturanJadwal) {
+    console.log('[BACKEND] 🧠 Running Smart Diagnostic...');
+    
+    const mahasiswaCount = await prisma.mahasiswa.count({ where: { siap_sidang: true } });
+    const totalDosen = await prisma.dosen.count();
+    const ruanganCount = pengaturan.ruangan_sidang.length;
+    const hariLiburCount = pengaturan.hari_libur_tetap.length;
+    
+    // Hitung jam operasional
+    const [jamMulai, menitMulai] = pengaturan.jam_mulai_sidang.split(':').map(Number);
+    const [jamSelesai, menitSelesai] = pengaturan.jam_selesai_sidang.split(':').map(Number);
+    const totalMenit = (jamSelesai * 60 + menitSelesai) - (jamMulai * 60 + menitMulai);
+    const durasiPerSidang = pengaturan.durasi_sidang_menit + pengaturan.jeda_sidang_menit;
+    const slotPerHari = Math.floor(totalMenit / durasiPerSidang) * ruanganCount;
+    const hariKerja = 7 - hariLiburCount;
+    
+    const problems: string[] = [];
+    const suggestions: string[] = [];
+    
+    // Cek 1: Tidak ada mahasiswa
+    if (mahasiswaCount === 0) {
+      return {
+        success: false,
+        error: {
+          status: 'TIDAK_ADA_MAHASISWA',
+          masalah: 'Tidak ada mahasiswa yang siap sidang.',
+          saran: 'Pastikan ada mahasiswa dengan status "siap_sidang = true" di sistem.',
+          detail: { mahasiswaCount: 0 },
+        },
+      };
+    }
+    
+    // Cek 2: Tidak ada ruangan
+    if (ruanganCount === 0) {
+      return {
+        success: false,
+        error: {
+          status: 'TIDAK_ADA_RUANGAN',
+          masalah: 'Tidak ada ruangan sidang yang tersedia.',
+          saran: 'Tambahkan minimal 1 ruangan di menu Aturan Umum → Ruangan Sidang.',
+          detail: { ruanganCount: 0 },
+        },
+      };
+    }
+    
+    // Cek 3: Tidak ada dosen
+    if (totalDosen === 0) {
+      return {
+        success: false,
+        error: {
+          status: 'TIDAK_ADA_DOSEN',
+          masalah: 'Tidak ada dosen di sistem.',
+          saran: 'Tambahkan dosen melalui menu manajemen pengguna.',
+          detail: { totalDosen: 0 },
+        },
+      };
+    }
+    
+    // Cek 4: Semua hari libur
+    if (hariKerja === 0) {
+      return {
+        success: false,
+        error: {
+          status: 'SEMUA_HARI_LIBUR',
+          masalah: 'Semua hari (Senin-Minggu) diatur sebagai hari libur.',
+          saran: 'Uncheck beberapa hari di menu Aturan Umum → Hari Libur Tetap agar ada hari kerja untuk sidang.',
+          detail: { hariLiburCount, hariKerja: 0 },
+        },
+      };
+    }
+    
+    // Cek 5: Jam operasional terlalu pendek
+    if (totalMenit < pengaturan.durasi_sidang_menit) {
+      return {
+        success: false,
+        error: {
+          status: 'JAM_OPERASIONAL_PENDEK',
+          masalah: `Jam operasional (${totalMenit} menit) lebih pendek dari durasi sidang (${pengaturan.durasi_sidang_menit} menit).`,
+          saran: `Perlebar jam operasional di menu Aturan Umum atau kurangi durasi sidang.`,
+          detail: { totalMenit, durasiSidang: pengaturan.durasi_sidang_menit },
+        },
+      };
+    }
+    
+    // Cek 6: Kapasitas dosen tidak cukup
+    const totalSlotDosen = totalDosen * pengaturan.max_mahasiswa_uji_per_dosen;
+    const slotDibutuhkan = mahasiswaCount * 3;
+    
+    if (totalSlotDosen < slotDibutuhkan) {
+      const kuotaMinimal = Math.ceil(slotDibutuhkan / totalDosen);
+      return {
+        success: false,
+        error: {
+          status: 'KAPASITAS_DOSEN_TIDAK_CUKUP',
+          masalah: `${totalDosen} dosen × ${pengaturan.max_mahasiswa_uji_per_dosen} kuota = ${totalSlotDosen} slot, tapi butuh ${mahasiswaCount} mahasiswa × 3 penguji = ${slotDibutuhkan} slot!`,
+          saran: `Naikkan "Maksimal Mahasiswa Uji per Dosen" menjadi minimal ${kuotaMinimal} di menu Aturan Umum.`,
+          detail: {
+            totalDosen,
+            kuotaSekarang: pengaturan.max_mahasiswa_uji_per_dosen,
+            kuotaMinimal,
+            totalSlotDosen,
+            mahasiswaCount,
+            slotDibutuhkan,
+          },
+        },
+      };
+    }
+    
+    // Cek 7: Kapasitas waktu (estimasi hari yang dibutuhkan)
+    const hariDibutuhkan = Math.ceil(mahasiswaCount / slotPerHari);
+    
+    if (slotPerHari === 0) {
+      return {
+        success: false,
+        error: {
+          status: 'TIDAK_ADA_SLOT_WAKTU',
+          masalah: 'Tidak ada slot waktu yang tersedia per hari.',
+          saran: 'Perlebar jam operasional atau tambah ruangan di menu Aturan Umum.',
+          detail: { slotPerHari: 0, totalMenit, durasiPerSidang },
+        },
+      };
+    }
+    
+    // Warning jika butuh waktu lama
+    if (hariDibutuhkan > 60) {
+      problems.push(`Estimasi butuh ${hariDibutuhkan} hari kerja untuk ${mahasiswaCount} mahasiswa.`);
+      suggestions.push(`Tambah ruangan (sekarang: ${ruanganCount}) atau perlebar jam operasional untuk mempercepat.`);
+    }
+    
+    console.log('[BACKEND] ✅ Diagnostic passed!');
+    console.log('[BACKEND] 📊 Estimasi:', hariDibutuhkan, 'hari kerja untuk', mahasiswaCount, 'mahasiswa');
+    console.log('[BACKEND] 📊 Slot per hari:', slotPerHari, '(', Math.floor(totalMenit / durasiPerSidang), 'slot/ruangan ×', ruanganCount, 'ruangan)');
+    
+    return {
+      success: true,
+      info: {
+        mahasiswaCount,
+        totalDosen,
+        ruanganCount,
+        hariKerja,
+        slotPerHari,
+        estimasiHari: hariDibutuhkan,
+        warnings: problems.length > 0 ? { problems, suggestions } : null,
+      },
+    };
   }
 
   async getMahasiswaSiapSidang() {
@@ -501,6 +672,31 @@ export class JadwalSidangService {
         },
       },
       orderBy: [{ tanggal: 'asc' }, { waktu_mulai: 'asc' }],
+    });
+  }
+
+  async deleteAllJadwal() {
+    console.log('[BACKEND] 🗑️ Deleting all jadwal sidang...');
+    
+    return await prisma.$transaction(async (tx) => {
+      // Hapus semua penguji
+      await tx.peranDosenTa.deleteMany({
+        where: {
+          peran: { in: [PeranDosen.penguji1, PeranDosen.penguji2, PeranDosen.penguji3] },
+        },
+      });
+
+      // Reset status sidang ke menunggu_penjadwalan
+      await tx.sidang.updateMany({
+        where: { status_hasil: HasilSidang.dijadwalkan },
+        data: { status_hasil: HasilSidang.menunggu_penjadwalan },
+      });
+
+      // Hapus semua jadwal
+      const result = await tx.jadwalSidang.deleteMany({});
+      
+      console.log('[BACKEND] ✅ Deleted', result.count, 'jadwal');
+      return result;
     });
   }
 }

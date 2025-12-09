@@ -65,4 +65,22 @@ router.get(
   })
 );
 
+router.delete(
+  '/jadwal',
+  asyncHandler(authMiddleware),
+  authorizeRoles([Role.admin, Role.jurusan]),
+  auditLog('DELETE_JADWAL_SIDANG', 'jadwal_sidang'),
+  asyncHandler(async (req, res) => {
+    console.log('[BACKEND API] 🗑️ DELETE /jadwal called');
+    const result = await service.deleteAllJadwal();
+    console.log('[BACKEND API] ✅ Deleted:', result);
+
+    res.json({
+      status: 'sukses',
+      message: `Berhasil menghapus ${result.count} jadwal sidang`,
+      data: result,
+    });
+  })
+);
+
 export default router;

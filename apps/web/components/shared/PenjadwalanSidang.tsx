@@ -20,21 +20,25 @@ export default function PenjadwalanSidang() {
   const [mahasiswaSiap, setMahasiswaSiap] = useState<any[]>([]);
   const [generating, setGenerating] = useState(false);
   const [jadwalResult, setJadwalResult] = useState<any[]>([]);
+  const [jadwalTersimpan, setJadwalTersimpan] = useState<any[]>([]);
+  const [loadingJadwal, setLoadingJadwal] = useState(false);
 
   const fetchJadwal = async () => {
     console.log('[FRONTEND] 🔄 Fetching jadwal dan mahasiswa siap...');
     try {
-      const [jadwalRes, mahasiswaRes] = await Promise.all([
+      const [jadwalRes, mahasiswaRes, jadwalTersimpanRes] = await Promise.all([
         api.get('/penjadwalan-sidang/pengaturan'),
         api.get('/jadwal-sidang-smart/mahasiswa-siap'),
+        api.get('/jadwal-sidang-smart/jadwal'),
       ]);
       
       console.log('[FRONTEND] ✅ Jadwal response:', jadwalRes.data);
       console.log('[FRONTEND] ✅ Mahasiswa siap response:', mahasiswaRes.data);
-      console.log('[FRONTEND] 📊 Jumlah mahasiswa siap:', mahasiswaRes.data.data?.length || 0);
+      console.log('[FRONTEND] ✅ Jadwal tersimpan response:', jadwalTersimpanRes.data);
       
       setJadwal(jadwalRes.data.data);
       setMahasiswaSiap(mahasiswaRes.data.data || []);
+      setJadwalTersimpan(jadwalTersimpanRes.data.data || []);
       
       if (jadwalRes.data.data?.tanggal_generate) {
         const date = new Date(jadwalRes.data.data.tanggal_generate);
@@ -129,6 +133,8 @@ export default function PenjadwalanSidang() {
     }
   };
 
+  const [errorInfo, setErrorInfo] = useState<any>(null);
+
   const handleGenerateSekarang = async () => {
     console.log('[FRONTEND] 🚀 Generate sekarang clicked');
     console.log('[FRONTEND] 👥 Jumlah mahasiswa siap:', mahasiswaSiap.length);
@@ -139,6 +145,7 @@ export default function PenjadwalanSidang() {
     }
 
     setGenerating(true);
+    setErrorInfo(null);
     console.log('[FRONTEND] 📤 Sending generate request...');
     
     try {
@@ -146,18 +153,45 @@ export default function PenjadwalanSidang() {
       console.log('[FRONTEND] ✅ Generate response:', response.data);
       console.log('[FRONTEND] 📊 Jadwal result:', response.data.data);
       
-      setJadwalResult(response.data.data);
       toast.success(`Berhasil menjadwalkan ${response.data.data.length} mahasiswa`);
       await fetchJadwal();
+      
+      // Scroll ke jadwal tersimpan
+      setTimeout(() => {
+        document.getElementById('jadwal-tersimpan')?.scrollIntoView({ behavior: 'smooth' });
+      }, 500);
     } catch (error: any) {
       console.error('[FRONTEND] ❌ Error generate:', error);
       console.error('[FRONTEND] ❌ Error response:', error.response?.data);
       console.error('[FRONTEND] ❌ Error message:', error.response?.data?.message);
-      toast.error(error.response?.data?.message || 'Gagal generate jadwal');
-      setJadwalResult([]);
+      
+      // Parse smart error message
+      try {
+        const errorData = JSON.parse(error.response?.data?.message);
+        setErrorInfo(errorData);
+      } catch {
+        toast.error(error.response?.data?.message || 'Gagal generate jadwal');
+      }
     } finally {
       setGenerating(false);
       console.log('[FRONTEND] 🏁 Generate finished');
+    }
+  };
+
+  const handleHapusJadwal = async () => {
+    if (!confirm('⚠️ PERINGATAN: Yakin ingin menghapus SEMUA jadwal sidang yang sudah dibuat? Tindakan ini tidak dapat dibatalkan!')) {
+      return;
+    }
+
+    setLoadingJadwal(true);
+    try {
+      const response = await api.delete('/jadwal-sidang-smart/jadwal');
+      toast.success(response.data.message);
+      await fetchJadwal();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Gagal menghapus jadwal');
+    } finally {
+      setLoadingJadwal(false);
     }
   };
 
@@ -307,17 +341,17 @@ export default function PenjadwalanSidang() {
 
         {mahasiswaSiap.length > 0 && (
           <div className="max-h-60 overflow-y-auto space-y-2">
-            {mahasiswaSiap.map((mhs: any) => (
+            {mahasiswaSiap.map((mhs: any, idx: number) => (
               <div
-                key={mhs.id}
+                key={`mhs-${mhs.tugasAkhir?.mahasiswa?.nim || idx}`}
                 className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
               >
                 <div>
                   <p className="text-sm font-medium text-gray-900">
-                    {mhs.tugasAkhir.mahasiswa.user.name}
+                    {mhs.tugasAkhir?.mahasiswa?.user?.name || 'N/A'}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {mhs.tugasAkhir.mahasiswa.nim} • {mhs.tugasAkhir.judul}
+                    {mhs.tugasAkhir?.mahasiswa?.nim || 'N/A'} • {mhs.tugasAkhir?.judul || 'N/A'}
                   </p>
                 </div>
                 <span className="text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded">
@@ -329,11 +363,68 @@ export default function PenjadwalanSidang() {
         )}
       </div>
 
-      {jadwalResult.length > 0 && (
-        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Jadwal Sidang ({jadwalResult.length} Mahasiswa)
-          </h2>
+      {errorInfo && (
+        <div className="bg-white rounded-xl shadow-md border-2 border-red-500 p-6">
+          <div className="flex items-start space-x-4">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <XCircle className="w-6 h-6 text-red-600" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-red-900 mb-2">
+                {errorInfo.status === 'KAPASITAS_TIDAK_CUKUP' ? '🚨 Kapasitas Dosen Tidak Cukup' : '⚠️ Gagal Menjadwalkan'}
+              </h3>
+              
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <p className="text-sm font-semibold text-red-900 mb-2">📊 Masalah:</p>
+                <p className="text-sm text-red-800">{errorInfo.masalah}</p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p className="text-sm font-semibold text-blue-900 mb-2">💡 Saran:</p>
+                <p className="text-sm text-blue-800">{errorInfo.saran}</p>
+              </div>
+
+              {errorInfo.detail && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <p className="text-xs font-semibold text-gray-700 mb-2">Detail:</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                    {Object.entries(errorInfo.detail).map(([key, value]: [string, any]) => (
+                      <div key={key}>
+                        <span className="font-medium">{key}:</span> {value}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => setErrorInfo(null)}
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {jadwalTersimpan.length > 0 && (
+        <div id="jadwal-tersimpan" className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Jadwal Sidang Tersimpan ({jadwalTersimpan.length} Mahasiswa)
+            </h2>
+            <button
+              onClick={handleHapusJadwal}
+              disabled={loadingJadwal}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 text-sm flex items-center space-x-2"
+            >
+              <XCircle className="w-4 h-4" />
+              <span>{loadingJadwal ? 'Menghapus...' : 'Hapus Semua Jadwal'}</span>
+            </button>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -346,21 +437,41 @@ export default function PenjadwalanSidang() {
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Anggota II</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Hari/Tanggal</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Pukul</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Ruangan</th>
                 </tr>
               </thead>
               <tbody>
-                {jadwalResult.map((jadwal: any, idx: number) => (
-                  <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-900">{jadwal.mahasiswa}</td>
-                    <td className="px-4 py-3 text-gray-600">{jadwal.nim}</td>
-                    <td className="px-4 py-3 text-gray-900">{jadwal.ketua}</td>
-                    <td className="px-4 py-3 text-gray-900">{jadwal.sekretaris}</td>
-                    <td className="px-4 py-3 text-gray-900">{jadwal.anggota1}</td>
-                    <td className="px-4 py-3 text-gray-900">{jadwal.anggota2}</td>
-                    <td className="px-4 py-3 text-gray-600">{jadwal.hari_tanggal}</td>
-                    <td className="px-4 py-3 text-gray-600">{jadwal.pukul}</td>
-                  </tr>
-                ))}
+                {jadwalTersimpan.map((item: any) => {
+                  const mhs = item.sidang.tugasAkhir.mahasiswa;
+                  const peran = item.sidang.tugasAkhir.peranDosenTa;
+                  const ketua = peran.find((p: any) => p.peran === 'penguji1');
+                  const sekretaris = peran.find((p: any) => p.peran === 'pembimbing1');
+                  const anggota1 = peran.find((p: any) => p.peran === 'penguji2');
+                  const anggota2 = peran.find((p: any) => p.peran === 'penguji3');
+                  
+                  const tanggal = new Date(item.tanggal);
+                  const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                  const hari = hariMap[tanggal.getDay()];
+                  const tanggalStr = tanggal.toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                  });
+                  
+                  return (
+                    <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="px-4 py-3 text-gray-900">{mhs.user.name}</td>
+                      <td className="px-4 py-3 text-gray-600">{mhs.nim}</td>
+                      <td className="px-4 py-3 text-gray-900">{ketua?.dosen.user.name || '-'}</td>
+                      <td className="px-4 py-3 text-gray-900">{sekretaris?.dosen.user.name || '-'}</td>
+                      <td className="px-4 py-3 text-gray-900">{anggota1?.dosen.user.name || '-'}</td>
+                      <td className="px-4 py-3 text-gray-900">{anggota2?.dosen.user.name || '-'}</td>
+                      <td className="px-4 py-3 text-gray-600">{hari}, {tanggalStr}</td>
+                      <td className="px-4 py-3 text-gray-600">{item.waktu_mulai} - {item.waktu_selesai}</td>
+                      <td className="px-4 py-3 text-gray-600">{item.ruangan.nama_ruangan}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
