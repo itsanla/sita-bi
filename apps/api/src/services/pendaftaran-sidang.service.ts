@@ -28,7 +28,7 @@ export class PendaftaranSidangService {
       orderBy: { created_at: 'desc' },
     });
 
-    if (existingRegistration) {
+    if (existingRegistration && existingRegistration.status_validasi !== 'rejected') {
       return existingRegistration;
     }
 
@@ -97,6 +97,140 @@ export class PendaftaranSidangService {
     });
   }
 
+  async getRegistrationHistory(
+    mahasiswaId: number,
+  ): Promise<any[]> {
+    const history = await this.prisma.pendaftaranSidangHistory.findMany({
+      where: { mahasiswa_id: mahasiswaId },
+      orderBy: { created_at: 'desc' },
+    });
+
+    const historyWithUsers = await Promise.all(
+      history.map(async (item) => {
+        let validatorInfo = null;
+        if (item.validated_by) {
+          const validator = await this.prisma.user.findUnique({
+            where: { id: item.validated_by },
+            include: { roles: true },
+          });
+          if (validator) {
+            validatorInfo = {
+              name: validator.name,
+              roles: validator.roles.map((r) => r.name),
+            };
+          }
+        }
+        return { ...item, validator: validatorInfo };
+      }),
+    );
+
+    return historyWithUsers;
+  }
+
+  async getAllRegistrationHistory(userId: number): Promise<any[]> {
+    console.log('[BACKEND] getAllRegistrationHistory called for userId:', userId);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { roles: true, dosen: true },
+    });
+
+    if (!user) {
+      throw new Error('User tidak ditemukan');
+    }
+
+    const userRoles = user.roles.map((r) => r.name);
+    console.log('[BACKEND] User roles:', userRoles);
+    console.log('[BACKEND] User dosen:', user.dosen);
+    const isJurusan = userRoles.includes('jurusan');
+    const isProdiD3 = userRoles.includes('prodi_d3');
+    const isProdiD4 = userRoles.includes('prodi_d4');
+
+    let mahasiswaIds: number[] = [];
+
+    if (isJurusan) {
+      const allMahasiswa = await this.prisma.mahasiswa.findMany({
+        select: { id: true },
+      });
+      mahasiswaIds = allMahasiswa.map((m) => m.id);
+    } else if (isProdiD3) {
+      const mahasiswa = await this.prisma.mahasiswa.findMany({
+        where: { prodi: 'D3' },
+        select: { id: true },
+      });
+      mahasiswaIds = mahasiswa.map((m) => m.id);
+    } else if (isProdiD4) {
+      const mahasiswa = await this.prisma.mahasiswa.findMany({
+        where: { prodi: 'D4' },
+        select: { id: true },
+      });
+      mahasiswaIds = mahasiswa.map((m) => m.id);
+    } else if (user.dosen) {
+      const tugasAkhir = await this.prisma.tugasAkhir.findMany({
+        where: {
+          peranDosenTa: {
+            some: {
+              dosen_id: user.dosen.id,
+              peran: { in: ['pembimbing1', 'pembimbing2'] },
+            },
+          },
+        },
+        select: { mahasiswa_id: true },
+      });
+      mahasiswaIds = tugasAkhir.map((ta) => ta.mahasiswa_id);
+    }
+
+    console.log('[BACKEND] Mahasiswa IDs:', mahasiswaIds);
+    
+    if (mahasiswaIds.length === 0) {
+      console.log('[BACKEND] No mahasiswa IDs found, returning empty array');
+      return [];
+    }
+
+    const history = await this.prisma.pendaftaranSidangHistory.findMany({
+      where: { mahasiswa_id: { in: mahasiswaIds } },
+      orderBy: { created_at: 'desc' },
+    });
+    
+    console.log('[BACKEND] History count:', history.length);
+
+    const historyWithDetails = await Promise.all(
+      history.map(async (item) => {
+        const mahasiswa = await this.prisma.mahasiswa.findUnique({
+          where: { id: item.mahasiswa_id },
+          include: { user: { select: { name: true } } },
+        });
+
+        let validatorInfo = null;
+        if (item.validated_by) {
+          const validator = await this.prisma.user.findUnique({
+            where: { id: item.validated_by },
+            include: { roles: true },
+          });
+          if (validator) {
+            validatorInfo = {
+              name: validator.name,
+              roles: validator.roles.map((r) => r.name),
+            };
+          }
+        }
+
+        return {
+          ...item,
+          mahasiswa: mahasiswa
+            ? {
+                name: mahasiswa.user.name,
+                nim: mahasiswa.nim,
+                prodi: mahasiswa.prodi,
+              }
+            : null,
+          validator: validatorInfo,
+        };
+      }),
+    );
+
+    return historyWithDetails;
+  }
+
   async submitRegistration(mahasiswaId: number): Promise<PendaftaranSidang> {
     const tugasAkhir = await this.prisma.tugasAkhir.findFirst({
       where: { mahasiswa_id: mahasiswaId },
@@ -127,6 +261,8 @@ export class PendaftaranSidangService {
       'validasi_pendaftaran_sidang_aktif',
     );
 
+    const newStatus = validasiAktif === 'false' ? 'approved' : 'pending';
+
     if (validasiAktif === 'false') {
       await this.prisma.mahasiswa.update({
         where: { id: mahasiswaId },
@@ -139,13 +275,25 @@ export class PendaftaranSidangService {
       });
     }
 
-    return this.prisma.pendaftaranSidang.update({
+    const updated = await this.prisma.pendaftaranSidang.update({
       where: { id: pendaftaran.id },
       data: {
         is_submitted: true,
-        status_validasi: validasiAktif === 'false' ? 'approved' : 'pending',
+        status_validasi: newStatus,
       },
     });
+
+    await this.prisma.pendaftaranSidangHistory.create({
+      data: {
+        pendaftaran_sidang_id: pendaftaran.id,
+        mahasiswa_id: mahasiswaId,
+        action: 'submit',
+        status_before: pendaftaran.status_validasi,
+        status_after: newStatus,
+      },
+    });
+
+    return updated;
   }
 
   async cancelRegistration(mahasiswaId: number): Promise<PendaftaranSidang> {
@@ -238,10 +386,24 @@ export class PendaftaranSidangService {
     }
 
     const pengaturan = await this.pengaturanService.getPengaturan();
-    const validasiPembimbing1 = pengaturan.validasi_pembimbing_1 === 'true';
-    const validasiPembimbing2 = pengaturan.validasi_pembimbing_2 === 'true';
-    const validasiProdi = pengaturan.validasi_prodi === 'true';
-    const validasiJurusan = pengaturan.validasi_jurusan === 'true';
+    const validasiPembimbing1 = pengaturan.validasi_pembimbing_1 === true;
+    const validasiPembimbing2 = pengaturan.validasi_pembimbing_2 === true;
+    const validasiProdi = pengaturan.validasi_prodi === true;
+    const validasiJurusan = pengaturan.validasi_jurusan === true;
+
+    console.log('=== VALIDATION DEBUG ===');
+    console.log('Pengaturan:', {
+      validasi_pembimbing_1: pengaturan.validasi_pembimbing_1,
+      validasi_pembimbing_2: pengaturan.validasi_pembimbing_2,
+      validasi_prodi: pengaturan.validasi_prodi,
+      validasi_jurusan: pengaturan.validasi_jurusan,
+    });
+    console.log('Parsed:', {
+      validasiPembimbing1,
+      validasiPembimbing2,
+      validasiProdi,
+      validasiJurusan,
+    });
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -253,6 +415,9 @@ export class PendaftaranSidangService {
     }
 
     const userRoles = user.roles.map((r) => r.name);
+    console.log('User roles:', userRoles);
+    console.log('User dosen:', user.dosen);
+
     const isPembimbing1 = pendaftaran.tugasAkhir.peranDosenTa.some(
       (p) => p.peran === 'pembimbing1' && p.dosen.user_id === userId,
     );
@@ -265,6 +430,16 @@ export class PendaftaranSidangService {
     const isProdi = isProdiD3 || isProdiD4;
     const isJurusan = userRoles.includes('jurusan');
 
+    console.log('User checks:', {
+      isPembimbing1,
+      isPembimbing2,
+      mahasiswaProdi,
+      isProdiD3,
+      isProdiD4,
+      isProdi,
+      isJurusan,
+    });
+
     let updateData: any = {
       validated_at: new Date(),
       validated_by: userId,
@@ -272,6 +447,8 @@ export class PendaftaranSidangService {
 
     if (action === 'reject') {
       updateData.status_validasi = 'rejected';
+      updateData.rejected_by = userId;
+      updateData.rejection_reason = catatan || 'Tidak ada alasan';
       await this.prisma.mahasiswa.update({
         where: { id: pendaftaran.tugasAkhir.mahasiswa_id },
         data: { siap_sidang: false },
@@ -279,17 +456,22 @@ export class PendaftaranSidangService {
     } else {
       let hasAccess = false;
 
+      console.log('Checking access...');
+
       if (validasiPembimbing1 && isPembimbing1) {
+        console.log('✓ Access granted: Pembimbing 1');
         updateData.divalidasi_pembimbing_1 = true;
         hasAccess = true;
       }
 
       if (validasiPembimbing2 && isPembimbing2) {
+        console.log('✓ Access granted: Pembimbing 2');
         updateData.divalidasi_pembimbing_2 = true;
         hasAccess = true;
       }
 
       if (validasiProdi && isProdi) {
+        console.log('✓ Access granted: Prodi');
         if (!isProdiD3 && !isProdiD4) {
           throw new Error(
             'Anda hanya bisa memvalidasi mahasiswa dari prodi yang sama',
@@ -300,11 +482,15 @@ export class PendaftaranSidangService {
       }
 
       if (validasiJurusan && isJurusan) {
+        console.log('✓ Access granted: Jurusan');
         updateData.divalidasi_jurusan = true;
         hasAccess = true;
       }
 
+      console.log('Final hasAccess:', hasAccess);
+
       if (!hasAccess) {
+        console.log('✗ Access DENIED');
         throw new Error('Anda tidak memiliki akses untuk validasi ini');
       }
 
@@ -331,10 +517,32 @@ export class PendaftaranSidangService {
       }
     }
 
-    return this.prisma.pendaftaranSidang.update({
+    const updated = await this.prisma.pendaftaranSidang.update({
       where: { id: pendaftaranId },
       data: updateData,
     });
+
+    let validatorRole = null;
+    if (isJurusan) validatorRole = 'jurusan';
+    else if (isProdiD3) validatorRole = 'prodi_d3';
+    else if (isProdiD4) validatorRole = 'prodi_d4';
+    else if (isPembimbing1) validatorRole = 'pembimbing1';
+    else if (isPembimbing2) validatorRole = 'pembimbing2';
+
+    await this.prisma.pendaftaranSidangHistory.create({
+      data: {
+        pendaftaran_sidang_id: pendaftaranId,
+        mahasiswa_id: pendaftaran.tugasAkhir.mahasiswa_id,
+        action: action === 'approve' ? 'approve' : 'reject',
+        status_before: pendaftaran.status_validasi,
+        status_after: updateData.status_validasi || pendaftaran.status_validasi,
+        validated_by: userId,
+        validator_role: validatorRole,
+        rejection_reason: action === 'reject' ? catatan : null,
+      },
+    });
+
+    return updated;
   }
 
   async getListForValidation(userId: number): Promise<PendaftaranSidang[]> {
@@ -354,20 +562,18 @@ export class PendaftaranSidangService {
 
     let whereClause: any = {
       is_submitted: true,
+      status_validasi: { in: ['pending', 'approved'] },
     };
 
-    if (isJurusan) {
-      // Jurusan bisa lihat semua
-    } else if (isProdiD3) {
+    if (!isJurusan && isProdiD3) {
       whereClause.tugasAkhir = {
         mahasiswa: { prodi: 'D3' },
       };
-    } else if (isProdiD4) {
+    } else if (!isJurusan && isProdiD4) {
       whereClause.tugasAkhir = {
         mahasiswa: { prodi: 'D4' },
       };
-    } else if (user.dosen) {
-      // Pembimbing hanya lihat mahasiswa bimbingannya
+    } else if (!isJurusan && !isProdiD3 && !isProdiD4 && user.dosen) {
       whereClause.tugasAkhir = {
         peranDosenTa: {
           some: {
@@ -378,7 +584,7 @@ export class PendaftaranSidangService {
       };
     }
 
-    return this.prisma.pendaftaranSidang.findMany({
+    const list = await this.prisma.pendaftaranSidang.findMany({
       where: whereClause,
       include: {
         tugasAkhir: {
@@ -393,6 +599,99 @@ export class PendaftaranSidangService {
         files: true,
       },
       orderBy: { created_at: 'desc' },
+    });
+
+    const listWithValidator = await Promise.all(
+      list.map(async (item) => {
+        let validatorInfo = null;
+        if (item.validated_by) {
+          const validator = await this.prisma.user.findUnique({
+            where: { id: item.validated_by },
+            include: { roles: true },
+          });
+          if (validator) {
+            validatorInfo = {
+              name: validator.name,
+              roles: validator.roles.map((r) => r.name),
+            };
+          }
+        }
+        return { ...item, validator: validatorInfo };
+      }),
+    );
+
+    return listWithValidator as any;
+  }
+
+  async cancelValidation(
+    pendaftaranId: number,
+    userId: number,
+  ): Promise<PendaftaranSidang> {
+    const pendaftaran = await this.prisma.pendaftaranSidang.findUnique({
+      where: { id: pendaftaranId },
+      include: {
+        tugasAkhir: {
+          include: {
+            mahasiswa: true,
+            peranDosenTa: { include: { dosen: true } },
+          },
+        },
+      },
+    });
+
+    if (!pendaftaran) {
+      throw new Error('Pendaftaran tidak ditemukan');
+    }
+
+    if (pendaftaran.status_validasi !== 'approved') {
+      throw new Error('Hanya bisa membatalkan pendaftaran yang sudah disetujui');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { roles: true, dosen: true },
+    });
+
+    if (!user) {
+      throw new Error('User tidak ditemukan');
+    }
+
+    const userRoles = user.roles.map((r) => r.name);
+    const isJurusan = userRoles.includes('jurusan');
+    const isProdiD3 = userRoles.includes('prodi_d3');
+    const isProdiD4 = userRoles.includes('prodi_d4');
+    
+    const isPembimbing1 = user.dosen && pendaftaran.tugasAkhir.peranDosenTa.some(
+      (p) => p.peran === 'pembimbing1' && p.dosen.user_id === userId,
+    );
+    const isPembimbing2 = user.dosen && pendaftaran.tugasAkhir.peranDosenTa.some(
+      (p) => p.peran === 'pembimbing2' && p.dosen.user_id === userId,
+    );
+
+    const updateData: any = {
+      status_validasi: 'pending',
+    };
+
+    if (isJurusan && pendaftaran.divalidasi_jurusan) {
+      updateData.divalidasi_jurusan = false;
+    } else if ((isProdiD3 || isProdiD4) && pendaftaran.divalidasi_prodi) {
+      updateData.divalidasi_prodi = false;
+    } else if (isPembimbing1 && pendaftaran.divalidasi_pembimbing_1) {
+      updateData.divalidasi_pembimbing_1 = false;
+    } else if (isPembimbing2 && pendaftaran.divalidasi_pembimbing_2) {
+      updateData.divalidasi_pembimbing_2 = false;
+    } else {
+      throw new Error('Anda belum memvalidasi pendaftaran ini');
+    }
+
+    await this.prisma.mahasiswa.update({
+      where: { id: pendaftaran.tugasAkhir.mahasiswa_id },
+      data: { siap_sidang: false },
+    });
+
+    return this.prisma.pendaftaranSidang.update({
+      where: { id: pendaftaranId },
+      data: updateData,
     });
   }
 }

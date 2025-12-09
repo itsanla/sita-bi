@@ -466,6 +466,8 @@ model PendaftaranSidang {
   divalidasi_jurusan      Boolean   @default(false)
   validated_at            DateTime?
   validated_by            Int?
+  rejected_by             Int?
+  rejection_reason        String?
   created_at              DateTime  @default(now())
   updated_at              DateTime  @updatedAt
 
@@ -488,6 +490,21 @@ model PendaftaranSidangFile {
   pendaftaran PendaftaranSidang @relation(fields: [pendaftaran_sidang_id], references: [id], onDelete: Cascade)
 
   @@map("pendaftaran_sidang_files")
+}
+
+model PendaftaranSidangHistory {
+  id                    Int      @id @default(autoincrement())
+  pendaftaran_sidang_id Int
+  mahasiswa_id          Int
+  action                String   // "submit", "approve", "reject", "cancel"
+  status_before         String?
+  status_after          String?
+  validated_by          Int?
+  validator_role        String?  // "jurusan", "prodi_d3", "prodi_d4", "pembimbing1", "pembimbing2"
+  rejection_reason      String?
+  created_at            DateTime @default(now())
+
+  @@map("pendaftaran_sidang_history")
 }
 
 model Sidang {

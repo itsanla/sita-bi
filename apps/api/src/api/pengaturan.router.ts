@@ -13,7 +13,7 @@ const pengaturanService = new PengaturanService();
 router.get(
   '/',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin, Role.jurusan, Role.mahasiswa]),
+  authorizeRoles([Role.admin, Role.jurusan, Role.mahasiswa, Role.dosen, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req, res) => {
     const pengaturan = await pengaturanService.getPengaturan();
     res.json({
@@ -26,7 +26,7 @@ router.get(
 router.patch(
   '/',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin, Role.jurusan]),
+  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   auditLog('UPDATE_PENGATURAN', 'pengaturan'),
   validate(updatePengaturanSchema),
   asyncHandler(async (req, res) => {

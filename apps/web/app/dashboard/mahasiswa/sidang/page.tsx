@@ -19,7 +19,30 @@ interface PendaftaranSidangFile {
 interface PendaftaranSidang {
   id: number;
   is_submitted: boolean;
+  status_validasi?: string;
+  rejected_by?: number;
+  rejection_reason?: string;
+  validated_at?: string;
+  created_at?: string;
   files: PendaftaranSidangFile[];
+  validator?: {
+    name: string;
+    roles: string[];
+  };
+}
+
+interface HistoryItem {
+  id: number;
+  action: string;
+  status_before?: string;
+  status_after?: string;
+  rejection_reason?: string;
+  validator_role?: string;
+  created_at: string;
+  validator?: {
+    name: string;
+    roles: string[];
+  };
 }
 
 interface SyaratSidang {
@@ -32,6 +55,7 @@ export default function PendaftaranSidangPage() {
   const [pendaftaran, setPendaftaran] = useState<PendaftaranSidang | null>(
     null,
   );
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [syaratSidang, setSyaratSidang] = useState<SyaratSidang[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, boolean>>(
@@ -46,6 +70,11 @@ export default function PendaftaranSidangPage() {
         '/pendaftaran-sidang/my-registration',
       );
       setPendaftaran(pendaftaranRes.data?.data || null);
+
+      const historyRes = await request<{ data: HistoryItem[] }>(
+        '/pendaftaran-sidang/history',
+      );
+      setHistory(historyRes.data?.data || []);
 
       try {
         const pengaturanRes = await request<{
@@ -184,7 +213,7 @@ export default function PendaftaranSidangPage() {
     );
   }
 
-  const isTerdaftar = pendaftaran?.is_submitted === true;
+  const isTerdaftar = pendaftaran?.is_submitted === true && pendaftaran?.status_validasi !== 'rejected';
 
   return (
     <PeriodeGuard>
@@ -199,7 +228,21 @@ export default function PendaftaranSidangPage() {
             </p>
           </div>
 
-          {isTerdaftar && (
+          {pendaftaran?.status_validasi === 'rejected' && (
+            <div className="bg-red-50 p-6 rounded-lg border border-red-200">
+              <p className="text-red-800 font-semibold text-lg mb-2">
+                ✗ Pendaftaran Ditolak
+              </p>
+              <p className="text-red-700 text-sm">
+                Alasan: {pendaftaran.rejection_reason || 'Tidak ada alasan'}
+              </p>
+              <p className="text-red-600 text-xs mt-2">
+                Upload ulang dokumen yang diperlukan dan daftar kembali.
+              </p>
+            </div>
+          )}
+
+          {isTerdaftar && pendaftaran?.status_validasi !== 'rejected' && (
             <div className="bg-green-50 p-6 rounded-lg border border-green-200">
               <div className="flex justify-between items-start">
                 <div>
@@ -332,6 +375,108 @@ export default function PendaftaranSidangPage() {
               </button>
             )}
           </div>
+
+          {history.length > 0 && (
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h2 className="text-xl font-bold mb-4">Riwayat Pendaftaran</h2>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        #
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Tanggal Daftar
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Status
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Validator
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Keterangan
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {history.map((item, idx) => {
+                      const roleLabel = item.validator_role === 'jurusan'
+                        ? 'Jurusan'
+                        : item.validator_role === 'prodi_d3'
+                        ? 'Prodi D3'
+                        : item.validator_role === 'prodi_d4'
+                        ? 'Prodi D4'
+                        : item.validator_role === 'pembimbing1'
+                        ? 'Pembimbing 1'
+                        : item.validator_role === 'pembimbing2'
+                        ? 'Pembimbing 2'
+                        : 'Pembimbing';
+
+                      const actionLabel =
+                        item.action === 'submit'
+                          ? 'Mendaftar'
+                          : item.action === 'approve'
+                          ? 'Disetujui'
+                          : item.action === 'reject'
+                          ? 'Ditolak'
+                          : item.action;
+
+                      return (
+                        <tr key={item.id}>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {history.length - idx}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-500">
+                            {new Date(item.created_at).toLocaleDateString('id-ID', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </td>
+                          <td className="px-4 py-3">
+                            {item.action === 'approve' ? (
+                              <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                {actionLabel}
+                              </span>
+                            ) : item.action === 'reject' ? (
+                              <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                {actionLabel}
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                {actionLabel}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {item.validator ? (
+                              <div>
+                                <p className="font-medium">{item.validator.name}</p>
+                                <p className="text-xs text-gray-500">({roleLabel})</p>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {item.action === 'reject'
+                              ? item.rejection_reason || 'Tidak ada alasan'
+                              : item.action === 'approve'
+                              ? 'Pendaftaran disetujui'
+                              : 'Pendaftaran disubmit'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </TAGuard>
     </PeriodeGuard>

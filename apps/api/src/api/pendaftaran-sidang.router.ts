@@ -68,6 +68,44 @@ router.get(
   }),
 );
 
+router.get(
+  '/history',
+  periodeGuard(),
+  authorizeRoles([Role.mahasiswa]),
+  asyncHandler(async (req, res): Promise<void> => {
+    const mahasiswaId = req.user?.mahasiswa?.id;
+    if (mahasiswaId === undefined) {
+      res.status(401).json({
+        status: 'gagal',
+        message: 'Akses ditolak: Pengguna tidak memiliki profil mahasiswa.',
+      });
+      return;
+    }
+    const history =
+      await pendaftaranSidangService.getRegistrationHistory(mahasiswaId);
+    res.status(200).json({ status: 'sukses', data: history });
+  }),
+);
+
+router.get(
+  '/all-history',
+  periodeGuard(),
+  authorizeRoles([Role.jurusan, Role.prodi_d3, Role.prodi_d4, Role.dosen]),
+  asyncHandler(async (req, res): Promise<void> => {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({
+        status: 'gagal',
+        message: 'Akses ditolak: User tidak ditemukan.',
+      });
+      return;
+    }
+    const history =
+      await pendaftaranSidangService.getAllRegistrationHistory(userId);
+    res.status(200).json({ status: 'sukses', data: history });
+  }),
+);
+
 router.post(
   '/submit',
   periodeGuard(),
@@ -164,7 +202,7 @@ router.post(
 router.get(
   '/list-for-validation',
   periodeGuard(),
-  authorizeRoles([Role.dosen, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
+  authorizeRoles([Role.jurusan, Role.prodi_d3, Role.prodi_d4, Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
@@ -177,6 +215,29 @@ router.get(
 
     const list = await pendaftaranSidangService.getListForValidation(userId);
     res.status(200).json({ status: 'sukses', data: list });
+  }),
+);
+
+router.post(
+  '/:id/cancel-validation',
+  periodeGuard(),
+  authorizeRoles([Role.dosen, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
+  asyncHandler(async (req, res): Promise<void> => {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({
+        status: 'gagal',
+        message: 'Akses ditolak: User tidak ditemukan.',
+      });
+      return;
+    }
+    const pendaftaranId = parseInt(req.params.id);
+
+    const result = await pendaftaranSidangService.cancelValidation(
+      pendaftaranId,
+      userId,
+    );
+    res.status(200).json({ status: 'sukses', data: result });
   }),
 );
 
