@@ -561,7 +561,7 @@ model JadwalSidang {
 
 model Ruangan {
   id           Int      @id @default(autoincrement())
-  nama_ruangan String
+  nama_ruangan String   @unique
   lokasi       String?
   kapasitas    Int?
   created_at   DateTime @default(now())

@@ -9,16 +9,24 @@ async function main() {
   // Clear existing data
   console.log('🗑️  Clearing existing data...');
   await prisma.jadwalSidang.deleteMany();
+  await prisma.nilaiSidang.deleteMany();
   await prisma.sidang.deleteMany();
+  await prisma.pendaftaranSidangFile.deleteMany();
+  await prisma.pendaftaranSidang.deleteMany();
   await prisma.pengumumanLampiran.deleteMany();
+  await prisma.pengumumanPembaca.deleteMany();
   await prisma.pengumuman.deleteMany();
   await prisma.historyTopikMahasiswa.deleteMany();
   await prisma.historyPenugasanDosen.deleteMany();
   await prisma.peranDosenTa.deleteMany();
+  await prisma.dokumenTa.deleteMany();
+  await prisma.catatanBimbingan.deleteMany();
+  await prisma.bimbinganLampiran.deleteMany();
+  await prisma.historyPerubahanJadwal.deleteMany();
+  await prisma.bimbinganTA.deleteMany();
   await prisma.tugasAkhir.deleteMany();
   await prisma.tawaranTopik.deleteMany();
   await prisma.pengajuanBimbingan.deleteMany();
-  await prisma.pendaftaranSidang.deleteMany();
   await prisma.periodeTa.deleteMany();
   await prisma.mahasiswa.deleteMany();
   await prisma.dosen.deleteMany();
@@ -163,30 +171,24 @@ async function main() {
     dosenUsers.push(user);
   }
 
-  // Create Mahasiswa (20 mahasiswa)
+  // Create Mahasiswa (80 mahasiswa)
   console.log('👨🎓 Creating mahasiswa...');
-  const mahasiswaData = [
-    { name: 'Andi Pratama', nim: '2101010001', prodi: Prodi.D4, kelas: '4A' },
-    { name: 'Budi Santoso', nim: '2101010002', prodi: Prodi.D4, kelas: '4A' },
-    { name: 'Citra Dewi', nim: '2101010003', prodi: Prodi.D4, kelas: '4B' },
-    { name: 'Dian Permata', nim: '2101010004', prodi: Prodi.D4, kelas: '4B' },
-    { name: 'Eko Prasetyo', nim: '2101010005', prodi: Prodi.D4, kelas: '4A' },
-    { name: 'Fajar Ramadhan', nim: '2101010006', prodi: Prodi.D4, kelas: '4B' },
-    { name: 'Gita Savitri', nim: '2101010007', prodi: Prodi.D4, kelas: '4A' },
-    { name: 'Hadi Wijaya', nim: '2101010008', prodi: Prodi.D4, kelas: '4B' },
-    { name: 'Indah Sari', nim: '2101010009', prodi: Prodi.D4, kelas: '4A' },
-    { name: 'Joko Susilo', nim: '2101010010', prodi: Prodi.D4, kelas: '4B' },
-    { name: 'Kartika Putri', nim: '2201010001', prodi: Prodi.D3, kelas: '3A' },
-    { name: 'Lukman Hakim', nim: '2201010002', prodi: Prodi.D3, kelas: '3A' },
-    { name: 'Maya Anggraini', nim: '2201010003', prodi: Prodi.D3, kelas: '3B' },
-    { name: 'Nanda Pratama', nim: '2201010004', prodi: Prodi.D3, kelas: '3B' },
-    { name: 'Oki Setiawan', nim: '2201010005', prodi: Prodi.D3, kelas: '3A' },
-    { name: 'Putri Ayu', nim: '2201010006', prodi: Prodi.D3, kelas: '3B' },
-    { name: 'Qori Maulana', nim: '2201010007', prodi: Prodi.D3, kelas: '3A' },
-    { name: 'Rina Safitri', nim: '2201010008', prodi: Prodi.D3, kelas: '3B' },
-    { name: 'Sandi Kurniawan', nim: '2201010009', prodi: Prodi.D3, kelas: '3A' },
-    { name: 'Tari Wulandari', nim: '2201010010', prodi: Prodi.D3, kelas: '3B' },
-  ];
+  const mahasiswaData: any[] = [];
+  const namaDepan = ['Andi', 'Budi', 'Citra', 'Dian', 'Eko', 'Fajar', 'Gita', 'Hadi', 'Indah', 'Joko'];
+  const namaBelakang = ['Pratama', 'Santoso', 'Dewi', 'Permata', 'Prasetyo', 'Ramadhan', 'Savitri', 'Wijaya', 'Sari', 'Susilo'];
+  
+  for (let i = 0; i < 80; i++) {
+    const prodi = i < 40 ? Prodi.D4 : Prodi.D3;
+    const kelas = i % 2 === 0 ? (prodi === Prodi.D4 ? '4A' : '3A') : (prodi === Prodi.D4 ? '4B' : '3B');
+    const nim = prodi === Prodi.D4 ? `21010${String(i + 1).padStart(5, '0')}` : `22010${String(i - 39).padStart(5, '0')}`;
+    
+    mahasiswaData.push({
+      name: `${namaDepan[i % 10]} ${namaBelakang[(i + 5) % 10]} ${i + 1}`,
+      nim,
+      prodi,
+      kelas,
+    });
+  }
 
   const mahasiswaUsers: any[] = [];
   for (let idx = 0; idx < mahasiswaData.length; idx++) {
@@ -195,7 +197,7 @@ async function main() {
       data: {
         name: data.name,
         email: `${data.nim}@student.pnp.ac.id`,
-        phone_number: `08567890${String(idx).padStart(4, '0')}`,
+        phone_number: `08567${String(idx).padStart(6, '0')}`,
         password: hashedPassword,
         email_verified_at: emailVerifiedAt,
         roles: { connect: { name: 'mahasiswa' } },
@@ -204,6 +206,7 @@ async function main() {
             nim: data.nim,
             prodi: data.prodi,
             kelas: data.kelas,
+            siap_sidang: true,
           },
         },
       },
@@ -246,29 +249,24 @@ async function main() {
     },
   });
 
-  // Create Tugas Akhir
+  // Create Tugas Akhir untuk 80 mahasiswa
   console.log('📝 Creating tugas akhir...');
   
-  // 5 TA DISETUJUI
-  for (let i = 0; i < 5; i++) {
-    await prisma.tugasAkhir.create({
-      data: {
-        mahasiswa_id: mahasiswaUsers[i].mahasiswa.id,
-        judul: `Sistem Informasi ${['Manajemen', 'Monitoring', 'Analisis', 'Prediksi', 'Optimasi'][i]} Berbasis Web`,
-        status: StatusTugasAkhir.DISETUJUI,
-        tanggal_pengajuan: new Date(),
-        disetujui_oleh: admin.id,
-        periode_ta_id: periodeAktif.id,
-      },
-    });
-  }
+  const judulTopik = [
+    'Sistem Informasi', 'Aplikasi Mobile', 'Platform Web', 'Dashboard Analitik', 'Sistem Monitoring',
+    'Aplikasi Desktop', 'Website E-Commerce', 'Portal Informasi', 'Sistem Prediksi', 'Aplikasi IoT'
+  ];
+  
+  const bidang = [
+    'Manajemen Data', 'Kesehatan', 'Pendidikan', 'Bisnis', 'Pemerintahan',
+    'Industri', 'Pariwisata', 'Pertanian', 'Transportasi', 'Keuangan'
+  ];
 
-  // 5 TA BIMBINGAN
-  for (let i = 5; i < 10; i++) {
+  for (let i = 0; i < 80; i++) {
     const ta = await prisma.tugasAkhir.create({
       data: {
         mahasiswa_id: mahasiswaUsers[i].mahasiswa.id,
-        judul: `Aplikasi ${['Mobile', 'Desktop', 'Cloud', 'IoT', 'AI'][i - 5]} untuk ${['Pendidikan', 'Kesehatan', 'Bisnis', 'Pemerintahan', 'Industri'][i - 5]}`,
+        judul: `${judulTopik[i % 10]} ${bidang[(i + 3) % 10]} Berbasis ${i % 2 === 0 ? 'Web' : 'Mobile'}`,
         status: StatusTugasAkhir.BIMBINGAN,
         tanggal_pengajuan: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
         disetujui_oleh: admin.id,
@@ -289,18 +287,6 @@ async function main() {
           peran: PeranDosen.pembimbing2,
         },
       ],
-    });
-  }
-
-  // 5 TA DRAFT
-  for (let i = 10; i < 15; i++) {
-    await prisma.tugasAkhir.create({
-      data: {
-        mahasiswa_id: mahasiswaUsers[i].mahasiswa.id,
-        judul: `Rancang Bangun ${['Website', 'Aplikasi', 'Platform', 'Dashboard', 'Portal'][i - 10]} ${['E-Commerce', 'E-Learning', 'E-Government', 'E-Health', 'E-Tourism'][i - 10]}`,
-        status: StatusTugasAkhir.DRAFT,
-        periode_ta_id: periodeAktif.id,
-      },
     });
   }
 
@@ -416,9 +402,9 @@ async function main() {
   console.log('- Jurusan Level: 1');
   console.log('- Prodi Level: 2 (D3 & D4)');
   console.log(`- Dosen: ${dosenUsers.length}`);
-  console.log(`- Mahasiswa: ${mahasiswaUsers.length}`);
+  console.log(`- Mahasiswa: ${mahasiswaUsers.length} (SEMUA SIAP SIDANG)`);
   console.log('- Periode TA: 3 (1 AKTIF, 1 SELESAI, 1 PERSIAPAN)');
-  console.log('- Tugas Akhir: 15 (5 DISETUJUI, 5 BIMBINGAN, 5 DRAFT)');
+  console.log(`- Tugas Akhir: ${mahasiswaUsers.length} (SEMUA DENGAN PEMBIMBING 1 & 2)`);
   console.log('- Tawaran Topik: 10');
   console.log('- Pengumuman: 8');
   console.log('- Ruangan: 2 (A & B)');
