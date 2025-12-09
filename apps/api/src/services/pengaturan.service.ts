@@ -14,10 +14,15 @@ export class PengaturanService {
         result[setting.key] = setting.value.split(',').map((r) => r.trim());
       } else if (setting.key === 'syarat_pendaftaran_sidang') {
         result[setting.key] = JSON.parse(setting.value);
+      } else if (setting.key === 'hari_libur_tetap') {
+        result[setting.key] = setting.value.split(',').map((h) => h.trim());
+      } else if (setting.key === 'tanggal_libur_khusus') {
+        result[setting.key] = JSON.parse(setting.value);
       } else if (
         setting.key === 'max_similaritas_persen' ||
         setting.key === 'min_bimbingan_valid' ||
         setting.key === 'max_pembimbing_aktif' ||
+        setting.key === 'max_mahasiswa_uji_per_dosen' ||
         setting.key === 'durasi_sidang_menit' ||
         setting.key === 'jeda_sidang_menit'
       ) {
@@ -115,6 +120,24 @@ export class PengaturanService {
       );
     }
 
+    if (data.max_mahasiswa_uji_per_dosen !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'max_mahasiswa_uji_per_dosen' },
+          update: {
+            value: data.max_mahasiswa_uji_per_dosen.toString(),
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'max_mahasiswa_uji_per_dosen',
+            value: data.max_mahasiswa_uji_per_dosen.toString(),
+            deskripsi:
+              'Jumlah maksimal mahasiswa yang dapat diuji oleh satu dosen dalam satu periode sidang',
+          },
+        }),
+      );
+    }
+
     if (data.durasi_sidang_menit !== undefined) {
       updates.push(
         prisma.pengaturanSistem.upsert({
@@ -144,6 +167,74 @@ export class PengaturanService {
             key: 'jeda_sidang_menit',
             value: data.jeda_sidang_menit.toString(),
             deskripsi: 'Waktu jeda antar sidang dalam menit',
+          },
+        }),
+      );
+    }
+
+    if (data.jam_mulai_sidang !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'jam_mulai_sidang' },
+          update: {
+            value: data.jam_mulai_sidang,
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'jam_mulai_sidang',
+            value: data.jam_mulai_sidang,
+            deskripsi: 'Jam mulai operasional sidang',
+          },
+        }),
+      );
+    }
+
+    if (data.jam_selesai_sidang !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'jam_selesai_sidang' },
+          update: {
+            value: data.jam_selesai_sidang,
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'jam_selesai_sidang',
+            value: data.jam_selesai_sidang,
+            deskripsi: 'Jam selesai operasional sidang',
+          },
+        }),
+      );
+    }
+
+    if (data.hari_libur_tetap !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'hari_libur_tetap' },
+          update: {
+            value: data.hari_libur_tetap.join(','),
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'hari_libur_tetap',
+            value: data.hari_libur_tetap.join(','),
+            deskripsi: 'Hari libur tetap (dipisahkan dengan koma)',
+          },
+        }),
+      );
+    }
+
+    if (data.tanggal_libur_khusus !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'tanggal_libur_khusus' },
+          update: {
+            value: JSON.stringify(data.tanggal_libur_khusus),
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'tanggal_libur_khusus',
+            value: JSON.stringify(data.tanggal_libur_khusus),
+            deskripsi: 'Tanggal libur khusus (JSON array)',
           },
         }),
       );

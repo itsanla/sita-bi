@@ -30,6 +30,7 @@ import rbacRouter from './api/rbac.router';
 import pengaturanRouter from './api/pengaturan.router';
 import periodeRouter from './api/periode.router';
 import aturanValidasiRouter from './api/aturan-validasi.router';
+import penjadwalanSidangRouter from './api/penjadwalan-sidang.router';
 import { errorHandler } from './middlewares/error.middleware';
 import { activityLogger } from './middlewares/logger.middleware';
 import { getUploadPath, getApiRoot } from './utils/upload.config';
@@ -149,6 +150,7 @@ app.use('/api/rbac', rbacRouter);
 app.use('/api/pengaturan', pengaturanRouter);
 app.use('/api/periode', periodeRouter);
 app.use('/api/aturan-validasi', aturanValidasiRouter);
+app.use('/api/penjadwalan-sidang', penjadwalanSidangRouter);
 
 // Error Handling Middleware
 app.use(errorHandler);

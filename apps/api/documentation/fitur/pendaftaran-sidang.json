@@ -1,0 +1,300 @@
+{
+  "fitur": "Pendaftaran Sidang Tugas Akhir",
+  "deskripsi": "Sistem pendaftaran sidang dengan validasi multi-level yang dinamis dan riwayat immutable",
+  "versi": "1.0.0",
+  "tanggal_update": "2025-12-09",
+
+  "logika_bisnis": {
+    "alur_pendaftaran": {
+      "1_mahasiswa_upload": {
+        "deskripsi": "Mahasiswa upload dokumen sesuai syarat yang ditentukan di pengaturan",
+        "validasi": [
+          "File harus PDF",
+          "Maksimal 10MB per file",
+          "Semua dokumen wajib diupload sebelum submit"
+        ],
+        "catatan": "Mahasiswa bisa upload ulang sebelum submit"
+      },
+      "2_mahasiswa_submit": {
+        "deskripsi": "Mahasiswa submit pendaftaran setelah semua dokumen lengkap",
+        "kondisi": {
+          "validasi_aktif_false": "Status langsung 'approved', siap_sidang = true",
+          "validasi_aktif_true": "Status 'pending', siap_sidang = false, menunggu validasi"
+        },
+        "history": "Tercatat sebagai action 'submit' di tabel history"
+      },
+      "3_validasi_dosen": {
+        "deskripsi": "Dosen/Jurusan/Prodi melakukan validasi sesuai role dan pengaturan",
+        "aturan_validasi": {
+          "multi_role": "Jika user memiliki multiple role (misal: Pembimbing 1 + Jurusan), semua flag validasi yang sesuai akan di-set sekaligus",
+          "flag_validasi": [
+            "divalidasi_pembimbing_1: true jika validasi_pembimbing_1 aktif DAN user adalah pembimbing 1",
+            "divalidasi_pembimbing_2: true jika validasi_pembimbing_2 aktif DAN user adalah pembimbing 2",
+            "divalidasi_prodi: true jika validasi_prodi aktif DAN user adalah prodi (D3/D4 sesuai mahasiswa)",
+            "divalidasi_jurusan: true jika validasi_jurusan aktif DAN user adalah jurusan"
+          ],
+          "status_approved": "Status berubah 'approved' HANYA jika SEMUA validasi yang diaktifkan sudah terpenuhi",
+          "validator_role": "Menyimpan semua role yang berlaku (misal: 'pembimbing1,jurusan')"
+        },
+        "action": {
+          "approve": "Set flag validasi sesuai role, cek apakah semua validasi terpenuhi",
+          "reject": "Status langsung 'rejected', siap_sidang = false, simpan alasan penolakan"
+        },
+        "history": "Tercatat sebagai action 'approve' atau 'reject' dengan validator_role"
+      },
+      "4_batalkan_validasi": {
+        "deskripsi": "Validator bisa membatalkan validasi yang sudah dilakukan",
+        "kondisi": "Hanya bisa batalkan jika status 'approved'",
+        "logika": "Reset SEMUA flag validasi yang dimiliki user (multi-role), status kembali 'pending'",
+        "catatan": "Jika user adalah Pembimbing 1 + Jurusan, kedua flag akan di-reset"
+      },
+      "5_daftar_ulang": {
+        "deskripsi": "Mahasiswa bisa daftar ulang jika ditolak",
+        "logika": "Sistem otomatis membuat pendaftaran baru jika yang terakhir status 'rejected'",
+        "riwayat": "Pendaftaran lama tetap tersimpan sebagai riwayat"
+      }
+    },
+
+    "pengaturan_dinamis": {
+      "deskripsi": "Validasi bersifat dinamis berdasarkan pengaturan sistem",
+      "key_pengaturan": {
+        "validasi_pendaftaran_sidang_aktif": "true/false - Aktifkan sistem validasi",
+        "validasi_pembimbing_1": "true/false - Wajib validasi Pembimbing 1",
+        "validasi_pembimbing_2": "true/false - Wajib validasi Pembimbing 2",
+        "validasi_prodi": "true/false - Wajib validasi Prodi",
+        "validasi_jurusan": "true/false - Wajib validasi Jurusan",
+        "syarat_pendaftaran_sidang": "Array dokumen yang wajib diupload [{key, label}]"
+      },
+      "contoh_skenario": {
+        "skenario_1": {
+          "pengaturan": "validasi_pembimbing_1=true, validasi_jurusan=true",
+          "hasil": "Pendaftaran approved jika sudah divalidasi Pembimbing 1 DAN Jurusan"
+        },
+        "skenario_2": {
+          "pengaturan": "validasi_jurusan=true (hanya jurusan)",
+          "hasil": "Pendaftaran approved jika sudah divalidasi Jurusan saja"
+        },
+        "skenario_3": {
+          "pengaturan": "User adalah Pembimbing 1 + Jurusan, validasi_pembimbing_1=true, validasi_jurusan=true",
+          "hasil": "Satu kali approve dari user ini akan set kedua flag, langsung approved"
+        }
+      }
+    },
+
+    "riwayat_immutable": {
+      "deskripsi": "Setiap tindakan tercatat permanen di tabel history",
+      "tabel": "pendaftaran_sidang_history",
+      "field_penting": {
+        "action": "submit, approve, reject",
+        "status_before": "Status sebelum tindakan",
+        "status_after": "Status setelah tindakan",
+        "validated_by": "User ID yang melakukan tindakan",
+        "validator_role": "Role yang berlaku (bisa multiple: 'pembimbing1,jurusan')",
+        "rejection_reason": "Alasan jika ditolak"
+      },
+      "kegunaan": [
+        "Audit trail lengkap",
+        "Tracking siapa yang approve/reject",
+        "Menampilkan riwayat di UI",
+        "Data tidak pernah berubah setelah tercatat"
+      ]
+    }
+  },
+
+  "struktur_file": {
+    "backend": {
+      "database": {
+        "schema": "packages/db/prisma/schema.prisma",
+        "models": [
+          "PendaftaranSidang - Data pendaftaran (mutable)",
+          "PendaftaranSidangFile - File yang diupload",
+          "PendaftaranSidangHistory - Riwayat tindakan (immutable)"
+        ],
+        "migrations": [
+          "20251209090154_add_rejection_fields",
+          "20251209092015_add_pendaftaran_history",
+          "20251209094035_add_validator_role"
+        ]
+      },
+      "service": {
+        "path": "apps/api/src/services/pendaftaran-sidang.service.ts",
+        "methods": {
+          "getOrCreateRegistration": "Buat pendaftaran baru atau ambil yang ada (kecuali rejected)",
+          "uploadSingleFile": "Upload file dokumen",
+          "submitRegistration": "Submit pendaftaran + catat history",
+          "validateRegistration": "Approve/reject + set flag + catat history",
+          "cancelValidation": "Batalkan validasi + reset flag multi-role",
+          "getListForValidation": "List pendaftaran untuk validator (filter by role)",
+          "getRegistrationHistory": "Riwayat mahasiswa tertentu",
+          "getAllRegistrationHistory": "Riwayat semua mahasiswa (filter by role)",
+          "cancelRegistration": "Mahasiswa batalkan pendaftaran",
+          "deleteFile": "Hapus file sebelum submit"
+        }
+      },
+      "router": {
+        "path": "apps/api/src/api/pendaftaran-sidang.router.ts",
+        "endpoints": {
+          "POST /upload/:tipeDokumen": "Upload file (mahasiswa)",
+          "GET /my-registration": "Lihat pendaftaran sendiri (mahasiswa)",
+          "GET /history": "Riwayat pendaftaran sendiri (mahasiswa)",
+          "POST /submit": "Submit pendaftaran (mahasiswa)",
+          "POST /cancel": "Batalkan pendaftaran (mahasiswa)",
+          "DELETE /file/:fileId": "Hapus file (mahasiswa)",
+          "GET /list-for-validation": "List untuk validasi (dosen/jurusan/prodi)",
+          "GET /all-history": "Riwayat semua mahasiswa (dosen/jurusan/prodi)",
+          "POST /:id/validate": "Approve/reject pendaftaran (dosen/jurusan/prodi)",
+          "POST /:id/cancel-validation": "Batalkan validasi (dosen/jurusan/prodi)"
+        }
+      }
+    },
+    "frontend": {
+      "mahasiswa": {
+        "path": "apps/web/app/dashboard/mahasiswa/sidang/page.tsx",
+        "fitur": [
+          "Upload dokumen PDF (max 10MB)",
+          "Submit pendaftaran",
+          "Batalkan pendaftaran",
+          "Lihat status (pending/approved/rejected)",
+          "Lihat alasan penolakan",
+          "Daftar ulang jika ditolak",
+          "Tabel riwayat dengan filter dan pagination (10/page)"
+        ]
+      },
+      "dosen": {
+        "path": "apps/web/app/dashboard/dosen/sidang-approvals/page.tsx",
+        "fitur": [
+          "Tabel validasi dengan search (nama/NIM) dan filter (pending/approved)",
+          "Pagination 5 per page",
+          "Icon validator dinamis (P1, P2, PS, JU) dengan warna kuning/hijau",
+          "Approve/reject dengan alasan",
+          "Batalkan validasi",
+          "Modal detail: info mahasiswa, TA, status validasi, dokumen, alasan penolakan",
+          "Tabel riwayat semua mahasiswa dengan filter aksi dan pagination (10/page)"
+        ],
+        "keterangan_icon": {
+          "P1": "Pembimbing 1",
+          "P2": "Pembimbing 2",
+          "PS": "Prodi",
+          "JU": "Jurusan",
+          "kuning": "Belum validasi",
+          "hijau": "Sudah validasi"
+        }
+      }
+    }
+  },
+
+  "flow_data": {
+    "mahasiswa_upload": {
+      "input": "File PDF + tipe_dokumen",
+      "proses": "Upload ke /uploads/sidang-files/ + simpan metadata",
+      "output": "PendaftaranSidangFile record"
+    },
+    "mahasiswa_submit": {
+      "input": "mahasiswa_id",
+      "validasi": "Cek semua dokumen sudah diupload",
+      "proses": [
+        "Update is_submitted = true",
+        "Set status_validasi (pending/approved tergantung pengaturan)",
+        "Update siap_sidang mahasiswa",
+        "Insert ke PendaftaranSidangHistory (action: submit)"
+      ],
+      "output": "PendaftaranSidang updated"
+    },
+    "dosen_validate": {
+      "input": "pendaftaran_id, user_id, action (approve/reject), catatan",
+      "proses": [
+        "Cek role user (isPembimbing1, isPembimbing2, isProdi, isJurusan)",
+        "Cek pengaturan validasi aktif",
+        "Set flag validasi sesuai role (bisa multiple)",
+        "Cek apakah semua validasi terpenuhi",
+        "Update status_validasi jika semua terpenuhi",
+        "Update siap_sidang mahasiswa",
+        "Insert ke PendaftaranSidangHistory dengan validator_role (multi-role)"
+      ],
+      "output": "PendaftaranSidang updated + History record"
+    },
+    "dosen_cancel_validation": {
+      "input": "pendaftaran_id, user_id",
+      "proses": [
+        "Cek status harus 'approved'",
+        "Cek role user",
+        "Reset SEMUA flag validasi yang dimiliki user",
+        "Set status_validasi = 'pending'",
+        "Update siap_sidang = false"
+      ],
+      "output": "PendaftaranSidang updated"
+    }
+  },
+
+  "contoh_kasus": {
+    "kasus_1_normal": {
+      "deskripsi": "Mahasiswa daftar, divalidasi Jurusan, approved",
+      "pengaturan": "validasi_jurusan = true",
+      "langkah": [
+        "Mahasiswa upload 6 dokumen",
+        "Mahasiswa submit → status: pending",
+        "Jurusan approve → divalidasi_jurusan: true, status: approved",
+        "History: 2 record (submit, approve)"
+      ]
+    },
+    "kasus_2_multi_validator": {
+      "deskripsi": "Perlu validasi Pembimbing 1 dan Jurusan",
+      "pengaturan": "validasi_pembimbing_1 = true, validasi_jurusan = true",
+      "langkah": [
+        "Mahasiswa submit → status: pending",
+        "Pembimbing 1 approve → divalidasi_pembimbing_1: true, status: pending (belum semua)",
+        "Jurusan approve → divalidasi_jurusan: true, status: approved (semua terpenuhi)",
+        "History: 3 record (submit, approve P1, approve Jurusan)"
+      ]
+    },
+    "kasus_3_multi_role": {
+      "deskripsi": "Dosen adalah Pembimbing 1 sekaligus Jurusan",
+      "pengaturan": "validasi_pembimbing_1 = true, validasi_jurusan = true",
+      "langkah": [
+        "Mahasiswa submit → status: pending",
+        "Dosen (P1+Jurusan) approve → divalidasi_pembimbing_1: true, divalidasi_jurusan: true, status: approved",
+        "History: validator_role = 'pembimbing1,jurusan'",
+        "Satu approve langsung memenuhi semua syarat"
+      ]
+    },
+    "kasus_4_reject_daftar_ulang": {
+      "deskripsi": "Ditolak, mahasiswa daftar ulang",
+      "langkah": [
+        "Mahasiswa submit → status: pending",
+        "Jurusan reject dengan alasan → status: rejected",
+        "Mahasiswa lihat alasan di UI",
+        "Mahasiswa upload dokumen baru → sistem buat pendaftaran baru",
+        "Mahasiswa submit lagi → status: pending",
+        "History: 4 record (submit, reject, submit, ...)"
+      ]
+    },
+    "kasus_5_batalkan_validasi": {
+      "deskripsi": "Dosen batalkan validasi yang sudah dilakukan",
+      "langkah": [
+        "Status: approved (divalidasi_jurusan: true)",
+        "Jurusan klik 'Batalkan' → divalidasi_jurusan: false, status: pending",
+        "Icon JU berubah dari hijau ke kuning",
+        "Mahasiswa siap_sidang kembali false"
+      ]
+    }
+  },
+
+  "catatan_penting": [
+    "Flag validasi bersifat boolean per role, bukan per user",
+    "Satu user bisa set multiple flag jika punya multiple role",
+    "History immutable, tidak pernah diupdate atau dihapus",
+    "Pendaftaran yang ditolak tidak dihapus, tetap sebagai riwayat",
+    "File PDF disimpan di /uploads/sidang-files/ dengan nama unik",
+    "Pagination: validasi 5/page, riwayat 10/page",
+    "Search hanya di tabel validasi (nama/NIM)",
+    "Filter: validasi (pending/approved), riwayat (submit/approve/reject)",
+    "Modal detail menampilkan semua info termasuk status validasi per role"
+  ],
+
+  "teknologi": {
+    "backend": "Node.js + Express + Prisma + SQLite",
+    "frontend": "Next.js 15 + React 19 + TypeScript + Tailwind CSS",
+    "upload": "Multer untuk handle file upload",
+    "icons": "Lucide React"
+  }
+}

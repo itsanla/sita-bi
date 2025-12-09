@@ -20,6 +20,11 @@ export const updatePengaturanSchema = z.object({
     .int('Jumlah pembimbing harus bilangan bulat')
     .min(1, 'Minimal 1 mahasiswa')
     .optional(),
+  max_mahasiswa_uji_per_dosen: z
+    .number()
+    .int('Jumlah mahasiswa uji harus bilangan bulat')
+    .min(1, 'Minimal 1 mahasiswa')
+    .optional(),
   durasi_sidang_menit: z
     .number()
     .int('Durasi harus bilangan bulat')
@@ -29,6 +34,25 @@ export const updatePengaturanSchema = z.object({
     .number()
     .int('Jeda harus bilangan bulat')
     .min(0, 'Minimal 0 menit')
+    .optional(),
+  jam_mulai_sidang: z
+    .string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format jam harus HH:mm')
+    .optional(),
+  jam_selesai_sidang: z
+    .string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format jam harus HH:mm')
+    .optional(),
+  hari_libur_tetap: z
+    .array(z.string())
+    .optional(),
+  tanggal_libur_khusus: z
+    .array(
+      z.object({
+        tanggal: z.string(),
+        keterangan: z.string(),
+      }),
+    )
     .optional(),
   syarat_pendaftaran_sidang: z
     .array(

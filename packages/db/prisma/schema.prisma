@@ -778,6 +778,23 @@ enum StatusPeriode {
   SELESAI
 }
 
+enum StatusPenjadwalanSidang {
+  BELUM_DIJADWALKAN
+  DIJADWALKAN
+  SELESAI
+}
+
+model PenjadwalanSidang {
+  id              Int                      @id @default(autoincrement())
+  tanggal_generate DateTime?
+  status          StatusPenjadwalanSidang  @default(BELUM_DIJADWALKAN)
+  dibuat_oleh     Int?
+  created_at      DateTime                 @default(now())
+  updated_at      DateTime                 @updatedAt
+
+  @@map("penjadwalan_sidang")
+}
+
 model PeriodeTa {
   id                    Int           @id @default(autoincrement())
   tahun                 Int           @unique

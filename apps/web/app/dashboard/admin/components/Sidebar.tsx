@@ -35,6 +35,11 @@ const navItems = [
     icon: Calendar,
     label: 'Kelola Sidang',
   },
+  {
+    href: '/dashboard/admin/penjadwalan',
+    icon: Calendar,
+    label: 'Penjadwalan Sidang',
+  },
   { href: '/dashboard/admin/pengumuman', icon: Megaphone, label: 'Pengumuman' },
   { href: '/dashboard/admin/import', icon: Upload, label: 'Import Data' },
   { href: '/dashboard/admin/reports', icon: FileText, label: 'Laporan' },

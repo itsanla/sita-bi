@@ -12,13 +12,23 @@ interface SyaratSidang {
   label: string;
 }
 
+interface TanggalLibur {
+  tanggal: string;
+  keterangan: string;
+}
+
 interface Pengaturan {
   max_similaritas_persen: number;
   min_bimbingan_valid: number;
   ruangan_sidang: string[];
   max_pembimbing_aktif: number;
+  max_mahasiswa_uji_per_dosen: number;
   durasi_sidang_menit: number;
   jeda_sidang_menit: number;
+  jam_mulai_sidang?: string;
+  jam_selesai_sidang?: string;
+  hari_libur_tetap?: string[];
+  tanggal_libur_khusus?: TanggalLibur[];
   mode_validasi_judul?: string;
   mode_validasi_draf?: string;
   validasi_pendaftaran_sidang_aktif?: boolean;
@@ -39,8 +49,13 @@ export default function AturanTugasAkhirPage() {
     min_bimbingan_valid: 9,
     ruangan_sidang: [],
     max_pembimbing_aktif: 4,
+    max_mahasiswa_uji_per_dosen: 4,
     durasi_sidang_menit: 90,
     jeda_sidang_menit: 15,
+    jam_mulai_sidang: '08:00',
+    jam_selesai_sidang: '15:00',
+    hari_libur_tetap: ['sabtu', 'minggu'],
+    tanggal_libur_khusus: [],
     mode_validasi_judul: 'KEDUA_PEMBIMBING',
     mode_validasi_draf: 'KEDUA_PEMBIMBING',
     validasi_pendaftaran_sidang_aktif: false,
@@ -55,8 +70,13 @@ export default function AturanTugasAkhirPage() {
     min_bimbingan_valid: 9,
     ruangan_sidang: [],
     max_pembimbing_aktif: 4,
+    max_mahasiswa_uji_per_dosen: 4,
     durasi_sidang_menit: 90,
     jeda_sidang_menit: 15,
+    jam_mulai_sidang: '08:00',
+    jam_selesai_sidang: '15:00',
+    hari_libur_tetap: ['sabtu', 'minggu'],
+    tanggal_libur_khusus: [],
     mode_validasi_judul: 'KEDUA_PEMBIMBING',
     mode_validasi_draf: 'KEDUA_PEMBIMBING',
     validasi_pendaftaran_sidang_aktif: false,
@@ -68,6 +88,7 @@ export default function AturanTugasAkhirPage() {
   });
   const [ruanganBaru, setRuanganBaru] = useState('');
   const [syaratBaru, setSyaratBaru] = useState({ key: '', label: '' });
+  const [tanggalLiburBaru, setTanggalLiburBaru] = useState({ tanggal: '', keterangan: '' });
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
@@ -129,8 +150,13 @@ export default function AturanTugasAkhirPage() {
         min_bimbingan_valid: data.min_bimbingan_valid ?? 9,
         ruangan_sidang: data.ruangan_sidang ?? [],
         max_pembimbing_aktif: data.max_pembimbing_aktif ?? 4,
+        max_mahasiswa_uji_per_dosen: data.max_mahasiswa_uji_per_dosen ?? 4,
         durasi_sidang_menit: data.durasi_sidang_menit ?? 90,
         jeda_sidang_menit: data.jeda_sidang_menit ?? 15,
+        jam_mulai_sidang: data.jam_mulai_sidang ?? '08:00',
+        jam_selesai_sidang: data.jam_selesai_sidang ?? '15:00',
+        hari_libur_tetap: data.hari_libur_tetap ?? ['sabtu', 'minggu'],
+        tanggal_libur_khusus: data.tanggal_libur_khusus ?? [],
         mode_validasi_judul:
           aturanValidasi?.mode_validasi_judul ?? 'KEDUA_PEMBIMBING',
         mode_validasi_draf:
@@ -240,6 +266,43 @@ export default function AturanTugasAkhirPage() {
         pengaturan.syarat_pendaftaran_sidang || []
       ).filter((_, i) => i !== index),
     });
+  };
+  
+  const handleTambahTanggalLibur = () => {
+    if (tanggalLiburBaru.tanggal && tanggalLiburBaru.keterangan.trim()) {
+      setPengaturan({
+        ...pengaturan,
+        tanggal_libur_khusus: [
+          ...(pengaturan.tanggal_libur_khusus || []),
+          { tanggal: tanggalLiburBaru.tanggal, keterangan: tanggalLiburBaru.keterangan.trim() },
+        ],
+      });
+      setTanggalLiburBaru({ tanggal: '', keterangan: '' });
+    }
+  };
+
+  const handleHapusTanggalLibur = (index: number) => {
+    setPengaturan({
+      ...pengaturan,
+      tanggal_libur_khusus: (
+        pengaturan.tanggal_libur_khusus || []
+      ).filter((_, i) => i !== index),
+    });
+  };
+
+  const handleToggleHariLibur = (hari: string) => {
+    const current = pengaturan.hari_libur_tetap || [];
+    if (current.includes(hari)) {
+      setPengaturan({
+        ...pengaturan,
+        hari_libur_tetap: current.filter(h => h !== hari),
+      });
+    } else {
+      setPengaturan({
+        ...pengaturan,
+        hari_libur_tetap: [...current, hari],
+      });
+    }
   };
 
   if (!role) {
@@ -394,13 +457,8 @@ export default function AturanTugasAkhirPage() {
               </p>
             </div>
           </div>
-        </div>
 
-        {/* Aturan Validasi */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">
-            Aturan Validasi
-          </h2>
+          <div className="mt-6 pt-6 border-t">
           <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
             <p className="text-xs text-amber-800">
               <span className="font-semibold">Catatan:</span> Perubahan aturan
@@ -470,12 +528,13 @@ export default function AturanTugasAkhirPage() {
               </p>
             </div>
           </div>
+          </div>
         </div>
 
-        {/* Aturan Sidang */}
+        {/* Aturan Pendaftaran Sidang */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">
-            Aturan Sidang
+            Aturan Pendaftaran Sidang
           </h2>
           <div className="space-y-4">
             <div className="space-y-4">
@@ -682,6 +741,35 @@ export default function AturanTugasAkhirPage() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Aturan Penjadwalan Sidang */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">
+            Aturan Penjadwalan Sidang
+          </h2>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Maksimal Mahasiswa Uji per Dosen
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={pengaturan.max_mahasiswa_uji_per_dosen}
+                onChange={(e) =>
+                  setPengaturan({
+                    ...pengaturan,
+                    max_mahasiswa_uji_per_dosen: parseInt(e.target.value) || 1,
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+              />
+              <p className="text-sm text-gray-500">
+                Jumlah maksimal mahasiswa yang dapat diuji oleh satu dosen dalam satu periode sidang
+              </p>
+            </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Durasi Sidang (Menit)
@@ -722,6 +810,139 @@ export default function AturanTugasAkhirPage() {
                 Jeda waktu setelah sidang selesai sebelum sidang berikutnya
                 dimulai
               </p>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Jam Operasional Sidang
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Jam Mulai
+                  </label>
+                  <input
+                    type="time"
+                    value={pengaturan.jam_mulai_sidang}
+                    onChange={(e) =>
+                      setPengaturan({
+                        ...pengaturan,
+                        jam_mulai_sidang: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Jam Selesai
+                  </label>
+                  <input
+                    type="time"
+                    value={pengaturan.jam_selesai_sidang}
+                    onChange={(e) =>
+                      setPengaturan({
+                        ...pengaturan,
+                        jam_selesai_sidang: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <p className="text-sm text-gray-500">
+                Rentang waktu operasional untuk penjadwalan sidang
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Hari Libur Tetap
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'].map((hari) => (
+                  <label
+                    key={hari}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={(pengaturan.hari_libur_tetap || []).includes(hari)}
+                      onChange={() => handleToggleHariLibur(hari)}
+                      className="w-4 h-4 text-red-900 border-gray-300 rounded focus:ring-red-900"
+                    />
+                    <span className="text-sm capitalize">{hari}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-sm text-gray-500">
+                Pilih hari yang tidak tersedia untuk sidang
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Tanggal Libur Khusus
+              </label>
+              <p className="text-sm text-gray-500 mb-2">
+                Tambahkan tanggal libur nasional atau hari khusus lainnya
+              </p>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="date"
+                    value={tanggalLiburBaru.tanggal}
+                    onChange={(e) =>
+                      setTanggalLiburBaru({ ...tanggalLiburBaru, tanggal: e.target.value })
+                    }
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+                  />
+                  <input
+                    type="text"
+                    value={tanggalLiburBaru.keterangan}
+                    onChange={(e) =>
+                      setTanggalLiburBaru({ ...tanggalLiburBaru, keterangan: e.target.value })
+                    }
+                    placeholder="Keterangan (contoh: HUT RI)"
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+                  />
+                </div>
+                <button
+                  onClick={handleTambahTanggalLibur}
+                  className="flex items-center space-x-2 px-4 py-2 bg-red-900 text-white rounded-lg hover:bg-red-800 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Tambah Tanggal Libur</span>
+                </button>
+              </div>
+              <div className="space-y-2 mt-2">
+                {(pengaturan.tanggal_libur_khusus || []).length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    Belum ada tanggal libur khusus.
+                  </p>
+                ) : (
+                  (pengaturan.tanggal_libur_khusus || []).map(
+                    (libur, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div>
+                          <span className="text-sm font-medium text-gray-900">
+                            {libur.tanggal}
+                          </span>
+                          <span className="text-xs text-gray-500 ml-2">
+                            - {libur.keterangan}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleHapusTanggalLibur(index)}
+                          className="text-red-600 hover:text-red-800 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ),
+                  )
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">

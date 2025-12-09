@@ -18,6 +18,7 @@ import {
   FileCheck,
   Award,
   ClipboardList,
+  Calendar,
 } from 'lucide-react';
 
 const baseNavItems = [
@@ -60,6 +61,11 @@ const jurusanMenuItems = [
     href: '/dashboard/dosen/kelola-periode',
     icon: FileCheck,
     label: 'Kelola Periode TA',
+  },
+  {
+    href: '/dashboard/dosen/penjadwalan',
+    icon: Calendar,
+    label: 'Penjadwalan Sidang',
   },
 ];
 

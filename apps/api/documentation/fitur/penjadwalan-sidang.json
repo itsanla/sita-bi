@@ -1,0 +1,872 @@
+{
+  "fitur": "Penjadwalan Sidang Tugas Akhir",
+  "deskripsi": "Sistem penjadwalan sidang dengan conflict detection, auto-assignment penguji, dan calendar view",
+  "versi": "1.0.0",
+  "tanggal_update": "2025-01-09",
+
+  "logika_bisnis": {
+    "overview": {
+      "deskripsi": "Jurusan menjadwalkan sidang untuk mahasiswa yang sudah approved (siap_sidang = true)",
+      "waktu_penjadwalan": "Setelah periode pendaftaran sidang ditutup",
+      "mode": "Manual scheduling dengan conflict detection otomatis"
+    },
+
+    "aturan_penguji": {
+      "jumlah_penguji": 3,
+      "role_penguji": {
+        "penguji1": "Ketua Penguji",
+        "penguji2": "Anggota Penguji 1",
+        "penguji3": "Anggota Penguji 2"
+      },
+      "pembimbing_sebagai_sekretaris": {
+        "deskripsi": "Pembimbing 1 hadir sebagai sekretaris (bukan penguji)",
+        "tugas": "Input nilai dari ketua dan anggota penguji",
+        "catatan": "Pembimbing 1 TIDAK BOLEH menjadi penguji di sidang mahasiswa bimbingannya"
+      },
+      "larangan": [
+        "Pembimbing 1 tidak boleh jadi penguji",
+        "Pembimbing 2 tidak boleh jadi penguji",
+        "Ketiga penguji harus berbeda"
+      ],
+      "assignment": "Random assignment dari pool dosen yang tersedia"
+    },
+
+    "pengaturan_dinamis": {
+      "durasi_sidang_menit": {
+        "default": 90,
+        "deskripsi": "Durasi standar setiap sesi sidang"
+      },
+      "jeda_sidang_menit": {
+        "default": 15,
+        "deskripsi": "Waktu jeda setelah sidang selesai sebelum sidang berikutnya"
+      },
+      "ruangan_sidang": {
+        "tipe": "array",
+        "deskripsi": "List ruangan yang tersedia untuk sidang"
+      },
+      "max_mahasiswa_uji_per_dosen": {
+        "default": 10,
+        "deskripsi": "Maksimal mahasiswa yang bisa diuji oleh 1 dosen dalam 1 periode"
+      }
+    },
+
+    "conflict_detection": {
+      "deskripsi": "Sistem otomatis mendeteksi bentrok jadwal",
+      "validasi": [
+        "Ruangan tidak bentrok di waktu yang sama",
+        "Dosen (penguji + sekretaris) tidak bentrok di waktu yang sama",
+        "Mahasiswa belum dijadwalkan di waktu yang sama",
+        "Durasi + jeda tidak overlap dengan jadwal lain"
+      ],
+      "response": {
+        "valid": "Jadwal berhasil disimpan",
+        "conflict": "Tampilkan error + saran slot kosong"
+      }
+    },
+
+    "alur_penjadwalan": {
+      "1_list_mahasiswa": {
+        "deskripsi": "Jurusan melihat list mahasiswa siap sidang",
+        "sumber_data": "Mahasiswa dengan siap_sidang = true",
+        "info_ditampilkan": [
+          "Nama mahasiswa",
+          "NIM",
+          "Judul TA",
+          "Pembimbing 1 & 2",
+          "Status penjadwalan"
+        ]
+      },
+      "2_pilih_mahasiswa": {
+        "deskripsi": "Jurusan klik 'Jadwalkan' pada mahasiswa",
+        "action": "Buka modal penjadwalan"
+      },
+      "3_input_jadwal": {
+        "deskripsi": "Jurusan input detail jadwal",
+        "input": [
+          "Tanggal sidang",
+          "Waktu mulai",
+          "Ruangan (dropdown dari pengaturan)",
+          "Penguji 1, 2, 3 (multi-select dosen, exclude pembimbing)"
+        ],
+        "validasi_realtime": "Sistem cek conflict saat input"
+      },
+      "4_auto_calculate": {
+        "deskripsi": "Sistem otomatis hitung waktu selesai",
+        "formula": "waktu_selesai = waktu_mulai + durasi_sidang_menit"
+      },
+      "5_simpan_jadwal": {
+        "deskripsi": "Sistem simpan jadwal dan assign penguji",
+        "proses": [
+          "Insert ke tabel JadwalSidang",
+          "Insert 3 record ke PeranDosenTa (penguji1, penguji2, penguji3)",
+          "Update status_hasil Sidang menjadi 'dijadwalkan'"
+        ]
+      }
+    },
+
+    "random_assignment_penguji": {
+      "deskripsi": "Penentuan role penguji (ketua/anggota) dilakukan random",
+      "algoritma": "Shuffle array penguji yang dipilih, assign ke penguji1/2/3",
+      "catatan": "Jurusan hanya pilih 3 dosen, sistem yang tentukan siapa ketua/anggota"
+    }
+  },
+
+  "struktur_database": {
+    "tabel_utama": {
+      "JadwalSidang": {
+        "deskripsi": "Menyimpan jadwal sidang",
+        "kolom": {
+          "id": "Primary key",
+          "sidang_id": "FK ke Sidang",
+          "tanggal": "Tanggal sidang",
+          "waktu_mulai": "Waktu mulai (HH:mm)",
+          "waktu_selesai": "Waktu selesai (HH:mm)",
+          "ruangan_id": "FK ke Ruangan",
+          "created_at": "Timestamp",
+          "updated_at": "Timestamp"
+        }
+      },
+      "Ruangan": {
+        "deskripsi": "Master data ruangan sidang",
+        "kolom": {
+          "id": "Primary key",
+          "nama_ruangan": "Nama ruangan",
+          "lokasi": "Lokasi ruangan",
+          "kapasitas": "Kapasitas ruangan",
+          "created_at": "Timestamp",
+          "updated_at": "Timestamp"
+        },
+        "catatan": "Data ruangan di-sync dari pengaturan.ruangan_sidang"
+      },
+      "PeranDosenTa": {
+        "deskripsi": "Menyimpan peran dosen (pembimbing + penguji)",
+        "kolom": {
+          "id": "Primary key",
+          "tugas_akhir_id": "FK ke TugasAkhir",
+          "dosen_id": "FK ke Dosen",
+          "peran": "Enum: pembimbing1, pembimbing2, penguji1, penguji2, penguji3",
+          "created_at": "Timestamp",
+          "updated_at": "Timestamp"
+        },
+        "constraint": "UNIQUE(tugas_akhir_id, peran)"
+      },
+      "Sidang": {
+        "kolom_penting": {
+          "status_hasil": "Enum: menunggu_penjadwalan, dijadwalkan, lulus, lulus_revisi, tidak_lulus",
+          "jenis_sidang": "Enum: PROPOSAL, AKHIR"
+        }
+      }
+    }
+  },
+
+  "api_endpoints": {
+    "backend": {
+      "path": "apps/api/src/api/jadwal-sidang.router.ts",
+      "endpoints": {
+        "GET /jadwal-sidang/mahasiswa-siap": {
+          "deskripsi": "List mahasiswa siap sidang (siap_sidang = true)",
+          "auth": "Jurusan only",
+          "response": {
+            "mahasiswa": [
+              {
+                "id": "number",
+                "nim": "string",
+                "nama": "string",
+                "prodi": "D3 | D4",
+                "tugas_akhir": {
+                  "id": "number",
+                  "judul": "string",
+                  "pembimbing1": "{ id, nama, nip }",
+                  "pembimbing2": "{ id, nama, nip }"
+                },
+                "is_scheduled": "boolean"
+              }
+            ]
+          }
+        },
+        "GET /jadwal-sidang/calendar": {
+          "deskripsi": "Calendar view semua jadwal sidang",
+          "auth": "Jurusan, Dosen",
+          "query": {
+            "start": "Date (optional)",
+            "end": "Date (optional)"
+          },
+          "response": {
+            "events": [
+              {
+                "id": "number",
+                "title": "string (nama mahasiswa)",
+                "start": "DateTime",
+                "end": "DateTime",
+                "ruangan": "string",
+                "mahasiswa": "{ id, nim, nama }",
+                "penguji": "[ { id, nama, role } ]",
+                "sekretaris": "{ id, nama }"
+              }
+            ]
+          }
+        },
+        "POST /jadwal-sidang/check-conflict": {
+          "deskripsi": "Real-time conflict check",
+          "auth": "Jurusan",
+          "body": {
+            "tanggal": "Date",
+            "waktu_mulai": "string (HH:mm)",
+            "waktu_selesai": "string (HH:mm)",
+            "ruangan_id": "number",
+            "dosen_ids": "number[] (penguji + sekretaris)"
+          },
+          "response": {
+            "has_conflict": "boolean",
+            "conflicts": [
+              {
+                "type": "room | dosen",
+                "message": "string",
+                "conflicting_schedule": "object"
+              }
+            ],
+            "suggested_slots": [
+              {
+                "waktu_mulai": "string",
+                "waktu_selesai": "string"
+              }
+            ]
+          }
+        },
+        "POST /jadwal-sidang": {
+          "deskripsi": "Create jadwal sidang",
+          "auth": "Jurusan",
+          "body": {
+            "mahasiswa_id": "number",
+            "tanggal": "Date",
+            "waktu_mulai": "string (HH:mm)",
+            "ruangan_id": "number",
+            "penguji_ids": "number[3] (3 dosen penguji)"
+          },
+          "proses": [
+            "1. Validasi mahasiswa siap_sidang = true",
+            "2. Validasi penguji bukan pembimbing",
+            "3. Check conflict",
+            "4. Random assign penguji1/2/3",
+            "5. Insert JadwalSidang",
+            "6. Insert 3 PeranDosenTa (penguji)",
+            "7. Update Sidang.status_hasil = 'dijadwalkan'"
+          ],
+          "response": {
+            "jadwal": "JadwalSidang object",
+            "penguji": "PeranDosenTa[] (3 records)"
+          }
+        },
+        "PUT /jadwal-sidang/:id": {
+          "deskripsi": "Update/reschedule jadwal",
+          "auth": "Jurusan",
+          "body": "Same as POST",
+          "proses": [
+            "1. Check conflict (exclude current schedule)",
+            "2. Update JadwalSidang",
+            "3. Delete old PeranDosenTa (penguji only)",
+            "4. Insert new PeranDosenTa",
+            "5. Insert HistoryPerubahanSidang"
+          ]
+        },
+        "DELETE /jadwal-sidang/:id": {
+          "deskripsi": "Cancel jadwal sidang",
+          "auth": "Jurusan",
+          "proses": [
+            "1. Delete JadwalSidang",
+            "2. Delete PeranDosenTa (penguji only)",
+            "3. Update Sidang.status_hasil = 'menunggu_penjadwalan'",
+            "4. Insert HistoryPerubahanSidang"
+          ]
+        },
+        "GET /jadwal-sidang/available-dosen": {
+          "deskripsi": "List dosen yang available untuk jadi penguji",
+          "auth": "Jurusan",
+          "query": {
+            "mahasiswa_id": "number",
+            "tanggal": "Date",
+            "waktu_mulai": "string",
+            "waktu_selesai": "string"
+          },
+          "logic": [
+            "1. Exclude pembimbing 1 & 2 mahasiswa tersebut",
+            "2. Exclude dosen yang bentrok jadwal",
+            "3. Exclude dosen yang sudah mencapai max_mahasiswa_uji_per_dosen",
+            "4. Return list dosen available"
+          ],
+          "response": {
+            "dosen": [
+              {
+                "id": "number",
+                "nama": "string",
+                "nip": "string",
+                "jumlah_uji_periode_ini": "number"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+
+  "frontend": {
+    "halaman_jurusan": {
+      "path": "apps/web/app/dashboard/dosen/jadwal-sidang/page.tsx",
+      "fitur": [
+        "Tabel mahasiswa siap sidang",
+        "Button 'Jadwalkan' per mahasiswa",
+        "Calendar view (FullCalendar)",
+        "Filter by prodi, status",
+        "Search by nama/NIM"
+      ],
+      "modal_penjadwalan": {
+        "fields": [
+          "Tanggal (DatePicker)",
+          "Waktu mulai (TimePicker)",
+          "Waktu selesai (auto-calculated, readonly)",
+          "Ruangan (Select)",
+          "Penguji 1, 2, 3 (Multi-select dosen)"
+        ],
+        "validasi_realtime": [
+          "Conflict indicator (red/green)",
+          "Suggested slots jika bentrok",
+          "Available dosen count"
+        ],
+        "actions": [
+          "Simpan",
+          "Batal"
+        ]
+      },
+      "calendar_view": {
+        "library": "@fullcalendar/react",
+        "views": ["dayGridMonth", "timeGridWeek", "timeGridDay"],
+        "event_color": "By ruangan",
+        "tooltip": "Nama mahasiswa, ruangan, penguji, waktu",
+        "actions": [
+          "Click event → detail modal",
+          "Drag & drop → reschedule (opsional)"
+        ]
+      }
+    },
+    "halaman_dosen": {
+      "path": "apps/web/app/dashboard/dosen/jadwal-sidang/page.tsx",
+      "fitur": [
+        "Calendar view jadwal sidang yang dosen terlibat",
+        "Filter by role (penguji/sekretaris)",
+        "Detail sidang (read-only)"
+      ]
+    },
+    "halaman_mahasiswa": {
+      "path": "apps/web/app/dashboard/mahasiswa/sidang/page.tsx",
+      "fitur": [
+        "Lihat jadwal sidang sendiri",
+        "Info: tanggal, waktu, ruangan, penguji, sekretaris",
+        "Status sidang"
+      ]
+    }
+  },
+
+  "service_layer": {
+    "path": "apps/api/src/services/jadwal-sidang.service.ts",
+    "methods": {
+      "getMahasiswaSiapSidang": {
+        "deskripsi": "Get mahasiswa dengan siap_sidang = true",
+        "return": "Mahasiswa[] dengan relasi TugasAkhir dan pembimbing"
+      },
+      "checkConflict": {
+        "deskripsi": "Check conflict ruangan dan dosen",
+        "params": "{ tanggal, waktu_mulai, waktu_selesai, ruangan_id, dosen_ids }",
+        "return": "{ has_conflict, conflicts, suggested_slots }"
+      },
+      "getAvailableDosen": {
+        "deskripsi": "Get dosen yang available untuk jadi penguji",
+        "params": "{ mahasiswa_id, tanggal, waktu_mulai, waktu_selesai }",
+        "logic": [
+          "Exclude pembimbing",
+          "Exclude bentrok",
+          "Exclude max quota"
+        ],
+        "return": "Dosen[]"
+      },
+      "createJadwal": {
+        "deskripsi": "Create jadwal sidang + assign penguji",
+        "params": "{ mahasiswa_id, tanggal, waktu_mulai, ruangan_id, penguji_ids }",
+        "proses": [
+          "Validasi input",
+          "Check conflict",
+          "Random shuffle penguji_ids",
+          "Insert JadwalSidang",
+          "Insert 3 PeranDosenTa",
+          "Update Sidang.status_hasil"
+        ],
+        "return": "JadwalSidang dengan relasi"
+      },
+      "updateJadwal": {
+        "deskripsi": "Update jadwal sidang",
+        "params": "{ id, ...updateData }",
+        "proses": [
+          "Check conflict (exclude current)",
+          "Update JadwalSidang",
+          "Delete old penguji",
+          "Insert new penguji",
+          "Insert history"
+        ]
+      },
+      "deleteJadwal": {
+        "deskripsi": "Cancel jadwal sidang",
+        "params": "{ id }",
+        "proses": [
+          "Delete JadwalSidang",
+          "Delete penguji",
+          "Update Sidang.status_hasil",
+          "Insert history"
+        ]
+      },
+      "getCalendarEvents": {
+        "deskripsi": "Get jadwal untuk calendar view",
+        "params": "{ start?, end?, user_id?, role? }",
+        "return": "CalendarEvent[]"
+      },
+      "suggestTimeSlots": {
+        "deskripsi": "Suggest available time slots",
+        "params": "{ tanggal, ruangan_id, dosen_ids }",
+        "logic": [
+          "Get all schedules on that date",
+          "Find gaps between schedules",
+          "Return available slots"
+        ],
+        "return": "TimeSlot[]"
+      }
+    }
+  },
+
+  "conflict_detection_algorithm": {
+    "deskripsi": "Algoritma untuk detect bentrok jadwal",
+    "pseudocode": "```\nfunction checkConflict(newSchedule) {\n  // 1. Check room conflict\n  const roomConflicts = await JadwalSidang.findMany({\n    where: {\n      ruangan_id: newSchedule.ruangan_id,\n      tanggal: newSchedule.tanggal,\n      OR: [\n        {\n          waktu_mulai: { lte: newSchedule.waktu_selesai },\n          waktu_selesai: { gte: newSchedule.waktu_mulai }\n        }\n      ]\n    }\n  });\n\n  // 2. Check dosen conflict\n  const dosenConflicts = await JadwalSidang.findMany({\n    where: {\n      tanggal: newSchedule.tanggal,\n      OR: [\n        {\n          waktu_mulai: { lte: newSchedule.waktu_selesai },\n          waktu_selesai: { gte: newSchedule.waktu_mulai }\n        }\n      ],\n      sidang: {\n        tugasAkhir: {\n          peranDosenTa: {\n            some: {\n              dosen_id: { in: newSchedule.dosen_ids }\n            }\n          }\n        }\n      }\n    }\n  });\n\n  return {\n    has_conflict: roomConflicts.length > 0 || dosenConflicts.length > 0,\n    conflicts: [...roomConflicts, ...dosenConflicts]\n  };\n}\n```"
+  },
+
+  "random_assignment_algorithm": {
+    "deskripsi": "Algoritma random assignment penguji",
+    "pseudocode": "```\nfunction assignPenguji(penguji_ids: number[]) {\n  // Shuffle array\n  const shuffled = penguji_ids.sort(() => Math.random() - 0.5);\n  \n  return [\n    { dosen_id: shuffled[0], peran: 'penguji1' }, // Ketua\n    { dosen_id: shuffled[1], peran: 'penguji2' }, // Anggota 1\n    { dosen_id: shuffled[2], peran: 'penguji3' }  // Anggota 2\n  ];\n}\n```"
+  },
+
+  "validasi_bisnis": {
+    "validasi_pembimbing_bukan_penguji": {
+      "deskripsi": "Pembimbing tidak boleh jadi penguji",
+      "query": "```\nconst pembimbing = await PeranDosenTa.findMany({\n  where: {\n    tugas_akhir_id: mahasiswa.tugas_akhir_id,\n    peran: { in: ['pembimbing1', 'pembimbing2'] }\n  }\n});\n\nconst pembimbing_ids = pembimbing.map(p => p.dosen_id);\n\nif (penguji_ids.some(id => pembimbing_ids.includes(id))) {\n  throw new Error('Pembimbing tidak boleh menjadi penguji');\n}\n```"
+    },
+    "validasi_max_mahasiswa_uji": {
+      "deskripsi": "Dosen tidak boleh melebihi max_mahasiswa_uji_per_dosen",
+      "query": "```\nconst count = await PeranDosenTa.count({\n  where: {\n    dosen_id: dosen_id,\n    peran: { in: ['penguji1', 'penguji2', 'penguji3'] },\n    tugasAkhir: {\n      periode_ta_id: current_periode_id\n    }\n  }\n});\n\nif (count >= max_mahasiswa_uji_per_dosen) {\n  throw new Error('Dosen sudah mencapai kuota maksimal');\n}\n```"
+    },
+    "validasi_penguji_unik": {
+      "deskripsi": "Ketiga penguji harus berbeda",
+      "logic": "```\nif (new Set(penguji_ids).size !== 3) {\n  throw new Error('Penguji harus berbeda');\n}\n```"
+    }
+  },
+
+  "ui_components": {
+    "CalendarView": {
+      "library": "@fullcalendar/react",
+      "props": {
+        "events": "CalendarEvent[]",
+        "onEventClick": "(event) => void",
+        "onDateClick": "(date) => void"
+      }
+    },
+    "ScheduleModal": {
+      "props": {
+        "mahasiswa": "Mahasiswa",
+        "onSave": "(data) => void",
+        "onClose": "() => void"
+      },
+      "state": {
+        "tanggal": "Date",
+        "waktu_mulai": "string",
+        "ruangan_id": "number",
+        "penguji_ids": "number[]",
+        "conflicts": "Conflict[]",
+        "available_dosen": "Dosen[]"
+      }
+    },
+    "ConflictIndicator": {
+      "props": {
+        "has_conflict": "boolean",
+        "conflicts": "Conflict[]"
+      },
+      "display": "Red badge jika conflict, green jika clear"
+    }
+  },
+
+  "migration_plan": {
+    "step_1": "Tambah field max_mahasiswa_uji_per_dosen di PengaturanSistem",
+    "step_2": "Sync ruangan_sidang ke tabel Ruangan",
+    "step_3": "Buat service layer (jadwal-sidang.service.ts)",
+    "step_4": "Buat API endpoints (jadwal-sidang.router.ts)",
+    "step_5": "Buat UI Jurusan (jadwal-sidang/page.tsx)",
+    "step_6": "Buat UI Dosen & Mahasiswa (read-only view)",
+    "step_7": "Testing & refinement"
+  },
+
+  "contoh_kasus": {
+    "kasus_1_normal": {
+      "deskripsi": "Jurusan jadwalkan sidang mahasiswa A",
+      "langkah": [
+        "Jurusan buka halaman penjadwalan",
+        "Pilih mahasiswa A (siap_sidang = true)",
+        "Input: 2025-01-15, 09:00, Ruang 301",
+        "Pilih 3 dosen penguji (exclude pembimbing A)",
+        "Sistem check conflict → clear",
+        "Sistem random assign: penguji1 (ketua), penguji2, penguji3",
+        "Simpan → jadwal tersimpan"
+      ]
+    },
+    "kasus_2_conflict": {
+      "deskripsi": "Bentrok ruangan",
+      "langkah": [
+        "Jurusan input: 2025-01-15, 09:00, Ruang 301",
+        "Sistem detect: Ruang 301 sudah dipakai 09:00-10:30",
+        "Tampilkan error + suggest slot: 10:45-12:15",
+        "Jurusan ubah waktu atau ruangan"
+      ]
+    },
+    "kasus_3_dosen_bentrok": {
+      "deskripsi": "Dosen penguji bentrok",
+      "langkah": [
+        "Jurusan pilih Dosen X sebagai penguji",
+        "Sistem detect: Dosen X sudah jadi penguji di 09:00-10:30",
+        "Tampilkan error + list dosen available",
+        "Jurusan ganti dosen"
+      ]
+    },
+    "kasus_4_reschedule": {
+      "deskripsi": "Reschedule jadwal yang sudah ada",
+      "langkah": [
+        "Jurusan klik jadwal di calendar",
+        "Edit tanggal/waktu/ruangan/penguji",
+        "Sistem check conflict (exclude jadwal ini)",
+        "Update jadwal + insert history"
+      ]
+    }
+  },
+
+  "status_penjadwalan": {
+    "deskripsi": "Sistem status untuk mengontrol akses dan visibilitas jadwal sidang",
+    "tabel": "PenjadwalanSidang",
+    "kolom": {
+      "id": "Primary key",
+      "periode_ta_id": "FK ke PeriodeTa",
+      "status": "Enum: BELUM_DIJADWALKAN, DIJADWALKAN, SELESAI",
+      "tanggal_generate": "DateTime (kapan jadwal akan dipublish)",
+      "is_generated": "Boolean (apakah jadwal sudah dipublish)",
+      "created_at": "Timestamp",
+      "updated_at": "Timestamp"
+    },
+    "status_enum": {
+      "BELUM_DIJADWALKAN": {
+        "deskripsi": "Kaprodi belum mengatur jadwal publish",
+        "akses_pendaftaran": "Terbuka",
+        "akses_jadwal": "Overlay: Jadwal belum dijadwalkan"
+      },
+      "DIJADWALKAN": {
+        "deskripsi": "Kaprodi sudah set tanggal publish, tapi belum tercapai",
+        "akses_pendaftaran": "Terbuka",
+        "akses_jadwal": "Overlay: Jadwal akan dipublish pada [tanggal]"
+      },
+      "SELESAI": {
+        "deskripsi": "Jadwal sudah dipublish (tanggal_generate tercapai)",
+        "akses_pendaftaran": "Ditutup (PendaftaranSidangGuard)",
+        "akses_jadwal": "Terbuka untuk semua mahasiswa"
+      }
+    },
+    "auto_update": {
+      "deskripsi": "Status otomatis berubah dari DIJADWALKAN ke SELESAI saat tanggal_generate tercapai",
+      "mekanisme": "Cron job atau check saat API dipanggil"
+    }
+  },
+
+  "guards_dan_akses_kontrol": {
+    "PendaftaranSidangGuard": {
+      "path": "apps/web/components/shared/PendaftaranSidangGuard.tsx",
+      "deskripsi": "Guard untuk menutup pendaftaran sidang setelah jadwal dipublish",
+      "lokasi_penerapan": "/dashboard/mahasiswa/sidang",
+      "logika": {
+        "kondisi_block": "status === 'SELESAI' && is_generated === true",
+        "pesan": "Pendaftaran Sidang Ditutup - Jadwal sidang telah dipublish",
+        "icon": "Lock (red)",
+        "action": "Redirect ke menu Jadwal Sidang"
+      },
+      "tujuan": "Mencegah mahasiswa mendaftar sidang setelah jadwal keluar"
+    },
+    "JadwalSidangGuard": {
+      "path": "apps/web/components/shared/JadwalSidangGuard.tsx",
+      "deskripsi": "Guard untuk mengontrol akses ke halaman jadwal sidang",
+      "lokasi_penerapan": "/dashboard/mahasiswa/jadwal-sidang",
+      "3_kondisi_overlay": {
+        "kondisi_1_belum_dijadwalkan": {
+          "trigger": "status === 'BELUM_DIJADWALKAN'",
+          "tampilan": "Overlay dengan notifikasi status pendaftaran mahasiswa",
+          "notifikasi": {
+            "belum_daftar": {
+              "icon": "AlertCircle (red)",
+              "title": "Belum Mendaftar Sidang",
+              "message": "Anda belum mendaftar sidang. Silakan daftar melalui menu Pendaftaran Sidang.",
+              "footer": "Kaprodi belum mengatur jadwal publish untuk jadwal sidang periode ini."
+            },
+            "menunggu_validasi": {
+              "icon": "Clock (amber)",
+              "title": "Menunggu Validasi Pendaftaran",
+              "message": "Pendaftaran sidang Anda sedang dalam proses validasi.",
+              "footer": "Kaprodi belum mengatur jadwal publish untuk jadwal sidang periode ini."
+            },
+            "disetujui": {
+              "icon": "Calendar (green)",
+              "title": "Pendaftaran Disetujui",
+              "message": "Anda terdaftar untuk sidang periode ini.",
+              "footer": "Kaprodi belum mengatur jadwal publish untuk jadwal sidang periode ini."
+            }
+          }
+        },
+        "kondisi_2_dijadwalkan": {
+          "trigger": "status === 'DIJADWALKAN' && tanggal_generate !== null",
+          "tampilan": "Overlay dengan notifikasi status + tanggal publish",
+          "notifikasi": {
+            "belum_daftar": {
+              "icon": "AlertCircle (red)",
+              "title": "Belum Mendaftar Sidang",
+              "message": "Anda belum mendaftar sidang. Silakan daftar melalui menu Pendaftaran Sidang.",
+              "info_jadwal": "Jadwal sidang akan dipublish pada: [Tanggal lengkap] Pukul [HH:mm] WIB"
+            },
+            "menunggu_validasi": {
+              "icon": "Clock (amber)",
+              "title": "Menunggu Validasi Pendaftaran",
+              "message": "Pendaftaran sidang Anda sedang dalam proses validasi.",
+              "info_jadwal": "Jadwal sidang akan dipublish pada: [Tanggal lengkap] Pukul [HH:mm] WIB"
+            },
+            "disetujui": {
+              "icon": "Calendar (green)",
+              "title": "Pendaftaran Disetujui",
+              "message": "Anda terdaftar untuk sidang periode ini.",
+              "info_jadwal": "Jadwal sidang akan dipublish pada: [Tanggal lengkap] Pukul [HH:mm] WIB"
+            }
+          }
+        },
+        "kondisi_3_selesai": {
+          "trigger": "status === 'SELESAI' && is_generated === true",
+          "tampilan": "Notifikasi banner + konten jadwal sidang (children)",
+          "notifikasi_banner": {
+            "belum_daftar": {
+              "color": "red",
+              "icon": "AlertCircle",
+              "title": "Anda Tidak Terdaftar dalam Jadwal Sidang",
+              "message": "Anda belum mendaftar sidang untuk periode ini. Nama Anda tidak akan muncul dalam daftar jadwal sidang."
+            },
+            "menunggu_validasi": {
+              "color": "amber",
+              "icon": "Clock",
+              "title": "Pendaftaran Belum Diverifikasi",
+              "message": "Pendaftaran Anda belum diverifikasi. Nama Anda tidak akan muncul dalam daftar jadwal sidang sampai diverifikasi."
+            },
+            "disetujui": {
+              "color": "green",
+              "icon": "Calendar",
+              "title": "Anda Terdaftar dalam Jadwal Sidang",
+              "message": "Nama Anda sudah masuk dalam daftar jadwal sidang di bawah ini."
+            }
+          },
+          "konten": "Tampilkan {children} - daftar jadwal sidang untuk semua mahasiswa"
+        }
+      },
+      "tujuan": "Memberikan transparansi jadwal sidang untuk semua mahasiswa sambil memberi informasi status pendaftaran masing-masing"
+    }
+  },
+
+  "api_endpoints_status": {
+    "GET /penjadwalan-sidang/status": {
+      "deskripsi": "Get status penjadwalan sidang untuk periode aktif",
+      "auth": "All authenticated users",
+      "response": {
+        "status": "BELUM_DIJADWALKAN | DIJADWALKAN | SELESAI",
+        "tanggal_generate": "DateTime | null",
+        "is_generated": "boolean",
+        "periode_ta_id": "number"
+      },
+      "logic": [
+        "Get PenjadwalanSidang by current periode_ta_id",
+        "If tanggal_generate <= now && status === DIJADWALKAN, auto update to SELESAI",
+        "Return status"
+      ]
+    },
+    "POST /penjadwalan-sidang/set-schedule": {
+      "deskripsi": "Kaprodi set tanggal publish jadwal sidang",
+      "auth": "Prodi only",
+      "body": {
+        "tanggal_generate": "DateTime",
+        "periode_ta_id": "number"
+      },
+      "proses": [
+        "Upsert PenjadwalanSidang",
+        "Set status = DIJADWALKAN",
+        "Set tanggal_generate",
+        "Set is_generated = false"
+      ],
+      "response": {
+        "message": "Jadwal publish berhasil diatur",
+        "data": "PenjadwalanSidang object"
+      }
+    },
+    "POST /penjadwalan-sidang/publish-now": {
+      "deskripsi": "Kaprodi publish jadwal sidang sekarang (manual)",
+      "auth": "Prodi only",
+      "body": {
+        "periode_ta_id": "number"
+      },
+      "proses": [
+        "Update PenjadwalanSidang",
+        "Set status = SELESAI",
+        "Set is_generated = true",
+        "Set tanggal_generate = now"
+      ],
+      "response": {
+        "message": "Jadwal sidang berhasil dipublish",
+        "data": "PenjadwalanSidang object"
+      }
+    }
+  },
+
+  "hooks_frontend": {
+    "usePenjadwalanSidangStatus": {
+      "path": "apps/web/hooks/usePenjadwalanSidangStatus.ts",
+      "deskripsi": "Custom hook untuk get status penjadwalan sidang",
+      "return": {
+        "status": "PenjadwalanSidang | null",
+        "loading": "boolean",
+        "error": "Error | null",
+        "refetch": "() => void"
+      },
+      "usage": "Digunakan di JadwalSidangGuard dan PendaftaranSidangGuard",
+      "polling": "Optional: polling setiap 60 detik untuk auto-refresh saat tanggal_generate tercapai"
+    }
+  },
+
+  "alur_lengkap_penjadwalan": {
+    "fase_1_pendaftaran": {
+      "deskripsi": "Mahasiswa mendaftar sidang",
+      "status_sistem": "BELUM_DIJADWALKAN atau DIJADWALKAN",
+      "akses": {
+        "pendaftaran_sidang": "Terbuka (PendaftaranSidangGuard pass)",
+        "jadwal_sidang": "Overlay (JadwalSidangGuard block)"
+      },
+      "proses": [
+        "Mahasiswa upload dokumen",
+        "Mahasiswa submit pendaftaran",
+        "Pembimbing/Prodi validasi",
+        "Mahasiswa.siap_sidang = true"
+      ]
+    },
+    "fase_2_penjadwalan": {
+      "deskripsi": "Kaprodi jadwalkan sidang",
+      "status_sistem": "BELUM_DIJADWALKAN atau DIJADWALKAN",
+      "akses": {
+        "pendaftaran_sidang": "Terbuka",
+        "jadwal_sidang": "Overlay dengan info kapan jadwal akan dipublish"
+      },
+      "proses": [
+        "Kaprodi lihat list mahasiswa siap_sidang = true",
+        "Kaprodi jadwalkan satu per satu",
+        "Sistem assign penguji random",
+        "Kaprodi set tanggal publish jadwal (opsional)"
+      ]
+    },
+    "fase_3_publish_jadwal": {
+      "deskripsi": "Jadwal sidang dipublish",
+      "trigger": "Kaprodi klik 'Publish Now' atau tanggal_generate tercapai",
+      "status_sistem": "SELESAI",
+      "akses": {
+        "pendaftaran_sidang": "Ditutup (PendaftaranSidangGuard block)",
+        "jadwal_sidang": "Terbuka untuk semua mahasiswa dengan notifikasi status"
+      },
+      "proses": [
+        "Status berubah ke SELESAI",
+        "is_generated = true",
+        "Semua mahasiswa bisa lihat jadwal sidang",
+        "Mahasiswa yang belum daftar/belum divalidasi dapat notifikasi",
+        "Mahasiswa yang disetujui dapat notifikasi nama mereka ada di jadwal"
+      ]
+    },
+    "fase_4_pelaksanaan_sidang": {
+      "deskripsi": "Sidang dilaksanakan sesuai jadwal",
+      "status_sistem": "SELESAI",
+      "proses": [
+        "Mahasiswa, penguji, dan sekretaris hadir",
+        "Sidang dilaksanakan",
+        "Penguji input nilai",
+        "Sekretaris (pembimbing1) input nilai final",
+        "Status sidang berubah: lulus/lulus_revisi/tidak_lulus"
+      ]
+    }
+  },
+
+  "transparansi_jadwal": {
+    "filosofi": "Jadwal sidang adalah informasi publik yang bisa dilihat semua mahasiswa",
+    "alasan": [
+      "Mahasiswa lain perlu tahu kapan temannya sidang untuk datang sebagai penonton",
+      "Dosen dan mahasiswa lain perlu tahu jadwal untuk menghindari bentrok",
+      "Informasi ini biasanya dipublikasikan di papan pengumuman atau grup WA",
+      "Transparansi meningkatkan kepercayaan terhadap sistem"
+    ],
+    "implementasi": {
+      "semua_mahasiswa_bisa_lihat": true,
+      "notifikasi_status_personal": true,
+      "deskripsi": "Semua mahasiswa bisa lihat jadwal sidang, tapi mendapat notifikasi berbeda sesuai status pendaftaran mereka"
+    }
+  },
+
+  "catatan_penting": [
+    "Pembimbing 1 otomatis hadir sebagai sekretaris (tidak perlu input manual)",
+    "Pembimbing 2 tidak hadir di sidang (kecuali ditunjuk sebagai penguji, tapi ini tidak direkomendasikan)",
+    "Random assignment penguji dilakukan di backend, bukan frontend",
+    "Conflict detection harus real-time untuk UX yang baik",
+    "Calendar view harus responsive dan mudah digunakan",
+    "Suggested slots membantu jurusan menemukan waktu kosong",
+    "History perubahan jadwal penting untuk audit trail",
+    "Status penjadwalan mengontrol akses ke pendaftaran dan jadwal sidang",
+    "Jadwal sidang bersifat publik (semua mahasiswa bisa lihat) setelah dipublish",
+    "Notifikasi status pendaftaran membantu mahasiswa memahami posisi mereka",
+    "PendaftaranSidangGuard menutup pendaftaran setelah jadwal dipublish",
+    "JadwalSidangGuard memberikan overlay informatif sebelum jadwal dipublish"
+  ],
+
+  "teknologi": {
+    "backend": "Node.js + Express + Prisma + SQLite",
+    "frontend": "Next.js 15 + React 19 + TypeScript + Tailwind CSS",
+    "calendar": "@fullcalendar/react",
+    "date_handling": "date-fns",
+    "validation": "Zod",
+    "icons": "lucide-react"
+  },
+
+  "file_struktur": {
+    "backend": {
+      "router": "apps/api/src/api/jadwal-sidang.router.ts",
+      "service": "apps/api/src/services/jadwal-sidang.service.ts",
+      "models": [
+        "apps/api/prisma/schema.prisma (JadwalSidang, PenjadwalanSidang, Ruangan)"
+      ]
+    },
+    "frontend": {
+      "guards": [
+        "apps/web/components/shared/JadwalSidangGuard.tsx",
+        "apps/web/components/shared/PendaftaranSidangGuard.tsx"
+      ],
+      "hooks": [
+        "apps/web/hooks/usePenjadwalanSidangStatus.ts"
+      ],
+      "pages": [
+        "apps/web/app/dashboard/mahasiswa/jadwal-sidang/page.tsx",
+        "apps/web/app/dashboard/mahasiswa/sidang/page.tsx",
+        "apps/web/app/dashboard/dosen/jadwal-sidang/page.tsx"
+      ]
+    }
+  }
+}

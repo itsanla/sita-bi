@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import request from '@/lib/api';
 import PeriodeGuard from '@/components/shared/PeriodeGuard';
 import TAGuard from '@/components/shared/TAGuard';
+import PendaftaranSidangGuard from '@/components/shared/PendaftaranSidangGuard';
 import { Upload, FileText, Eye, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -207,7 +208,9 @@ export default function PendaftaranSidangPage() {
     return (
       <PeriodeGuard>
         <TAGuard requireEligibleForSidang>
-          <div className="text-center p-8">Memuat...</div>
+          <PendaftaranSidangGuard>
+            <div className="text-center p-8">Memuat...</div>
+          </PendaftaranSidangGuard>
         </TAGuard>
       </PeriodeGuard>
     );
@@ -218,7 +221,8 @@ export default function PendaftaranSidangPage() {
   return (
     <PeriodeGuard>
       <TAGuard requireEligibleForSidang>
-        <div className="space-y-6">
+        <PendaftaranSidangGuard>
+          <div className="space-y-6">
           <div className="bg-white p-6 rounded-lg shadow">
             <h1 className="text-2xl font-bold mb-4">
               Pendaftaran Sidang Tugas Akhir
@@ -402,17 +406,15 @@ export default function PendaftaranSidangPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {history.map((item, idx) => {
-                      const roleLabel = item.validator_role === 'jurusan'
-                        ? 'Jurusan'
-                        : item.validator_role === 'prodi_d3'
-                        ? 'Prodi D3'
-                        : item.validator_role === 'prodi_d4'
-                        ? 'Prodi D4'
-                        : item.validator_role === 'pembimbing1'
-                        ? 'Pembimbing 1'
-                        : item.validator_role === 'pembimbing2'
-                        ? 'Pembimbing 2'
-                        : 'Pembimbing';
+                      const roles = item.validator_role?.split(',') || [];
+                      const roleLabels = roles.map(r => 
+                        r === 'jurusan' ? 'Jurusan' :
+                        r === 'prodi_d3' ? 'Prodi D3' :
+                        r === 'prodi_d4' ? 'Prodi D4' :
+                        r === 'pembimbing1' ? 'Pembimbing 1' :
+                        r === 'pembimbing2' ? 'Pembimbing 2' : r
+                      );
+                      const roleLabel = roleLabels.join(' + ') || 'Pembimbing';
 
                       const actionLabel =
                         item.action === 'submit'
@@ -477,7 +479,8 @@ export default function PendaftaranSidangPage() {
               </div>
             </div>
           )}
-        </div>
+          </div>
+        </PendaftaranSidangGuard>
       </TAGuard>
     </PeriodeGuard>
   );
