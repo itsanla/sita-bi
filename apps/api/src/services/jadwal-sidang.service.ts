@@ -1187,4 +1187,58 @@ export class JadwalSidangService {
       ruangan: ruangan.map(r => ({ id: r.id, name: r.nama_ruangan })),
     };
   }
+
+  async moveSchedule(fromDate: string, toDate: string) {
+    console.log('[BACKEND] 📅 Moving schedule from', fromDate, 'to', toDate);
+    
+    const dateFrom = new Date(fromDate);
+    dateFrom.setUTCHours(0, 0, 0, 0);
+    const dateTo = new Date(toDate);
+    dateTo.setUTCHours(0, 0, 0, 0);
+    
+    const daysDiff = Math.floor((dateTo.getTime() - dateFrom.getTime()) / (1000 * 60 * 60 * 24));
+    console.log('[BACKEND] 📊 Days difference:', daysDiff);
+    
+    if (daysDiff <= 0) {
+      const error: any = new Error('Tanggal tujuan harus lebih besar dari tanggal asal');
+      error.statusCode = 400;
+      throw error;
+    }
+    
+    const jadwalToMove = await prisma.jadwalSidang.findMany({
+      where: {
+        tanggal: { gte: dateFrom },
+      },
+    });
+    
+    console.log('[BACKEND] 📋 Found', jadwalToMove.length, 'jadwal to move');
+    
+    if (jadwalToMove.length === 0) {
+      const error: any = new Error('Tidak ada jadwal yang ditemukan dari tanggal tersebut');
+      error.statusCode = 404;
+      throw error;
+    }
+    
+    await prisma.$transaction(async (tx) => {
+      for (const jadwal of jadwalToMove) {
+        const oldDate = new Date(jadwal.tanggal);
+        oldDate.setUTCHours(0, 0, 0, 0);
+        const daysFromStart = Math.floor((oldDate.getTime() - dateFrom.getTime()) / (1000 * 60 * 60 * 24));
+        
+        const newDate = new Date(dateTo);
+        newDate.setDate(newDate.getDate() + daysFromStart);
+        newDate.setUTCHours(0, 0, 0, 0);
+        
+        await tx.jadwalSidang.update({
+          where: { id: jadwal.id },
+          data: { tanggal: newDate },
+        });
+        
+        console.log('[BACKEND] ✅ Moved jadwal', jadwal.id, 'from', oldDate.toISOString().split('T')[0], 'to', newDate.toISOString().split('T')[0]);
+      }
+    });
+    
+    console.log('[BACKEND] 🎉 Successfully moved', jadwalToMove.length, 'jadwal');
+    return { count: jadwalToMove.length };
+  }
 }

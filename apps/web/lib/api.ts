@@ -81,9 +81,18 @@ apiClient.interceptors.response.use(
     const message =
       (error.response.data as ApiResponse)?.message || error.message;
 
-    // Only log unexpected errors (not validation/conflict errors)
-    if (![400, 409, 422].includes(status)) {
+    // Only log unexpected errors (not validation/conflict/smart errors)
+    if (![400, 409, 422, 500].includes(status)) {
       console.error(`[API Response] HTTP ${status}:`, message);
+    } else if (status === 500 && message && typeof message === 'string') {
+      // Only log 500 if it's not a JSON smart error
+      try {
+        JSON.parse(message);
+        // It's JSON smart error, don't log
+      } catch {
+        // Not JSON, log it
+        console.error(`[API Response] HTTP ${status}:`, message);
+      }
     }
 
     switch (status) {
@@ -157,8 +166,20 @@ apiClient.interceptors.response.use(
 
       case 500:
         // Show error message from backend for validation errors
+        // Skip if message is JSON (smart error for generate jadwal)
         if (message && typeof message === 'string') {
-          toast.error(message);
+          try {
+            JSON.parse(message);
+            // It's JSON, don't show toast (component will handle it)
+          } catch {
+            // Not JSON, show toast
+            const now = Date.now();
+            if (message !== lastToastMessage || now - lastToastTime > 1000) {
+              toast.error(message);
+              lastToastMessage = message;
+              lastToastTime = now;
+            }
+          }
         }
         break;
 

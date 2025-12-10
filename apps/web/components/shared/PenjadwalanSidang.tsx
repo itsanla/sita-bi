@@ -37,6 +37,10 @@ export default function PenjadwalanSidang() {
   const [showDropdownAnggota1, setShowDropdownAnggota1] = useState(false);
   const [showDropdownAnggota2, setShowDropdownAnggota2] = useState(false);
   const [showDropdownRuangan, setShowDropdownRuangan] = useState(false);
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [moveDateFrom, setMoveDateFrom] = useState('');
+  const [moveDateTo, setMoveDateTo] = useState('');
+  const [movingJadwal, setMovingJadwal] = useState(false);
 
   const fetchJadwal = async () => {
     console.log('[FRONTEND] 🔄 Fetching jadwal dan mahasiswa siap...');
@@ -178,20 +182,15 @@ export default function PenjadwalanSidang() {
         document.getElementById('jadwal-tersimpan')?.scrollIntoView({ behavior: 'smooth' });
       }, 500);
     } catch (error: any) {
-      console.error('[FRONTEND] ❌ Error generate:', error);
-      console.error('[FRONTEND] ❌ Error response:', error.response?.data);
-      console.error('[FRONTEND] ❌ Error message:', error.response?.data?.message);
-      
       // Parse smart error message
       try {
         const errorData = JSON.parse(error.response?.data?.message);
         setErrorInfo(errorData);
       } catch {
-        toast.error(error.response?.data?.message || 'Gagal generate jadwal');
+        // Not a JSON error, will be handled by interceptor
       }
     } finally {
       setGenerating(false);
-      console.log('[FRONTEND] 🏁 Generate finished');
     }
   };
 
@@ -515,6 +514,13 @@ export default function PenjadwalanSidang() {
                 <span>Excel</span>
               </button>
               <button
+                onClick={() => setShowMoveModal(true)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm flex items-center space-x-2"
+              >
+                <Calendar className="w-4 h-4" />
+                <span>Pindahkan Jadwal</span>
+              </button>
+              <button
                 onClick={handleHapusJadwal}
                 disabled={loadingJadwal}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 text-sm flex items-center space-x-2"
@@ -690,6 +696,93 @@ export default function PenjadwalanSidang() {
           generate langsung.
         </p>
       </div>
+
+      {showMoveModal && (
+        <div className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50 -mt-16 lg:-mt-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', marginTop: '-64px' }}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+            <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
+              <h3 className="text-xl font-bold">Pindahkan Jadwal Massal</h3>
+              <button onClick={() => setShowMoveModal(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <span className="font-semibold">Info:</span> Semua jadwal yang dimulai dari tanggal yang dipilih akan dipindahkan ke tanggal baru dengan mempertahankan urutan hari.
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Pindahkan Dari Tanggal</label>
+                <input
+                  type="date"
+                  value={moveDateFrom}
+                  onChange={(e) => setMoveDateFrom(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Pindahkan Ke Tanggal</label>
+                <input
+                  type="date"
+                  value={moveDateTo}
+                  onChange={(e) => setMoveDateTo(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div className="sticky bottom-0 bg-gray-50 p-6 flex justify-end space-x-3 border-t rounded-b-xl">
+              <button
+                onClick={() => setShowMoveModal(false)}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-100"
+              >
+                Batal
+              </button>
+              <button
+                onClick={async () => {
+                  if (!moveDateFrom || !moveDateTo) {
+                    toast.error('Kedua tanggal harus diisi');
+                    return;
+                  }
+                  
+                  const dateFrom = new Date(moveDateFrom);
+                  const dateTo = new Date(moveDateTo);
+                  
+                  if (dateTo <= dateFrom) {
+                    toast.error('Tanggal tujuan harus lebih besar dari tanggal asal');
+                    return;
+                  }
+                  
+                  if (!confirm(`Yakin ingin memindahkan semua jadwal dari ${dateFrom.toLocaleDateString('id-ID')} ke ${dateTo.toLocaleDateString('id-ID')}?`)) {
+                    return;
+                  }
+                  
+                  setMovingJadwal(true);
+                  try {
+                    const response = await api.post('/jadwal-sidang-smart/move-schedule', {
+                      from_date: moveDateFrom,
+                      to_date: moveDateTo,
+                    });
+                    toast.success(response.data.message);
+                    setShowMoveModal(false);
+                    setMoveDateFrom('');
+                    setMoveDateTo('');
+                    fetchJadwal();
+                  } catch (error: any) {
+                    // Error handled by interceptor
+                  } finally {
+                    setMovingJadwal(false);
+                  }
+                }}
+                disabled={movingJadwal}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+              >
+                {movingJadwal ? 'Memindahkan...' : 'Pindahkan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {editModal && editOptions && (
         <div className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50 -mt-16 lg:-mt-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', marginTop: '-64px' }}>

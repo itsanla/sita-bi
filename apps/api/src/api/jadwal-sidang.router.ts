@@ -124,6 +124,18 @@ router.get(
   })
 );
 
+router.post(
+  '/move-schedule',
+  asyncHandler(authMiddleware),
+  authorizeRoles([Role.admin, Role.jurusan]),
+  auditLog('MOVE_SCHEDULE', 'jadwal_sidang'),
+  asyncHandler(async (req, res) => {
+    const { from_date, to_date } = req.body;
+    const result = await service.moveSchedule(from_date, to_date);
+    res.json({ status: 'sukses', message: `Berhasil memindahkan ${result.count} jadwal`, data: result });
+  })
+);
+
 router.get(
   '/export/pdf',
   asyncHandler(authMiddleware),
