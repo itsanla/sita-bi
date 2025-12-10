@@ -77,6 +77,11 @@ enum HasilSidang {
   tidak_lulus
 }
 
+enum StatusKelulusan {
+  BELUM_LULUS
+  LULUS
+}
+
 enum StatusBimbingan {
   dijadwalkan
   ditolak
@@ -205,15 +210,17 @@ model Permission {
 
 /// Profil khusus untuk Mahasiswa, berisi data akademik.
 model Mahasiswa {
-  id          Int      @id @default(autoincrement())
-  user_id     Int      @unique
-  nim         String   @unique
-  prodi       Prodi
-  kelas       String
-  ipk         Float?
-  siap_sidang Boolean  @default(false)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  id               Int              @id @default(autoincrement())
+  user_id          Int              @unique
+  nim              String           @unique
+  prodi            Prodi
+  kelas            String
+  ipk              Float?
+  siap_sidang      Boolean          @default(false)
+  sidang_terjadwal Boolean          @default(false)
+  status_kelulusan StatusKelulusan  @default(BELUM_LULUS)
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @updatedAt
 
   // Relasi
   user                   User                     @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -514,6 +521,7 @@ model Sidang {
   periode_ta_id         Int?
   jenis_sidang          JenisSidang
   status_hasil          HasilSidang @default(menunggu_penjadwalan)
+  selesai_sidang        Boolean     @default(false)
   is_active             Boolean     @default(true)
   deleted_at            DateTime?
   created_at            DateTime    @default(now())

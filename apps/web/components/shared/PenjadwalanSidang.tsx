@@ -49,6 +49,11 @@ export default function PenjadwalanSidang() {
   const [swappingJadwal, setSwappingJadwal] = useState(false);
   const [showDropdownMhs1, setShowDropdownMhs1] = useState(false);
   const [showDropdownMhs2, setShowDropdownMhs2] = useState(false);
+  const [searchMahasiswa, setSearchMahasiswa] = useState('');
+  const [filterStatus, setFilterStatus] = useState('semua');
+  const [currentPageMhs, setCurrentPageMhs] = useState(1);
+  const itemsPerPageMhs = 5;
+  const [detailMahasiswa, setDetailMahasiswa] = useState<any>(null);
 
   const fetchJadwal = async () => {
     console.log('[FRONTEND] 🔄 Fetching jadwal dan mahasiswa siap...');
@@ -381,7 +386,7 @@ export default function PenjadwalanSidang() {
             <button
               onClick={handleAturJadwal}
               disabled={processing || !tanggalGenerate || !jamGenerate}
-              className="flex-1 px-4 py-2 bg-red-900 text-white rounded-lg hover:bg-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 bg-red-900 text-white rounded-lg hover:bg-red-800 hover:shadow-md active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {processing ? 'Menyimpan...' : 'Simpan Jadwal'}
             </button>
@@ -389,7 +394,7 @@ export default function PenjadwalanSidang() {
               <button
                 onClick={handleBatalkan}
                 disabled={processing}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 hover:shadow-md active:scale-95 transition-all disabled:opacity-50"
               >
                 Batalkan
               </button>
@@ -406,45 +411,202 @@ export default function PenjadwalanSidang() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
-                Mahasiswa Siap Sidang
+                Status Mahasiswa Sidang
               </h2>
               <p className="text-sm text-gray-600">
-                {mahasiswaSiap.length} mahasiswa menunggu penjadwalan
+                {mahasiswaSiap.filter((m: any) => {
+                  const matchSearch = !searchMahasiswa || 
+                    m.tugasAkhir?.mahasiswa?.user?.name?.toLowerCase().includes(searchMahasiswa.toLowerCase()) ||
+                    m.tugasAkhir?.mahasiswa?.nim?.toLowerCase().includes(searchMahasiswa.toLowerCase());
+                  const matchFilter = filterStatus === 'semua' || m.status_display === filterStatus;
+                  return matchSearch && matchFilter;
+                }).length} mahasiswa
               </p>
             </div>
           </div>
           <button
             onClick={handleGenerateSekarang}
-            disabled={generating || mahasiswaSiap.length === 0}
-            className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+            disabled={generating || mahasiswaSiap.filter((m: any) => m.status_display === 'siap_sidang').length === 0}
+            className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 hover:shadow-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
           >
             <Zap className="w-5 h-5" />
-            <span>{generating ? 'Menjadwalkan...' : 'Jadwalkan Sekarang'}</span>
+            <span>{generating ? 'Menjadwalkan...' : `Jadwalkan (${mahasiswaSiap.filter((m: any) => m.status_display === 'siap_sidang').length})`}</span>
           </button>
         </div>
 
-        {mahasiswaSiap.length > 0 && (
-          <div className="max-h-60 overflow-y-auto space-y-2">
-            {mahasiswaSiap.map((mhs: any, idx: number) => (
-              <div
-                key={`mhs-${mhs.tugasAkhir?.mahasiswa?.nim || idx}`}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-              >
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {mhs.tugasAkhir?.mahasiswa?.user?.name || 'N/A'}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {mhs.tugasAkhir?.mahasiswa?.nim || 'N/A'} • {mhs.tugasAkhir?.judul || 'N/A'}
-                  </p>
-                </div>
-                <span className="text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded">
-                  Menunggu
-                </span>
-              </div>
-            ))}
+        <div className="mb-4 space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Cari nama atau NIM mahasiswa..."
+              value={searchMahasiswa}
+              onChange={(e) => {
+                setSearchMahasiswa(e.target.value);
+                setCurrentPageMhs(1);
+              }}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
-        )}
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => {
+                setFilterStatus('semua');
+                setCurrentPageMhs(1);
+              }}
+              className={`px-3 py-1 rounded-lg text-sm transition-all ${
+                filterStatus === 'semua'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Semua ({mahasiswaSiap.length})
+            </button>
+            <button
+              onClick={() => {
+                setFilterStatus('siap_sidang');
+                setCurrentPageMhs(1);
+              }}
+              className={`px-3 py-1 rounded-lg text-sm transition-all ${
+                filterStatus === 'siap_sidang'
+                  ? 'bg-green-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Siap Sidang ({mahasiswaSiap.filter((m: any) => m.status_display === 'siap_sidang').length})
+            </button>
+            <button
+              onClick={() => {
+                setFilterStatus('menunggu_validasi');
+                setCurrentPageMhs(1);
+              }}
+              className={`px-3 py-1 rounded-lg text-sm transition-all ${
+                filterStatus === 'menunggu_validasi'
+                  ? 'bg-amber-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Menunggu Validasi ({mahasiswaSiap.filter((m: any) => m.status_display === 'menunggu_validasi').length})
+            </button>
+            <button
+              onClick={() => {
+                setFilterStatus('ditolak');
+                setCurrentPageMhs(1);
+              }}
+              className={`px-3 py-1 rounded-lg text-sm transition-all ${
+                filterStatus === 'ditolak'
+                  ? 'bg-red-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Ditolak ({mahasiswaSiap.filter((m: any) => m.status_display === 'ditolak').length})
+            </button>
+            <button
+              onClick={() => {
+                setFilterStatus('belum_daftar');
+                setCurrentPageMhs(1);
+              }}
+              className={`px-3 py-1 rounded-lg text-sm transition-all ${
+                filterStatus === 'belum_daftar'
+                  ? 'bg-gray-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Belum Daftar ({mahasiswaSiap.filter((m: any) => m.status_display === 'belum_daftar').length})
+            </button>
+          </div>
+        </div>
+
+        {mahasiswaSiap.length > 0 && (() => {
+          const filteredMhs = mahasiswaSiap.filter((mhs: any) => {
+            const matchSearch = !searchMahasiswa || 
+              mhs.tugasAkhir?.mahasiswa?.user?.name?.toLowerCase().includes(searchMahasiswa.toLowerCase()) ||
+              mhs.tugasAkhir?.mahasiswa?.nim?.toLowerCase().includes(searchMahasiswa.toLowerCase());
+            const matchFilter = filterStatus === 'semua' || mhs.status_display === filterStatus;
+            return matchSearch && matchFilter;
+          });
+          
+          const totalPagesMhs = Math.ceil(filteredMhs.length / itemsPerPageMhs);
+          const startIndexMhs = (currentPageMhs - 1) * itemsPerPageMhs;
+          const paginatedMhs = filteredMhs.slice(startIndexMhs, startIndexMhs + itemsPerPageMhs);
+          
+          return (
+            <>
+              <div className="space-y-2">
+                {paginatedMhs.map((mhs: any, idx: number) => {
+                const getStatusBadge = () => {
+                  switch (mhs.status_display) {
+                    case 'siap_sidang':
+                      return <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded font-medium">Siap Sidang</span>;
+                    case 'menunggu_validasi':
+                      return (
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded font-medium">Menunggu Validasi</span>
+                          <span className="text-xs text-gray-500">{mhs.validator_info}</span>
+                        </div>
+                      );
+                    case 'ditolak':
+                      return (
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded font-medium">Ditolak</span>
+                          {mhs.rejection_reason && (
+                            <span className="text-xs text-red-600 max-w-xs text-right">{mhs.rejection_reason}</span>
+                          )}
+                        </div>
+                      );
+                    case 'belum_daftar':
+                      return <span className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded font-medium">Belum Daftar</span>;
+                    default:
+                      return <span className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded font-medium">-</span>;
+                  }
+                };
+
+                return (
+                  <div
+                    key={`mhs-${mhs.tugasAkhir?.mahasiswa?.nim || idx}`}
+                    onClick={() => setDetailMahasiswa(mhs)}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 hover:border-blue-300 transition-all cursor-pointer"
+                  >
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">
+                        {mhs.tugasAkhir?.mahasiswa?.user?.name || 'N/A'}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {mhs.tugasAkhir?.mahasiswa?.nim || 'N/A'} • {mhs.tugasAkhir?.judul || 'N/A'}
+                      </p>
+                    </div>
+                    {getStatusBadge()}
+                  </div>
+                );
+                })}
+              </div>
+              
+              {totalPagesMhs > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-sm text-gray-600">
+                    Halaman {currentPageMhs} dari {totalPagesMhs} ({filteredMhs.length} mahasiswa)
+                  </p>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setCurrentPageMhs(p => Math.max(1, p - 1))}
+                      disabled={currentPageMhs === 1}
+                      className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      Sebelumnya
+                    </button>
+                    <button
+                      onClick={() => setCurrentPageMhs(p => Math.min(totalPagesMhs, p + 1))}
+                      disabled={currentPageMhs === totalPagesMhs}
+                      className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      Selanjutnya
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       {errorInfo && (
@@ -509,28 +671,28 @@ export default function PenjadwalanSidang() {
             <div className="flex space-x-2">
               <button
                 onClick={handleExportPDF}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center space-x-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:shadow-md active:scale-95 transition-all text-sm flex items-center space-x-2"
               >
                 <FileDown className="w-4 h-4" />
                 <span>PDF</span>
               </button>
               <button
                 onClick={handleExportExcel}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm flex items-center space-x-2"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:shadow-md active:scale-95 transition-all text-sm flex items-center space-x-2"
               >
                 <FileSpreadsheet className="w-4 h-4" />
                 <span>Excel</span>
               </button>
               <button
                 onClick={() => setShowSwapModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center space-x-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:shadow-md active:scale-95 transition-all text-sm flex items-center space-x-2"
               >
                 <Users className="w-4 h-4" />
                 <span>Tukar Jadwal</span>
               </button>
               <button
                 onClick={() => setShowMoveModal(true)}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm flex items-center space-x-2"
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 hover:shadow-md active:scale-95 transition-all text-sm flex items-center space-x-2"
               >
                 <Calendar className="w-4 h-4" />
                 <span>Pindahkan Jadwal</span>
@@ -538,7 +700,7 @@ export default function PenjadwalanSidang() {
               <button
                 onClick={handleHapusJadwal}
                 disabled={loadingJadwal}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 text-sm flex items-center space-x-2"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 hover:shadow-md active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center space-x-2"
               >
                 <XCircle className="w-4 h-4" />
                 <span>{loadingJadwal ? 'Menghapus...' : 'Hapus Semua'}</span>
@@ -624,7 +786,7 @@ export default function PenjadwalanSidang() {
                               setShowDropdownAnggota2(false);
                               setShowDropdownRuangan(false);
                             }}
-                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
+                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 hover:shadow active:scale-95 transition-all text-xs"
                           >
                             Edit
                           </button>
@@ -640,7 +802,7 @@ export default function PenjadwalanSidang() {
                                 }
                               }
                             }}
-                            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-xs"
+                            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 hover:shadow active:scale-95 transition-all text-xs"
                           >
                             Hapus
                           </button>
@@ -662,7 +824,7 @@ export default function PenjadwalanSidang() {
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                 >
                   Sebelumnya
                 </button>
@@ -680,10 +842,10 @@ export default function PenjadwalanSidang() {
                       )}
                       <button
                         onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-1 rounded-lg text-sm ${
+                        className={`px-3 py-1 rounded-lg text-sm transition-all ${
                           currentPage === page
-                            ? 'bg-red-900 text-white'
-                            : 'border border-gray-300 hover:bg-gray-50'
+                            ? 'bg-red-900 text-white shadow-md'
+                            : 'border border-gray-300 hover:bg-gray-50 hover:border-gray-400 active:scale-95'
                         }`}
                       >
                         {page}
@@ -693,7 +855,7 @@ export default function PenjadwalanSidang() {
                 <button
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                 >
                   Selanjutnya
                 </button>
@@ -712,9 +874,88 @@ export default function PenjadwalanSidang() {
         </p>
       </div>
 
+      {detailMahasiswa && (
+        <div className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50 -mt-16 lg:-mt-0 animate-in fade-in duration-200" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', marginTop: '-64px' }}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
+              <h3 className="text-xl font-bold">Detail Mahasiswa</h3>
+              <button onClick={() => setDetailMahasiswa(null)} className="text-gray-500 hover:text-gray-700">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-semibold text-gray-900">{detailMahasiswa.tugasAkhir?.mahasiswa?.user?.name}</h4>
+                  {(() => {
+                    switch (detailMahasiswa.status_display) {
+                      case 'siap_sidang':
+                        return <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">Siap Sidang</span>;
+                      case 'menunggu_validasi':
+                        return <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium">Menunggu Validasi</span>;
+                      case 'ditolak':
+                        return <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">Ditolak</span>;
+                      case 'belum_daftar':
+                        return <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">Belum Daftar</span>;
+                    }
+                  })()}
+                </div>
+                <p className="text-sm text-gray-600">NIM: {detailMahasiswa.tugasAkhir?.mahasiswa?.nim}</p>
+                <p className="text-sm text-gray-600">Prodi: {detailMahasiswa.tugasAkhir?.mahasiswa?.prodi}</p>
+                <p className="text-sm text-gray-600">Kelas: {detailMahasiswa.tugasAkhir?.mahasiswa?.kelas}</p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Judul Tugas Akhir</h4>
+                <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">{detailMahasiswa.tugasAkhir?.judul}</p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Pembimbing</h4>
+                <div className="space-y-2">
+                  {detailMahasiswa.tugasAkhir?.peranDosenTa?.map((peran: any) => (
+                    <div key={peran.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{peran.dosen?.user?.name}</p>
+                        <p className="text-xs text-gray-500">{peran.dosen?.nip}</p>
+                      </div>
+                      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                        {peran.peran === 'pembimbing1' ? 'Pembimbing 1' : 'Pembimbing 2'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {detailMahasiswa.status_display === 'menunggu_validasi' && detailMahasiswa.validator_info && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm font-semibold text-amber-900 mb-1">Status Validasi</p>
+                  <p className="text-sm text-amber-800">{detailMahasiswa.validator_info}</p>
+                </div>
+              )}
+
+              {detailMahasiswa.status_display === 'ditolak' && detailMahasiswa.rejection_reason && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-sm font-semibold text-red-900 mb-1">Alasan Penolakan</p>
+                  <p className="text-sm text-red-800">{detailMahasiswa.rejection_reason}</p>
+                </div>
+              )}
+            </div>
+            <div className="sticky bottom-0 bg-gray-50 p-6 flex justify-end border-t">
+              <button
+                onClick={() => setDetailMahasiswa(null)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:shadow-md active:scale-95 transition-all"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showSwapModal && (
-        <div className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50 -mt-16 lg:-mt-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', marginTop: '-64px' }}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
+        <div className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50 -mt-16 lg:-mt-0 animate-in fade-in duration-200" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', marginTop: '-64px' }}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
             <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
               <h3 className="text-xl font-bold">Tukar Jadwal Mahasiswa</h3>
               <button onClick={() => {
@@ -929,8 +1170,8 @@ export default function PenjadwalanSidang() {
       )}
 
       {showMoveModal && (
-        <div className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50 -mt-16 lg:-mt-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', marginTop: '-64px' }}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+        <div className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50 -mt-16 lg:-mt-0 animate-in fade-in duration-200" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', marginTop: '-64px' }}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
               <h3 className="text-xl font-bold">Pindahkan Jadwal Massal</h3>
               <button onClick={() => setShowMoveModal(false)} className="text-gray-500 hover:text-gray-700">
@@ -1016,8 +1257,8 @@ export default function PenjadwalanSidang() {
       )}
 
       {editModal && editOptions && (
-        <div className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50 -mt-16 lg:-mt-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', marginTop: '-64px' }}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-4">
+        <div className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50 -mt-16 lg:-mt-0 animate-in fade-in duration-200" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', marginTop: '-64px' }}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-4 animate-in zoom-in-95 duration-200">
             <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
               <h3 className="text-xl font-bold">Edit Jadwal Sidang</h3>
               <button onClick={() => setEditModal(null)} className="text-gray-500 hover:text-gray-700">

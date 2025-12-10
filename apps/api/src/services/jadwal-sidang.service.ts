@@ -544,6 +544,12 @@ export class JadwalSidangService {
                   data: { status_hasil: HasilSidang.dijadwalkan },
                 });
 
+                // Set sidang_terjadwal = true untuk mahasiswa
+                await tx.mahasiswa.update({
+                  where: { id: sidang.tugasAkhir.mahasiswa.id },
+                  data: { sidang_terjadwal: true },
+                });
+
                 const [ketua, anggota1, anggota2] = await Promise.all([
                   tx.dosen.findUnique({ where: { id: pengujiIds[0] }, include: { user: true } }),
                   tx.dosen.findUnique({ where: { id: pengujiIds[1] }, include: { user: true } }),
@@ -800,11 +806,9 @@ export class JadwalSidangService {
   }
 
   async getMahasiswaSiapSidang() {
-    console.log('[BACKEND] 🔍 Getting mahasiswa siap sidang...');
+    console.log('[BACKEND] 🔍 Getting mahasiswa status sidang...');
+    
     const mahasiswa = await prisma.mahasiswa.findMany({
-      where: {
-        siap_sidang: true,
-      },
       include: {
         user: true,
         tugasAkhir: {
@@ -815,24 +819,47 @@ export class JadwalSidangService {
               },
               include: { dosen: { include: { user: true } } },
             },
-            sidang: true,
+            sidang: { where: { is_active: true } },
+            pendaftaranSidang: { orderBy: { created_at: 'desc' }, take: 1 },
           },
         },
       },
     });
 
-    console.log('[BACKEND] 👥 Found mahasiswa:', mahasiswa.length);
-    
     const result = mahasiswa
       .filter((m) => m.tugasAkhir)
       .map((m) => {
-        const sidangAktif = m.tugasAkhir!.sidang.find(
-          (s) => s.is_active && s.status_hasil === HasilSidang.menunggu_penjadwalan
-        );
+        const pendaftaran = m.tugasAkhir!.pendaftaranSidang[0];
+        const sidangAktif = m.tugasAkhir!.sidang.find((s) => s.is_active);
+        
+        let status_display = 'belum_daftar';
+        let validator_info = '';
+        let rejection_reason = '';
+        
+        // Cek status berdasarkan prioritas
+        if (m.siap_sidang && !m.sidang_terjadwal) {
+          status_display = 'siap_sidang';
+        } else if (pendaftaran?.rejected_by) {
+          status_display = 'ditolak';
+          rejection_reason = pendaftaran.rejection_reason || '';
+        } else if (pendaftaran?.is_submitted && pendaftaran.status_validasi === 'pending') {
+          status_display = 'menunggu_validasi';
+          const validators = [];
+          if (!pendaftaran.divalidasi_pembimbing_1) validators.push('P1');
+          if (!pendaftaran.divalidasi_pembimbing_2) validators.push('P2');
+          if (!pendaftaran.divalidasi_prodi) validators.push('Prodi');
+          if (!pendaftaran.divalidasi_jurusan) validators.push('Jurusan');
+          validator_info = validators.length > 0 ? `Menunggu: ${validators.join(', ')}` : '';
+        } else if (!pendaftaran || !pendaftaran.is_submitted) {
+          status_display = 'belum_daftar';
+        }
         
         return {
           id: sidangAktif?.id || 0,
           status_hasil: sidangAktif?.status_hasil || 'belum_ada_sidang',
+          status_display,
+          validator_info,
+          rejection_reason,
           tugasAkhir: {
             ...m.tugasAkhir,
             mahasiswa: m,
@@ -840,7 +867,7 @@ export class JadwalSidangService {
         };
       });
     
-    console.log('[BACKEND] 📊 Returning mahasiswa siap:', result.length);
+    console.log('[BACKEND] 📊 Returning mahasiswa:', result.length);
     return result;
   }
 
@@ -914,6 +941,12 @@ export class JadwalSidangService {
         data: { status_hasil: HasilSidang.menunggu_penjadwalan },
       });
 
+      // Reset sidang_terjadwal untuk semua mahasiswa
+      await tx.mahasiswa.updateMany({
+        where: { sidang_terjadwal: true },
+        data: { sidang_terjadwal: false },
+      });
+
       // Hapus semua jadwal
       const result = await tx.jadwalSidang.deleteMany({});
       
@@ -924,7 +957,18 @@ export class JadwalSidangService {
 
   async deleteJadwal(id: number) {
     return await prisma.$transaction(async (tx) => {
-      const jadwal = await tx.jadwalSidang.findUnique({ where: { id }, include: { sidang: true } });
+      const jadwal = await tx.jadwalSidang.findUnique({ 
+        where: { id }, 
+        include: { 
+          sidang: { 
+            include: { 
+              tugasAkhir: { 
+                include: { mahasiswa: true } 
+              } 
+            } 
+          } 
+        } 
+      });
       if (!jadwal) throw new Error('Jadwal tidak ditemukan');
 
       await tx.peranDosenTa.deleteMany({
@@ -937,6 +981,12 @@ export class JadwalSidangService {
       await tx.sidang.update({
         where: { id: jadwal.sidang_id },
         data: { status_hasil: HasilSidang.menunggu_penjadwalan },
+      });
+
+      // Reset sidang_terjadwal untuk mahasiswa ini
+      await tx.mahasiswa.update({
+        where: { id: jadwal.sidang.tugasAkhir.mahasiswa.id },
+        data: { sidang_terjadwal: false },
       });
 
       await tx.jadwalSidang.delete({ where: { id } });
