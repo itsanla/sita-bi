@@ -1,7 +1,7 @@
 'use client';
 
 import { useRBAC } from '@/hooks/useRBAC';
-import { Settings, Lock, Save, Plus, X } from 'lucide-react';
+import { Settings, Lock, Save, Plus, X, Coffee, Calendar } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -17,6 +17,20 @@ interface TanggalLibur {
   keterangan: string;
 }
 
+interface WaktuIstirahat {
+  waktu: string;
+  durasi_menit: number;
+}
+
+interface JadwalHariKhusus {
+  hari: string;
+  jam_mulai: string;
+  jam_selesai: string;
+  durasi_sidang_menit?: number;
+  jeda_sidang_menit?: number;
+  waktu_istirahat?: WaktuIstirahat[];
+}
+
 interface Pengaturan {
   max_similaritas_persen: number;
   min_bimbingan_valid: number;
@@ -27,6 +41,8 @@ interface Pengaturan {
   jeda_sidang_menit: number;
   jam_mulai_sidang?: string;
   jam_selesai_sidang?: string;
+  waktu_istirahat?: WaktuIstirahat[];
+  jadwal_hari_khusus?: JadwalHariKhusus[];
   hari_libur_tetap?: string[];
   tanggal_libur_khusus?: TanggalLibur[];
   mode_validasi_judul?: string;
@@ -54,6 +70,8 @@ export default function AturanTugasAkhirPage() {
     jeda_sidang_menit: 15,
     jam_mulai_sidang: '08:00',
     jam_selesai_sidang: '15:00',
+    waktu_istirahat: [],
+    jadwal_hari_khusus: [],
     hari_libur_tetap: ['sabtu', 'minggu'],
     tanggal_libur_khusus: [],
     mode_validasi_judul: 'KEDUA_PEMBIMBING',
@@ -75,6 +93,8 @@ export default function AturanTugasAkhirPage() {
     jeda_sidang_menit: 15,
     jam_mulai_sidang: '08:00',
     jam_selesai_sidang: '15:00',
+    waktu_istirahat: [],
+    jadwal_hari_khusus: [],
     hari_libur_tetap: ['sabtu', 'minggu'],
     tanggal_libur_khusus: [],
     mode_validasi_judul: 'KEDUA_PEMBIMBING',
@@ -89,6 +109,10 @@ export default function AturanTugasAkhirPage() {
   const [ruanganBaru, setRuanganBaru] = useState('');
   const [syaratBaru, setSyaratBaru] = useState({ key: '', label: '' });
   const [tanggalLiburBaru, setTanggalLiburBaru] = useState({ tanggal: '', keterangan: '' });
+  const [waktuIstirahatBaru, setWaktuIstirahatBaru] = useState({ waktu: '', durasi_menit: 60 });
+  const [showJadwalKhususModal, setShowJadwalKhususModal] = useState(false);
+  const [editingHariKhusus, setEditingHariKhusus] = useState<JadwalHariKhusus | null>(null);
+  const [waktuIstirahatKhususBaru, setWaktuIstirahatKhususBaru] = useState({ waktu: '', durasi_menit: 60 });
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
@@ -155,6 +179,8 @@ export default function AturanTugasAkhirPage() {
         jeda_sidang_menit: data.jeda_sidang_menit ?? 15,
         jam_mulai_sidang: data.jam_mulai_sidang ?? '08:00',
         jam_selesai_sidang: data.jam_selesai_sidang ?? '15:00',
+        waktu_istirahat: data.waktu_istirahat ?? [],
+        jadwal_hari_khusus: data.jadwal_hari_khusus ?? [],
         hari_libur_tetap: data.hari_libur_tetap ?? ['sabtu', 'minggu'],
         tanggal_libur_khusus: data.tanggal_libur_khusus ?? [],
         mode_validasi_judul:
@@ -191,6 +217,7 @@ export default function AturanTugasAkhirPage() {
     try {
       const { mode_validasi_judul, mode_validasi_draf, ...pengaturanData } =
         pengaturan;
+      console.log('Saving pengaturan:', pengaturanData);
       console.log('Saving aturan validasi:', {
         mode_validasi_judul,
         mode_validasi_draf,
@@ -303,6 +330,72 @@ export default function AturanTugasAkhirPage() {
         hari_libur_tetap: [...current, hari],
       });
     }
+  };
+
+  const calculateAvailableWaktuIstirahat = () => {
+    const { jam_mulai_sidang, jam_selesai_sidang, durasi_sidang_menit, jeda_sidang_menit } = pengaturan;
+    if (!jam_mulai_sidang || !jam_selesai_sidang || !durasi_sidang_menit) return [];
+
+    const [jamMulai, menitMulai] = jam_mulai_sidang.split(':').map(Number);
+    const [jamSelesai, menitSelesai] = jam_selesai_sidang.split(':').map(Number);
+    const startMinutes = jamMulai * 60 + menitMulai;
+    const endMinutes = jamSelesai * 60 + menitSelesai;
+    const durasiTotal = durasi_sidang_menit + jeda_sidang_menit;
+
+    const waktuList: string[] = [];
+    let currentMinutes = startMinutes + durasi_sidang_menit;
+
+    while (currentMinutes < endMinutes) {
+      const jam = Math.floor(currentMinutes / 60);
+      const menit = currentMinutes % 60;
+      waktuList.push(`${String(jam).padStart(2, '0')}:${String(menit).padStart(2, '0')}`);
+      currentMinutes += durasiTotal;
+    }
+
+    return waktuList;
+  };
+
+  const handleTambahWaktuIstirahat = () => {
+    if (waktuIstirahatBaru.waktu && waktuIstirahatBaru.durasi_menit > 0) {
+      setPengaturan({
+        ...pengaturan,
+        waktu_istirahat: [
+          ...(pengaturan.waktu_istirahat || []),
+          { waktu: waktuIstirahatBaru.waktu, durasi_menit: waktuIstirahatBaru.durasi_menit },
+        ],
+      });
+      setWaktuIstirahatBaru({ waktu: '', durasi_menit: 60 });
+    }
+  };
+
+  const handleHapusWaktuIstirahat = (index: number) => {
+    setPengaturan({
+      ...pengaturan,
+      waktu_istirahat: (pengaturan.waktu_istirahat || []).filter((_, i) => i !== index),
+    });
+  };
+
+  const handleTambahHariKhusus = () => {
+    setEditingHariKhusus({ hari: 'jumat', jam_mulai: '08:00', jam_selesai: '15:00', durasi_sidang_menit: pengaturan.durasi_sidang_menit, jeda_sidang_menit: pengaturan.jeda_sidang_menit, waktu_istirahat: [] });
+    setShowJadwalKhususModal(true);
+  };
+
+  const handleSimpanHariKhusus = () => {
+    if (!editingHariKhusus) return;
+    const existing = (pengaturan.jadwal_hari_khusus || []).findIndex(j => j.hari === editingHariKhusus.hari);
+    if (existing >= 0) {
+      const updated = [...(pengaturan.jadwal_hari_khusus || [])];
+      updated[existing] = editingHariKhusus;
+      setPengaturan({ ...pengaturan, jadwal_hari_khusus: updated });
+    } else {
+      setPengaturan({ ...pengaturan, jadwal_hari_khusus: [...(pengaturan.jadwal_hari_khusus || []), editingHariKhusus] });
+    }
+    setShowJadwalKhususModal(false);
+    setEditingHariKhusus(null);
+  };
+
+  const handleHapusHariKhusus = (hari: string) => {
+    setPengaturan({ ...pengaturan, jadwal_hari_khusus: (pengaturan.jadwal_hari_khusus || []).filter(j => j.hari !== hari) });
   };
 
   if (!role) {
@@ -855,6 +948,74 @@ export default function AturanTugasAkhirPage() {
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
+                Waktu Istirahat
+              </label>
+              <p className="text-sm text-gray-500 mb-2">
+                Tambahkan waktu istirahat di tengah jadwal sidang (misal: istirahat makan siang)
+              </p>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={waktuIstirahatBaru.waktu}
+                    onChange={(e) => setWaktuIstirahatBaru({ ...waktuIstirahatBaru, waktu: e.target.value })}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+                  >
+                    <option value="">Pilih waktu selesai sidang</option>
+                    {calculateAvailableWaktuIstirahat().map((waktu) => (
+                      <option key={waktu} value={waktu}>{waktu}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    min="15"
+                    step="15"
+                    value={waktuIstirahatBaru.durasi_menit}
+                    onChange={(e) => setWaktuIstirahatBaru({ ...waktuIstirahatBaru, durasi_menit: parseInt(e.target.value) || 60 })}
+                    placeholder="Durasi (menit)"
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+                  />
+                </div>
+                <button
+                  onClick={handleTambahWaktuIstirahat}
+                  disabled={!waktuIstirahatBaru.waktu}
+                  className="flex items-center space-x-2 px-4 py-2 bg-red-900 text-white rounded-lg hover:bg-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Tambah Waktu Istirahat</span>
+                </button>
+              </div>
+              <div className="space-y-2 mt-2">
+                {(pengaturan.waktu_istirahat || []).length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    Belum ada waktu istirahat.
+                  </p>
+                ) : (
+                  (pengaturan.waktu_istirahat || []).map((istirahat, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                    >
+                      <div>
+                        <span className="text-sm font-medium text-gray-900">
+                          Istirahat setelah sidang selesai jam {istirahat.waktu}
+                        </span>
+                        <span className="text-xs text-gray-500 ml-2">
+                          (Durasi: {istirahat.durasi_menit} menit)
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleHapusWaktuIstirahat(index)}
+                        className="text-red-600 hover:text-red-800 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
                 Hari Libur Tetap
               </label>
               <div className="flex flex-wrap gap-2">
@@ -994,9 +1155,264 @@ export default function AturanTugasAkhirPage() {
                 )}
               </div>
             </div>
+            
+            {/* Jadwal Hari Khusus */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Jadwal Hari Khusus</label>
+              <p className="text-sm text-gray-500 mb-2">Atur jam operasional berbeda untuk hari tertentu (misal: Jumat kosong jam 11-13 untuk sholat Jumat)</p>
+              <button onClick={handleTambahHariKhusus} className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                <Plus className="w-4 h-4" /><span>Tambah Hari Khusus</span>
+              </button>
+              <div className="space-y-2 mt-2">
+                {(pengaturan.jadwal_hari_khusus || []).length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">Belum ada jadwal hari khusus</p>
+                ) : (
+                  (pengaturan.jadwal_hari_khusus || []).map((jadwal, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
+                      <div><span className="text-sm font-medium text-purple-900 capitalize">Hari {jadwal.hari}</span><span className="text-xs text-purple-700 ml-2">{jadwal.jam_mulai} - {jadwal.jam_selesai}</span></div>
+                      <button onClick={() => handleHapusHariKhusus(jadwal.hari)} className="text-red-600 hover:text-red-800"><X className="w-4 h-4" /></button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Preview Jadwal */}
+            <div className="mt-6 pt-6 border-t">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <Coffee className="w-4 h-4" />
+                Preview Jadwal
+              </h3>
+              {(pengaturan.jadwal_hari_khusus || []).length > 0 && (
+                <p className="text-xs text-purple-600 mb-3">⚠️ Ada {(pengaturan.jadwal_hari_khusus || []).length} hari dengan jadwal khusus</p>
+              )}
+              {/* Preview Default */}
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-gray-700 mb-2">Jadwal Default (Hari Normal)</p>
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                {(() => {
+                  const { jam_mulai_sidang, jam_selesai_sidang, durasi_sidang_menit, jeda_sidang_menit, waktu_istirahat, ruangan_sidang } = pengaturan;
+                  if (!jam_mulai_sidang || !jam_selesai_sidang || !durasi_sidang_menit) {
+                    return <p className="text-sm text-gray-500">Lengkapi pengaturan untuk melihat preview</p>;
+                  }
+
+                  const [jamMulai, menitMulai] = jam_mulai_sidang.split(':').map(Number);
+                  const [jamSelesai, menitSelesai] = jam_selesai_sidang.split(':').map(Number);
+                  const startMinutes = jamMulai * 60 + menitMulai;
+                  const endMinutes = jamSelesai * 60 + menitSelesai;
+                  const durasiTotal = durasi_sidang_menit + jeda_sidang_menit;
+
+                  const waktuIstirahatMap = new Map<number, number>();
+                  (waktu_istirahat || []).forEach((istirahat) => {
+                    const [jam, menit] = istirahat.waktu.split(':').map(Number);
+                    waktuIstirahatMap.set(jam * 60 + menit, istirahat.durasi_menit);
+                  });
+
+                  const slots: { mulai: string; selesai: string; isIstirahat?: boolean; durasi?: number }[] = [];
+                  let currentMinutes = startMinutes;
+
+                  while (currentMinutes + durasi_sidang_menit <= endMinutes) {
+                    const waktuMulai = `${String(Math.floor(currentMinutes / 60)).padStart(2, '0')}:${String(currentMinutes % 60).padStart(2, '0')}`;
+                    const waktuSelesaiMenit = currentMinutes + durasi_sidang_menit;
+                    const waktuSelesai = `${String(Math.floor(waktuSelesaiMenit / 60)).padStart(2, '0')}:${String(waktuSelesaiMenit % 60).padStart(2, '0')}`;
+
+                    slots.push({ mulai: waktuMulai, selesai: waktuSelesai });
+
+                    if (waktuIstirahatMap.has(waktuSelesaiMenit)) {
+                      const durasiIstirahat = waktuIstirahatMap.get(waktuSelesaiMenit)!;
+                      const istirahatSelesai = `${String(Math.floor((waktuSelesaiMenit + durasiIstirahat) / 60)).padStart(2, '0')}:${String((waktuSelesaiMenit + durasiIstirahat) % 60).padStart(2, '0')}`;
+                      slots.push({ mulai: waktuSelesai, selesai: istirahatSelesai, isIstirahat: true, durasi: durasiIstirahat });
+                      currentMinutes = waktuSelesaiMenit + durasiIstirahat;
+                    } else {
+                      currentMinutes += durasiTotal;
+                    }
+                  }
+
+                  const totalSlot = slots.filter(s => !s.isIstirahat).length;
+                  const totalRuangan = (ruangan_sidang || []).length || 1;
+                  const totalSidangPerHari = totalSlot * totalRuangan;
+
+                  return (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-3 gap-3 text-xs">
+                        <div className="bg-white rounded p-2 border border-blue-200">
+                          <p className="text-gray-600">Total Slot</p>
+                          <p className="text-lg font-bold text-blue-900">{totalSlot}</p>
+                        </div>
+                        <div className="bg-white rounded p-2 border border-blue-200">
+                          <p className="text-gray-600">Ruangan</p>
+                          <p className="text-lg font-bold text-blue-900">{totalRuangan}</p>
+                        </div>
+                        <div className="bg-white rounded p-2 border border-blue-200">
+                          <p className="text-gray-600">Sidang/Hari</p>
+                          <p className="text-lg font-bold text-blue-900">{totalSidangPerHari}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        {slots.map((slot, idx) => (
+                          slot.isIstirahat ? (
+                            <div key={idx} className="flex items-center gap-2 p-2 bg-amber-100 border border-amber-300 rounded text-xs">
+                              <Coffee className="w-3 h-3 text-amber-700" />
+                              <span className="font-medium text-amber-900">ISTIRAHAT</span>
+                              <span className="text-amber-700">{slot.mulai} - {slot.selesai}</span>
+                              <span className="text-amber-600">({slot.durasi} menit)</span>
+                            </div>
+                          ) : (
+                            <div key={idx} className="flex items-center justify-between p-2 bg-white border border-blue-200 rounded text-xs">
+                              <span className="font-mono font-medium text-blue-900">Slot {idx - slots.slice(0, idx).filter(s => s.isIstirahat).length + 1}</span>
+                              <span className="text-gray-700">{slot.mulai} - {slot.selesai}</span>
+                              <span className="text-gray-500">({durasi_sidang_menit} menit)</span>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+                </div>
+              </div>
+              
+              {/* Preview Hari Khusus */}
+              {(pengaturan.jadwal_hari_khusus || []).map((jadwalKhusus, idx) => (
+                <div key={idx} className="mb-4">
+                  <p className="text-xs font-semibold text-purple-700 mb-2 capitalize">Jadwal Hari {jadwalKhusus.hari}</p>
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
+                    {(() => {
+                      const { jam_mulai, jam_selesai, waktu_istirahat, durasi_sidang_menit: durasiKhusus, jeda_sidang_menit: jedaKhusus } = jadwalKhusus;
+                      const durasi_sidang_menit = durasiKhusus ?? pengaturan.durasi_sidang_menit;
+                      const jeda_sidang_menit = jedaKhusus ?? pengaturan.jeda_sidang_menit;
+                      const { ruangan_sidang } = pengaturan;
+                      if (!jam_mulai || !jam_selesai || !durasi_sidang_menit) return <p className="text-sm text-gray-500">Lengkapi pengaturan</p>;
+                      const [jamMulai, menitMulai] = jam_mulai.split(':').map(Number);
+                      const [jamSelesai, menitSelesai] = jam_selesai.split(':').map(Number);
+                      const startMinutes = jamMulai * 60 + menitMulai;
+                      const endMinutes = jamSelesai * 60 + menitSelesai;
+                      const durasiTotal = durasi_sidang_menit + jeda_sidang_menit;
+                      const waktuIstirahatMap = new Map<number, number>();
+                      (waktu_istirahat || []).forEach((istirahat) => {
+                        const [jam, menit] = istirahat.waktu.split(':').map(Number);
+                        waktuIstirahatMap.set(jam * 60 + menit, istirahat.durasi_menit);
+                      });
+                      const slots: { mulai: string; selesai: string; isIstirahat?: boolean; durasi?: number }[] = [];
+                      let currentMinutes = startMinutes;
+                      while (currentMinutes + durasi_sidang_menit <= endMinutes) {
+                        const waktuMulai = `${String(Math.floor(currentMinutes / 60)).padStart(2, '0')}:${String(currentMinutes % 60).padStart(2, '0')}`;
+                        const waktuSelesaiMenit = currentMinutes + durasi_sidang_menit;
+                        const waktuSelesai = `${String(Math.floor(waktuSelesaiMenit / 60)).padStart(2, '0')}:${String(waktuSelesaiMenit % 60).padStart(2, '0')}`;
+                        slots.push({ mulai: waktuMulai, selesai: waktuSelesai });
+                        if (waktuIstirahatMap.has(waktuSelesaiMenit)) {
+                          const durasiIstirahat = waktuIstirahatMap.get(waktuSelesaiMenit)!;
+                          const istirahatSelesai = `${String(Math.floor((waktuSelesaiMenit + durasiIstirahat) / 60)).padStart(2, '0')}:${String((waktuSelesaiMenit + durasiIstirahat) % 60).padStart(2, '0')}`;
+                          slots.push({ mulai: waktuSelesai, selesai: istirahatSelesai, isIstirahat: true, durasi: durasiIstirahat });
+                          currentMinutes = waktuSelesaiMenit + durasiIstirahat;
+                        } else {
+                          currentMinutes += durasiTotal;
+                        }
+                      }
+                      const totalSlot = slots.filter(s => !s.isIstirahat).length;
+                      const totalRuangan = (ruangan_sidang || []).length || 1;
+                      const totalSidangPerHari = totalSlot * totalRuangan;
+                      return (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-3 gap-3 text-xs">
+                            <div className="bg-white rounded p-2 border border-purple-200"><p className="text-gray-600">Total Slot</p><p className="text-lg font-bold text-purple-900">{totalSlot}</p></div>
+                            <div className="bg-white rounded p-2 border border-purple-200"><p className="text-gray-600">Ruangan</p><p className="text-lg font-bold text-purple-900">{totalRuangan}</p></div>
+                            <div className="bg-white rounded p-2 border border-purple-200"><p className="text-gray-600">Sidang/Hari</p><p className="text-lg font-bold text-purple-900">{totalSidangPerHari}</p></div>
+                          </div>
+                          <div className="space-y-1">
+                            {slots.map((slot, idx) => slot.isIstirahat ? (
+                              <div key={idx} className="flex items-center gap-2 p-2 bg-amber-100 border border-amber-300 rounded text-xs"><Coffee className="w-3 h-3 text-amber-700" /><span className="font-medium text-amber-900">ISTIRAHAT</span><span className="text-amber-700">{slot.mulai} - {slot.selesai}</span><span className="text-amber-600">({slot.durasi} menit)</span></div>
+                            ) : (
+                              <div key={idx} className="flex items-center justify-between p-2 bg-white border border-purple-200 rounded text-xs"><span className="font-mono font-medium text-purple-900">Slot {idx - slots.slice(0, idx).filter(s => s.isIstirahat).length + 1}</span><span className="text-gray-700">{slot.mulai} - {slot.selesai}</span><span className="text-gray-500">({durasi_sidang_menit} menit)</span></div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
+
+      {showJadwalKhususModal && editingHariKhusus && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+            <div className="p-6 border-b"><h3 className="text-lg font-bold flex items-center gap-2"><Calendar className="w-5 h-5" />Atur Jadwal Hari Khusus</h3></div>
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div><label className="block text-sm font-medium mb-2">Pilih Hari</label>
+                <select value={editingHariKhusus.hari} onChange={(e) => setEditingHariKhusus({ ...editingHariKhusus, hari: e.target.value })} className="w-full px-4 py-2 border rounded-lg">
+                  {['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'].map(h => <option key={h} value={h}>{h.charAt(0).toUpperCase() + h.slice(1)}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="block text-sm font-medium mb-2">Jam Mulai</label><input type="time" value={editingHariKhusus.jam_mulai} onChange={(e) => setEditingHariKhusus({ ...editingHariKhusus, jam_mulai: e.target.value })} className="w-full px-4 py-2 border rounded-lg" /></div>
+                <div><label className="block text-sm font-medium mb-2">Jam Selesai</label><input type="time" value={editingHariKhusus.jam_selesai} onChange={(e) => setEditingHariKhusus({ ...editingHariKhusus, jam_selesai: e.target.value })} className="w-full px-4 py-2 border rounded-lg" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="block text-sm font-medium mb-2">Durasi Sidang (Menit)</label><input type="number" min="30" value={editingHariKhusus.durasi_sidang_menit ?? pengaturan.durasi_sidang_menit} onChange={(e) => setEditingHariKhusus({ ...editingHariKhusus, durasi_sidang_menit: parseInt(e.target.value) || 30 })} className="w-full px-4 py-2 border rounded-lg" /></div>
+                <div><label className="block text-sm font-medium mb-2">Jeda Sidang (Menit)</label><input type="number" min="0" value={editingHariKhusus.jeda_sidang_menit ?? pengaturan.jeda_sidang_menit} onChange={(e) => setEditingHariKhusus({ ...editingHariKhusus, jeda_sidang_menit: parseInt(e.target.value) || 0 })} className="w-full px-4 py-2 border rounded-lg" /></div>
+              </div>
+              <div className="border-t pt-4">
+                <label className="block text-sm font-medium mb-2">Waktu Istirahat Khusus</label>
+                <p className="text-xs text-gray-500 mb-2">Tambahkan waktu istirahat khusus untuk hari ini</p>
+                <div className="space-y-2">
+                  {(() => {
+                    const { jam_mulai, jam_selesai, durasi_sidang_menit: durasiKhusus, jeda_sidang_menit: jedaKhusus } = editingHariKhusus;
+                    const durasi_sidang_menit = durasiKhusus ?? pengaturan.durasi_sidang_menit;
+                    const jeda_sidang_menit = jedaKhusus ?? pengaturan.jeda_sidang_menit;
+                    if (!jam_mulai || !jam_selesai || !durasi_sidang_menit) return null;
+                    const [jamMulai, menitMulai] = jam_mulai.split(':').map(Number);
+                    const [jamSelesai, menitSelesai] = jam_selesai.split(':').map(Number);
+                    const startMinutes = jamMulai * 60 + menitMulai;
+                    const endMinutes = jamSelesai * 60 + menitSelesai;
+                    const durasiTotal = durasi_sidang_menit + jeda_sidang_menit;
+                    const waktuList: string[] = [];
+                    let currentMinutes = startMinutes + durasi_sidang_menit;
+                    while (currentMinutes < endMinutes) {
+                      const jam = Math.floor(currentMinutes / 60);
+                      const menit = currentMinutes % 60;
+                      waktuList.push(`${String(jam).padStart(2, '0')}:${String(menit).padStart(2, '0')}`);
+                      currentMinutes += durasiTotal;
+                    }
+                    return (
+                      <>
+                        <div className="grid grid-cols-2 gap-2">
+                          <select value={waktuIstirahatKhususBaru.waktu} onChange={(e) => setWaktuIstirahatKhususBaru({ ...waktuIstirahatKhususBaru, waktu: e.target.value })} className="px-3 py-2 border rounded-lg text-sm">
+                            <option value="">Pilih waktu</option>
+                            {waktuList.map(w => <option key={w} value={w}>{w}</option>)}
+                          </select>
+                          <input type="number" min="15" step="15" value={waktuIstirahatKhususBaru.durasi_menit} onChange={(e) => setWaktuIstirahatKhususBaru({ ...waktuIstirahatKhususBaru, durasi_menit: parseInt(e.target.value) || 60 })} placeholder="Durasi (menit)" className="px-3 py-2 border rounded-lg text-sm" />
+                        </div>
+                        <button onClick={() => {
+                          if (waktuIstirahatKhususBaru.waktu) {
+                            setEditingHariKhusus({ ...editingHariKhusus, waktu_istirahat: [...(editingHariKhusus.waktu_istirahat || []), waktuIstirahatKhususBaru] });
+                            setWaktuIstirahatKhususBaru({ waktu: '', durasi_menit: 60 });
+                          }
+                        }} disabled={!waktuIstirahatKhususBaru.waktu} className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm disabled:opacity-50">Tambah</button>
+                        <div className="space-y-1 mt-2">
+                          {(editingHariKhusus.waktu_istirahat || []).map((ist, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-2 bg-amber-50 rounded border border-amber-200 text-xs">
+                              <span>Istirahat {ist.waktu} ({ist.durasi_menit} menit)</span>
+                              <button onClick={() => setEditingHariKhusus({ ...editingHariKhusus, waktu_istirahat: (editingHariKhusus.waktu_istirahat || []).filter((_, i) => i !== idx) })} className="text-red-600"><X className="w-3 h-3" /></button>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t flex justify-end gap-2">
+              <button onClick={() => { setShowJadwalKhususModal(false); setEditingHariKhusus(null); }} className="px-4 py-2 border rounded-lg">Batal</button>
+              <button onClick={handleSimpanHariKhusus} className="px-4 py-2 bg-purple-600 text-white rounded-lg">Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-end">
         <button

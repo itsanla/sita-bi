@@ -10,6 +10,8 @@ interface PengaturanJadwal {
   hari_libur_tetap: string[];
   tanggal_libur_khusus: { tanggal: string; keterangan: string }[];
   ruangan_sidang: string[];
+  waktu_istirahat?: { waktu: string; durasi_menit: number }[];
+  jadwal_hari_khusus?: { hari: string; jam_mulai: string; jam_selesai: string; waktu_istirahat?: { waktu: string; durasi_menit: number }[] }[];
 }
 
 interface TimeSlot {
@@ -51,6 +53,8 @@ export class JadwalSidangService {
       hari_libur_tetap: config.hari_libur_tetap || ['sabtu', 'minggu'],
       tanggal_libur_khusus: config.tanggal_libur_khusus || [],
       ruangan_sidang: ruanganSidang,
+      waktu_istirahat: config.waktu_istirahat || [],
+      jadwal_hari_khusus: config.jadwal_hari_khusus || [],
     };
     
     console.log('[BACKEND] ✅ Pengaturan:', pengaturan);
@@ -84,18 +88,44 @@ export class JadwalSidangService {
     if (this.isHariLibur(tanggal, pengaturan)) return [];
 
     const slots: TimeSlot[] = [];
-    const [jamMulai, menitMulai] = pengaturan.jam_mulai_sidang.split(':').map(Number);
-    const [jamSelesai, menitSelesai] = pengaturan.jam_selesai_sidang.split(':').map(Number);
+    const hariMap = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+    const hariIni = hariMap[tanggal.getDay()];
+    
+    // Cek apakah ada jadwal khusus untuk hari ini
+    const jadwalKhusus = (pengaturan.jadwal_hari_khusus || []).find(j => j.hari === hariIni);
+    
+    let jamMulaiSidang = pengaturan.jam_mulai_sidang;
+    let jamSelesaiSidang = pengaturan.jam_selesai_sidang;
+    let waktuIstirahatList = pengaturan.waktu_istirahat || [];
+    
+    if (jadwalKhusus) {
+      jamMulaiSidang = jadwalKhusus.jam_mulai;
+      jamSelesaiSidang = jadwalKhusus.jam_selesai;
+      waktuIstirahatList = jadwalKhusus.waktu_istirahat || [];
+      console.log(`[BACKEND] 📅 Menggunakan jadwal khusus untuk hari ${hariIni}:`, jadwalKhusus);
+    }
+
+    const [jamMulai, menitMulai] = jamMulaiSidang.split(':').map(Number);
+    const [jamSelesai, menitSelesai] = jamSelesaiSidang.split(':').map(Number);
 
     const startMinutes = jamMulai * 60 + menitMulai;
     const endMinutes = jamSelesai * 60 + menitSelesai;
     const durasiTotal = pengaturan.durasi_sidang_menit + pengaturan.jeda_sidang_menit;
 
+    // Parse waktu istirahat ke menit
+    const waktuIstirahatMap = new Map<number, number>();
+    waktuIstirahatList.forEach((istirahat) => {
+      const [jam, menit] = istirahat.waktu.split(':').map(Number);
+      const waktuMenit = jam * 60 + menit;
+      waktuIstirahatMap.set(waktuMenit, istirahat.durasi_menit);
+    });
+
     for (const ruanganId of ruanganIds) {
       let currentMinutes = startMinutes;
       while (currentMinutes + pengaturan.durasi_sidang_menit <= endMinutes) {
         const waktuMulai = `${String(Math.floor(currentMinutes / 60)).padStart(2, '0')}:${String(currentMinutes % 60).padStart(2, '0')}`;
-        const waktuSelesai = `${String(Math.floor((currentMinutes + pengaturan.durasi_sidang_menit) / 60)).padStart(2, '0')}:${String((currentMinutes + pengaturan.durasi_sidang_menit) % 60).padStart(2, '0')}`;
+        const waktuSelesaiMenit = currentMinutes + pengaturan.durasi_sidang_menit;
+        const waktuSelesai = `${String(Math.floor(waktuSelesaiMenit / 60)).padStart(2, '0')}:${String(waktuSelesaiMenit % 60).padStart(2, '0')}`;
 
         slots.push({
           tanggal,
@@ -104,7 +134,15 @@ export class JadwalSidangService {
           ruangan_id: ruanganId,
         });
 
-        currentMinutes += durasiTotal;
+        // Cek apakah ada waktu istirahat setelah slot ini
+        if (waktuIstirahatMap.has(waktuSelesaiMenit)) {
+          const durasiIstirahat = waktuIstirahatMap.get(waktuSelesaiMenit)!;
+          currentMinutes = waktuSelesaiMenit + durasiIstirahat;
+          console.log(`[BACKEND] ☕ Waktu istirahat ${waktuSelesai} (+${durasiIstirahat} menit, skip jeda normal)`);
+        } else {
+          // Tambahkan jeda normal hanya jika tidak ada istirahat
+          currentMinutes += durasiTotal;
+        }
       }
     }
 
@@ -131,22 +169,22 @@ export class JadwalSidangService {
   private async getDosenAvailable(
     slot: TimeSlot,
     excludeDosenIds: number[],
-    pengaturan: PengaturanJadwal
+    pengaturan: PengaturanJadwal,
+    allowSoftBusy: boolean = false
   ): Promise<number[]> {
     const periodeAktif = await prisma.periodeTa.findFirst({
       where: { status: 'AKTIF' },
     });
 
-    // Cek dosen yang bentrok jadwal di tanggal yang sama
+    const [jamMulai, menitMulai] = slot.waktu_mulai.split(':').map(Number);
+    const [jamSelesai, menitSelesai] = slot.waktu_selesai.split(':').map(Number);
+    const slotStart = jamMulai * 60 + menitMulai;
+    const slotEnd = jamSelesai * 60 + menitSelesai;
+    const jedaMinutes = pengaturan.jeda_sidang_menit;
+
     const dosenBusy = await prisma.jadwalSidang.findMany({
       where: {
         tanggal: slot.tanggal,
-        OR: [
-          {
-            waktu_mulai: { lte: slot.waktu_selesai },
-            waktu_selesai: { gte: slot.waktu_mulai },
-          },
-        ],
       },
       include: {
         sidang: {
@@ -162,49 +200,90 @@ export class JadwalSidangService {
     });
 
     const busyDosenIds = new Set<number>();
+    const softBusyDosenIds = new Set<number>();
+    
     dosenBusy.forEach((jadwal) => {
+      const [jMulai, mMulai] = jadwal.waktu_mulai.split(':').map(Number);
+      const [jSelesai, mSelesai] = jadwal.waktu_selesai.split(':').map(Number);
+      const existingStart = jMulai * 60 + mMulai;
+      const existingEnd = jSelesai * 60 + mSelesai;
+
+      // HARD CONSTRAINT: Dosen tidak boleh di 2 tempat pada waktu EXACT yang sama
+      const hasExactOverlap = (
+        (slotStart >= existingStart && slotStart < existingEnd) ||
+        (slotEnd > existingStart && slotEnd <= existingEnd) ||
+        (slotStart <= existingStart && slotEnd >= existingEnd)
+      );
+
+      // SOFT CONSTRAINT: Minimal ada jeda antar sidang
+      const hasSoftOverlap = (
+        (slotStart >= existingStart - jedaMinutes && slotStart < existingEnd + jedaMinutes) ||
+        (slotEnd > existingStart - jedaMinutes && slotEnd <= existingEnd + jedaMinutes) ||
+        (slotStart <= existingStart && slotEnd >= existingEnd)
+      );
+
       jadwal.sidang.tugasAkhir.peranDosenTa.forEach((peran) => {
         if (['penguji1', 'penguji2', 'penguji3', 'pembimbing1'].includes(peran.peran)) {
-          busyDosenIds.add(peran.dosen_id);
+          if (hasExactOverlap) {
+            busyDosenIds.add(peran.dosen_id);
+          } else if (hasSoftOverlap) {
+            softBusyDosenIds.add(peran.dosen_id);
+          }
         }
       });
     });
 
-    // Cek kuota dosen (hanya yang sudah dijadwalkan)
-    const dosenKuota = await prisma.peranDosenTa.groupBy({
-      by: ['dosen_id'],
+    // LOAD BALANCING: Hitung TOTAL beban dosen sebagai penguji (semua peran dijumlahkan)
+    const dosenLoadRaw = await prisma.peranDosenTa.findMany({
       where: {
         peran: { in: ['penguji1', 'penguji2', 'penguji3'] },
         tugasAkhir: {
           periode_ta_id: periodeAktif?.id,
           sidang: {
             some: {
-              status_hasil: 'dijadwalkan', // Hanya hitung yang sudah dijadwalkan
+              status_hasil: 'dijadwalkan',
             },
           },
         },
       },
-      _count: { dosen_id: true },
+      select: { dosen_id: true },
     });
 
-    const fullQuotaDosenIds = new Set(
-      dosenKuota
-        .filter((d) => d._count.dosen_id >= pengaturan.max_mahasiswa_uji_per_dosen)
-        .map((d) => d.dosen_id)
-    );
+    // Hitung total kemunculan per dosen (bukan per peran)
+    const dosenLoadMap = new Map<number, number>();
+    dosenLoadRaw.forEach((peran) => {
+      const current = dosenLoadMap.get(peran.dosen_id) || 0;
+      dosenLoadMap.set(peran.dosen_id, current + 1);
+    });
+    
+    // QUOTA: Exclude dosen yang sudah mencapai max quota (total semua peran penguji)
+    const fullQuotaDosenIds = new Set<number>();
+    dosenLoadMap.forEach((count, dosenId) => {
+      if (count >= pengaturan.max_mahasiswa_uji_per_dosen) {
+        fullQuotaDosenIds.add(dosenId);
+      }
+    });
 
     const allDosen = await prisma.dosen.findMany({
       select: { id: true },
     });
 
-    return allDosen
+    // Filter: HARD constraint (busy) harus diexclude
+    // SOFT constraint (softBusy) hanya diexclude jika allowSoftBusy = false
+    const availableDosen = allDosen
       .map((d) => d.id)
       .filter(
         (id) =>
           !excludeDosenIds.includes(id) &&
           !busyDosenIds.has(id) &&
-          !fullQuotaDosenIds.has(id)
+          !fullQuotaDosenIds.has(id) &&
+          (allowSoftBusy || !softBusyDosenIds.has(id))
       );
+
+    // Sort: Prioritas dosen dengan beban paling rendah (load balancing)
+    return availableDosen.sort((a, b) => {
+      return (dosenLoadMap.get(a) || 0) - (dosenLoadMap.get(b) || 0);
+    });
   }
 
   private shuffleArray<T>(array: T[]): T[] {
@@ -214,6 +293,54 @@ export class JadwalSidangService {
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
+  }
+
+  private async validateNoConflict(
+    slot: TimeSlot,
+    pengujiIds: number[],
+    pembimbingIds: number[]
+  ): Promise<boolean> {
+    const allDosenIds = [...pengujiIds, ...pembimbingIds];
+    
+    // CRITICAL: Check conflicts in ALL rooms at the EXACT same time
+    const conflicts = await prisma.jadwalSidang.findMany({
+      where: {
+        tanggal: slot.tanggal,
+        waktu_mulai: slot.waktu_mulai,
+        waktu_selesai: slot.waktu_selesai,
+      },
+      include: {
+        sidang: {
+          include: {
+            tugasAkhir: {
+              include: {
+                peranDosenTa: {
+                  where: {
+                    peran: { in: ['penguji1', 'penguji2', 'penguji3', 'pembimbing1'] },
+                  },
+                },
+              },
+            },
+          },
+        },
+        ruangan: true,
+      },
+    });
+
+    for (const conflict of conflicts) {
+      const conflictDosenIds = conflict.sidang.tugasAkhir.peranDosenTa
+        .filter(p => ['penguji1', 'penguji2', 'penguji3', 'pembimbing1'].includes(p.peran))
+        .map(p => p.dosen_id);
+      
+      const conflictingDosen = allDosenIds.filter(id => conflictDosenIds.includes(id));
+      
+      if (conflictingDosen.length > 0) {
+        console.log('[BACKEND] ❌ HARD CONFLICT: Dosen IDs', conflictingDosen, 'already scheduled at', slot.waktu_mulai, 'in room', conflict.ruangan.nama_ruangan);
+        return false;
+      }
+    }
+
+    return true;
   }
 
   async generateJadwalOtomatis(): Promise<any[]> {
@@ -301,13 +428,55 @@ export class JadwalSidangService {
     }
 
     console.log('[BACKEND] 📊 Total mahasiswa to schedule:', mahasiswaSiap.length);
+      
+    // VALIDASI: Cek apakah ada dosen yang membimbing > max_pembimbing_aktif
+    const maxPembimbingAktif = parseInt(await this.getPengaturanByKey('max_pembimbing_aktif') || '4', 10);
+    const pembimbingCount = new Map<number, number>();
+    
+    mahasiswaSiap.forEach((sidang) => {
+      sidang.tugasAkhir.peranDosenTa.forEach((peran: any) => {
+        if (peran.peran === 'pembimbing1') {
+          const count = pembimbingCount.get(peran.dosen_id) || 0;
+          pembimbingCount.set(peran.dosen_id, count + 1);
+        }
+      });
+    });
+    
+    const overloadPembimbing: string[] = [];
+    for (const [dosenId, count] of pembimbingCount.entries()) {
+      if (count > maxPembimbingAktif) {
+        const dosen = await prisma.dosen.findUnique({
+          where: { id: dosenId },
+          include: { user: true },
+        });
+        overloadPembimbing.push(`${dosen?.user.name} (${count} mahasiswa, max: ${maxPembimbingAktif})`);
+      }
+    }
+    
+    if (overloadPembimbing.length > 0) {
+      console.error('[BACKEND] ❌ Dosen overload pembimbing:', overloadPembimbing);
+      throw new Error(
+        JSON.stringify({
+          status: 'PEMBIMBING_OVERLOAD',
+          masalah: `Ada ${overloadPembimbing.length} dosen yang membimbing melebihi batas maksimal.`,
+          detail: overloadPembimbing,
+          saran: `Kurangi jumlah mahasiswa yang dibimbing oleh dosen tersebut, atau naikkan "Maksimal Pembimbing Aktif" di menu Aturan Umum.`,
+        })
+      );
+    }
+    
     const results: any[] = [];
+    let scheduledCount = 0;
+    const totalMahasiswa = mahasiswaSiap.length;
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() + 1);
     console.log('[BACKEND] 📅 Start date for scheduling:', startDate);
 
     for (const sidang of mahasiswaSiap) {
+      scheduledCount++;
+      const progress = (scheduledCount / totalMahasiswa * 100).toFixed(1);
+      console.log(`[BACKEND] 🎯 [${scheduledCount}/${totalMahasiswa} - ${progress}%] Scheduling:`, sidang.tugasAkhir.mahasiswa.nim);
       console.log('[BACKEND] 🎯 Scheduling mahasiswa:', sidang.tugasAkhir.mahasiswa.nim);
       const pembimbingIds = sidang.tugasAkhir.peranDosenTa.map((p) => p.dosen_id);
       console.log('[BACKEND] 👨‍🏫 Pembimbing IDs:', pembimbingIds);
@@ -326,17 +495,48 @@ export class JadwalSidangService {
           console.log('[BACKEND] 🔍 Slot', slot.waktu_mulai, 'available:', isAvailable);
           if (!isAvailable) continue;
 
-          const availableDosen = await this.getDosenAvailable(
+          let availableDosen = await this.getDosenAvailable(
             slot,
             pembimbingIds,
-            pengaturan
+            pengaturan,
+            false
           );
+          
+          if (availableDosen.length < 3) {
+            console.log('[BACKEND] ⚠️ Not enough dosen, allowing softBusy...');
+            availableDosen = await this.getDosenAvailable(
+              slot,
+              pembimbingIds,
+              pengaturan,
+              true
+            );
+          }
           console.log('[BACKEND] 👨‍🏫 Available dosen:', availableDosen.length);
 
           if (availableDosen.length >= 3) {
             console.log('[BACKEND] ✅ Found slot with enough dosen!');
-            const shuffled = this.shuffleArray(availableDosen);
-            const pengujiIds = shuffled.slice(0, 3);
+            
+            // RETRY MECHANISM: Try multiple combinations if first fails
+            let isValid = false;
+            let pengujiIds: number[] = [];
+            const maxRetries = Math.min(10, availableDosen.length);
+            
+            for (let retry = 0; retry < maxRetries && !isValid; retry++) {
+              const shuffled = this.shuffleArray(availableDosen);
+              pengujiIds = shuffled.slice(0, 3);
+              
+              // VALIDATION LAYER: Double check no conflict
+              isValid = await this.validateNoConflict(slot, pengujiIds, pembimbingIds);
+              
+              if (!isValid && retry < maxRetries - 1) {
+                console.log('[BACKEND] ⚠️ Validation failed, retry', retry + 1, '/', maxRetries);
+              }
+            }
+            
+            if (!isValid) {
+              console.log('[BACKEND] ❌ All retries failed, trying next slot');
+              continue;
+            }
 
             const pengujiData = await prisma.$transaction(async (tx) => {
               // Hapus penguji lama jika ada
@@ -418,7 +618,7 @@ export class JadwalSidangService {
               ruangan: pengujiData.jadwal.ruangan.nama_ruangan,
             });
 
-            console.log('[BACKEND] ✅ Mahasiswa scheduled:', sidang.tugasAkhir.mahasiswa.nim);
+            console.log('[BACKEND] ✅ Mahasiswa scheduled:', sidang.tugasAkhir.mahasiswa.nim, 'at', slot.waktu_mulai, 'room', pengujiData.jadwal.ruangan.nama_ruangan);
             scheduled = true;
             break;
           } else {
@@ -450,6 +650,11 @@ export class JadwalSidangService {
     console.log('[BACKEND] 🎉 All mahasiswa scheduled successfully!');
     console.log('[BACKEND] 📊 Total results:', results.length);
     return results;
+  }
+
+  private async getPengaturanByKey(key: string): Promise<string> {
+    const setting = await prisma.pengaturanSistem.findUnique({ where: { key } });
+    return setting?.value || '';
   }
 
   private async runSmartDiagnostic(pengaturan: PengaturanJadwal) {
@@ -537,24 +742,70 @@ export class JadwalSidangService {
     }
     
     // Cek 6: Kapasitas dosen tidak cukup
+    const maxPembimbingAktif = parseInt(await this.getPengaturanByKey('max_pembimbing_aktif') || '4', 10);
+    const marginPersen = totalDosen > 0 ? (maxPembimbingAktif / totalDosen) : 0.2;
     const totalSlotDosen = totalDosen * pengaturan.max_mahasiswa_uji_per_dosen;
     const slotDibutuhkan = mahasiswaCount * 3;
+    const slotDibutuhkanDenganMargin = Math.ceil(slotDibutuhkan * (1 + marginPersen));
     
-    if (totalSlotDosen < slotDibutuhkan) {
-      const kuotaMinimal = Math.ceil(slotDibutuhkan / totalDosen);
+    if (totalSlotDosen < slotDibutuhkanDenganMargin) {
+      const kuotaMinimal = Math.ceil(slotDibutuhkanDenganMargin / totalDosen);
+      
+      const perhitungan = [
+        `📊 Perhitungan Kapasitas:`,
+        ``,
+        `1. Slot Dibutuhkan (Tanpa Margin):`,
+        `   ${mahasiswaCount} mahasiswa × 3 penguji = ${slotDibutuhkan} slot`,
+        ``,
+        `2. Margin Safety (Cadangan Fleksibilitas):`,
+        `   Apa itu Margin?`,
+        `   Margin adalah cadangan slot tambahan yang diperlukan karena ada`,
+        `   pembatasan: pembimbing TIDAK BOLEH menjadi penguji untuk mahasiswa`,
+        `   yang dibimbingnya sendiri.`,
+        ``,
+        `   Margin dipengaruhi oleh:`,
+        `   - Maksimal Pembimbing Aktif (${maxPembimbingAktif} mahasiswa/dosen)`,
+        `   - Total Dosen (${totalDosen} dosen)`,
+        ``,
+        `   Rumus Margin:`,
+        `   Margin = Maksimal Pembimbing Aktif / Total Dosen`,
+        `   Margin = ${maxPembimbingAktif} / ${totalDosen} = ${(marginPersen * 100).toFixed(1)}%`,
+        ``,
+        `   Artinya: Jika semua dosen membimbing ${maxPembimbingAktif} mahasiswa, maka untuk`,
+        `   setiap mahasiswa hanya ada ${totalDosen - 1} dosen (bukan ${totalDosen}) yang bisa jadi`,
+        `   penguji. Semakin banyak mahasiswa per pembimbing, semakin besar`,
+        `   margin yang dibutuhkan.`,
+        ``,
+        `3. Slot Dibutuhkan (Dengan Margin):`,
+        `   ${slotDibutuhkan} slot + ${(marginPersen * 100).toFixed(1)}% margin = ${slotDibutuhkanDenganMargin} slot`,
+        ``,
+        `4. Kapasitas Tersedia:`,
+        `   ${totalDosen} dosen × ${pengaturan.max_mahasiswa_uji_per_dosen} quota = ${totalSlotDosen} slot`,
+        ``,
+        `5. Hasil:`,
+        `   ${totalSlotDosen} slot < ${slotDibutuhkanDenganMargin} slot → TIDAK CUKUP! ❌`,
+        ``,
+        `6. Quota Minimal yang Dibutuhkan:`,
+        `   ${slotDibutuhkanDenganMargin} slot / ${totalDosen} dosen = ${(slotDibutuhkanDenganMargin / totalDosen).toFixed(1)} → ${kuotaMinimal} quota/dosen`,
+      ].join('\n');
+      
       return {
         success: false,
         error: {
           status: 'KAPASITAS_DOSEN_TIDAK_CUKUP',
-          masalah: `${totalDosen} dosen × ${pengaturan.max_mahasiswa_uji_per_dosen} kuota = ${totalSlotDosen} slot, tapi butuh ${mahasiswaCount} mahasiswa × 3 penguji = ${slotDibutuhkan} slot!`,
-          saran: `Naikkan "Maksimal Mahasiswa Uji per Dosen" menjadi minimal ${kuotaMinimal} di menu Aturan Umum.`,
+          masalah: `Kapasitas dosen tidak mencukupi untuk ${mahasiswaCount} mahasiswa.`,
+          perhitungan,
+          saran: `Naikkan "Maksimal Mahasiswa Uji per Dosen" dari ${pengaturan.max_mahasiswa_uji_per_dosen} menjadi minimal ${kuotaMinimal} di menu Aturan Umum.`,
           detail: {
             totalDosen,
+            maxPembimbingAktif,
+            marginPersen: `${(marginPersen * 100).toFixed(1)}%`,
             kuotaSekarang: pengaturan.max_mahasiswa_uji_per_dosen,
             kuotaMinimal,
             totalSlotDosen,
             mahasiswaCount,
             slotDibutuhkan,
+            slotDibutuhkanDenganMargin,
           },
         },
       };

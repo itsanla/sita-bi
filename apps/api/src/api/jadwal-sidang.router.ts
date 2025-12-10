@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { JadwalSidangService } from '../services/jadwal-sidang.service';
 import { RuanganSyncService } from '../services/ruangan-sync.service';
+import { ExportService } from '../services/export.service';
 import { asyncHandler } from '../utils/asyncHandler';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
@@ -10,6 +11,7 @@ import { auditLog } from '../middlewares/audit.middleware';
 const router = Router();
 const service = new JadwalSidangService();
 const ruanganSync = new RuanganSyncService();
+const exportService = new ExportService();
 
 router.post(
   '/generate',
@@ -80,6 +82,92 @@ router.delete(
       message: `Berhasil menghapus ${result.count} jadwal sidang`,
       data: result,
     });
+  })
+);
+
+router.get(
+  '/export/pdf',
+  asyncHandler(authMiddleware),
+  asyncHandler(async (req, res) => {
+    const jadwal = await service.getJadwalSidang();
+    const exportData = jadwal.map((item) => {
+      const mhs = item.sidang.tugasAkhir.mahasiswa;
+      const peran = item.sidang.tugasAkhir.peranDosenTa;
+      const ketua = peran.find((p) => p.peran === 'penguji1');
+      const sekretaris = peran.find((p) => p.peran === 'pembimbing1');
+      const anggota1 = peran.find((p) => p.peran === 'penguji2');
+      const anggota2 = peran.find((p) => p.peran === 'penguji3');
+      
+      const tanggal = new Date(item.tanggal);
+      const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const hari = hariMap[tanggal.getDay()];
+      const tanggalStr = tanggal.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      });
+      
+      return {
+        mahasiswa: mhs.user.name,
+        nim: mhs.nim,
+        ketua: ketua?.dosen.user.name || '-',
+        sekretaris: sekretaris?.dosen.user.name || '-',
+        anggota1: anggota1?.dosen.user.name || '-',
+        anggota2: anggota2?.dosen.user.name || '-',
+        hari_tanggal: `${hari}, ${tanggalStr}`,
+        pukul: `${item.waktu_mulai} - ${item.waktu_selesai}`,
+        ruangan: item.ruangan.nama_ruangan,
+      };
+    });
+
+    const pdfBuffer = await exportService.generatePDF(exportData);
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=jadwal-sidang-${Date.now()}.pdf`);
+    res.send(pdfBuffer);
+  })
+);
+
+router.get(
+  '/export/excel',
+  asyncHandler(authMiddleware),
+  asyncHandler(async (req, res) => {
+    const jadwal = await service.getJadwalSidang();
+    const exportData = jadwal.map((item) => {
+      const mhs = item.sidang.tugasAkhir.mahasiswa;
+      const peran = item.sidang.tugasAkhir.peranDosenTa;
+      const ketua = peran.find((p) => p.peran === 'penguji1');
+      const sekretaris = peran.find((p) => p.peran === 'pembimbing1');
+      const anggota1 = peran.find((p) => p.peran === 'penguji2');
+      const anggota2 = peran.find((p) => p.peran === 'penguji3');
+      
+      const tanggal = new Date(item.tanggal);
+      const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const hari = hariMap[tanggal.getDay()];
+      const tanggalStr = tanggal.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      });
+      
+      return {
+        mahasiswa: mhs.user.name,
+        nim: mhs.nim,
+        ketua: ketua?.dosen.user.name || '-',
+        sekretaris: sekretaris?.dosen.user.name || '-',
+        anggota1: anggota1?.dosen.user.name || '-',
+        anggota2: anggota2?.dosen.user.name || '-',
+        hari_tanggal: `${hari}, ${tanggalStr}`,
+        pukul: `${item.waktu_mulai} - ${item.waktu_selesai}`,
+        ruangan: item.ruangan.nama_ruangan,
+      };
+    });
+
+    const excelBuffer = await exportService.generateExcel(exportData);
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=jadwal-sidang-${Date.now()}.xlsx`);
+    res.send(excelBuffer);
   })
 );
 

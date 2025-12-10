@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, Clock, Zap, Users, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Clock, Zap, Users, CheckCircle, XCircle, Search, FileDown, FileSpreadsheet } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -22,6 +22,9 @@ export default function PenjadwalanSidang() {
   const [jadwalResult, setJadwalResult] = useState<any[]>([]);
   const [jadwalTersimpan, setJadwalTersimpan] = useState<any[]>([]);
   const [loadingJadwal, setLoadingJadwal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fetchJadwal = async () => {
     console.log('[FRONTEND] 🔄 Fetching jadwal dan mahasiswa siap...');
@@ -195,6 +198,66 @@ export default function PenjadwalanSidang() {
     }
   };
 
+  const handleExportPDF = async () => {
+    try {
+      const response = await api.get('/jadwal-sidang-smart/export/pdf', {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `jadwal-sidang-${Date.now()}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('PDF berhasil diunduh');
+    } catch (error: any) {
+      toast.error('Gagal mengunduh PDF');
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const response = await api.get('/jadwal-sidang-smart/export/excel', {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `jadwal-sidang-${Date.now()}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Excel berhasil diunduh');
+    } catch (error: any) {
+      toast.error('Gagal mengunduh Excel');
+    }
+  };
+
+  // Filter dan pagination
+  const filteredJadwal = jadwalTersimpan.filter((item: any) => {
+    const mhs = item.sidang.tugasAkhir.mahasiswa;
+    const peran = item.sidang.tugasAkhir.peranDosenTa;
+    const ketua = peran.find((p: any) => p.peran === 'penguji1');
+    const sekretaris = peran.find((p: any) => p.peran === 'pembimbing1');
+    const anggota1 = peran.find((p: any) => p.peran === 'penguji2');
+    const anggota2 = peran.find((p: any) => p.peran === 'penguji3');
+    
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      mhs.user.name.toLowerCase().includes(searchLower) ||
+      mhs.nim.toLowerCase().includes(searchLower) ||
+      ketua?.dosen.user.name.toLowerCase().includes(searchLower) ||
+      sekretaris?.dosen.user.name.toLowerCase().includes(searchLower) ||
+      anggota1?.dosen.user.name.toLowerCase().includes(searchLower) ||
+      anggota2?.dosen.user.name.toLowerCase().includes(searchLower)
+    );
+  });
+
+  const totalPages = Math.ceil(filteredJadwal.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedJadwal = filteredJadwal.slice(startIndex, startIndex + itemsPerPage);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -210,7 +273,7 @@ export default function PenjadwalanSidang() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-md border border-gray-200 p-6">
         <div className="flex items-center space-x-3">
           <div className="w-12 h-12 bg-gradient-to-br from-red-900 to-red-800 rounded-lg flex items-center justify-center shadow-md">
@@ -373,7 +436,7 @@ export default function PenjadwalanSidang() {
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-bold text-red-900 mb-2">
-                {errorInfo.status === 'KAPASITAS_TIDAK_CUKUP' ? '🚨 Kapasitas Dosen Tidak Cukup' : '⚠️ Gagal Menjadwalkan'}
+                {errorInfo.status === 'KAPASITAS_DOSEN_TIDAK_CUKUP' ? '🚨 Kapasitas Dosen Tidak Cukup' : '⚠️ Gagal Menjadwalkan'}
               </h3>
               
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
@@ -381,22 +444,28 @@ export default function PenjadwalanSidang() {
                 <p className="text-sm text-red-800">{errorInfo.masalah}</p>
               </div>
 
+              {errorInfo.perhitungan && (
+                <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 mb-4 font-mono text-xs">
+                  <pre className="whitespace-pre-wrap text-gray-800">{errorInfo.perhitungan}</pre>
+                </div>
+              )}
+
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <p className="text-sm font-semibold text-blue-900 mb-2">💡 Saran:</p>
                 <p className="text-sm text-blue-800">{errorInfo.saran}</p>
               </div>
 
               {errorInfo.detail && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <p className="text-xs font-semibold text-gray-700 mb-2">Detail:</p>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                <details className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <summary className="text-xs font-semibold text-gray-700 cursor-pointer">Detail Teknis (klik untuk expand)</summary>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mt-2">
                     {Object.entries(errorInfo.detail).map(([key, value]: [string, any]) => (
                       <div key={key}>
                         <span className="font-medium">{key}:</span> {value}
                       </div>
                     ))}
                   </div>
-                </div>
+                </details>
               )}
 
               <button
@@ -414,17 +483,48 @@ export default function PenjadwalanSidang() {
         <div id="jadwal-tersimpan" className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">
-              Jadwal Sidang Tersimpan ({jadwalTersimpan.length} Mahasiswa)
+              Jadwal Sidang Tersimpan ({filteredJadwal.length} dari {jadwalTersimpan.length})
             </h2>
-            <button
-              onClick={handleHapusJadwal}
-              disabled={loadingJadwal}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 text-sm flex items-center space-x-2"
-            >
-              <XCircle className="w-4 h-4" />
-              <span>{loadingJadwal ? 'Menghapus...' : 'Hapus Semua Jadwal'}</span>
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleExportPDF}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center space-x-2"
+              >
+                <FileDown className="w-4 h-4" />
+                <span>PDF</span>
+              </button>
+              <button
+                onClick={handleExportExcel}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm flex items-center space-x-2"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>Excel</span>
+              </button>
+              <button
+                onClick={handleHapusJadwal}
+                disabled={loadingJadwal}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 text-sm flex items-center space-x-2"
+              >
+                <XCircle className="w-4 h-4" />
+                <span>{loadingJadwal ? 'Menghapus...' : 'Hapus Semua'}</span>
+              </button>
+            </div>
           </div>
+          
+          <div className="mb-4 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Cari berdasarkan nama mahasiswa, NIM, atau nama dosen..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+            />
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -441,7 +541,7 @@ export default function PenjadwalanSidang() {
                 </tr>
               </thead>
               <tbody>
-                {jadwalTersimpan.map((item: any) => {
+                {paginatedJadwal.map((item: any) => {
                   const mhs = item.sidang.tugasAkhir.mahasiswa;
                   const peran = item.sidang.tugasAkhir.peranDosenTa;
                   const ketua = peran.find((p: any) => p.peran === 'penguji1');
@@ -475,6 +575,54 @@ export default function PenjadwalanSidang() {
               </tbody>
             </table>
           </div>
+          
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600">
+                Halaman {currentPage} dari {totalPages} ({filteredJadwal.length} data)
+              </p>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Sebelumnya
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(page => {
+                    if (totalPages <= 7) return true;
+                    if (page === 1 || page === totalPages) return true;
+                    if (page >= currentPage - 1 && page <= currentPage + 1) return true;
+                    return false;
+                  })
+                  .map((page, idx, arr) => (
+                    <div key={page} className="flex items-center">
+                      {idx > 0 && arr[idx - 1] !== page - 1 && (
+                        <span className="px-2 text-gray-400">...</span>
+                      )}
+                      <button
+                        onClick={() => setCurrentPage(page)}
+                        className={`px-3 py-1 rounded-lg text-sm ${
+                          currentPage === page
+                            ? 'bg-red-900 text-white'
+                            : 'border border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    </div>
+                  ))}
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  Selanjutnya
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

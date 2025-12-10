@@ -35,6 +35,18 @@ export class PengaturanService {
         setting.key === 'validasi_jurusan'
       ) {
         result[setting.key] = setting.value === 'true';
+      } else if (setting.key === 'waktu_istirahat') {
+        try {
+          result[setting.key] = JSON.parse(setting.value);
+        } catch {
+          result[setting.key] = [];
+        }
+      } else if (setting.key === 'jadwal_hari_khusus') {
+        try {
+          result[setting.key] = JSON.parse(setting.value);
+        } catch {
+          result[setting.key] = [];
+        }
       } else {
         result[setting.key] = setting.value;
       }
@@ -338,6 +350,40 @@ export class PengaturanService {
             key: 'validasi_jurusan',
             value: data.validasi_jurusan.toString(),
             deskripsi: 'Validasi oleh jurusan',
+          },
+        }),
+      );
+    }
+
+    if ((data as any).waktu_istirahat !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'waktu_istirahat' },
+          update: {
+            value: JSON.stringify((data as any).waktu_istirahat),
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'waktu_istirahat',
+            value: JSON.stringify((data as any).waktu_istirahat),
+            deskripsi: 'Waktu istirahat tambahan di tengah jadwal sidang (JSON array)',
+          },
+        }),
+      );
+    }
+
+    if ((data as any).jadwal_hari_khusus !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'jadwal_hari_khusus' },
+          update: {
+            value: JSON.stringify((data as any).jadwal_hari_khusus),
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'jadwal_hari_khusus',
+            value: JSON.stringify((data as any).jadwal_hari_khusus),
+            deskripsi: 'Jadwal jam operasional khusus untuk hari tertentu (JSON array)',
           },
         }),
       );

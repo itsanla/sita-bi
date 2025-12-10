@@ -43,6 +43,33 @@ export const updatePengaturanSchema = z.object({
     .string()
     .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format jam harus HH:mm')
     .optional(),
+  waktu_istirahat: z
+    .array(
+      z.object({
+        waktu: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format jam harus HH:mm'),
+        durasi_menit: z.number().int().min(15, 'Minimal 15 menit'),
+      }),
+    )
+    .optional(),
+  jadwal_hari_khusus: z
+    .array(
+      z.object({
+        hari: z.string(),
+        jam_mulai: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format jam harus HH:mm'),
+        jam_selesai: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format jam harus HH:mm'),
+        durasi_sidang_menit: z.number().int().min(30, 'Minimal 30 menit').optional(),
+        jeda_sidang_menit: z.number().int().min(0, 'Minimal 0 menit').optional(),
+        waktu_istirahat: z
+          .array(
+            z.object({
+              waktu: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format jam harus HH:mm'),
+              durasi_menit: z.number().int().min(15, 'Minimal 15 menit'),
+            }),
+          )
+          .optional(),
+      }),
+    )
+    .optional(),
   hari_libur_tetap: z
     .array(z.string())
     .optional(),
