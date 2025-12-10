@@ -1,5 +1,6 @@
 import { PrismaClient, Prodi, StatusTugasAkhir, PeranDosen, AudiensPengumuman, PrioritasPengumuman, KategoriPengumuman, JenisSidang, HasilSidang } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { faker } from '@faker-js/faker';
 
 const prisma = new PrismaClient();
 
@@ -173,21 +174,30 @@ async function main() {
 
   // Create Mahasiswa (80 mahasiswa)
   console.log('👨🎓 Creating mahasiswa...');
+  faker.seed(12345);
   const mahasiswaData: any[] = [];
-  const namaDepan = ['Andi', 'Budi', 'Citra', 'Dian', 'Eko', 'Fajar', 'Gita', 'Hadi', 'Indah', 'Joko'];
-  const namaBelakang = ['Pratama', 'Santoso', 'Dewi', 'Permata', 'Prasetyo', 'Ramadhan', 'Savitri', 'Wijaya', 'Sari', 'Susilo'];
+  const usedNims = new Set<string>();
+  const usedNames = new Set<string>();
   
   for (let i = 0; i < 80; i++) {
     const prodi = i < 40 ? Prodi.D4 : Prodi.D3;
     const kelas = i % 2 === 0 ? (prodi === Prodi.D4 ? '4A' : '3A') : (prodi === Prodi.D4 ? '4B' : '3B');
-    const nim = prodi === Prodi.D4 ? `21010${String(i + 1).padStart(5, '0')}` : `22010${String(i - 39).padStart(5, '0')}`;
     
-    mahasiswaData.push({
-      name: `${namaDepan[i % 10]} ${namaBelakang[(i + 5) % 10]} ${i + 1}`,
-      nim,
-      prodi,
-      kelas,
-    });
+    let nim: string;
+    do {
+      const tahun = prodi === Prodi.D4 ? '2101' : '2201';
+      const randomDigits = faker.string.numeric(6);
+      nim = `${tahun}${randomDigits}`;
+    } while (usedNims.has(nim));
+    usedNims.add(nim);
+    
+    let name: string;
+    do {
+      name = faker.person.fullName();
+    } while (usedNames.has(name));
+    usedNames.add(name);
+    
+    mahasiswaData.push({ name, nim, prodi, kelas });
   }
 
   const mahasiswaUsers: any[] = [];

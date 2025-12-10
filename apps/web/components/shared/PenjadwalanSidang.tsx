@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, Clock, Zap, Users, CheckCircle, XCircle, Search, FileDown, FileSpreadsheet } from 'lucide-react';
+import { Calendar, Clock, Zap, Users, CheckCircle, XCircle, Search, FileDown, FileSpreadsheet, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -25,14 +25,27 @@ export default function PenjadwalanSidang() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [editModal, setEditModal] = useState<any>(null);
+  const [editOptions, setEditOptions] = useState<any>(null);
+  const [editForm, setEditForm] = useState<any>({});
+  const [searchMhs, setSearchMhs] = useState('');
+  const [searchKetua, setSearchKetua] = useState('');
+  const [searchAnggota1, setSearchAnggota1] = useState('');
+  const [searchAnggota2, setSearchAnggota2] = useState('');
+  const [searchRuangan, setSearchRuangan] = useState('');
+  const [showDropdownKetua, setShowDropdownKetua] = useState(false);
+  const [showDropdownAnggota1, setShowDropdownAnggota1] = useState(false);
+  const [showDropdownAnggota2, setShowDropdownAnggota2] = useState(false);
+  const [showDropdownRuangan, setShowDropdownRuangan] = useState(false);
 
   const fetchJadwal = async () => {
     console.log('[FRONTEND] 🔄 Fetching jadwal dan mahasiswa siap...');
     try {
-      const [jadwalRes, mahasiswaRes, jadwalTersimpanRes] = await Promise.all([
+      const [jadwalRes, mahasiswaRes, jadwalTersimpanRes, optionsRes] = await Promise.all([
         api.get('/penjadwalan-sidang/pengaturan'),
         api.get('/jadwal-sidang-smart/mahasiswa-siap'),
         api.get('/jadwal-sidang-smart/jadwal'),
+        api.get('/jadwal-sidang-smart/options'),
       ]);
       
       console.log('[FRONTEND] ✅ Jadwal response:', jadwalRes.data);
@@ -42,6 +55,7 @@ export default function PenjadwalanSidang() {
       setJadwal(jadwalRes.data.data);
       setMahasiswaSiap(mahasiswaRes.data.data || []);
       setJadwalTersimpan(jadwalTersimpanRes.data.data || []);
+      setEditOptions(optionsRes.data.data);
       
       if (jadwalRes.data.data?.tanggal_generate) {
         const date = new Date(jadwalRes.data.data.tanggal_generate);
@@ -236,23 +250,23 @@ export default function PenjadwalanSidang() {
 
   // Filter dan pagination
   const filteredJadwal = jadwalTersimpan.filter((item: any) => {
-    const mhs = item.sidang.tugasAkhir.mahasiswa;
-    const peran = item.sidang.tugasAkhir.peranDosenTa;
-    const ketua = peran.find((p: any) => p.peran === 'penguji1');
-    const sekretaris = peran.find((p: any) => p.peran === 'pembimbing1');
-    const anggota1 = peran.find((p: any) => p.peran === 'penguji2');
-    const anggota2 = peran.find((p: any) => p.peran === 'penguji3');
-    
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      mhs.user.name.toLowerCase().includes(searchLower) ||
-      mhs.nim.toLowerCase().includes(searchLower) ||
-      ketua?.dosen.user.name.toLowerCase().includes(searchLower) ||
-      sekretaris?.dosen.user.name.toLowerCase().includes(searchLower) ||
-      anggota1?.dosen.user.name.toLowerCase().includes(searchLower) ||
-      anggota2?.dosen.user.name.toLowerCase().includes(searchLower)
-    );
-  });
+      const mhs = item.sidang.tugasAkhir.mahasiswa;
+      const peran = item.sidang.tugasAkhir.peranDosenTa;
+      const ketua = peran.find((p: any) => p.peran === 'penguji1');
+      const sekretaris = peran.find((p: any) => p.peran === 'pembimbing1');
+      const anggota1 = peran.find((p: any) => p.peran === 'penguji2');
+      const anggota2 = peran.find((p: any) => p.peran === 'penguji3');
+      
+      const searchLower = searchQuery.toLowerCase();
+      return (
+        mhs.user.name.toLowerCase().includes(searchLower) ||
+        mhs.nim.toLowerCase().includes(searchLower) ||
+        ketua?.dosen.user.name.toLowerCase().includes(searchLower) ||
+        sekretaris?.dosen.user.name.toLowerCase().includes(searchLower) ||
+        anggota1?.dosen.user.name.toLowerCase().includes(searchLower) ||
+        anggota2?.dosen.user.name.toLowerCase().includes(searchLower)
+      );
+    });
 
   const totalPages = Math.ceil(filteredJadwal.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -530,14 +544,13 @@ export default function PenjadwalanSidang() {
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Mahasiswa</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">NIM</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Ketua</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Sekretaris</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Anggota I</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Anggota II</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Hari/Tanggal</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Pukul</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-700">Ruangan</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-700">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -561,14 +574,57 @@ export default function PenjadwalanSidang() {
                   return (
                     <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="px-4 py-3 text-gray-900">{mhs.user.name}</td>
-                      <td className="px-4 py-3 text-gray-600">{mhs.nim}</td>
                       <td className="px-4 py-3 text-gray-900">{ketua?.dosen.user.name || '-'}</td>
-                      <td className="px-4 py-3 text-gray-900">{sekretaris?.dosen.user.name || '-'}</td>
                       <td className="px-4 py-3 text-gray-900">{anggota1?.dosen.user.name || '-'}</td>
                       <td className="px-4 py-3 text-gray-900">{anggota2?.dosen.user.name || '-'}</td>
                       <td className="px-4 py-3 text-gray-600">{hari}, {tanggalStr}</td>
                       <td className="px-4 py-3 text-gray-600">{item.waktu_mulai} - {item.waktu_selesai}</td>
                       <td className="px-4 py-3 text-gray-600">{item.ruangan.nama_ruangan}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center space-x-2">
+                          <button
+                            onClick={() => {
+                              setEditModal(item);
+                              setEditForm({
+                                tanggal: item.tanggal.split('T')[0],
+                                waktu_mulai: item.waktu_mulai,
+                                waktu_selesai: item.waktu_selesai,
+                                ruangan_id: item.ruangan_id,
+                                penguji1_id: ketua?.dosen_id,
+                                penguji2_id: anggota1?.dosen_id,
+                                penguji3_id: anggota2?.dosen_id,
+                              });
+                              setSearchKetua(ketua?.dosen.user.name || '');
+                              setSearchAnggota1(anggota1?.dosen.user.name || '');
+                              setSearchAnggota2(anggota2?.dosen.user.name || '');
+                              setSearchRuangan(item.ruangan.nama_ruangan || '');
+                              setShowDropdownKetua(false);
+                              setShowDropdownAnggota1(false);
+                              setShowDropdownAnggota2(false);
+                              setShowDropdownRuangan(false);
+                            }}
+                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (confirm('Yakin ingin menghapus jadwal ini?')) {
+                                try {
+                                  await api.delete(`/jadwal-sidang-smart/jadwal/${item.id}`);
+                                  toast.success('Jadwal berhasil dihapus');
+                                  fetchJadwal();
+                                } catch (error: any) {
+                                  toast.error('Gagal menghapus jadwal');
+                                }
+                              }
+                            }}
+                            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-xs"
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -634,6 +690,218 @@ export default function PenjadwalanSidang() {
           generate langsung.
         </p>
       </div>
+
+      {editModal && editOptions && (
+        <div className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50 -mt-16 lg:-mt-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', marginTop: '-64px' }}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-4">
+            <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
+              <h3 className="text-xl font-bold">Edit Jadwal Sidang</h3>
+              <button onClick={() => setEditModal(null)} className="text-gray-500 hover:text-gray-700">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Tanggal</label>
+                <input type="date" value={editForm.tanggal} onChange={(e) => setEditForm({...editForm, tanggal: e.target.value})} className="w-full px-4 py-2 border rounded-lg" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Waktu Mulai</label>
+                  <input type="time" value={editForm.waktu_mulai} onChange={(e) => setEditForm({...editForm, waktu_mulai: e.target.value})} className="w-full px-4 py-2 border rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Waktu Selesai</label>
+                  <input type="time" value={editForm.waktu_selesai} onChange={(e) => setEditForm({...editForm, waktu_selesai: e.target.value})} className="w-full px-4 py-2 border rounded-lg" />
+                </div>
+              </div>
+              <div className="relative">
+                <label className="block text-sm font-medium mb-2">Ketua Penguji</label>
+                <input
+                  type="text"
+                  placeholder="Ketik nama ketua penguji..."
+                  value={searchKetua}
+                  onChange={(e) => {
+                    setSearchKetua(e.target.value);
+                    const exactMatch = editOptions.dosen.find((d: any) => d.name.toLowerCase() === e.target.value.toLowerCase());
+                    setEditForm({...editForm, penguji1_id: exactMatch?.id});
+                    setShowDropdownKetua(true);
+                  }}
+                  onFocus={() => setShowDropdownKetua(true)}
+                  onBlur={() => setTimeout(() => setShowDropdownKetua(false), 200)}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                {searchKetua && !editForm.penguji1_id && (
+                  <p className="text-xs text-red-500 mt-1">Tidak ada dosen bernama "{searchKetua}"</p>
+                )}
+                {showDropdownKetua && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {editOptions.dosen.filter((d: any) => !searchKetua || d.name.toLowerCase().includes(searchKetua.toLowerCase())).map((d: any) => (
+                      <div
+                        key={d.id}
+                        onClick={() => {
+                          setEditForm({...editForm, penguji1_id: d.id});
+                          setSearchKetua(d.name);
+                          setShowDropdownKetua(false);
+                        }}
+                        className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                      >
+                        {d.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="relative">
+                <label className="block text-sm font-medium mb-2">Anggota Penguji I</label>
+                <input
+                  type="text"
+                  placeholder="Ketik nama anggota penguji I..."
+                  value={searchAnggota1}
+                  onChange={(e) => {
+                    setSearchAnggota1(e.target.value);
+                    const exactMatch = editOptions.dosen.find((d: any) => d.name.toLowerCase() === e.target.value.toLowerCase());
+                    setEditForm({...editForm, penguji2_id: exactMatch?.id});
+                    setShowDropdownAnggota1(true);
+                  }}
+                  onFocus={() => setShowDropdownAnggota1(true)}
+                  onBlur={() => setTimeout(() => setShowDropdownAnggota1(false), 200)}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                {searchAnggota1 && !editForm.penguji2_id && (
+                  <p className="text-xs text-red-500 mt-1">Tidak ada dosen bernama "{searchAnggota1}"</p>
+                )}
+                {showDropdownAnggota1 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {editOptions.dosen.filter((d: any) => !searchAnggota1 || d.name.toLowerCase().includes(searchAnggota1.toLowerCase())).map((d: any) => (
+                      <div
+                        key={d.id}
+                        onClick={() => {
+                          setEditForm({...editForm, penguji2_id: d.id});
+                          setSearchAnggota1(d.name);
+                          setShowDropdownAnggota1(false);
+                        }}
+                        className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                      >
+                        {d.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="relative">
+                <label className="block text-sm font-medium mb-2">Anggota Penguji II</label>
+                <input
+                  type="text"
+                  placeholder="Ketik nama anggota penguji II..."
+                  value={searchAnggota2}
+                  onChange={(e) => {
+                    setSearchAnggota2(e.target.value);
+                    const exactMatch = editOptions.dosen.find((d: any) => d.name.toLowerCase() === e.target.value.toLowerCase());
+                    setEditForm({...editForm, penguji3_id: exactMatch?.id});
+                    setShowDropdownAnggota2(true);
+                  }}
+                  onFocus={() => setShowDropdownAnggota2(true)}
+                  onBlur={() => setTimeout(() => setShowDropdownAnggota2(false), 200)}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                {searchAnggota2 && !editForm.penguji3_id && (
+                  <p className="text-xs text-red-500 mt-1">Tidak ada dosen bernama "{searchAnggota2}"</p>
+                )}
+                {showDropdownAnggota2 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {editOptions.dosen.filter((d: any) => !searchAnggota2 || d.name.toLowerCase().includes(searchAnggota2.toLowerCase())).map((d: any) => (
+                      <div
+                        key={d.id}
+                        onClick={() => {
+                          setEditForm({...editForm, penguji3_id: d.id});
+                          setSearchAnggota2(d.name);
+                          setShowDropdownAnggota2(false);
+                        }}
+                        className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                      >
+                        {d.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="relative">
+                <label className="block text-sm font-medium mb-2">Ruangan</label>
+                <input
+                  type="text"
+                  placeholder="Ketik nama ruangan..."
+                  value={searchRuangan}
+                  onChange={(e) => {
+                    setSearchRuangan(e.target.value);
+                    const exactMatch = editOptions.ruangan.find((r: any) => r.name.toLowerCase() === e.target.value.toLowerCase());
+                    setEditForm({...editForm, ruangan_id: exactMatch?.id});
+                    setShowDropdownRuangan(true);
+                  }}
+                  onFocus={() => setShowDropdownRuangan(true)}
+                  onBlur={() => setTimeout(() => setShowDropdownRuangan(false), 200)}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                {searchRuangan && !editForm.ruangan_id && (
+                  <p className="text-xs text-red-500 mt-1">Tidak ada ruangan "{searchRuangan}"</p>
+                )}
+                {showDropdownRuangan && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {editOptions.ruangan.filter((r: any) => !searchRuangan || r.name.toLowerCase().includes(searchRuangan.toLowerCase())).map((r: any) => (
+                      <div
+                        key={r.id}
+                        onClick={() => {
+                          setEditForm({...editForm, ruangan_id: r.id});
+                          setSearchRuangan(r.name);
+                          setShowDropdownRuangan(false);
+                        }}
+                        className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                      >
+                        {r.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="sticky bottom-0 bg-gray-50 p-6 flex justify-end space-x-3 border-t">
+              <button onClick={() => setEditModal(null)} className="px-4 py-2 border rounded-lg hover:bg-gray-100">Batal</button>
+              <button onClick={async () => {
+                if (editForm.waktu_mulai && editForm.waktu_selesai) {
+                  const [hMulai, mMulai] = editForm.waktu_mulai.split(':').map(Number);
+                  const [hSelesai, mSelesai] = editForm.waktu_selesai.split(':').map(Number);
+                  const menitMulai = hMulai * 60 + mMulai;
+                  const menitSelesai = hSelesai * 60 + mSelesai;
+                  
+                  if (menitMulai >= menitSelesai) {
+                    toast.error('Waktu mulai harus lebih awal dari waktu selesai');
+                    return;
+                  }
+                }
+                
+                console.log('[FRONTEND EDIT] 📝 Starting edit jadwal');
+                console.log('[FRONTEND EDIT] 🎯 ID:', editModal.id);
+                console.log('[FRONTEND EDIT] 📦 Form data:', editForm);
+                console.log('[FRONTEND EDIT] 📋 Current jadwal:', {
+                  tanggal: editModal.tanggal,
+                  waktu_mulai: editModal.waktu_mulai,
+                  waktu_selesai: editModal.waktu_selesai,
+                  ruangan_id: editModal.ruangan_id,
+                });
+                
+                try {
+                  const response = await api.patch(`/jadwal-sidang-smart/jadwal/${editModal.id}`, editForm);
+                  toast.success('Jadwal berhasil diupdate');
+                  setEditModal(null);
+                  fetchJadwal();
+                } catch (error: any) {
+                  // Error sudah ditangani oleh interceptor
+                }
+              }} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

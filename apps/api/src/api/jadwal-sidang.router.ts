@@ -85,6 +85,45 @@ router.delete(
   })
 );
 
+router.delete(
+  '/jadwal/:id',
+  asyncHandler(authMiddleware),
+  authorizeRoles([Role.admin, Role.jurusan]),
+  auditLog('DELETE_SINGLE_JADWAL', 'jadwal_sidang'),
+  asyncHandler(async (req, res) => {
+    const id = parseInt(req.params.id);
+    await service.deleteJadwal(id);
+    res.json({ status: 'sukses', message: 'Jadwal berhasil dihapus' });
+  })
+);
+
+router.patch(
+  '/jadwal/:id',
+  asyncHandler(authMiddleware),
+  authorizeRoles([Role.admin, Role.jurusan]),
+  auditLog('UPDATE_JADWAL', 'jadwal_sidang'),
+  asyncHandler(async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const data = req.body;
+      const result = await service.updateJadwal(id, data);
+      res.json({ status: 'sukses', message: 'Jadwal berhasil diupdate', data: result });
+    } catch (error: any) {
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({ status: 'error', message: error.message });
+    }
+  })
+);
+
+router.get(
+  '/options',
+  asyncHandler(authMiddleware),
+  asyncHandler(async (req, res) => {
+    const options = await service.getEditOptions();
+    res.json({ status: 'sukses', data: options });
+  })
+);
+
 router.get(
   '/export/pdf',
   asyncHandler(authMiddleware),

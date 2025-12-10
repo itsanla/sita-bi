@@ -1344,7 +1344,7 @@ export default function AturanTugasAkhirPage() {
             <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
               <div><label className="block text-sm font-medium mb-2">Pilih Hari</label>
                 <select value={editingHariKhusus.hari} onChange={(e) => setEditingHariKhusus({ ...editingHariKhusus, hari: e.target.value })} className="w-full px-4 py-2 border rounded-lg">
-                  {['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'].map(h => <option key={h} value={h}>{h.charAt(0).toUpperCase() + h.slice(1)}</option>)}
+                  {['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'].filter(h => !(pengaturan.hari_libur_tetap || []).includes(h)).map(h => <option key={h} value={h}>{h.charAt(0).toUpperCase() + h.slice(1)}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">

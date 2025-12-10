@@ -16,6 +16,10 @@ const apiClient: AxiosInstance = axios.create({
   },
 });
 
+let lastToastMessage = '';
+let lastToastTime = 0;
+const processedErrors = new WeakMap();
+
 // Request interceptor
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -50,6 +54,11 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
+    // Prevent duplicate toast for same error object
+    if (processedErrors.has(error)) {
+      return Promise.reject(error);
+    }
+    processedErrors.set(error, true);
     // Network error
     if (!error.response) {
       console.error('[API Response] Network error:', error);
@@ -79,7 +88,15 @@ apiClient.interceptors.response.use(
 
     switch (status) {
       case 400:
-        // Don't show toast here, let the component handle it
+        // Show validation error from backend
+        if (message && typeof message === 'string') {
+          const now = Date.now();
+          if (message !== lastToastMessage || now - lastToastTime > 1000) {
+            toast.error(message);
+            lastToastMessage = message;
+            lastToastTime = now;
+          }
+        }
         break;
 
       case 401:
@@ -119,7 +136,15 @@ apiClient.interceptors.response.use(
         break;
 
       case 409:
-        // Don't show toast here, let the component handle it
+        // Show conflict error from backend (prevent duplicate)
+        if (message && typeof message === 'string') {
+          const now = Date.now();
+          if (message !== lastToastMessage || now - lastToastTime > 1000) {
+            toast.error(message);
+            lastToastMessage = message;
+            lastToastTime = now;
+          }
+        }
         break;
 
       case 422:
@@ -131,7 +156,10 @@ apiClient.interceptors.response.use(
         break;
 
       case 500:
-        // Don't show toast here, let the component handle it
+        // Show error message from backend for validation errors
+        if (message && typeof message === 'string') {
+          toast.error(message);
+        }
         break;
 
       case 502:

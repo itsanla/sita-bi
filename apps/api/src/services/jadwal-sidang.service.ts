@@ -11,7 +11,7 @@ interface PengaturanJadwal {
   tanggal_libur_khusus: { tanggal: string; keterangan: string }[];
   ruangan_sidang: string[];
   waktu_istirahat?: { waktu: string; durasi_menit: number }[];
-  jadwal_hari_khusus?: { hari: string; jam_mulai: string; jam_selesai: string; waktu_istirahat?: { waktu: string; durasi_menit: number }[] }[];
+  jadwal_hari_khusus?: { hari: string; jam_mulai: string; jam_selesai: string; durasi_sidang_menit?: number; jeda_sidang_menit?: number; waktu_istirahat?: { waktu: string; durasi_menit: number }[] }[];
 }
 
 interface TimeSlot {
@@ -96,11 +96,15 @@ export class JadwalSidangService {
     
     let jamMulaiSidang = pengaturan.jam_mulai_sidang;
     let jamSelesaiSidang = pengaturan.jam_selesai_sidang;
+    let durasiSidangMenit = pengaturan.durasi_sidang_menit;
+    let jedaSidangMenit = pengaturan.jeda_sidang_menit;
     let waktuIstirahatList = pengaturan.waktu_istirahat || [];
     
     if (jadwalKhusus) {
       jamMulaiSidang = jadwalKhusus.jam_mulai;
       jamSelesaiSidang = jadwalKhusus.jam_selesai;
+      durasiSidangMenit = jadwalKhusus.durasi_sidang_menit ?? pengaturan.durasi_sidang_menit;
+      jedaSidangMenit = jadwalKhusus.jeda_sidang_menit ?? pengaturan.jeda_sidang_menit;
       waktuIstirahatList = jadwalKhusus.waktu_istirahat || [];
       console.log(`[BACKEND] 📅 Menggunakan jadwal khusus untuk hari ${hariIni}:`, jadwalKhusus);
     }
@@ -110,7 +114,7 @@ export class JadwalSidangService {
 
     const startMinutes = jamMulai * 60 + menitMulai;
     const endMinutes = jamSelesai * 60 + menitSelesai;
-    const durasiTotal = pengaturan.durasi_sidang_menit + pengaturan.jeda_sidang_menit;
+    const durasiTotal = durasiSidangMenit + jedaSidangMenit;
 
     // Parse waktu istirahat ke menit
     const waktuIstirahatMap = new Map<number, number>();
@@ -122,9 +126,9 @@ export class JadwalSidangService {
 
     for (const ruanganId of ruanganIds) {
       let currentMinutes = startMinutes;
-      while (currentMinutes + pengaturan.durasi_sidang_menit <= endMinutes) {
+      while (currentMinutes + durasiSidangMenit <= endMinutes) {
         const waktuMulai = `${String(Math.floor(currentMinutes / 60)).padStart(2, '0')}:${String(currentMinutes % 60).padStart(2, '0')}`;
-        const waktuSelesaiMenit = currentMinutes + pengaturan.durasi_sidang_menit;
+        const waktuSelesaiMenit = currentMinutes + durasiSidangMenit;
         const waktuSelesai = `${String(Math.floor(waktuSelesaiMenit / 60)).padStart(2, '0')}:${String(waktuSelesaiMenit % 60).padStart(2, '0')}`;
 
         slots.push({
@@ -154,11 +158,9 @@ export class JadwalSidangService {
       where: {
         tanggal: slot.tanggal,
         ruangan_id: slot.ruangan_id,
-        OR: [
-          {
-            waktu_mulai: { lte: slot.waktu_selesai },
-            waktu_selesai: { gte: slot.waktu_mulai },
-          },
+        NOT: [
+          { waktu_selesai: { lte: slot.waktu_mulai } },
+          { waktu_mulai: { gte: slot.waktu_selesai } },
         ],
       },
     });
@@ -466,187 +468,134 @@ export class JadwalSidangService {
     }
     
     const results: any[] = [];
-    let scheduledCount = 0;
     const totalMahasiswa = mahasiswaSiap.length;
+    const unscheduled = [...mahasiswaSiap];
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() + 1);
     console.log('[BACKEND] 📅 Start date for scheduling:', startDate);
+    console.log('[BACKEND] 🚀 Using BATCH PARALLEL scheduling');
 
-    for (const sidang of mahasiswaSiap) {
-      scheduledCount++;
-      const progress = (scheduledCount / totalMahasiswa * 100).toFixed(1);
-      console.log(`[BACKEND] 🎯 [${scheduledCount}/${totalMahasiswa} - ${progress}%] Scheduling:`, sidang.tugasAkhir.mahasiswa.nim);
-      console.log('[BACKEND] 🎯 Scheduling mahasiswa:', sidang.tugasAkhir.mahasiswa.nim);
-      const pembimbingIds = sidang.tugasAkhir.peranDosenTa.map((p) => p.dosen_id);
-      console.log('[BACKEND] 👨‍🏫 Pembimbing IDs:', pembimbingIds);
-      let scheduled = false;
+    for (let dayOffset = 0; unscheduled.length > 0 && dayOffset < 365; dayOffset++) {
+      const tanggal = new Date(startDate);
+      tanggal.setDate(tanggal.getDate() + dayOffset);
+      console.log(`[BACKEND] 📅 Day ${dayOffset + 1}: ${tanggal.toISOString().split('T')[0]} - Remaining: ${unscheduled.length}/${totalMahasiswa}`);
 
-      for (let dayOffset = 0; !scheduled && dayOffset < 365; dayOffset++) {
-        const tanggal = new Date(startDate);
-        tanggal.setDate(tanggal.getDate() + dayOffset);
-        console.log('[BACKEND] 📅 Trying date:', tanggal.toISOString().split('T')[0], 'offset:', dayOffset);
+      const slots = this.generateTimeSlots(tanggal, pengaturan, ruanganIds);
+      if (slots.length === 0) continue;
 
-        const slots = this.generateTimeSlots(tanggal, pengaturan, ruanganIds);
-        console.log('[BACKEND] 🕐 Generated slots:', slots.length);
+      for (const slot of slots) {
+        if (unscheduled.length === 0) break;
 
-        for (const slot of slots) {
-          const isAvailable = await this.isSlotAvailable(slot);
-          console.log('[BACKEND] 🔍 Slot', slot.waktu_mulai, 'available:', isAvailable);
-          if (!isAvailable) continue;
+        const isAvailable = await this.isSlotAvailable(slot);
+        if (!isAvailable) continue;
 
-          let availableDosen = await this.getDosenAvailable(
-            slot,
-            pembimbingIds,
-            pengaturan,
-            false
-          );
-          
+        let scheduled = false;
+        for (let i = 0; i < unscheduled.length && !scheduled; i++) {
+          const sidang = unscheduled[i];
+          const pembimbingIds = sidang.tugasAkhir.peranDosenTa.map((p: any) => p.dosen_id);
+
+          let availableDosen = await this.getDosenAvailable(slot, pembimbingIds, pengaturan, false);
           if (availableDosen.length < 3) {
-            console.log('[BACKEND] ⚠️ Not enough dosen, allowing softBusy...');
-            availableDosen = await this.getDosenAvailable(
-              slot,
-              pembimbingIds,
-              pengaturan,
-              true
-            );
+            availableDosen = await this.getDosenAvailable(slot, pembimbingIds, pengaturan, true);
           }
-          console.log('[BACKEND] 👨‍🏫 Available dosen:', availableDosen.length);
 
           if (availableDosen.length >= 3) {
-            console.log('[BACKEND] ✅ Found slot with enough dosen!');
-            
-            // RETRY MECHANISM: Try multiple combinations if first fails
             let isValid = false;
             let pengujiIds: number[] = [];
             const maxRetries = Math.min(10, availableDosen.length);
-            
+
             for (let retry = 0; retry < maxRetries && !isValid; retry++) {
               const shuffled = this.shuffleArray(availableDosen);
               pengujiIds = shuffled.slice(0, 3);
-              
-              // VALIDATION LAYER: Double check no conflict
               isValid = await this.validateNoConflict(slot, pengujiIds, pembimbingIds);
-              
-              if (!isValid && retry < maxRetries - 1) {
-                console.log('[BACKEND] ⚠️ Validation failed, retry', retry + 1, '/', maxRetries);
-              }
-            }
-            
-            if (!isValid) {
-              console.log('[BACKEND] ❌ All retries failed, trying next slot');
-              continue;
             }
 
-            const pengujiData = await prisma.$transaction(async (tx) => {
-              // Hapus penguji lama jika ada
-              await tx.peranDosenTa.deleteMany({
-                where: {
-                  tugas_akhir_id: sidang.tugas_akhir_id,
-                  peran: { in: [PeranDosen.penguji1, PeranDosen.penguji2, PeranDosen.penguji3] },
-                },
-              });
-
-              const jadwal = await tx.jadwalSidang.create({
-                data: {
-                  sidang_id: sidang.id,
-                  tanggal: slot.tanggal,
-                  waktu_mulai: slot.waktu_mulai,
-                  waktu_selesai: slot.waktu_selesai,
-                  ruangan_id: slot.ruangan_id,
-                },
-                include: {
-                  ruangan: true,
-                },
-              });
-
-              await tx.peranDosenTa.createMany({
-                data: [
-                  {
+            if (isValid) {
+              const pengujiData = await prisma.$transaction(async (tx) => {
+                await tx.peranDosenTa.deleteMany({
+                  where: {
                     tugas_akhir_id: sidang.tugas_akhir_id,
-                    dosen_id: pengujiIds[0],
-                    peran: PeranDosen.penguji1,
+                    peran: { in: [PeranDosen.penguji1, PeranDosen.penguji2, PeranDosen.penguji3] },
                   },
-                  {
-                    tugas_akhir_id: sidang.tugas_akhir_id,
-                    dosen_id: pengujiIds[1],
-                    peran: PeranDosen.penguji2,
+                });
+
+                const jadwal = await tx.jadwalSidang.create({
+                  data: {
+                    sidang_id: sidang.id,
+                    tanggal: slot.tanggal,
+                    waktu_mulai: slot.waktu_mulai,
+                    waktu_selesai: slot.waktu_selesai,
+                    ruangan_id: slot.ruangan_id,
                   },
-                  {
-                    tugas_akhir_id: sidang.tugas_akhir_id,
-                    dosen_id: pengujiIds[2],
-                    peran: PeranDosen.penguji3,
-                  },
-                ],
+                  include: { ruangan: true },
+                });
+
+                await tx.peranDosenTa.createMany({
+                  data: [
+                    { tugas_akhir_id: sidang.tugas_akhir_id, dosen_id: pengujiIds[0], peran: PeranDosen.penguji1 },
+                    { tugas_akhir_id: sidang.tugas_akhir_id, dosen_id: pengujiIds[1], peran: PeranDosen.penguji2 },
+                    { tugas_akhir_id: sidang.tugas_akhir_id, dosen_id: pengujiIds[2], peran: PeranDosen.penguji3 },
+                  ],
+                });
+
+                await tx.sidang.update({
+                  where: { id: sidang.id },
+                  data: { status_hasil: HasilSidang.dijadwalkan },
+                });
+
+                const [ketua, anggota1, anggota2] = await Promise.all([
+                  tx.dosen.findUnique({ where: { id: pengujiIds[0] }, include: { user: true } }),
+                  tx.dosen.findUnique({ where: { id: pengujiIds[1] }, include: { user: true } }),
+                  tx.dosen.findUnique({ where: { id: pengujiIds[2] }, include: { user: true } }),
+                ]);
+
+                return { ketua, anggota1, anggota2, jadwal };
               });
 
-              await tx.sidang.update({
-                where: { id: sidang.id },
-                data: { status_hasil: HasilSidang.dijadwalkan },
+              const pembimbing1 = sidang.tugasAkhir.peranDosenTa.find((p: any) => p.peran === 'pembimbing1');
+              const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+              const hari = hariMap[slot.tanggal.getDay()];
+              const tanggalStr = slot.tanggal.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+
+              results.push({
+                mahasiswa: sidang.tugasAkhir.mahasiswa.user.name,
+                nim: sidang.tugasAkhir.mahasiswa.nim,
+                ketua: pengujiData.ketua?.user.name || '-',
+                sekretaris: pembimbing1?.dosen?.user?.name || '-',
+                anggota1: pengujiData.anggota1?.user.name || '-',
+                anggota2: pengujiData.anggota2?.user.name || '-',
+                hari_tanggal: `${hari}, ${tanggalStr}`,
+                pukul: `${slot.waktu_mulai} - ${slot.waktu_selesai}`,
+                ruangan: pengujiData.jadwal.ruangan.nama_ruangan,
               });
 
-              const [ketua, anggota1, anggota2] = await Promise.all([
-                tx.dosen.findUnique({ where: { id: pengujiIds[0] }, include: { user: true } }),
-                tx.dosen.findUnique({ where: { id: pengujiIds[1] }, include: { user: true } }),
-                tx.dosen.findUnique({ where: { id: pengujiIds[2] }, include: { user: true } }),
-              ]);
-
-              return { ketua, anggota1, anggota2, jadwal };
-            });
-
-            const pembimbing1 = sidang.tugasAkhir.peranDosenTa.find(
-              (p: any) => p.peran === 'pembimbing1'
-            );
-
-            const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-            const hari = hariMap[slot.tanggal.getDay()];
-            const tanggalStr = slot.tanggal.toLocaleDateString('id-ID', {
-              day: '2-digit',
-              month: 'long',
-              year: 'numeric',
-            });
-
-            results.push({
-              mahasiswa: sidang.tugasAkhir.mahasiswa.user.name,
-              nim: sidang.tugasAkhir.mahasiswa.nim,
-              ketua: pengujiData.ketua?.user.name || '-',
-              sekretaris: pembimbing1?.dosen?.user?.name || '-',
-              anggota1: pengujiData.anggota1?.user.name || '-',
-              anggota2: pengujiData.anggota2?.user.name || '-',
-              hari_tanggal: `${hari}, ${tanggalStr}`,
-              pukul: `${slot.waktu_mulai} - ${slot.waktu_selesai}`,
-              ruangan: pengujiData.jadwal.ruangan.nama_ruangan,
-            });
-
-            console.log('[BACKEND] ✅ Mahasiswa scheduled:', sidang.tugasAkhir.mahasiswa.nim, 'at', slot.waktu_mulai, 'room', pengujiData.jadwal.ruangan.nama_ruangan);
-            scheduled = true;
-            break;
-          } else {
-            console.log('[BACKEND] ⚠️ Not enough dosen for this slot');
+              console.log(`[BACKEND] ✅ [${totalMahasiswa - unscheduled.length + 1}/${totalMahasiswa}] ${sidang.tugasAkhir.mahasiswa.nim} → ${slot.waktu_mulai} ${pengujiData.jadwal.ruangan.nama_ruangan}`);
+              unscheduled.splice(i, 1);
+              scheduled = true;
+            }
           }
         }
       }
-
-      if (!scheduled) {
-        console.error('[BACKEND] ❌ Failed to schedule after 365 days:', sidang.tugasAkhir.mahasiswa.nim);
-        throw new Error(
-          JSON.stringify({
-            status: 'TIDAK_ADA_SLOT',
-            masalah: `Tidak dapat menjadwalkan mahasiswa ${sidang.tugasAkhir.mahasiswa.user.name} (${sidang.tugasAkhir.mahasiswa.nim}) dalam 365 hari ke depan.`,
-            saran: 'Tambah ruangan sidang atau perbesar jam operasional sidang di menu Aturan Umum.',
-            detail: {
-              mahasiswa: sidang.tugasAkhir.mahasiswa.user.name,
-              nim: sidang.tugasAkhir.mahasiswa.nim,
-              ruanganCount: ruanganIds.length,
-              jamOperasional: `${pengaturan.jam_mulai_sidang} - ${pengaturan.jam_selesai_sidang}`,
-            },
-          })
-        );
-      }
     }
 
-    console.log('[BACKEND] 🎉 All mahasiswa scheduled successfully!');
-    console.log('[BACKEND] 📊 Total results:', results.length);
+    if (unscheduled.length > 0) {
+      const firstUnscheduled = unscheduled[0];
+      console.error('[BACKEND] ❌ Failed to schedule', unscheduled.length, 'mahasiswa');
+      throw new Error(
+        JSON.stringify({
+          status: 'TIDAK_ADA_SLOT',
+          masalah: `Tidak dapat menjadwalkan ${unscheduled.length} mahasiswa dalam 365 hari.`,
+          saran: 'Tambah ruangan atau perbesar jam operasional.',
+          detail: {
+            mahasiswa: firstUnscheduled.tugasAkhir.mahasiswa.user.name,
+            nim: firstUnscheduled.tugasAkhir.mahasiswa.nim,
+            totalGagal: unscheduled.length,
+          },
+        })
+      );
+    }
+
     console.log('[BACKEND] 🎉 All mahasiswa scheduled successfully!');
     console.log('[BACKEND] 📊 Total results:', results.length);
     return results;
@@ -896,7 +845,7 @@ export class JadwalSidangService {
   }
 
   async getJadwalSidang() {
-    return await prisma.jadwalSidang.findMany({
+    const jadwal = await prisma.jadwalSidang.findMany({
       include: {
         ruangan: true,
         sidang: {
@@ -922,8 +871,30 @@ export class JadwalSidangService {
           },
         },
       },
-      orderBy: [{ tanggal: 'asc' }, { waktu_mulai: 'asc' }],
     });
+    
+    const sorted = jadwal.sort((a, b) => {
+      const dateA = new Date(a.tanggal);
+      dateA.setUTCHours(0, 0, 0, 0);
+      const dateB = new Date(b.tanggal);
+      dateB.setUTCHours(0, 0, 0, 0);
+      
+      const timeA = dateA.getTime();
+      const timeB = dateB.getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      
+      const [hA, mA] = a.waktu_mulai.split(':').map(Number);
+      const [hB, mB] = b.waktu_mulai.split(':').map(Number);
+      return (hA * 60 + mA) - (hB * 60 + mB);
+    });
+    
+    console.log('[BACKEND] 📊 Jadwal count:', sorted.length);
+    if (sorted.length > 0) {
+      console.log('[BACKEND] 📅 First:', sorted[0].tanggal, sorted[0].waktu_mulai);
+      console.log('[BACKEND] 📅 Last:', sorted[sorted.length - 1].tanggal, sorted[sorted.length - 1].waktu_mulai);
+    }
+    
+    return sorted;
   }
 
   async deleteAllJadwal() {
@@ -949,5 +920,271 @@ export class JadwalSidangService {
       console.log('[BACKEND] ✅ Deleted', result.count, 'jadwal');
       return result;
     });
+  }
+
+  async deleteJadwal(id: number) {
+    return await prisma.$transaction(async (tx) => {
+      const jadwal = await tx.jadwalSidang.findUnique({ where: { id }, include: { sidang: true } });
+      if (!jadwal) throw new Error('Jadwal tidak ditemukan');
+
+      await tx.peranDosenTa.deleteMany({
+        where: {
+          tugas_akhir_id: jadwal.sidang.tugas_akhir_id,
+          peran: { in: [PeranDosen.penguji1, PeranDosen.penguji2, PeranDosen.penguji3] },
+        },
+      });
+
+      await tx.sidang.update({
+        where: { id: jadwal.sidang_id },
+        data: { status_hasil: HasilSidang.menunggu_penjadwalan },
+      });
+
+      await tx.jadwalSidang.delete({ where: { id } });
+    });
+  }
+
+  async updateJadwal(id: number, data: any) {
+    console.log('[BACKEND UPDATE] 📝 Starting update jadwal ID:', id);
+    console.log('[BACKEND UPDATE] 📦 Data received:', JSON.stringify(data));
+    
+    return await prisma.$transaction(async (tx) => {
+      const jadwal = await tx.jadwalSidang.findUnique({
+        where: { id },
+        include: {
+          sidang: {
+            include: {
+              tugasAkhir: {
+                include: {
+                  mahasiswa: { include: { user: true } },
+                  peranDosenTa: { include: { dosen: { include: { user: true } } } },
+                },
+              },
+            },
+          },
+          ruangan: true,
+        },
+      });
+
+      if (!jadwal) {
+        const error: any = new Error('Jadwal tidak ditemukan');
+        error.statusCode = 404;
+        throw error;
+      }
+      
+      console.log('[BACKEND UPDATE] 📋 Current jadwal:', {
+        tanggal: jadwal.tanggal,
+        waktu_mulai: jadwal.waktu_mulai,
+        waktu_selesai: jadwal.waktu_selesai,
+        ruangan_id: jadwal.ruangan_id,
+        ruangan_nama: jadwal.ruangan.nama_ruangan,
+      });
+
+      const pengujiIds = [data.penguji1_id, data.penguji2_id, data.penguji3_id].filter(Boolean);
+      const uniquePenguji = new Set(pengujiIds);
+      if (pengujiIds.length !== uniquePenguji.size) {
+        const error: any = new Error('Penguji tidak boleh sama');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const pembimbingIds = jadwal.sidang.tugasAkhir.peranDosenTa
+        .filter((p) => p.peran === 'pembimbing1' || p.peran === 'pembimbing2')
+        .map((p) => p.dosen_id);
+
+      const isPengujiSamaDenganPembimbing = pengujiIds.some((id) => pembimbingIds.includes(id));
+      if (isPengujiSamaDenganPembimbing) {
+        const error: any = new Error('Penguji tidak boleh sama dengan pembimbing');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const tanggalBaru = data.tanggal ? new Date(data.tanggal) : jadwal.tanggal;
+      const waktuMulaiBaru = data.waktu_mulai || jadwal.waktu_mulai;
+      const waktuSelesaiBaru = data.waktu_selesai || jadwal.waktu_selesai;
+      const ruanganBaru = data.ruangan_id !== undefined ? data.ruangan_id : jadwal.ruangan_id;
+
+      if (!ruanganBaru) {
+        const error: any = new Error('Ruangan harus dipilih');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const tanggalNormalized = new Date(tanggalBaru);
+      tanggalNormalized.setUTCHours(0, 0, 0, 0);
+
+      const toMinutes = (time: string) => {
+        const [h, m] = time.split(':').map(Number);
+        return h * 60 + m;
+      };
+
+      const newStart = toMinutes(waktuMulaiBaru);
+      const newEnd = toMinutes(waktuSelesaiBaru);
+
+      const allConflicts = await tx.jadwalSidang.findMany({
+        where: {
+          id: { not: id },
+          tanggal: {
+            gte: tanggalNormalized,
+            lt: new Date(tanggalNormalized.getTime() + 24 * 60 * 60 * 1000),
+          },
+          ruangan_id: ruanganBaru,
+        },
+        include: { 
+          sidang: { 
+            include: { 
+              tugasAkhir: { 
+                include: { 
+                  mahasiswa: { include: { user: true } } 
+                } 
+              } 
+            } 
+          },
+          ruangan: true,
+        },
+      });
+
+      const conflictRuangan = allConflicts.find((c) => {
+        const existStart = toMinutes(c.waktu_mulai);
+        const existEnd = toMinutes(c.waktu_selesai);
+        return !(existEnd <= newStart || existStart >= newEnd);
+      });
+
+      if (conflictRuangan) {
+        const error: any = new Error(
+          `Ruangan ${conflictRuangan.ruangan.nama_ruangan} sudah digunakan untuk sidang ${conflictRuangan.sidang.tugasAkhir.mahasiswa.user.name} pada waktu tersebut`
+        );
+        error.statusCode = 409;
+        throw error;
+      }
+
+      const allDosenIds = [...pengujiIds, ...pembimbingIds];
+      const allSchedules = await tx.jadwalSidang.findMany({
+        where: {
+          id: { not: id },
+          tanggal: {
+            gte: tanggalNormalized,
+            lt: new Date(tanggalNormalized.getTime() + 24 * 60 * 60 * 1000),
+          },
+        },
+        include: {
+          sidang: {
+            include: {
+              tugasAkhir: {
+                include: {
+                  mahasiswa: { include: { user: true } },
+                  peranDosenTa: { include: { dosen: { include: { user: true } } } },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const conflictDosen = allSchedules.filter((c) => {
+        const existStart = toMinutes(c.waktu_mulai);
+        const existEnd = toMinutes(c.waktu_selesai);
+        return !(existEnd <= newStart || existStart >= newEnd);
+      });
+
+      for (const conflict of conflictDosen) {
+        const conflictDosenIds = conflict.sidang.tugasAkhir.peranDosenTa
+          .filter((p) => ['penguji1', 'penguji2', 'penguji3', 'pembimbing1'].includes(p.peran))
+          .map((p) => p.dosen_id);
+
+        const bentrok = allDosenIds.filter((id) => conflictDosenIds.includes(id));
+
+        if (bentrok.length > 0) {
+          const dosenBentrok = conflict.sidang.tugasAkhir.peranDosenTa.find((p) =>
+            bentrok.includes(p.dosen_id)
+          );
+          const error: any = new Error(
+            `Dosen ${dosenBentrok?.dosen.user.name} sudah dijadwalkan untuk sidang ${conflict.sidang.tugasAkhir.mahasiswa.user.name} pada waktu tersebut`
+          );
+          error.statusCode = 409;
+          throw error;
+        }
+      }
+
+      const updateData: any = {};
+      if (data.tanggal) updateData.tanggal = new Date(data.tanggal);
+      if (data.waktu_mulai) updateData.waktu_mulai = data.waktu_mulai;
+      if (data.waktu_selesai) updateData.waktu_selesai = data.waktu_selesai;
+      if (data.ruangan_id !== undefined) updateData.ruangan_id = data.ruangan_id;
+
+      console.log('[BACKEND UPDATE] 💾 Update data:', JSON.stringify(updateData));
+
+      const updated = await tx.jadwalSidang.update({
+        where: { id },
+        data: updateData,
+      });
+      
+      console.log('[BACKEND UPDATE] ✅ Updated jadwal:', {
+        id: updated.id,
+        tanggal: updated.tanggal,
+        waktu_mulai: updated.waktu_mulai,
+        waktu_selesai: updated.waktu_selesai,
+        ruangan_id: updated.ruangan_id,
+      });
+
+      if (data.penguji1_id && data.penguji2_id && data.penguji3_id) {
+        await tx.peranDosenTa.deleteMany({
+          where: {
+            tugas_akhir_id: jadwal.sidang.tugas_akhir_id,
+            peran: { in: [PeranDosen.penguji1, PeranDosen.penguji2, PeranDosen.penguji3] },
+          },
+        });
+
+        await tx.peranDosenTa.createMany({
+          data: [
+            {
+              tugas_akhir_id: jadwal.sidang.tugas_akhir_id,
+              dosen_id: data.penguji1_id,
+              peran: PeranDosen.penguji1,
+            },
+            {
+              tugas_akhir_id: jadwal.sidang.tugas_akhir_id,
+              dosen_id: data.penguji2_id,
+              peran: PeranDosen.penguji2,
+            },
+            {
+              tugas_akhir_id: jadwal.sidang.tugas_akhir_id,
+              dosen_id: data.penguji3_id,
+              peran: PeranDosen.penguji3,
+            },
+          ],
+        });
+      }
+
+      return await tx.jadwalSidang.findUnique({
+        where: { id },
+        include: {
+          sidang: {
+            include: {
+              tugasAkhir: {
+                include: {
+                  mahasiswa: { include: { user: true } },
+                  peranDosenTa: { include: { dosen: { include: { user: true } } } },
+                },
+              },
+            },
+          },
+          ruangan: true,
+        },
+      });
+    });
+  }
+
+  async getEditOptions() {
+    const [mahasiswa, dosen, ruangan] = await Promise.all([
+      prisma.mahasiswa.findMany({ where: { siap_sidang: true }, include: { user: true } }),
+      prisma.dosen.findMany({ include: { user: true } }),
+      prisma.ruangan.findMany(),
+    ]);
+
+    return {
+      mahasiswa: mahasiswa.map(m => ({ id: m.id, name: m.user.name, nim: m.nim })),
+      dosen: dosen.map(d => ({ id: d.id, name: d.user.name })),
+      ruangan: ruangan.map(r => ({ id: r.id, name: r.nama_ruangan })),
+    };
   }
 }
