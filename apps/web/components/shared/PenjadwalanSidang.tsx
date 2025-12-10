@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 interface JadwalSidang {
   id?: number;
   tanggal_generate: string | null;
-  status: 'belum_dijadwalkan' | 'dijadwalkan' | 'selesai';
+  status: 'BELUM_DIJADWALKAN' | 'DIJADWALKAN' | 'SELESAI';
 }
 
 export default function PenjadwalanSidang() {
@@ -96,21 +96,46 @@ export default function PenjadwalanSidang() {
   }, []);
 
   useEffect(() => {
-    if (!jadwal?.tanggal_generate || jadwal.status === 'selesai') return;
+    if (!jadwal?.tanggal_generate) return;
+
+    // Jika status SELESAI tapi jadwal tersimpan masih kosong, polling sampai ada data
+    if (jadwal.status === 'SELESAI' && jadwalTersimpan.length === 0) {
+      const intervalId = setInterval(() => {
+        fetchJadwal();
+      }, 3000);
+      return () => clearInterval(intervalId);
+    }
+
+    if (jadwal.status === 'SELESAI') return;
 
     const targetTime = new Date(jadwal.tanggal_generate).getTime();
     const now = Date.now();
     const timeUntilGenerate = targetTime - now;
 
-    if (timeUntilGenerate <= 0) return;
-    if (timeUntilGenerate > 3600000) return;
+    if (timeUntilGenerate <= 0) {
+      // Waktu sudah lewat, polling setiap 5 detik untuk cek status
+      const intervalId = setInterval(() => {
+        fetchJadwal();
+      }, 5000);
+      return () => clearInterval(intervalId);
+    }
 
-    const timeoutId = setTimeout(() => {
-      fetchJadwal();
-    }, timeUntilGenerate);
+    if (timeUntilGenerate <= 60000) {
+      // Kurang dari 1 menit, polling setiap 5 detik
+      const intervalId = setInterval(() => {
+        fetchJadwal();
+      }, 5000);
+      return () => clearInterval(intervalId);
+    }
 
-    return () => clearTimeout(timeoutId);
-  }, [jadwal]);
+    if (timeUntilGenerate <= 3600000) {
+      // Kurang dari 1 jam, set timeout tepat di waktu generate
+      const timeoutId = setTimeout(() => {
+        fetchJadwal();
+      }, timeUntilGenerate);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [jadwal, jadwalTersimpan.length]);
 
   const handleAturJadwal = async () => {
     console.log('[FRONTEND] 🎯 Atur jadwal clicked');
@@ -316,107 +341,179 @@ export default function PenjadwalanSidang() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Atur Jadwal Generate Otomatis
-        </h2>
-
-        {jadwal?.status === 'selesai' ? (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-3">
-                <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-green-900">
-                    Jadwal Sudah Di-generate
-                  </p>
-                  <p className="text-sm text-green-700 mt-1">
-                    Sidang telah di-generate pada:{' '}
-                    <span className="font-semibold">
-                      {new Date(jadwal.tanggal_generate!).toLocaleString('id-ID', {
-                        dateStyle: 'full',
-                        timeStyle: 'short',
-                      })}
-                    </span>
-                  </p>
-                </div>
-              </div>
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-red-900 to-red-800 px-6 py-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+              <Clock className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">
+                Atur Jadwal Generate Otomatis
+              </h2>
+              <p className="text-xs text-red-100">
+                Sistem akan otomatis menjadwalkan sidang pada waktu yang ditentukan
+              </p>
             </div>
           </div>
-        ) : jadwal?.status === 'dijadwalkan' ? (
-          <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-3">
-                  <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-blue-900">
-                      Jadwal Generate Terjadwal
+        </div>
+
+        <div className="p-6">
+          {jadwal?.status === 'SELESAI' ? (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-5 shadow-sm">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shadow-md">
+                      <CheckCircle className="w-7 h-7 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-base font-bold text-green-900 mb-2">
+                      ✅ Jadwal Sudah Di-generate
                     </p>
-                    <p className="text-sm text-blue-700 mt-1">
-                      Sidang akan di-generate otomatis pada:{' '}
-                      <span className="font-semibold">
-                        {new Date(jadwal.tanggal_generate!).toLocaleString('id-ID', {
-                          dateStyle: 'full',
-                          timeStyle: 'short',
+                    <p className="text-sm text-green-800">
+                      Sidang telah berhasil di-generate pada:
+                    </p>
+                    <div className="mt-3 bg-white/60 backdrop-blur-sm rounded-lg px-4 py-3 border border-green-200">
+                      <p className="text-base font-bold text-green-900">
+                        📅 {new Date(jadwal.tanggal_generate!).toLocaleString('id-ID', {
+                          weekday: 'long',
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
                         })}
-                      </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-xs text-blue-800">
+                  💡 <span className="font-semibold">Tips:</span> Anda dapat mengatur jadwal generate baru atau menghapus semua jadwal yang sudah dibuat.
+                </p>
+              </div>
+              
+              {jadwalTersimpan.length > 0 && (
+                <button
+                  onClick={handleHapusJadwal}
+                  disabled={loadingJadwal}
+                  className="w-full px-5 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-700 hover:to-orange-800 hover:shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 font-semibold"
+                >
+                  <XCircle className="w-5 h-5" />
+                  <span>{loadingJadwal ? 'Menghapus...' : 'Hapus Semua Jadwal & Reset'}</span>
+                </button>
+              )}
+            </div>
+          ) : jadwal?.status === 'DIJADWALKAN' ? (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-5 shadow-sm">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center shadow-md animate-pulse">
+                      <Clock className="w-7 h-7 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-base font-bold text-blue-900 mb-2">
+                      ⏰ Jadwal Generate Terjadwal
+                    </p>
+                    <p className="text-sm text-blue-800 mb-3">
+                      Sistem akan otomatis menjadwalkan sidang pada:
+                    </p>
+                    <div className="bg-white/60 backdrop-blur-sm rounded-lg px-4 py-3 border border-blue-200">
+                      <p className="text-base font-bold text-blue-900">
+                        📅 {new Date(jadwal.tanggal_generate!).toLocaleString('id-ID', {
+                          weekday: 'long',
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-xs text-amber-800">
+                  ⚠️ <span className="font-semibold">Perhatian:</span> Membatalkan jadwal akan menghapus pengaturan waktu generate otomatis.
+                </p>
+              </div>
+
+              <button
+                onClick={handleBatalkan}
+                disabled={processing}
+                className="w-full px-5 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 hover:shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 font-semibold"
+              >
+                <XCircle className="w-5 h-5" />
+                <span>{processing ? 'Membatalkan...' : 'Batalkan Jadwal Generate'}</span>
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-5 shadow-sm">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-lg">💡</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-amber-900 mb-1">
+                      Informasi Penting
+                    </p>
+                    <p className="text-xs text-amber-800 leading-relaxed">
+                      Atur tanggal dan jam untuk generate jadwal sidang secara otomatis. Sistem akan menjadwalkan semua mahasiswa yang siap sidang pada waktu yang ditentukan.
                     </p>
                   </div>
                 </div>
               </div>
-            </div>
-            <button
-              onClick={handleBatalkan}
-              disabled={processing}
-              className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 hover:shadow-md active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
-            >
-              <XCircle className="w-4 h-4" />
-              <span>{processing ? 'Membatalkan...' : 'Batalkan Jadwal Generate'}</span>
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <p className="text-sm text-amber-800">
-                <span className="font-semibold">Info:</span> Atur tanggal dan jam untuk generate jadwal sidang secara otomatis.
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tanggal Generate
-                </label>
-                <input
-                  type="date"
-                  value={tanggalGenerate}
-                  onChange={(e) => setTanggalGenerate(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
-                  disabled={processing}
-                />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
+                    <Calendar className="w-4 h-4 text-red-900" />
+                    <span>Tanggal Generate</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={tanggalGenerate}
+                    onChange={(e) => setTanggalGenerate(e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-red-900 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    disabled={processing}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700">
+                    <Clock className="w-4 h-4 text-red-900" />
+                    <span>Jam Generate</span>
+                  </label>
+                  <input
+                    type="time"
+                    value={jamGenerate}
+                    onChange={(e) => setJamGenerate(e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-red-900 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    disabled={processing}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Jam Generate
-                </label>
-                <input
-                  type="time"
-                  value={jamGenerate}
-                  onChange={(e) => setJamGenerate(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
-                  disabled={processing}
-                />
-              </div>
+
+              <button
+                onClick={handleAturJadwal}
+                disabled={processing || !tanggalGenerate || !jamGenerate}
+                className="w-full px-5 py-3 bg-gradient-to-r from-red-900 to-red-800 text-white rounded-lg hover:from-red-800 hover:to-red-700 hover:shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 font-semibold"
+              >
+                <Zap className="w-5 h-5" />
+                <span>{processing ? 'Menyimpan...' : 'Simpan Jadwal Generate'}</span>
+              </button>
             </div>
-            <button
-              onClick={handleAturJadwal}
-              disabled={processing || !tanggalGenerate || !jamGenerate}
-              className="w-full px-4 py-2 bg-red-900 text-white rounded-lg hover:bg-red-800 hover:shadow-md active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {processing ? 'Menyimpan...' : 'Simpan Jadwal Generate'}
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">

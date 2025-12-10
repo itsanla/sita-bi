@@ -604,6 +604,23 @@ export class JadwalSidangService {
 
     console.log('[BACKEND] 🎉 All mahasiswa scheduled successfully!');
     console.log('[BACKEND] 📊 Total results:', results.length);
+    
+    // Update status penjadwalan ke SELESAI
+    try {
+      const penjadwalan = await prisma.penjadwalanSidang.findFirst({
+        where: { status: 'DIJADWALKAN' },
+      });
+      if (penjadwalan) {
+        await prisma.penjadwalanSidang.update({
+          where: { id: penjadwalan.id },
+          data: { status: 'SELESAI' },
+        });
+        console.log('[BACKEND] ✅ Updated penjadwalan status to SELESAI');
+      }
+    } catch (e) {
+      console.log('[BACKEND] ⚠️ Failed to update penjadwalan status:', e);
+    }
+    
     return results;
   }
 
@@ -926,6 +943,25 @@ export class JadwalSidangService {
 
   async deleteAllJadwal() {
     console.log('[BACKEND] 🗑️ Deleting all jadwal sidang...');
+    
+    // Reset status penjadwalan ke BELUM_DIJADWALKAN
+    try {
+      const penjadwalan = await prisma.penjadwalanSidang.findFirst({
+        where: { status: 'SELESAI' },
+      });
+      if (penjadwalan) {
+        await prisma.penjadwalanSidang.update({
+          where: { id: penjadwalan.id },
+          data: { 
+            status: 'BELUM_DIJADWALKAN',
+            tanggal_generate: null,
+          },
+        });
+        console.log('[BACKEND] ✅ Reset penjadwalan status to BELUM_DIJADWALKAN');
+      }
+    } catch (e) {
+      console.log('[BACKEND] ⚠️ Failed to reset penjadwalan status:', e);
+    }
     
     return await prisma.$transaction(async (tx) => {
       // Hapus semua penguji

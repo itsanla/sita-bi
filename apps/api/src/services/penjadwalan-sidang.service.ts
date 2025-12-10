@@ -24,10 +24,38 @@ export class PenjadwalanSidangService {
         where: { id: pengaturan.id },
         data: { status: StatusPenjadwalanSidang.SELESAI },
       });
+      
+      // Trigger generate otomatis
+      console.log('[PENJADWALAN] ⏰ Waktu generate tercapai, trigger generate otomatis...');
+      this.triggerAutoGenerate().catch(err => {
+        console.error('[PENJADWALAN] ❌ Error auto generate:', err);
+      });
+      
       return updated;
     }
 
     return pengaturan;
+  }
+
+  private async triggerAutoGenerate() {
+    try {
+      const { JadwalSidangService } = await import('./jadwal-sidang.service');
+      const { RuanganSyncService } = await import('./ruangan-sync.service');
+      
+      const jadwalService = new JadwalSidangService();
+      const ruanganSync = new RuanganSyncService();
+      
+      console.log('[PENJADWALAN] 🔄 Syncing ruangan...');
+      await ruanganSync.syncRuanganFromPengaturan();
+      
+      console.log('[PENJADWALAN] 🚀 Generating jadwal...');
+      const result = await jadwalService.generateJadwalOtomatis();
+      
+      console.log('[PENJADWALAN] ✅ Auto generate completed:', result.length, 'mahasiswa');
+    } catch (error) {
+      console.error('[PENJADWALAN] ❌ Auto generate failed:', error);
+      throw error;
+    }
   }
 
   async aturJadwal(tanggal_generate: string, user_id: number) {
