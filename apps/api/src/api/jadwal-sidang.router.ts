@@ -136,6 +136,18 @@ router.post(
   })
 );
 
+router.post(
+  '/swap-schedule',
+  asyncHandler(authMiddleware),
+  authorizeRoles([Role.admin, Role.jurusan]),
+  auditLog('SWAP_SCHEDULE', 'jadwal_sidang'),
+  asyncHandler(async (req, res) => {
+    const { jadwal1_id, jadwal2_id } = req.body;
+    const result = await service.swapSchedule(jadwal1_id, jadwal2_id);
+    res.json({ status: 'sukses', message: 'Berhasil menukar jadwal mahasiswa', data: result });
+  })
+);
+
 router.get(
   '/export/pdf',
   asyncHandler(authMiddleware),

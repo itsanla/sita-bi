@@ -41,6 +41,14 @@ export default function PenjadwalanSidang() {
   const [moveDateFrom, setMoveDateFrom] = useState('');
   const [moveDateTo, setMoveDateTo] = useState('');
   const [movingJadwal, setMovingJadwal] = useState(false);
+  const [showSwapModal, setShowSwapModal] = useState(false);
+  const [swapMhs1, setSwapMhs1] = useState('');
+  const [swapMhs2, setSwapMhs2] = useState('');
+  const [swapJadwal1, setSwapJadwal1] = useState<any>(null);
+  const [swapJadwal2, setSwapJadwal2] = useState<any>(null);
+  const [swappingJadwal, setSwappingJadwal] = useState(false);
+  const [showDropdownMhs1, setShowDropdownMhs1] = useState(false);
+  const [showDropdownMhs2, setShowDropdownMhs2] = useState(false);
 
   const fetchJadwal = async () => {
     console.log('[FRONTEND] 🔄 Fetching jadwal dan mahasiswa siap...');
@@ -514,6 +522,13 @@ export default function PenjadwalanSidang() {
                 <span>Excel</span>
               </button>
               <button
+                onClick={() => setShowSwapModal(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center space-x-2"
+              >
+                <Users className="w-4 h-4" />
+                <span>Tukar Jadwal</span>
+              </button>
+              <button
                 onClick={() => setShowMoveModal(true)}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm flex items-center space-x-2"
               >
@@ -696,6 +711,222 @@ export default function PenjadwalanSidang() {
           generate langsung.
         </p>
       </div>
+
+      {showSwapModal && (
+        <div className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50 -mt-16 lg:-mt-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', marginTop: '-64px' }}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
+              <h3 className="text-xl font-bold">Tukar Jadwal Mahasiswa</h3>
+              <button onClick={() => {
+                setShowSwapModal(false);
+                setSwapMhs1('');
+                setSwapMhs2('');
+                setSwapJadwal1(null);
+                setSwapJadwal2(null);
+              }} className="text-gray-500 hover:text-gray-700">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <span className="font-semibold">Info:</span> Pilih 2 mahasiswa untuk menukar jadwal sidang mereka (tanggal, waktu, dan ruangan akan ditukar).
+                </p>
+              </div>
+              
+              <div className="relative">
+                <label className="block text-sm font-medium mb-2">Mahasiswa 1</label>
+                <input
+                  type="text"
+                  placeholder="Ketik nama mahasiswa 1..."
+                  value={swapMhs1}
+                  onChange={(e) => {
+                    setSwapMhs1(e.target.value);
+                    const found = jadwalTersimpan.find((j: any) => 
+                      j.sidang.tugasAkhir.mahasiswa.user.name.toLowerCase() === e.target.value.toLowerCase()
+                    );
+                    setSwapJadwal1(found || null);
+                    setShowDropdownMhs1(true);
+                  }}
+                  onFocus={() => setShowDropdownMhs1(true)}
+                  onBlur={() => setTimeout(() => setShowDropdownMhs1(false), 200)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                {swapMhs1 && !swapJadwal1 && (
+                  <p className="text-xs text-red-500 mt-1">Mahasiswa "{swapMhs1}" tidak ditemukan</p>
+                )}
+                {showDropdownMhs1 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {jadwalTersimpan
+                      .filter((j: any) => !swapMhs1 || j.sidang.tugasAkhir.mahasiswa.user.name.toLowerCase().includes(swapMhs1.toLowerCase()))
+                      .map((j: any) => (
+                        <div
+                          key={j.id}
+                          onClick={() => {
+                            setSwapMhs1(j.sidang.tugasAkhir.mahasiswa.user.name);
+                            setSwapJadwal1(j);
+                            setShowDropdownMhs1(false);
+                          }}
+                          className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                        >
+                          <p className="text-sm font-medium">{j.sidang.tugasAkhir.mahasiswa.user.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(j.tanggal).toLocaleDateString('id-ID')} • {j.waktu_mulai} • {j.ruangan.nama_ruangan}
+                          </p>
+                        </div>
+                      ))}
+                  </div>
+                )}
+                {swapJadwal1 && (
+                  <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-sm font-medium">{swapJadwal1.sidang.tugasAkhir.mahasiswa.user.name}</p>
+                    <p className="text-xs text-gray-600">
+                      {new Date(swapJadwal1.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                      {' • '}
+                      {swapJadwal1.waktu_mulai} - {swapJadwal1.waktu_selesai}
+                      {' • '}
+                      {swapJadwal1.ruangan.nama_ruangan}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative">
+                <label className="block text-sm font-medium mb-2">Mahasiswa 2</label>
+                <input
+                  type="text"
+                  placeholder="Ketik nama mahasiswa 2..."
+                  value={swapMhs2}
+                  onChange={(e) => {
+                    setSwapMhs2(e.target.value);
+                    const found = jadwalTersimpan.find((j: any) => 
+                      j.sidang.tugasAkhir.mahasiswa.user.name.toLowerCase() === e.target.value.toLowerCase()
+                    );
+                    setSwapJadwal2(found || null);
+                    setShowDropdownMhs2(true);
+                  }}
+                  onFocus={() => setShowDropdownMhs2(true)}
+                  onBlur={() => setTimeout(() => setShowDropdownMhs2(false), 200)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                {swapMhs2 && !swapJadwal2 && (
+                  <p className="text-xs text-red-500 mt-1">Mahasiswa "{swapMhs2}" tidak ditemukan</p>
+                )}
+                {showDropdownMhs2 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {jadwalTersimpan
+                      .filter((j: any) => !swapMhs2 || j.sidang.tugasAkhir.mahasiswa.user.name.toLowerCase().includes(swapMhs2.toLowerCase()))
+                      .map((j: any) => (
+                        <div
+                          key={j.id}
+                          onClick={() => {
+                            setSwapMhs2(j.sidang.tugasAkhir.mahasiswa.user.name);
+                            setSwapJadwal2(j);
+                            setShowDropdownMhs2(false);
+                          }}
+                          className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                        >
+                          <p className="text-sm font-medium">{j.sidang.tugasAkhir.mahasiswa.user.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(j.tanggal).toLocaleDateString('id-ID')} • {j.waktu_mulai} • {j.ruangan.nama_ruangan}
+                          </p>
+                        </div>
+                      ))}
+                  </div>
+                )}
+                {swapJadwal2 && (
+                  <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-sm font-medium">{swapJadwal2.sidang.tugasAkhir.mahasiswa.user.name}</p>
+                    <p className="text-xs text-gray-600">
+                      {new Date(swapJadwal2.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                      {' • '}
+                      {swapJadwal2.waktu_mulai} - {swapJadwal2.waktu_selesai}
+                      {' • '}
+                      {swapJadwal2.ruangan.nama_ruangan}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {swapJadwal1 && swapJadwal2 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-sm font-semibold text-green-900 mb-2">Preview Pertukaran:</p>
+                  <div className="space-y-2 text-xs text-green-800">
+                    <div>
+                      <span className="font-medium">{swapJadwal1.sidang.tugasAkhir.mahasiswa.user.name}</span>
+                      <br />
+                      <span className="text-red-600">Dari: {new Date(swapJadwal1.tanggal).toLocaleDateString('id-ID')} • {swapJadwal1.waktu_mulai}-{swapJadwal1.waktu_selesai} • {swapJadwal1.ruangan.nama_ruangan}</span>
+                      <br />
+                      <span className="text-green-600">Ke: {new Date(swapJadwal2.tanggal).toLocaleDateString('id-ID')} • {swapJadwal2.waktu_mulai}-{swapJadwal2.waktu_selesai} • {swapJadwal2.ruangan.nama_ruangan}</span>
+                    </div>
+                    <div className="border-t border-green-300 pt-2">
+                      <span className="font-medium">{swapJadwal2.sidang.tugasAkhir.mahasiswa.user.name}</span>
+                      <br />
+                      <span className="text-red-600">Dari: {new Date(swapJadwal2.tanggal).toLocaleDateString('id-ID')} • {swapJadwal2.waktu_mulai}-{swapJadwal2.waktu_selesai} • {swapJadwal2.ruangan.nama_ruangan}</span>
+                      <br />
+                      <span className="text-green-600">Ke: {new Date(swapJadwal1.tanggal).toLocaleDateString('id-ID')} • {swapJadwal1.waktu_mulai}-{swapJadwal1.waktu_selesai} • {swapJadwal1.ruangan.nama_ruangan}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="sticky bottom-0 bg-gray-50 p-6 flex justify-end space-x-3 border-t">
+              <button
+                onClick={() => {
+                  setShowSwapModal(false);
+                  setSwapMhs1('');
+                  setSwapMhs2('');
+                  setSwapJadwal1(null);
+                  setSwapJadwal2(null);
+                }}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-100"
+              >
+                Batal
+              </button>
+              <button
+                onClick={async () => {
+                  if (!swapJadwal1 || !swapJadwal2) {
+                    toast.error('Pilih 2 mahasiswa yang valid');
+                    return;
+                  }
+                  
+                  if (swapJadwal1.id === swapJadwal2.id) {
+                    toast.error('Tidak bisa menukar jadwal yang sama');
+                    return;
+                  }
+                  
+                  if (!confirm(`Yakin ingin menukar jadwal ${swapJadwal1.sidang.tugasAkhir.mahasiswa.user.name} dengan ${swapJadwal2.sidang.tugasAkhir.mahasiswa.user.name}?`)) {
+                    return;
+                  }
+                  
+                  setSwappingJadwal(true);
+                  try {
+                    const response = await api.post('/jadwal-sidang-smart/swap-schedule', {
+                      jadwal1_id: swapJadwal1.id,
+                      jadwal2_id: swapJadwal2.id,
+                    });
+                    toast.success(response.data.message);
+                    setShowSwapModal(false);
+                    setSwapMhs1('');
+                    setSwapMhs2('');
+                    setSwapJadwal1(null);
+                    setSwapJadwal2(null);
+                    fetchJadwal();
+                  } catch (error: any) {
+                    // Error handled by interceptor
+                  } finally {
+                    setSwappingJadwal(false);
+                  }
+                }}
+                disabled={swappingJadwal || !swapJadwal1 || !swapJadwal2}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {swappingJadwal ? 'Menukar...' : 'Tukar Jadwal'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showMoveModal && (
         <div className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50 -mt-16 lg:-mt-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', marginTop: '-64px' }}>

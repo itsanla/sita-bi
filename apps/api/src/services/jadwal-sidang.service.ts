@@ -1241,4 +1241,52 @@ export class JadwalSidangService {
     console.log('[BACKEND] 🎉 Successfully moved', jadwalToMove.length, 'jadwal');
     return { count: jadwalToMove.length };
   }
+
+  async swapSchedule(jadwal1Id: number, jadwal2Id: number) {
+    console.log('[BACKEND] 🔄 Swapping schedule', jadwal1Id, 'with', jadwal2Id);
+    
+    return await prisma.$transaction(async (tx) => {
+      const [jadwal1, jadwal2] = await Promise.all([
+        tx.jadwalSidang.findUnique({ where: { id: jadwal1Id } }),
+        tx.jadwalSidang.findUnique({ where: { id: jadwal2Id } }),
+      ]);
+      
+      if (!jadwal1 || !jadwal2) {
+        const error: any = new Error('Jadwal tidak ditemukan');
+        error.statusCode = 404;
+        throw error;
+      }
+      
+      // Swap tanggal, waktu, dan ruangan
+      const temp = {
+        tanggal: jadwal1.tanggal,
+        waktu_mulai: jadwal1.waktu_mulai,
+        waktu_selesai: jadwal1.waktu_selesai,
+        ruangan_id: jadwal1.ruangan_id,
+      };
+      
+      await tx.jadwalSidang.update({
+        where: { id: jadwal1Id },
+        data: {
+          tanggal: jadwal2.tanggal,
+          waktu_mulai: jadwal2.waktu_mulai,
+          waktu_selesai: jadwal2.waktu_selesai,
+          ruangan_id: jadwal2.ruangan_id,
+        },
+      });
+      
+      await tx.jadwalSidang.update({
+        where: { id: jadwal2Id },
+        data: {
+          tanggal: temp.tanggal,
+          waktu_mulai: temp.waktu_mulai,
+          waktu_selesai: temp.waktu_selesai,
+          ruangan_id: temp.ruangan_id,
+        },
+      });
+      
+      console.log('[BACKEND] ✅ Successfully swapped jadwal', jadwal1Id, 'with', jadwal2Id);
+      return { jadwal1Id, jadwal2Id };
+    });
+  }
 }
