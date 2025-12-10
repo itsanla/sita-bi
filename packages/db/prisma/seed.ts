@@ -298,6 +298,46 @@ async function main() {
         },
       ],
     });
+
+    // Update mahasiswa siap_sidang status
+    // 60 mahasiswa pertama: siap_sidang = true
+    // 20 mahasiswa terakhir: siap_sidang = false (akan punya status berbeda)
+    if (i >= 60) {
+      await prisma.mahasiswa.update({
+        where: { id: mahasiswaUsers[i].mahasiswa.id },
+        data: { siap_sidang: false },
+      });
+    }
+
+    // Create pendaftaran sidang untuk mahasiswa dengan status berbeda
+    if (i >= 60 && i < 70) {
+      // 10 mahasiswa: Menunggu Validasi
+      await prisma.pendaftaranSidang.create({
+        data: {
+          tugas_akhir_id: ta.id,
+          periode_ta_id: periodeAktif.id,
+          is_submitted: true,
+          status_validasi: 'pending',
+          divalidasi_pembimbing_1: i % 2 === 0,
+          divalidasi_pembimbing_2: false,
+          divalidasi_prodi: false,
+          divalidasi_jurusan: false,
+        },
+      });
+    } else if (i >= 70 && i < 75) {
+      // 5 mahasiswa: Ditolak
+      await prisma.pendaftaranSidang.create({
+        data: {
+          tugas_akhir_id: ta.id,
+          periode_ta_id: periodeAktif.id,
+          is_submitted: true,
+          status_validasi: 'rejected',
+          rejected_by: admin.id,
+          rejection_reason: 'Dokumen tidak lengkap. Harap melengkapi berkas TOEIC dan Bebas Jurusan.',
+        },
+      });
+    }
+    // 5 mahasiswa terakhir (75-79): Belum Daftar (tidak ada pendaftaran)
   }
 
   // Create Tawaran Topik
@@ -367,13 +407,17 @@ async function main() {
   console.log('- Jurusan Level: 1');
   console.log('- Prodi Level: 2 (D3 & D4)');
   console.log(`- Dosen: ${dosenUsers.length}`);
-  console.log(`- Mahasiswa: ${mahasiswaUsers.length} (SEMUA SIAP SIDANG)`);
+  console.log(`- Mahasiswa: ${mahasiswaUsers.length}`);
+  console.log('  • 60 Siap Sidang');
+  console.log('  • 10 Menunggu Validasi');
+  console.log('  • 5 Ditolak');
+  console.log('  • 5 Belum Daftar');
   console.log('- Periode TA: 3 (1 AKTIF, 1 SELESAI, 1 PERSIAPAN)');
   console.log(`- Tugas Akhir: ${mahasiswaUsers.length} (SEMUA DENGAN PEMBIMBING 1 & 2)`);
   console.log('- Tawaran Topik: 10');
   console.log('- Pengumuman: 8');
   console.log('- Ruangan: 0 (akan diatur oleh jurusan)');
-  console.log('- Sidang Terjadwal: 0 (akan di-generate oleh sistem)');
+  console.log('- Sidang Terjadwal: 0 (akan di-generate oleh sistem)')
   console.log('\n🔑 Login Credentials (password: password123):');
   console.log('- Admin: admin@pnp.ac.id');
   console.log('- Jurusan Level: jurusan@pnp.ac.id');
