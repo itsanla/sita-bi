@@ -362,6 +362,7 @@ async function main() {
         judul_topik: topikData[i]!.judul,
         deskripsi: topikData[i]!.deskripsi,
         kuota: topikData[i]!.kuota,
+        periode_ta_id: periodeAktif.id,
       },
     });
   }

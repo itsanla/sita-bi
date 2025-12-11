@@ -35,7 +35,7 @@ router.get(
       where: {
         is_active: true,
         OR: [
-          { periode_ta_id: periodeAktif?.id }, // Sidang dengan periode aktif
+          { periode_ta_id: periodeAktif?.id ?? undefined }, // Sidang dengan periode aktif
           { periode_ta_id: null }, // ATAU sidang tanpa periode (legacy data)
         ],
         tugasAkhir: {
@@ -93,7 +93,7 @@ router.get(
       prisma.pengaturanSistem.findUnique({ where: { key: 'tampilkan_rincian_nilai_ke_sekretaris' } }),
     ]);
 
-    const tampilkanRincian = tampilkanRincianSetting?.value === 'true' || tampilkanRincianSetting?.value === true || !tampilkanRincianSetting;
+    const tampilkanRincian = tampilkanRincianSetting?.value === 'true' || tampilkanRincianSetting?.value === 'true' || tampilkanRincianSetting === null;
 
     res.json({
       status: 'sukses',
@@ -235,6 +235,7 @@ router.post(
           {
             sidang_id,
             dosen_id: penguji1.dosen_id,
+            periode_ta_id: sidang.periode_ta_id,
             aspek: 'Nilai Sidang',
             skor: nilai_penguji1,
             komentar: 'Nilai dari Penguji 1',
@@ -242,6 +243,7 @@ router.post(
           {
             sidang_id,
             dosen_id: penguji2.dosen_id,
+            periode_ta_id: sidang.periode_ta_id,
             aspek: 'Nilai Sidang',
             skor: nilai_penguji2,
             komentar: 'Nilai dari Penguji 2',
@@ -249,6 +251,7 @@ router.post(
           {
             sidang_id,
             dosen_id: penguji3.dosen_id,
+            periode_ta_id: sidang.periode_ta_id,
             aspek: 'Nilai Sidang',
             skor: nilai_penguji3,
             komentar: 'Nilai dari Penguji 3',

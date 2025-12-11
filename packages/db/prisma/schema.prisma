@@ -355,6 +355,7 @@ model BimbinganTA {
   id                Int             @id @default(autoincrement())
   tugas_akhir_id    Int
   dosen_id          Int
+  periode_ta_id     Int?
   peran             String
   sesi_ke           Int
   tanggal_bimbingan DateTime?
@@ -368,6 +369,7 @@ model BimbinganTA {
 
   tugasAkhir       TugasAkhir               @relation(fields: [tugas_akhir_id], references: [id], onDelete: Cascade)
   dosen            Dosen                    @relation(fields: [dosen_id], references: [id])
+  periodeTa        PeriodeTa?               @relation(fields: [periode_ta_id], references: [id])
   catatan          CatatanBimbingan[]
   lampiran         BimbinganLampiran[]
   historyPerubahan HistoryPerubahanJadwal[]
@@ -587,17 +589,19 @@ model Ruangan {
 }
 
 model NilaiSidang {
-  id         Int      @id @default(autoincrement())
-  sidang_id  Int
-  dosen_id   Int
-  aspek      String
-  komentar   String?
-  skor       Float
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  sidang_id     Int
+  dosen_id      Int
+  periode_ta_id Int?
+  aspek         String
+  komentar      String?
+  skor          Float
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 
-  sidang Sidang @relation(fields: [sidang_id], references: [id], onDelete: Cascade)
-  dosen  Dosen  @relation(fields: [dosen_id], references: [id])
+  sidang    Sidang     @relation(fields: [sidang_id], references: [id], onDelete: Cascade)
+  dosen     Dosen      @relation(fields: [dosen_id], references: [id])
+  periodeTa PeriodeTa? @relation(fields: [periode_ta_id], references: [id])
 
   @@map("nilai_sidang")
 }
@@ -609,6 +613,7 @@ model NilaiSidang {
 model DokumenTa {
   id                 Int                  @id @default(autoincrement())
   tugas_akhir_id     Int
+  periode_ta_id      Int?
   tipe_dokumen       TipeDokumenBimbingan
   status_validasi    String               @default("menunggu")
   divalidasi_oleh_p1 Int?
@@ -620,6 +625,7 @@ model DokumenTa {
   updated_at         DateTime             @updatedAt
 
   tugasAkhir  TugasAkhir @relation(fields: [tugas_akhir_id], references: [id], onDelete: Cascade)
+  periodeTa   PeriodeTa? @relation(fields: [periode_ta_id], references: [id])
   validatorP1 Dosen?     @relation("ValidatorP1", fields: [divalidasi_oleh_p1], references: [id])
   validatorP2 Dosen?     @relation("ValidatorP2", fields: [divalidasi_oleh_p2], references: [id])
 
@@ -831,9 +837,12 @@ model PeriodeTa {
   tugasAkhir            TugasAkhir[]
   tawaranTopik          TawaranTopik[]
   pengajuanBimbingan    PengajuanBimbingan[]
+  bimbinganTA           BimbinganTA[]
   sidang                Sidang[]
   pendaftaranSidang     PendaftaranSidang[]
   jadwalSidang          JadwalSidang[]
+  nilaiSidang           NilaiSidang[]
+  dokumenTa             DokumenTa[]
   penjadwalanSidang     PenjadwalanSidang[]
 
   @@map("periode_ta")
