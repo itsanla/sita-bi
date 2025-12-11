@@ -5,14 +5,43 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
 import { Role } from '../middlewares/auth.middleware';
-import { createTawaranTopikSchema } from '../dto/tawaran-topik.dto';
+import {
+  createTawaranTopikSchema,
+  checkSimilarityTawaranTopikSchema,
+} from '../dto/tawaran-topik.dto';
 import { periodeGuard } from '../middlewares/periode.middleware';
+import { getMaxSimilaritasPersen } from '../utils/business-rules';
 
 const router: Router = Router();
 const tawaranTopikService = new TawaranTopikService();
 
 // Apply JWT Auth and Roles Guard globally for this router
 router.use(asyncHandler(authMiddleware));
+
+router.post(
+  '/check-similarity',
+  periodeGuard(),
+  authorizeRoles([Role.dosen]),
+  validate(checkSimilarityTawaranTopikSchema),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const SIMILARITY_BLOCK_THRESHOLD = await getMaxSimilaritasPersen();
+    const { judul_topik } = req.body;
+    const results = await tawaranTopikService.checkSimilarity(judul_topik);
+
+    const isBlocked = results.some(
+      (result) => result.similarity >= SIMILARITY_BLOCK_THRESHOLD,
+    );
+
+    res.status(200).json({
+      status: 'sukses',
+      data: {
+        results,
+        isBlocked,
+        threshold: SIMILARITY_BLOCK_THRESHOLD,
+      },
+    });
+  }),
+);
 
 router.post(
   '/',
@@ -24,9 +53,18 @@ router.post(
       res.status(401).json({ status: 'gagal', message: 'Unauthorized' });
       return;
     }
+    const periodeId = req.periode?.id;
+    if (periodeId === undefined) {
+      res.status(403).json({
+        status: 'gagal',
+        message: 'Periode TA tidak ditemukan',
+      });
+      return;
+    }
     const newTawaranTopik = await tawaranTopikService.create(
       req.body,
       req.user.id,
+      periodeId,
     );
     res.status(201).json({ status: 'sukses', data: newTawaranTopik });
   }),
@@ -79,82 +117,8 @@ router.get(
   }),
 );
 
-router.get(
-  '/applications',
-  periodeGuard(),
-  authorizeRoles([Role.dosen]),
-  asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    if (req.user == null) {
-      res.status(401).json({ status: 'gagal', message: 'Unauthorized' });
-      return;
-    }
-    const page =
-      req.query['page'] != null
-        ? parseInt(req.query['page'] as string)
-        : undefined;
-    const limit =
-      req.query['limit'] != null
-        ? parseInt(req.query['limit'] as string)
-        : undefined;
-    const applications = await tawaranTopikService.getApplicationsForDosen(
-      req.user.id,
-      page,
-      limit,
-    );
-    res.status(200).json({ status: 'sukses', data: applications });
-  }),
-);
-
 router.post(
-  '/applications/:id/approve',
-  periodeGuard(),
-  authorizeRoles([Role.dosen]),
-  asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { id } = req.params;
-    if (id == null) {
-      res
-        .status(400)
-        .json({ status: 'gagal', message: 'ID Aplikasi diperlukan' });
-      return;
-    }
-    if (req.user == null) {
-      res.status(401).json({ status: 'gagal', message: 'Unauthorized' });
-      return;
-    }
-    const approvedApplication = await tawaranTopikService.approveApplication(
-      parseInt(id, 10),
-      req.user.id,
-    );
-    res.status(200).json({ status: 'sukses', data: approvedApplication });
-  }),
-);
-
-router.post(
-  '/applications/:id/reject',
-  periodeGuard(),
-  authorizeRoles([Role.dosen]),
-  asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { id } = req.params;
-    if (id == null) {
-      res
-        .status(400)
-        .json({ status: 'gagal', message: 'ID Aplikasi diperlukan' });
-      return;
-    }
-    if (req.user == null) {
-      res.status(401).json({ status: 'gagal', message: 'Unauthorized' });
-      return;
-    }
-    const rejectedApplication = await tawaranTopikService.rejectApplication(
-      parseInt(id, 10),
-      req.user.id,
-    );
-    res.status(200).json({ status: 'sukses', data: rejectedApplication });
-  }),
-);
-
-router.post(
-  '/:id/apply',
+  '/:id/take',
   periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
@@ -165,18 +129,18 @@ router.post(
     }
     const mahasiswaId = req.user?.mahasiswa?.id;
     if (mahasiswaId === undefined) {
-      throw new Error('User is not a mahasiswa or profile is not loaded.');
+      throw new Error('Mahasiswa tidak ditemukan');
     }
-    const application = await tawaranTopikService.applyForTopic(
+    const result = await tawaranTopikService.takeTopic(
       parseInt(id, 10),
       mahasiswaId,
     );
-    res.status(201).json({ status: 'sukses', data: application });
+    res.status(201).json({ status: 'sukses', data: result });
   }),
 );
 
 router.get(
-  '/all/with-applications',
+  '/all',
   periodeGuard(),
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
@@ -188,10 +152,7 @@ router.get(
       req.query['limit'] != null
         ? parseInt(req.query['limit'] as string)
         : undefined;
-    const allTopics = await tawaranTopikService.getAllTopicsWithApplications(
-      page,
-      limit,
-    );
+    const allTopics = await tawaranTopikService.getAllTopics(page, limit);
     res.status(200).json({ status: 'sukses', data: allTopics });
   }),
 );

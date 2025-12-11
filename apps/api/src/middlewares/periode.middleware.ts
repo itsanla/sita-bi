@@ -12,13 +12,15 @@ export const periodeGuard = () => {
   ): Promise<void> => {
     try {
       const userRole = req.user?.role;
+      const activePeriode = await periodeService.getActivePeriode();
 
       if (userRole === Role.jurusan || userRole === Role.admin) {
+        if (activePeriode !== null) {
+          req.periode = activePeriode;
+        }
         next();
         return;
       }
-
-      const activePeriode = await periodeService.getActivePeriode();
 
       if (activePeriode === null) {
         res.status(403).json({

@@ -24,7 +24,7 @@ router.post(
   '/check-similarity',
   asyncHandler(authMiddleware),
   periodeGuard(),
-  authorizeRoles([Role.mahasiswa]),
+  authorizeRoles([Role.mahasiswa, Role.dosen]),
   validate(createTugasAkhirSchema),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     const SIMILARITY_BLOCK_THRESHOLD = await getMaxSimilaritasPersen();

@@ -18,7 +18,7 @@ const pengumumanService = new PengumumanService();
 router.post(
   '/',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin]),
+  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   validate(createPengumumanSchema),
   asyncHandler(async (req, res): Promise<void> => {
     if (req.user == null) {
@@ -33,7 +33,7 @@ router.post(
 router.get(
   '/all',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin]),
+  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req, res): Promise<void> => {
     const page =
       req.query['page'] != null
@@ -52,7 +52,7 @@ router.get(
 router.patch(
   '/:id',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin]),
+  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   validate(updatePengumumanSchema),
   asyncHandler(async (req, res): Promise<void> => {
     const { id } = req.params;
@@ -73,7 +73,7 @@ router.patch(
 router.delete(
   '/:id',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin]),
+  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req, res): Promise<void> => {
     const { id } = req.params;
     if (id == null) {

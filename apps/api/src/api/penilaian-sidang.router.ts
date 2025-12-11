@@ -16,8 +16,8 @@ router.get(
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const dosenId = req.user?.dosen?.id;
-    
-    if (!dosenId) {
+
+    if (typeof dosenId !== 'number') {
       res.status(403).json({
         status: 'gagal',
         message: 'Akses ditolak: Anda bukan dosen',
@@ -83,28 +83,102 @@ router.get(
           },
           take: 1,
         },
+        nilaiSidang: {
+          include: {
+            dosen: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        },
       },
     });
 
     // Ambil pengaturan penilaian untuk ditampilkan
-    const [rumusSetting, nilaiMinimalSetting, tampilkanRincianSetting] = await Promise.all([
-      prisma.pengaturanSistem.findUnique({ where: { key: 'rumus_penilaian' } }),
-      prisma.pengaturanSistem.findUnique({ where: { key: 'nilai_minimal_lolos' } }),
-      prisma.pengaturanSistem.findUnique({ where: { key: 'tampilkan_rincian_nilai_ke_sekretaris' } }),
-    ]);
+    const [rumusSetting, nilaiMinimalSetting, tampilkanRincianSetting] =
+      await Promise.all([
+        prisma.pengaturanSistem.findUnique({
+          where: { key: 'rumus_penilaian' },
+        }),
+        prisma.pengaturanSistem.findUnique({
+          where: { key: 'nilai_minimal_lolos' },
+        }),
+        prisma.pengaturanSistem.findUnique({
+          where: { key: 'tampilkan_rincian_nilai_ke_sekretaris' },
+        }),
+      ]);
 
-    const tampilkanRincian = tampilkanRincianSetting?.value === 'true' || tampilkanRincianSetting?.value === 'true' || tampilkanRincianSetting === null;
+    const tampilkanRincian =
+      tampilkanRincianSetting?.value === 'true' ||
+      tampilkanRincianSetting === null;
+
+    const ASPEK_NILAI_SIDANG = 'Nilai Sidang';
+    const DEFAULT_RUMUS = '(p1 + p2 + p3) / 3';
+    const PERAN_PENGUJI1 = 'penguji1';
+    const PERAN_PENGUJI2 = 'penguji2';
+    const PERAN_PENGUJI3 = 'penguji3';
+
+    // Hitung nilai akhir untuk setiap sidang yang sudah dinilai
+    const sidangWithNilaiAkhir = sidangList.map((sidang) => {
+      if (sidang.nilaiSidang?.length === 3) {
+        const penguji1DosenId = sidang.tugasAkhir.peranDosenTa.find(
+          (p) => p.peran === PERAN_PENGUJI1,
+        )?.dosen_id;
+        const penguji2DosenId = sidang.tugasAkhir.peranDosenTa.find(
+          (p) => p.peran === PERAN_PENGUJI2,
+        )?.dosen_id;
+        const penguji3DosenId = sidang.tugasAkhir.peranDosenTa.find(
+          (p) => p.peran === PERAN_PENGUJI3,
+        )?.dosen_id;
+
+        const nilai1 =
+          sidang.nilaiSidang.find(
+            (n) =>
+              n.aspek === ASPEK_NILAI_SIDANG && n.dosen_id === penguji1DosenId,
+          )?.skor ?? 0;
+        const nilai2 =
+          sidang.nilaiSidang.find(
+            (n) =>
+              n.aspek === ASPEK_NILAI_SIDANG && n.dosen_id === penguji2DosenId,
+          )?.skor ?? 0;
+        const nilai3 =
+          sidang.nilaiSidang.find(
+            (n) =>
+              n.aspek === ASPEK_NILAI_SIDANG && n.dosen_id === penguji3DosenId,
+          )?.skor ?? 0;
+
+        const rumus = rumusSetting?.value ?? DEFAULT_RUMUS;
+        const formula = rumus
+          .replace(/p1/g, nilai1.toString())
+          .replace(/p2/g, nilai2.toString())
+          .replace(/p3/g, nilai3.toString());
+
+        try {
+          // eslint-disable-next-line sonarjs/code-eval
+          const nilaiAkhir = eval(formula) as number;
+          return { ...sidang, nilai_akhir: nilaiAkhir };
+        } catch {
+          return sidang;
+        }
+      }
+      return sidang;
+    });
 
     res.json({
       status: 'sukses',
-      data: sidangList,
-      pengaturan_penilaian: tampilkanRincian ? {
-        rumus: rumusSetting?.value || '(p1 + p2 + p3) / 3',
-        nilai_minimal_lolos: parseFloat(nilaiMinimalSetting?.value || '60'),
-        keterangan: 'Berikan nilai sesuai kemampuan mahasiswa secara objektif',
-      } : {
-        keterangan: 'Berikan nilai sesuai kemampuan mahasiswa secara objektif',
-      },
+      data: sidangWithNilaiAkhir,
+      pengaturan_penilaian: tampilkanRincian
+        ? {
+            rumus: rumusSetting?.value ?? DEFAULT_RUMUS,
+            nilai_minimal_lolos: parseFloat(nilaiMinimalSetting?.value ?? '60'),
+            keterangan:
+              'Berikan nilai sesuai kemampuan mahasiswa secara objektif',
+          }
+        : {
+            keterangan:
+              'Berikan nilai sesuai kemampuan mahasiswa secara objektif',
+          },
     });
   }),
 );
@@ -116,9 +190,10 @@ router.post(
   authorizeRoles([Role.dosen]),
   asyncHandler(async (req, res): Promise<void> => {
     const dosenId = req.user?.dosen?.id;
-    const { sidang_id, nilai_penguji1, nilai_penguji2, nilai_penguji3 } = req.body;
+    const { sidang_id, nilai_penguji1, nilai_penguji2, nilai_penguji3 } =
+      req.body;
 
-    if (!dosenId) {
+    if (typeof dosenId !== 'number') {
       res.status(403).json({
         status: 'gagal',
         message: 'Akses ditolak: Anda bukan dosen',
@@ -157,7 +232,8 @@ router.post(
     if (!sidang) {
       res.status(403).json({
         status: 'gagal',
-        message: 'Akses ditolak: Anda bukan sekretaris (pembimbing 1) dari sidang ini',
+        message:
+          'Akses ditolak: Anda bukan sekretaris (pembimbing 1) dari sidang ini',
       });
       return;
     }
@@ -188,11 +264,14 @@ router.post(
     // Ambil rumus penilaian dan nilai minimal lolos
     const [rumusSetting, nilaiMinimalSetting] = await Promise.all([
       prisma.pengaturanSistem.findUnique({ where: { key: 'rumus_penilaian' } }),
-      prisma.pengaturanSistem.findUnique({ where: { key: 'nilai_minimal_lolos' } }),
+      prisma.pengaturanSistem.findUnique({
+        where: { key: 'nilai_minimal_lolos' },
+      }),
     ]);
 
-    const rumus = rumusSetting?.value || '(p1 + p2 + p3) / 3';
-    const nilaiMinimal = parseFloat(nilaiMinimalSetting?.value || '60');
+    const DEFAULT_RUMUS_SUBMIT = '(p1 + p2 + p3) / 3';
+    const rumus = rumusSetting?.value ?? DEFAULT_RUMUS_SUBMIT;
+    const nilaiMinimal = parseFloat(nilaiMinimalSetting?.value ?? '60');
 
     // Hitung nilai akhir menggunakan rumus
     const formula = rumus
@@ -202,8 +281,9 @@ router.post(
 
     let nilaiAkhir: number;
     try {
-      nilaiAkhir = eval(formula);
-    } catch (error) {
+      // eslint-disable-next-line sonarjs/code-eval
+      nilaiAkhir = eval(formula) as number;
+    } catch {
       res.status(500).json({
         status: 'gagal',
         message: 'Rumus penilaian tidak valid',
@@ -288,7 +368,7 @@ router.post(
           data: {
             status_kelulusan: 'BELUM_LULUS',
             gagal_sidang: true,
-            periode_gagal_id: periodeAktif?.id || null,
+            periode_gagal_id: periodeAktif !== null ? periodeAktif.id : null,
             alasan_gagal: `Nilai sidang (${nilaiAkhir.toFixed(2)}) tidak mencapai nilai minimal (${nilaiMinimal})`,
             status_gagal: 'NILAI_TIDAK_MEMENUHI',
           },
@@ -311,6 +391,149 @@ router.post(
         nilai_akhir: nilaiAkhir,
         status: lulus ? 'LULUS' : 'TIDAK LULUS',
         nilai_minimal: nilaiMinimal,
+      },
+    });
+  }),
+);
+
+// Get hasil sidang untuk mahasiswa
+router.get(
+  '/hasil-mahasiswa',
+  periodeGuard(),
+  authorizeRoles([Role.mahasiswa]),
+  asyncHandler(async (req, res): Promise<void> => {
+    const mahasiswaId = req.user?.mahasiswa?.id;
+
+    if (typeof mahasiswaId !== 'number') {
+      res.status(403).json({
+        status: 'gagal',
+        message: 'Akses ditolak: Anda bukan mahasiswa',
+      });
+      return;
+    }
+
+    // Cari sidang mahasiswa yang sudah selesai
+    const sidang = await prisma.sidang.findFirst({
+      where: {
+        is_active: true,
+        selesai_sidang: true,
+        tugasAkhir: {
+          mahasiswa_id: mahasiswaId,
+        },
+      },
+      include: {
+        tugasAkhir: {
+          include: {
+            peranDosenTa: {
+              where: {
+                peran: {
+                  in: ['penguji1', 'penguji2', 'penguji3'],
+                },
+              },
+              include: {
+                dosen: {
+                  include: {
+                    user: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        jadwalSidang: {
+          include: {
+            ruangan: true,
+          },
+          orderBy: {
+            tanggal: 'asc',
+          },
+          take: 1,
+        },
+        nilaiSidang: {
+          include: {
+            dosen: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!sidang) {
+      res.status(404).json({
+        status: 'gagal',
+        message: 'Hasil sidang belum tersedia',
+      });
+      return;
+    }
+
+    // Ambil pengaturan penilaian
+    const [rumusSetting, nilaiMinimalSetting] = await Promise.all([
+      prisma.pengaturanSistem.findUnique({ where: { key: 'rumus_penilaian' } }),
+      prisma.pengaturanSistem.findUnique({
+        where: { key: 'nilai_minimal_lolos' },
+      }),
+    ]);
+
+    const DEFAULT_RUMUS_MAHASISWA = '(p1 + p2 + p3) / 3';
+    const ASPEK_NILAI = 'Nilai Sidang';
+    const PERAN_P1 = 'penguji1';
+    const PERAN_P2 = 'penguji2';
+    const PERAN_P3 = 'penguji3';
+
+    // Hitung nilai akhir
+    let nilaiAkhir: number | undefined;
+    if (sidang.nilaiSidang?.length === 3) {
+      const nilaiSidangList = sidang.nilaiSidang;
+      const penguji1DosenId = sidang.tugasAkhir.peranDosenTa.find(
+        (p) => p.peran === PERAN_P1,
+      )?.dosen_id;
+      const penguji2DosenId = sidang.tugasAkhir.peranDosenTa.find(
+        (p) => p.peran === PERAN_P2,
+      )?.dosen_id;
+      const penguji3DosenId = sidang.tugasAkhir.peranDosenTa.find(
+        (p) => p.peran === PERAN_P3,
+      )?.dosen_id;
+
+      const nilai1 =
+        nilaiSidangList.find(
+          (n) => n.aspek === ASPEK_NILAI && n.dosen_id === penguji1DosenId,
+        )?.skor ?? 0;
+      const nilai2 =
+        nilaiSidangList.find(
+          (n) => n.aspek === ASPEK_NILAI && n.dosen_id === penguji2DosenId,
+        )?.skor ?? 0;
+      const nilai3 =
+        nilaiSidangList.find(
+          (n) => n.aspek === ASPEK_NILAI && n.dosen_id === penguji3DosenId,
+        )?.skor ?? 0;
+
+      const rumus = rumusSetting?.value ?? DEFAULT_RUMUS_MAHASISWA;
+      const formula = rumus
+        .replace(/p1/g, nilai1.toString())
+        .replace(/p2/g, nilai2.toString())
+        .replace(/p3/g, nilai3.toString());
+
+      try {
+        // eslint-disable-next-line sonarjs/code-eval
+        nilaiAkhir = eval(formula) as number;
+      } catch {
+        nilaiAkhir = undefined;
+      }
+    }
+
+    res.json({
+      status: 'sukses',
+      data: {
+        ...sidang,
+        nilai_akhir: nilaiAkhir,
+      },
+      pengaturan_penilaian: {
+        rumus: rumusSetting?.value ?? DEFAULT_RUMUS_MAHASISWA,
+        nilai_minimal_lolos: parseFloat(nilaiMinimalSetting?.value ?? '60'),
+        keterangan: 'Informasi penilaian sidang tugas akhir',
       },
     });
   }),

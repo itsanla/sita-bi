@@ -14,6 +14,7 @@ import {
   CalendarClock,
   Megaphone,
   UserCircle,
+  Award,
 } from 'lucide-react';
 
 const navItems = [
@@ -47,6 +48,11 @@ const navItems = [
     href: '/dashboard/mahasiswa/jadwal-sidang',
     icon: CalendarClock,
     label: 'Jadwal Sidang',
+  },
+  {
+    href: '/dashboard/mahasiswa/pasca-sidang',
+    icon: Award,
+    label: 'Hasil Sidang',
   },
   {
     href: '/dashboard/mahasiswa/pengumuman',

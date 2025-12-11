@@ -8,10 +8,7 @@ import {
   PlusCircle,
   Loader,
   Info,
-  CheckCircle,
-  XCircle,
   BookOpen,
-  Users,
   Search,
   AlertTriangle,
 } from 'lucide-react';
@@ -22,20 +19,18 @@ interface TawaranTopik {
   judul_topik: string;
   deskripsi: string;
   kuota: number;
-}
-
-interface Application {
-  id: number;
-  status: string;
-  mahasiswa: {
-    user: {
-      name: string;
-      email: string;
+  dosenPencetus?: {
+    name: string;
+    email: string;
+  };
+  tugasAkhir?: Array<{
+    mahasiswa: {
+      user: {
+        name: string;
+        email: string;
+      };
     };
-  };
-  tawaranTopik: {
-    judul_topik: string;
-  };
+  }>;
 }
 
 interface SimilarityResult {
@@ -48,7 +43,6 @@ interface SimilarityResult {
 function CreateTopikForm({ onTopicCreated }: { onTopicCreated: () => void }) {
   const [judul, setJudul] = useState('');
   const [deskripsi, setDeskripsi] = useState('');
-  const [kuota, setKuota] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState('');
@@ -70,9 +64,9 @@ function CreateTopikForm({ onTopicCreated }: { onTopicCreated: () => void }) {
     try {
       const response = await request<{
         data: { results: SimilarityResult[]; isBlocked: boolean };
-      }>('/tugas-akhir/check-similarity', {
+      }>('/tawaran-topik/check-similarity', {
         method: 'POST',
-        data: { judul },
+        data: { judul_topik: judul },
       });
       setSimilarityResults(response.data.data.results || []);
       setIsBlocked(response.data.data.isBlocked || false);
@@ -95,12 +89,11 @@ function CreateTopikForm({ onTopicCreated }: { onTopicCreated: () => void }) {
     try {
       await request('/tawaran-topik', {
         method: 'POST',
-        data: { judul_topik: judul, deskripsi, kuota: Number(kuota) },
+        data: { judul_topik: judul, deskripsi },
       });
       alert('Topik berhasil dibuat!');
       setJudul('');
       setDeskripsi('');
-      setKuota(1);
       setSimilarityResults(null);
       setIsBlocked(false);
       onTopicCreated();
@@ -148,23 +141,6 @@ function CreateTopikForm({ onTopicCreated }: { onTopicCreated: () => void }) {
               value={deskripsi}
               onChange={(e) => setDeskripsi(e.target.value)}
               rows={4}
-              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-maroon-500 focus:border-maroon-500 sm:text-sm"
-              required
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="kuota"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Kuota
-            </label>
-            <input
-              id="kuota"
-              type="number"
-              value={kuota}
-              onChange={(e) => setKuota(parseInt(e.target.value, 10))}
-              min={1}
               className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-maroon-500 focus:border-maroon-500 sm:text-sm"
               required
             />
@@ -267,7 +243,7 @@ function CreateTopikForm({ onTopicCreated }: { onTopicCreated: () => void }) {
 export default function TawaranTopikPage() {
   const { status: periodeStatus, loading: periodeLoading } = usePeriodeStatus();
   const [topics, setTopics] = useState<TawaranTopik[]>([]);
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [allTopics, setAllTopics] = useState<TawaranTopik[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -275,18 +251,22 @@ export default function TawaranTopikPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [topicsRes, appsRes] = await Promise.all([
-        request<{ data: TawaranTopik[] }>('/tawaran-topik'),
-        request<{ data: Application[] }>('/tawaran-topik/applications'),
+      const [topicsRes, allTopicsRes] = await Promise.all([
+        request<{ data: { data: TawaranTopik[] } }>('/tawaran-topik'),
+        request<{ data: { data: TawaranTopik[] } }>('/tawaran-topik/all'),
       ]);
-      if (Array.isArray(topicsRes.data)) {
-        setTopics(topicsRes.data);
+      const topicsData = topicsRes.data.data?.data || topicsRes.data.data;
+      const allTopicsData =
+        allTopicsRes.data.data?.data || allTopicsRes.data.data;
+
+      if (Array.isArray(topicsData)) {
+        setTopics(topicsData);
       }
-      if (Array.isArray(appsRes.data)) {
-        setApplications(appsRes.data);
+      if (Array.isArray(allTopicsData)) {
+        setAllTopics(allTopicsData);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch data');
+      setError(err instanceof Error ? err.message : 'Gagal memuat data');
     } finally {
       setLoading(false);
     }
@@ -299,28 +279,6 @@ export default function TawaranTopikPage() {
       setLoading(false);
     }
   }, [periodeLoading, periodeStatus?.isActive]);
-
-  const handleApplication = async (
-    appId: number,
-    action: 'approve' | 'reject',
-  ) => {
-    if (!confirm(`Are you sure you want to ${action} this application?`))
-      return;
-
-    try {
-      await request(`/tawaran-topik/applications/${appId}/${action}`, {
-        method: 'POST',
-      });
-      alert(`Application ${action}d successfully!`);
-      fetchData(); // Refresh all data
-    } catch (err) {
-      alert(
-        `Failed to ${action} application: ${
-          err instanceof Error ? err.message : 'An unknown error occurred'
-        }`,
-      );
-    }
-  };
 
   if (error) {
     return (
@@ -337,22 +295,13 @@ export default function TawaranTopikPage() {
         {/* Header and Create Button */}
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-800">Tawaran Topik</h1>
-          <div className="flex gap-3">
-            <a
-              href="/dashboard/dosen/tawaran-topik/semua"
-              className="inline-flex items-center justify-center px-4 py-2 border border-maroon-700 text-sm font-medium rounded-md shadow-sm text-maroon-700 bg-white hover:bg-maroon-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon-500 transition"
-            >
-              <BookOpen size={16} className="mr-2" />
-              Lihat Semua Topik
-            </a>
-            <button
-              onClick={() => setShowCreateForm(!showCreateForm)}
-              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-maroon-700 hover:bg-maroon-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon-500 transition"
-            >
-              <PlusCircle size={16} className="mr-2" />
-              {showCreateForm ? 'Tutup Form' : 'Buat Topik Baru'}
-            </button>
-          </div>
+          <button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-maroon-700 hover:bg-maroon-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon-500 transition"
+          >
+            <PlusCircle size={16} className="mr-2" />
+            {showCreateForm ? 'Tutup Form' : 'Buat Topik Baru'}
+          </button>
         </div>
 
         {/* Create Form Section */}
@@ -401,9 +350,6 @@ export default function TawaranTopikPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Deskripsi
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Kuota
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -418,9 +364,6 @@ export default function TawaranTopikPage() {
                       <td className="px-6 py-4 text-sm text-gray-600 max-w-md truncate">
                         {topic.deskripsi}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-800 font-medium">
-                        {topic.kuota}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -429,69 +372,64 @@ export default function TawaranTopikPage() {
           )}
         </div>
 
-        {/* Pending Applications Section */}
+        {/* All Topics Section */}
         <div className="bg-white p-6 rounded-2xl shadow-lg">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-            <Users size={24} className="mr-3 text-maroon-700" /> Aplikasi
-            Mahasiswa untuk Topik Saya
+            <BookOpen size={24} className="mr-3 text-maroon-700" /> Semua
+            Tawaran Topik
           </h2>
           {!!loading && (
             <div className="flex items-center justify-center p-6">
               <Loader className="animate-spin text-maroon-700" size={24} />
             </div>
           )}
-          {!loading && applications.length === 0 && (
+          {!loading && allTopics.length === 0 && (
             <div className="text-center text-gray-500 py-6">
               <Info size={32} className="mx-auto mb-2" />
-              <p>Tidak ada aplikasi yang masuk saat ini.</p>
+              <p>Belum ada tawaran topik yang tersedia.</p>
             </div>
           )}
-          {!loading && applications.length > 0 && (
+          {!loading && allTopics.length > 0 && (
             <div className="overflow-x-auto">
               <table className="min-w-full bg-white">
                 <thead className="bg-gray-100">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Mahasiswa
+                      ID
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
+                      Judul Topik
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Topik yang Dilamar
+                      Deskripsi
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Aksi
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Dosen
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Diambil Oleh
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {applications.map((app) => (
-                    <tr key={app.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {app.mahasiswa.user.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {app.mahasiswa.user.email}
+                  {allTopics.map((topic) => (
+                    <tr key={topic.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {topic.id}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        {app.tawaranTopik.judul_topik}
+                        {topic.judul_topik}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
-                        <button
-                          onClick={() => handleApplication(app.id, 'approve')}
-                          className="inline-flex items-center justify-center p-2 border border-transparent rounded-full text-green-600 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition"
-                          title="Setujui"
-                        >
-                          <CheckCircle size={20} />
-                        </button>
-                        <button
-                          onClick={() => handleApplication(app.id, 'reject')}
-                          className="inline-flex items-center justify-center p-2 border border-transparent rounded-full text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition"
-                          title="Tolak"
-                        >
-                          <XCircle size={20} />
-                        </button>
+                      <td className="px-6 py-4 text-sm text-gray-600 max-w-md truncate">
+                        {topic.deskripsi}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {topic.dosenPencetus?.name || '-'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {!!topic.tugasAkhir && topic.tugasAkhir.length > 0
+                          ? topic.tugasAkhir[0].mahasiswa.user.name
+                          : '-'}
                       </td>
                     </tr>
                   ))}

@@ -181,7 +181,16 @@ export class PengumumanService {
       take: limit,
       include: {
         lampiran: true,
-        pembuat: { select: { name: true } },
+        pembuat: {
+          select: {
+            name: true,
+            roles: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
         pembaca: userId !== undefined ? { where: { user_id: userId } } : false,
       },
     });
@@ -233,7 +242,16 @@ export class PengumumanService {
       take: limit,
       include: {
         lampiran: true,
-        pembuat: { select: { name: true } },
+        pembuat: {
+          select: {
+            name: true,
+            roles: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
         pembaca: userId !== undefined ? { where: { user_id: userId } } : false,
       },
     });
