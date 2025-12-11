@@ -55,6 +55,22 @@ router.get(
 );
 
 router.get(
+  '/mahasiswa-gagal',
+  asyncHandler(authMiddleware),
+  authorizeRoles([Role.admin, Role.jurusan]),
+  asyncHandler(async (req, res) => {
+    console.log('[BACKEND API] 🔍 GET /mahasiswa-gagal called');
+    const mahasiswa = await service.getMahasiswaGagalSidang();
+    console.log('[BACKEND API] 📊 Returning mahasiswa gagal:', mahasiswa.length);
+
+    res.json({
+      status: 'sukses',
+      data: mahasiswa,
+    });
+  }),
+);
+
+router.get(
   '/jadwal',
   asyncHandler(authMiddleware),
   asyncHandler(async (req, res) => {
@@ -92,8 +108,9 @@ router.delete(
   auditLog('DELETE_SINGLE_JADWAL', 'jadwal_sidang'),
   asyncHandler(async (req, res) => {
     const id = parseInt(req.params.id);
-    await service.deleteJadwal(id);
-    res.json({ status: 'sukses', message: 'Jadwal berhasil dihapus' });
+    const { alasan } = req.body;
+    await service.deleteJadwal(id, alasan);
+    res.json({ status: 'sukses', message: 'Jadwal berhasil dihapus dan mahasiswa ditandai gagal sidang' });
   }),
 );
 

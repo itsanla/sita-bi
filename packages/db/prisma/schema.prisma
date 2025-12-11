@@ -220,6 +220,8 @@ model Mahasiswa {
   sidang_terjadwal Boolean          @default(false)
   gagal_sidang     Boolean          @default(false)
   periode_gagal_id Int?
+  status_gagal     String?          // "KHUSUS" untuk dihapus dari jadwal
+  alasan_gagal     String?          // Alasan kenapa gagal sidang
   status_kelulusan StatusKelulusan  @default(BELUM_LULUS)
   created_at       DateTime         @default(now())
   updated_at       DateTime         @updatedAt

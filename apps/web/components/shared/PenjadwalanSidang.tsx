@@ -65,6 +65,9 @@ export default function PenjadwalanSidang() {
   const [currentPageMhs, setCurrentPageMhs] = useState(1);
   const itemsPerPageMhs = 5;
   const [detailMahasiswa, setDetailMahasiswa] = useState<any>(null);
+  const [deleteModal, setDeleteModal] = useState<any>(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
 
   const fetchJadwal = async () => {
     console.log('[FRONTEND] 🔄 Fetching jadwal dan mahasiswa siap...');
@@ -256,18 +259,11 @@ export default function PenjadwalanSidang() {
   };
 
   const handleHapusJadwal = async () => {
-    if (
-      !confirm(
-        '⚠️ PERINGATAN: Yakin ingin menghapus SEMUA jadwal sidang yang sudah dibuat? Tindakan ini tidak dapat dibatalkan!',
-      )
-    ) {
-      return;
-    }
-
     setLoadingJadwal(true);
     try {
       const response = await api.delete('/jadwal-sidang-smart/jadwal');
       toast.success(response.data.message);
+      setShowDeleteAllModal(false);
       await fetchJadwal();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Gagal menghapus jadwal');
@@ -435,16 +431,12 @@ export default function PenjadwalanSidang() {
 
               {jadwalTersimpan.length > 0 && (
                 <button
-                  onClick={handleHapusJadwal}
+                  onClick={() => setShowDeleteAllModal(true)}
                   disabled={loadingJadwal}
                   className="w-full px-5 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-700 hover:to-orange-800 hover:shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 font-semibold"
                 >
                   <XCircle className="w-5 h-5" />
-                  <span>
-                    {loadingJadwal
-                      ? 'Menghapus...'
-                      : 'Hapus Semua Jadwal & Reset'}
-                  </span>
+                  <span>Hapus Semua Jadwal & Reset</span>
                 </button>
               )}
             </div>
@@ -1155,20 +1147,9 @@ export default function PenjadwalanSidang() {
                             Edit
                           </button>
                           <button
-                            onClick={async () => {
-                              if (
-                                confirm('Yakin ingin menghapus jadwal ini?')
-                              ) {
-                                try {
-                                  await api.delete(
-                                    `/jadwal-sidang-smart/jadwal/${item.id}`,
-                                  );
-                                  toast.success('Jadwal berhasil dihapus');
-                                  fetchJadwal();
-                                } catch (error: any) {
-                                  toast.error('Gagal menghapus jadwal');
-                                }
-                              }
+                            onClick={() => {
+                              setDeleteModal(item);
+                              setDeleteReason('');
                             }}
                             className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 hover:shadow active:scale-95 transition-all text-xs"
                           >
@@ -1817,6 +1798,150 @@ export default function PenjadwalanSidang() {
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
               >
                 {movingJadwal ? 'Memindahkan...' : 'Pindahkan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!!showDeleteAllModal && (
+        <div
+          className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50 -mt-16 lg:-mt-0 animate-in fade-in duration-200"
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            marginTop: '-64px',
+          }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-gradient-to-r from-orange-600 to-orange-700 p-6">
+              <h3 className="text-xl font-bold text-white flex items-center space-x-2">
+                <XCircle className="w-6 h-6" />
+                <span>Konfirmasi Hapus Semua Jadwal</span>
+              </h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-red-50 border-2 border-red-400 rounded-lg p-5">
+                <p className="text-base font-bold text-red-900 mb-3 flex items-center space-x-2">
+                  <span className="text-2xl">⚠️</span>
+                  <span>PERINGATAN PENTING</span>
+                </p>
+                <p className="text-sm text-red-800 leading-relaxed">
+                  Yakin ingin menghapus <span className="font-bold">SEMUA jadwal sidang</span> yang sudah dibuat?
+                </p>
+                <p className="text-sm text-red-900 font-semibold mt-2">
+                  Tindakan ini tidak dapat dibatalkan!
+                </p>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
+                <p className="text-sm text-amber-900">
+                  📊 <span className="font-semibold">Info:</span> Semua mahasiswa akan dikembalikan ke status "Siap Sidang" dan dapat dijadwalkan ulang.
+                </p>
+              </div>
+            </div>
+            <div className="bg-gray-50 p-6 flex justify-end space-x-3 border-t">
+              <button
+                onClick={() => setShowDeleteAllModal(false)}
+                disabled={loadingJadwal}
+                className="px-5 py-2.5 border-2 border-gray-300 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all font-medium disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleHapusJadwal}
+                disabled={loadingJadwal}
+                className="px-5 py-2.5 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-700 hover:to-orange-800 hover:shadow-lg transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingJadwal ? 'Menghapus...' : 'Ya, Hapus Semua'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!!deleteModal && (
+        <div
+          className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50 -mt-16 lg:-mt-0 animate-in fade-in duration-200"
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(6px)',
+            marginTop: '-64px',
+          }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-gradient-to-r from-red-600 to-red-700 p-6">
+              <h3 className="text-xl font-bold text-white flex items-center space-x-2">
+                <XCircle className="w-6 h-6" />
+                <span>Konfirmasi Hapus Jadwal</span>
+              </h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+                <p className="text-sm font-semibold text-red-900 mb-2">
+                  ⚠️ PERINGATAN PENTING
+                </p>
+                <p className="text-sm text-red-800 leading-relaxed">
+                  Menghapus jadwal akan membuat mahasiswa <span className="font-bold">{deleteModal.sidang.tugasAkhir.mahasiswa.user.name}</span> gagal sidang periode ini dengan status "KHUSUS".
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  💡 <span className="font-semibold">Catatan:</span> Jika ingin mengubah jadwal mahasiswa, gunakan tombol <span className="font-semibold">"Edit"</span> sebagai gantinya.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Alasan Penghapusan <span className="text-red-600">*</span>
+                </label>
+                <textarea
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  placeholder="Masukkan alasan kenapa mahasiswa ini dihapus dari jadwal sidang..."
+                  rows={4}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Alasan ini akan muncul di PDF Mahasiswa Gagal Sidang
+                </p>
+              </div>
+            </div>
+            <div className="bg-gray-50 p-6 flex justify-end space-x-3 border-t">
+              <button
+                onClick={() => {
+                  setDeleteModal(null);
+                  setDeleteReason('');
+                }}
+                className="px-5 py-2.5 border-2 border-gray-300 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all font-medium"
+              >
+                Batal
+              </button>
+              <button
+                onClick={async () => {
+                  if (!deleteReason.trim()) {
+                    toast.error('Alasan penghapusan harus diisi');
+                    return;
+                  }
+
+                  try {
+                    await api.delete(
+                      `/jadwal-sidang-smart/jadwal/${deleteModal.id}`,
+                      { data: { alasan: deleteReason } }
+                    );
+                    toast.success('Jadwal berhasil dihapus dan mahasiswa ditandai gagal sidang');
+                    setDeleteModal(null);
+                    setDeleteReason('');
+                    fetchJadwal();
+                  } catch (error: any) {
+                    toast.error('Gagal menghapus jadwal');
+                  }
+                }}
+                disabled={!deleteReason.trim()}
+                className="px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 hover:shadow-lg transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Hapus & Tandai Gagal Sidang
               </button>
             </div>
           </div>
