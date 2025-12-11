@@ -19,7 +19,7 @@ import tugasAkhirRouter from './api/tugas-akhir.router';
 import usersRouter from './api/users.router';
 import filesRouter from './api/files.router';
 import ruanganRouter from './api/ruangan.router';
-import sidangRouter from './api/sidang.router';
+
 import authRouter from './api/auth.router';
 import whatsappRouter from './api/whatsapp.router';
 import geminiRouter from './api/gemini.router';
@@ -140,7 +140,7 @@ app.use('/api/tugas-akhir', tugasAkhirRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/files', filesRouter);
 app.use('/api/ruangan', ruanganRouter);
-app.use('/api/sidang', sidangRouter);
+
 app.use('/api/whatsapp', whatsappRouter);
 app.use('/api/gemini', geminiRouter);
 app.use('/api/dashboard', dashboardRouter);

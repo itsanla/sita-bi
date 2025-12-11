@@ -28,7 +28,10 @@ export function usePenjadwalanSidangStatus() {
         status: data.status || 'BELUM_DIJADWALKAN',
       };
 
-      console.log('[usePenjadwalanSidangStatus] Processed data:', processedData);
+      console.log(
+        '[usePenjadwalanSidangStatus] Processed data:',
+        processedData,
+      );
       setStatus(processedData);
 
       if (processedData.status === 'SELESAI' && intervalRef.current !== null) {
@@ -42,7 +45,10 @@ export function usePenjadwalanSidangStatus() {
         timeoutRef.current = null;
       }
     } catch (error) {
-      console.error('[usePenjadwalanSidangStatus] Error fetching status:', error);
+      console.error(
+        '[usePenjadwalanSidangStatus] Error fetching status:',
+        error,
+      );
       setStatus({
         isGenerated: false,
         tanggalGenerate: null,
@@ -58,7 +64,9 @@ export function usePenjadwalanSidangStatus() {
     void fetchStatus();
 
     const handleUpdate = () => {
-      console.log('[usePenjadwalanSidangStatus] Event triggered: penjadwalan-sidang-updated');
+      console.log(
+        '[usePenjadwalanSidangStatus] Event triggered: penjadwalan-sidang-updated',
+      );
       void fetchStatus();
     };
 
@@ -70,8 +78,11 @@ export function usePenjadwalanSidangStatus() {
   }, [fetchStatus]);
 
   useEffect(() => {
-    console.log('[usePenjadwalanSidangStatus] Polling effect triggered, status:', status);
-    
+    console.log(
+      '[usePenjadwalanSidangStatus] Polling effect triggered, status:',
+      status,
+    );
+
     if (timeoutRef.current !== null) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -90,24 +101,38 @@ export function usePenjadwalanSidangStatus() {
       const now = Date.now();
       const timeUntilGenerate = targetTime - now;
 
-      console.log('[usePenjadwalanSidangStatus] Time until generate:', timeUntilGenerate, 'ms');
+      console.log(
+        '[usePenjadwalanSidangStatus] Time until generate:',
+        timeUntilGenerate,
+        'ms',
+      );
 
       if (timeUntilGenerate > 0) {
         if (timeUntilGenerate <= 3600000) {
-          console.log('[usePenjadwalanSidangStatus] Setting timeout for:', timeUntilGenerate, 'ms');
+          console.log(
+            '[usePenjadwalanSidangStatus] Setting timeout for:',
+            timeUntilGenerate,
+            'ms',
+          );
           timeoutRef.current = setTimeout(() => {
             console.log('[usePenjadwalanSidangStatus] Timeout triggered!');
             void fetchStatus();
           }, timeUntilGenerate);
         }
 
-        console.log('[usePenjadwalanSidangStatus] Starting polling interval (15s)');
+        console.log(
+          '[usePenjadwalanSidangStatus] Starting polling interval (15s)',
+        );
         intervalRef.current = setInterval(() => {
-          console.log('[usePenjadwalanSidangStatus] Interval tick - fetching status');
+          console.log(
+            '[usePenjadwalanSidangStatus] Interval tick - fetching status',
+          );
           void fetchStatus();
         }, 15000);
       } else {
-        console.log('[usePenjadwalanSidangStatus] Time already passed, fetching immediately');
+        console.log(
+          '[usePenjadwalanSidangStatus] Time already passed, fetching immediately',
+        );
         void fetchStatus();
       }
     }

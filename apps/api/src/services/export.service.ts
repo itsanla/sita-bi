@@ -204,4 +204,89 @@ export class ExportService {
 
     return await workbook.xlsx.writeBuffer() as Buffer;
   }
+
+  async generatePDFGagalSidang(data: any[]): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 50, size: 'A4' });
+      const chunks: Buffer[] = [];
+
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      this.headerService.addAcademicHeader(doc, 'Daftar Mahasiswa Gagal Sidang');
+
+      const tableTop = doc.y;
+      const colWidths = [25, 110, 70, 45, 90, 155];
+      const headers = ['No', 'Nama', 'NIM', 'Prodi', 'Status', 'Alasan'];
+      const tableWidth = colWidths.reduce((a, b) => a + b, 0);
+      const pageWidth = doc.page.width;
+      const tableLeft = (pageWidth - tableWidth) / 2;
+
+      // Draw header
+      doc.lineWidth(0.5).rect(tableLeft, tableTop - 3, tableWidth, 18).fillAndStroke('#f0f0f0', '#000000');
+      doc.fontSize(9).font('Helvetica-Bold').fillColor('#000000');
+      let x = tableLeft;
+      headers.forEach((header, i) => {
+        doc.text(header, x + 2, tableTop, { width: colWidths[i] - 4, align: 'center' });
+        x += colWidths[i];
+      });
+
+      // Data
+      doc.font('Helvetica').fontSize(8);
+      let y = tableTop + 15;
+
+      data.forEach((row, idx) => {
+        const rowData = [
+          (idx + 1).toString(),
+          row.nama,
+          row.nim,
+          row.prodi,
+          row.status,
+          row.alasan,
+        ];
+
+        let maxHeight = 0;
+        rowData.forEach((text, i) => {
+          const height = doc.heightOfString(text, { width: colWidths[i] - 4 });
+          if (height > maxHeight) maxHeight = height;
+        });
+        const rowHeight = maxHeight + 6;
+
+        if (y + rowHeight > doc.page.height - 80) {
+          doc.addPage({ margin: 50, size: 'A4' });
+          y = 50;
+          
+          doc.lineWidth(0.5).rect(tableLeft, y - 3, tableWidth, 18).fillAndStroke('#f0f0f0', '#000000');
+          doc.fontSize(9).font('Helvetica-Bold').fillColor('#000000');
+          x = tableLeft;
+          headers.forEach((header, i) => {
+            doc.text(header, x + 2, y, { width: colWidths[i] - 4, align: 'center' });
+            x += colWidths[i];
+          });
+          y += 15;
+          doc.font('Helvetica').fontSize(8);
+        }
+
+        doc.lineWidth(0.5).rect(tableLeft, y, tableWidth, rowHeight).stroke('#000000');
+
+        x = tableLeft;
+        colWidths.forEach((width) => {
+          doc.lineWidth(0.5).moveTo(x, y).lineTo(x, y + rowHeight).stroke();
+          x += width;
+        });
+        doc.lineWidth(0.5).moveTo(x, y).lineTo(x, y + rowHeight).stroke();
+
+        x = tableLeft;
+        rowData.forEach((text, i) => {
+          doc.text(text, x + 2, y + 3, { width: colWidths[i] - 4, align: i === 0 ? 'center' : 'left' });
+          x += colWidths[i];
+        });
+
+        y += rowHeight;
+      });
+
+      doc.end();
+    });
+  }
 }

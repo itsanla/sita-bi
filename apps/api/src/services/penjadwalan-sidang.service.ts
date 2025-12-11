@@ -1,9 +1,20 @@
 import prisma from '../config/database';
 import { StatusPenjadwalanSidang } from '@prisma/client';
 
+interface PengaturanPenjadwalan {
+  status: StatusPenjadwalanSidang;
+  tanggal_generate: Date | null;
+  periode_ta_id?: number;
+}
+
 export class PenjadwalanSidangService {
-  async getPengaturan() {
+  async getPengaturan(): Promise<PengaturanPenjadwalan> {
+    const periodeAktif = await prisma.periodeTa.findFirst({
+      where: { status: 'AKTIF' },
+    });
+
     const pengaturan = await prisma.penjadwalanSidang.findFirst({
+      where: { periode_ta_id: periodeAktif?.id },
       orderBy: { created_at: 'desc' },
     });
 
@@ -11,6 +22,7 @@ export class PenjadwalanSidangService {
       return {
         status: StatusPenjadwalanSidang.BELUM_DIJADWALKAN,
         tanggal_generate: null,
+        periode_ta_id: periodeAktif?.id,
       };
     }
 
@@ -24,50 +36,76 @@ export class PenjadwalanSidangService {
         where: { id: pengaturan.id },
         data: { status: StatusPenjadwalanSidang.SELESAI },
       });
-      
+
       // Trigger generate otomatis
-      console.log('[PENJADWALAN] ⏰ Waktu generate tercapai, trigger generate otomatis...');
-      this.triggerAutoGenerate().catch(err => {
+      console.warn(
+        '[PENJADWALAN] ⏰ Waktu generate tercapai, trigger generate otomatis...',
+      );
+      this.triggerAutoGenerate().catch((err: unknown) => {
         console.error('[PENJADWALAN] ❌ Error auto generate:', err);
       });
-      
+
       return updated;
     }
 
     return pengaturan;
   }
 
-  private async triggerAutoGenerate() {
+  private async triggerAutoGenerate(): Promise<void> {
     try {
       const { JadwalSidangService } = await import('./jadwal-sidang.service');
       const { RuanganSyncService } = await import('./ruangan-sync.service');
-      
+
       const jadwalService = new JadwalSidangService();
       const ruanganSync = new RuanganSyncService();
-      
-      console.log('[PENJADWALAN] 🔄 Syncing ruangan...');
+
+      console.warn('[PENJADWALAN] 🔄 Syncing ruangan...');
       await ruanganSync.syncRuanganFromPengaturan();
-      
-      console.log('[PENJADWALAN] 🚀 Generating jadwal...');
+
+      console.warn('[PENJADWALAN] 🚀 Generating jadwal...');
       const result = await jadwalService.generateJadwalOtomatis();
-      
-      console.log('[PENJADWALAN] ✅ Auto generate completed:', result.length, 'mahasiswa');
+
+      console.warn(
+        '[PENJADWALAN] ✅ Auto generate completed:',
+        result.length,
+        'mahasiswa',
+      );
     } catch (error) {
       console.error('[PENJADWALAN] ❌ Auto generate failed:', error);
       throw error;
     }
   }
 
-  async aturJadwal(tanggal_generate: string, user_id: number) {
+  async aturJadwal(
+    tanggal_generate: string,
+    user_id: number,
+  ): Promise<{
+    id: number;
+    periode_ta_id: number | null;
+    tanggal_generate: Date | null;
+    status: StatusPenjadwalanSidang;
+    dibuat_oleh: number | null;
+    created_at: Date;
+    updated_at: Date;
+  }> {
     const targetDate = new Date(tanggal_generate);
 
     if (targetDate <= new Date()) {
       throw new Error('Tanggal generate harus di masa depan');
     }
 
-    // Cek apakah sudah ada pengaturan
+    const periodeAktif = await prisma.periodeTa.findFirst({
+      where: { status: 'AKTIF' },
+    });
+
+    if (!periodeAktif) {
+      throw new Error('Tidak ada periode aktif');
+    }
+
+    // Cek apakah sudah ada pengaturan untuk periode aktif
     const existing = await prisma.penjadwalanSidang.findFirst({
       where: {
+        periode_ta_id: periodeAktif.id,
         status: {
           in: [
             StatusPenjadwalanSidang.DIJADWALKAN,
@@ -92,6 +130,7 @@ export class PenjadwalanSidangService {
     // Create new
     return await prisma.penjadwalanSidang.create({
       data: {
+        periode_ta_id: periodeAktif.id,
         tanggal_generate: targetDate,
         status: StatusPenjadwalanSidang.DIJADWALKAN,
         dibuat_oleh: user_id,
@@ -99,9 +138,24 @@ export class PenjadwalanSidangService {
     });
   }
 
-  async batalkan() {
+  async batalkan(): Promise<{
+    id: number;
+    periode_ta_id: number | null;
+    tanggal_generate: Date | null;
+    status: StatusPenjadwalanSidang;
+    dibuat_oleh: number | null;
+    created_at: Date;
+    updated_at: Date;
+  }> {
+    const periodeAktif = await prisma.periodeTa.findFirst({
+      where: { status: 'AKTIF' },
+    });
+
     const pengaturan = await prisma.penjadwalanSidang.findFirst({
-      where: { status: StatusPenjadwalanSidang.DIJADWALKAN },
+      where: {
+        periode_ta_id: periodeAktif?.id,
+        status: StatusPenjadwalanSidang.DIJADWALKAN,
+      },
     });
 
     if (!pengaturan) {
@@ -117,7 +171,11 @@ export class PenjadwalanSidangService {
     });
   }
 
-  async getStatus() {
+  async getStatus(): Promise<{
+    isGenerated: boolean;
+    tanggalGenerate: Date | null;
+    status: StatusPenjadwalanSidang;
+  }> {
     const pengaturan = await this.getPengaturan();
 
     return {

@@ -218,6 +218,8 @@ model Mahasiswa {
   ipk              Float?
   siap_sidang      Boolean          @default(false)
   sidang_terjadwal Boolean          @default(false)
+  gagal_sidang     Boolean          @default(false)
+  periode_gagal_id Int?
   status_kelulusan StatusKelulusan  @default(BELUM_LULUS)
   created_at       DateTime         @default(now())
   updated_at       DateTime         @updatedAt
@@ -554,6 +556,7 @@ model HistoryPerubahanSidang {
 model JadwalSidang {
   id            Int      @id @default(autoincrement())
   sidang_id     Int
+  periode_ta_id Int?
   tanggal       DateTime
   waktu_mulai   String
   waktu_selesai String
@@ -561,8 +564,9 @@ model JadwalSidang {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
-  sidang  Sidang  @relation(fields: [sidang_id], references: [id], onDelete: Cascade)
-  ruangan Ruangan @relation(fields: [ruangan_id], references: [id])
+  sidang    Sidang     @relation(fields: [sidang_id], references: [id], onDelete: Cascade)
+  periodeTa PeriodeTa? @relation(fields: [periode_ta_id], references: [id])
+  ruangan   Ruangan    @relation(fields: [ruangan_id], references: [id])
 
   @@map("jadwal_sidang")
 }
@@ -794,11 +798,14 @@ enum StatusPenjadwalanSidang {
 
 model PenjadwalanSidang {
   id              Int                      @id @default(autoincrement())
+  periode_ta_id   Int?
   tanggal_generate DateTime?
   status          StatusPenjadwalanSidang  @default(BELUM_DIJADWALKAN)
   dibuat_oleh     Int?
   created_at      DateTime                 @default(now())
   updated_at      DateTime                 @updatedAt
+
+  periodeTa       PeriodeTa?               @relation(fields: [periode_ta_id], references: [id])
 
   @@map("penjadwalan_sidang")
 }
@@ -824,6 +831,8 @@ model PeriodeTa {
   pengajuanBimbingan    PengajuanBimbingan[]
   sidang                Sidang[]
   pendaftaranSidang     PendaftaranSidang[]
+  jadwalSidang          JadwalSidang[]
+  penjadwalanSidang     PenjadwalanSidang[]
 
   @@map("periode_ta")
 }

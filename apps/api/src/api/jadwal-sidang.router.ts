@@ -21,11 +21,11 @@ router.post(
   asyncHandler(async (req, res) => {
     console.log('[BACKEND API] 🚀 POST /generate called');
     console.log('[BACKEND API] 👤 User:', req.user?.name, req.user?.email);
-    
+
     console.log('[BACKEND API] 🔄 Syncing ruangan...');
     const syncResult = await ruanganSync.syncRuanganFromPengaturan();
     console.log('[BACKEND API] ✅ Ruangan synced:', syncResult);
-    
+
     console.log('[BACKEND API] 📦 Calling generateJadwalOtomatis...');
     const result = await service.generateJadwalOtomatis();
     console.log('[BACKEND API] ✅ Generate completed, results:', result.length);
@@ -35,7 +35,7 @@ router.post(
       message: `Berhasil menjadwalkan ${result.length} mahasiswa`,
       data: result,
     });
-  })
+  }),
 );
 
 router.get(
@@ -51,7 +51,7 @@ router.get(
       status: 'sukses',
       data: mahasiswa,
     });
-  })
+  }),
 );
 
 router.get(
@@ -64,7 +64,7 @@ router.get(
       status: 'sukses',
       data: jadwal,
     });
-  })
+  }),
 );
 
 router.delete(
@@ -82,7 +82,7 @@ router.delete(
       message: `Berhasil menghapus ${result.count} jadwal sidang`,
       data: result,
     });
-  })
+  }),
 );
 
 router.delete(
@@ -94,7 +94,7 @@ router.delete(
     const id = parseInt(req.params.id);
     await service.deleteJadwal(id);
     res.json({ status: 'sukses', message: 'Jadwal berhasil dihapus' });
-  })
+  }),
 );
 
 router.patch(
@@ -107,12 +107,16 @@ router.patch(
       const id = parseInt(req.params.id);
       const data = req.body;
       const result = await service.updateJadwal(id, data);
-      res.json({ status: 'sukses', message: 'Jadwal berhasil diupdate', data: result });
+      res.json({
+        status: 'sukses',
+        message: 'Jadwal berhasil diupdate',
+        data: result,
+      });
     } catch (error: any) {
       const statusCode = error.statusCode || 500;
       res.status(statusCode).json({ status: 'error', message: error.message });
     }
-  })
+  }),
 );
 
 router.get(
@@ -121,7 +125,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const options = await service.getEditOptions();
     res.json({ status: 'sukses', data: options });
-  })
+  }),
 );
 
 router.post(
@@ -132,8 +136,12 @@ router.post(
   asyncHandler(async (req, res) => {
     const { from_date, to_date } = req.body;
     const result = await service.moveSchedule(from_date, to_date);
-    res.json({ status: 'sukses', message: `Berhasil memindahkan ${result.count} jadwal`, data: result });
-  })
+    res.json({
+      status: 'sukses',
+      message: `Berhasil memindahkan ${result.count} jadwal`,
+      data: result,
+    });
+  }),
 );
 
 router.post(
@@ -144,8 +152,12 @@ router.post(
   asyncHandler(async (req, res) => {
     const { jadwal1_id, jadwal2_id } = req.body;
     const result = await service.swapSchedule(jadwal1_id, jadwal2_id);
-    res.json({ status: 'sukses', message: 'Berhasil menukar jadwal mahasiswa', data: result });
-  })
+    res.json({
+      status: 'sukses',
+      message: 'Berhasil menukar jadwal mahasiswa',
+      data: result,
+    });
+  }),
 );
 
 router.get(
@@ -160,16 +172,24 @@ router.get(
       const sekretaris = peran.find((p) => p.peran === 'pembimbing1');
       const anggota1 = peran.find((p) => p.peran === 'penguji2');
       const anggota2 = peran.find((p) => p.peran === 'penguji3');
-      
+
       const tanggal = new Date(item.tanggal);
-      const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const hariMap = [
+        'Minggu',
+        'Senin',
+        'Selasa',
+        'Rabu',
+        'Kamis',
+        'Jumat',
+        'Sabtu',
+      ];
       const hari = hariMap[tanggal.getDay()];
       const tanggalStr = tanggal.toLocaleDateString('id-ID', {
         day: '2-digit',
         month: 'long',
         year: 'numeric',
       });
-      
+
       return {
         mahasiswa: mhs.user.name,
         nim: mhs.nim,
@@ -184,11 +204,31 @@ router.get(
     });
 
     const pdfBuffer = await exportService.generatePDF(exportData);
-    
+
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=jadwal-sidang-${Date.now()}.pdf`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=jadwal-sidang-${Date.now()}.pdf`,
+    );
     res.send(pdfBuffer);
-  })
+  }),
+);
+
+router.get(
+  '/export-gagal-sidang/pdf',
+  asyncHandler(authMiddleware),
+  asyncHandler(async (req, res) => {
+    const mahasiswaGagal = await service.getMahasiswaGagalSidang();
+    const pdfBuffer =
+      await exportService.generatePDFGagalSidang(mahasiswaGagal);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename=mahasiswa-gagal-sidang-${Date.now()}.pdf`,
+    );
+    res.send(pdfBuffer);
+  }),
 );
 
 router.get(
@@ -203,16 +243,24 @@ router.get(
       const sekretaris = peran.find((p) => p.peran === 'pembimbing1');
       const anggota1 = peran.find((p) => p.peran === 'penguji2');
       const anggota2 = peran.find((p) => p.peran === 'penguji3');
-      
+
       const tanggal = new Date(item.tanggal);
-      const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const hariMap = [
+        'Minggu',
+        'Senin',
+        'Selasa',
+        'Rabu',
+        'Kamis',
+        'Jumat',
+        'Sabtu',
+      ];
       const hari = hariMap[tanggal.getDay()];
       const tanggalStr = tanggal.toLocaleDateString('id-ID', {
         day: '2-digit',
         month: 'long',
         year: 'numeric',
       });
-      
+
       return {
         mahasiswa: mhs.user.name,
         nim: mhs.nim,
@@ -227,11 +275,17 @@ router.get(
     });
 
     const excelBuffer = await exportService.generateExcel(exportData);
-    
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=jadwal-sidang-${Date.now()}.xlsx`);
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=jadwal-sidang-${Date.now()}.xlsx`,
+    );
     res.send(excelBuffer);
-  })
+  }),
 );
 
 export default router;
