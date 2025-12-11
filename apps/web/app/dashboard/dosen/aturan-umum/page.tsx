@@ -53,6 +53,9 @@ interface Pengaturan {
   validasi_prodi?: boolean;
   validasi_jurusan?: boolean;
   syarat_pendaftaran_sidang?: SyaratSidang[];
+  rumus_penilaian?: string;
+  nilai_minimal_lolos?: number;
+  tampilkan_rincian_nilai_ke_sekretaris?: boolean;
 }
 
 export default function AturanTugasAkhirPage() {
@@ -82,6 +85,9 @@ export default function AturanTugasAkhirPage() {
     validasi_prodi: false,
     validasi_jurusan: false,
     syarat_pendaftaran_sidang: [],
+    rumus_penilaian: '(p1 + p2 + p3) / 3',
+    nilai_minimal_lolos: 60,
+    tampilkan_rincian_nilai_ke_sekretaris: true,
   });
   const [originalPengaturan, setOriginalPengaturan] = useState<Pengaturan>({
     max_similaritas_persen: 80,
@@ -105,6 +111,9 @@ export default function AturanTugasAkhirPage() {
     validasi_prodi: false,
     validasi_jurusan: false,
     syarat_pendaftaran_sidang: [],
+    rumus_penilaian: '(p1 + p2 + p3) / 3',
+    nilai_minimal_lolos: 60,
+    tampilkan_rincian_nilai_ke_sekretaris: true,
   });
   const [ruanganBaru, setRuanganBaru] = useState('');
   const [syaratBaru, setSyaratBaru] = useState({ key: '', label: '' });
@@ -200,6 +209,9 @@ export default function AturanTugasAkhirPage() {
           { key: 'IJAZAH_SLTA', label: 'Ijazah SLTA' },
           { key: 'BEBAS_JURUSAN', label: 'Surat Bebas Jurusan' },
         ],
+        rumus_penilaian: data.rumus_penilaian ?? '(p1 + p2 + p3) / 3',
+        nilai_minimal_lolos: data.nilai_minimal_lolos ?? 60,
+        tampilkan_rincian_nilai_ke_sekretaris: data.tampilkan_rincian_nilai_ke_sekretaris ?? true,
       };
       console.log('Settings:', settings);
       setPengaturan(settings);
@@ -1413,6 +1425,213 @@ export default function AturanTugasAkhirPage() {
           </div>
         </div>
       )}
+
+      {/* Aturan Penilaian */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">
+          Aturan Penilaian Sidang
+        </h2>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Rumus Penilaian Akhir
+            </label>
+            <p className="text-sm text-gray-500 mb-3">
+              Tentukan rumus perhitungan nilai akhir sidang menggunakan nilai dari 3 penguji.
+              Gunakan variabel: <code className="bg-gray-100 px-2 py-1 rounded text-xs">p1</code> (Penguji 1), 
+              <code className="bg-gray-100 px-2 py-1 rounded text-xs">p2</code> (Penguji 2), 
+              <code className="bg-gray-100 px-2 py-1 rounded text-xs">p3</code> (Penguji 3)
+            </p>
+            
+            {/* Formula Builder */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">Nilai Akhir =</span>
+                <input
+                  type="text"
+                  value={pengaturan.rumus_penilaian ?? ''}
+                  onChange={(e) =>
+                    setPengaturan({
+                      ...pengaturan,
+                      rumus_penilaian: e.target.value,
+                    })
+                  }
+                  placeholder="Contoh: (p1 + p2 + p3) / 3"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent font-mono text-sm"
+                />
+              </div>
+              
+              {/* Quick Insert Buttons */}
+              <div className="flex flex-wrap gap-2">
+                <span className="text-xs font-medium text-gray-600 self-center">Sisipkan:</span>
+                {['p1', 'p2', 'p3', '+', '-', '*', '/', '(', ')'].map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => {
+                      const currentFormula = pengaturan.rumus_penilaian || '';
+                      setPengaturan({
+                        ...pengaturan,
+                        rumus_penilaian: currentFormula + item,
+                      });
+                    }}
+                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-sm font-mono transition-colors"
+                  >
+                    {item}
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    setPengaturan((prev) => ({
+                      ...prev,
+                      rumus_penilaian: '',
+                    }));
+                  }}
+                  className="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded text-xs transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+
+              {/* Formula Examples */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-xs font-semibold text-blue-900 mb-2">💡 Contoh Rumus:</p>
+                <div className="space-y-1.5">
+                  <button
+                    onClick={() => setPengaturan({ ...pengaturan, rumus_penilaian: '(p1 + p2 + p3) / 3' })}
+                    className="block w-full text-left px-3 py-2 bg-white hover:bg-blue-100 border border-blue-200 rounded text-xs transition-colors"
+                  >
+                    <code className="font-mono text-blue-900">(p1 + p2 + p3) / 3</code>
+                    <span className="text-gray-600 ml-2">- Rata-rata sederhana</span>
+                  </button>
+                  <button
+                    onClick={() => setPengaturan({ ...pengaturan, rumus_penilaian: '(p1 * 2 + p2 + p3) / 4' })}
+                    className="block w-full text-left px-3 py-2 bg-white hover:bg-blue-100 border border-blue-200 rounded text-xs transition-colors"
+                  >
+                    <code className="font-mono text-blue-900">(p1 * 2 + p2 + p3) / 4</code>
+                    <span className="text-gray-600 ml-2">- Penguji 1 bobot 2x</span>
+                  </button>
+                  <button
+                    onClick={() => setPengaturan({ ...pengaturan, rumus_penilaian: '((p1 + p2) / 2 + p3) / 2' })}
+                    className="block w-full text-left px-3 py-2 bg-white hover:bg-blue-100 border border-blue-200 rounded text-xs transition-colors"
+                  >
+                    <code className="font-mono text-blue-900">((p1 + p2) / 2 + p3) / 2</code>
+                    <span className="text-gray-600 ml-2">- Rata-rata P1&P2, lalu rata-rata dengan P3</span>
+                  </button>
+                  <button
+                    onClick={() => setPengaturan({ ...pengaturan, rumus_penilaian: '(p1 * 0.4 + p2 * 0.3 + p3 * 0.3)' })}
+                    className="block w-full text-left px-3 py-2 bg-white hover:bg-blue-100 border border-blue-200 rounded text-xs transition-colors"
+                  >
+                    <code className="font-mono text-blue-900">(p1 * 0.4 + p2 * 0.3 + p3 * 0.3)</code>
+                    <span className="text-gray-600 ml-2">- Bobot: P1=40%, P2=30%, P3=30%</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Formula Validation */}
+              {(() => {
+                const formula = pengaturan.rumus_penilaian || '';
+                if (!formula) return null;
+                
+                try {
+                  // Test formula dengan nilai dummy
+                  const testFormula = formula
+                    .replace(/p1/g, '80')
+                    .replace(/p2/g, '85')
+                    .replace(/p3/g, '90');
+                  const result = eval(testFormula);
+                  
+                  if (isNaN(result) || !isFinite(result)) {
+                    return (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <p className="text-xs text-red-800">
+                          ⚠️ Rumus menghasilkan nilai tidak valid
+                        </p>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <p className="text-xs text-green-800">
+                        ✓ Rumus valid! Contoh: jika p1=80, p2=85, p3=90 → Nilai Akhir = <strong>{result.toFixed(2)}</strong>
+                      </p>
+                    </div>
+                  );
+                } catch (error) {
+                  return (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-xs text-red-800">
+                        ❌ Rumus tidak valid. Periksa kembali sintaks rumus Anda.
+                      </p>
+                    </div>
+                  );
+                }
+              })()}
+            </div>
+          </div>
+
+          {/* Toggle Tampilkan Rincian Nilai */}
+          <div className="space-y-2 pt-4 border-t">
+            <label className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100">
+              <div>
+                <span className="block text-sm font-medium text-gray-700">
+                  Tampilkan Rincian Penilaian ke Sekretaris
+                </span>
+                <span className="block text-xs text-gray-500 mt-1">
+                  Jika aktif, sekretaris (pembimbing 1) dapat melihat rumus penilaian dan nilai minimal lolos saat input nilai sidang
+                </span>
+              </div>
+              <div className="relative ml-4">
+                <input
+                  type="checkbox"
+                  checked={pengaturan.tampilkan_rincian_nilai_ke_sekretaris ?? true}
+                  onChange={(e) =>
+                    setPengaturan({
+                      ...pengaturan,
+                      tampilkan_rincian_nilai_ke_sekretaris: e.target.checked,
+                    })
+                  }
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-900"></div>
+              </div>
+            </label>
+          </div>
+
+          {/* Nilai Minimal Lolos */}
+          <div className="space-y-2 pt-4 border-t">
+            <label className="block text-sm font-medium text-gray-700">
+              Nilai Minimal Lolos Sidang
+            </label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={pengaturan.nilai_minimal_lolos ?? 60}
+              onChange={(e) =>
+                setPengaturan({
+                  ...pengaturan,
+                  nilai_minimal_lolos: parseFloat(e.target.value) || 0,
+                })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+            />
+            <p className="text-sm text-gray-500">
+              Mahasiswa dengan nilai akhir di bawah angka ini akan dinyatakan gagal sidang (gagal_sidang = true)
+            </p>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-2">
+              <p className="text-xs text-amber-800">
+                <span className="font-semibold">Contoh:</span> Jika nilai minimal = 60, maka:
+              </p>
+              <ul className="text-xs text-amber-700 mt-1 ml-4 list-disc">
+                <li>Nilai ≥ 60 → Mahasiswa <strong>LULUS</strong></li>
+                <li>Nilai &lt; 60 → Mahasiswa <strong>GAGAL SIDANG</strong></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="flex justify-end">
         <button

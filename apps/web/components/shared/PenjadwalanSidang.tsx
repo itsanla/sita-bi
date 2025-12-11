@@ -1952,39 +1952,48 @@ export default function PenjadwalanSidang() {
         <div
           className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50 -mt-16 lg:-mt-0 animate-in fade-in duration-200"
           style={{
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            backdropFilter: 'blur(4px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(6px)',
             marginTop: '-64px',
           }}
         >
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-4 animate-in zoom-in-95 duration-200">
-            <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
-              <h3 className="text-xl font-bold">Edit Jadwal Sidang</h3>
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 p-6 flex items-center justify-between z-10">
+              <h3 className="text-xl font-bold text-white flex items-center space-x-2">
+                <Calendar className="w-6 h-6" />
+                <span>Edit Jadwal Sidang</span>
+              </h3>
               <button
                 onClick={() => setEditModal(null)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-white hover:text-blue-100 transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
             <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Tanggal
-                </label>
-                <input
-                  type="date"
-                  value={editForm.tanggal}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, tanggal: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border rounded-lg"
-                />
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  <span className="font-semibold">Info:</span> Edit jadwal untuk <span className="font-semibold">{editModal.sidang.tugasAkhir.mahasiswa.user.name}</span>
+                </p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Waktu Mulai
+                  <label className="block text-xs font-semibold text-gray-900 mb-1">
+                    📅 Tanggal
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.tanggal}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, tanggal: e.target.value })
+                    }
+                    className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-900 mb-1">
+                    🕐 Mulai
                   </label>
                   <input
                     type="time"
@@ -1992,12 +2001,12 @@ export default function PenjadwalanSidang() {
                     onChange={(e) =>
                       setEditForm({ ...editForm, waktu_mulai: e.target.value })
                     }
-                    className="w-full px-4 py-2 border rounded-lg"
+                    className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Waktu Selesai
+                  <label className="block text-xs font-semibold text-gray-900 mb-1">
+                    🕐 Selesai
                   </label>
                   <input
                     type="time"
@@ -2008,13 +2017,14 @@ export default function PenjadwalanSidang() {
                         waktu_selesai: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2 border rounded-lg"
+                    className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
+
               <div className="relative">
-                <label className="block text-sm font-medium mb-2">
-                  Ketua Penguji
+                <label className="block text-xs font-semibold text-gray-900 mb-1">
+                  👨🏫 Ketua Penguji
                 </label>
                 <input
                   type="text"
@@ -2033,15 +2043,15 @@ export default function PenjadwalanSidang() {
                   onBlur={() =>
                     setTimeout(() => setShowDropdownKetua(false), 200)
                   }
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 {!!searchKetua && !editForm.penguji1_id && (
                   <p className="text-xs text-red-500 mt-1">
-                    Tidak ada dosen bernama "{searchKetua}"
+                    Tidak ada dosen "{searchKetua}"
                   </p>
                 )}
                 {!!showDropdownKetua && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">
                     {editOptions.dosen
                       .filter(
                         (d: any) =>
@@ -2058,7 +2068,7 @@ export default function PenjadwalanSidang() {
                             setSearchKetua(d.name);
                             setShowDropdownKetua(false);
                           }}
-                          className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                          className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
                         >
                           {d.name}
                         </div>
@@ -2066,117 +2076,121 @@ export default function PenjadwalanSidang() {
                   </div>
                 )}
               </div>
-              <div className="relative">
-                <label className="block text-sm font-medium mb-2">
-                  Anggota Penguji I
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ketik nama anggota penguji I..."
-                  value={searchAnggota1}
-                  onChange={(e) => {
-                    setSearchAnggota1(e.target.value);
-                    const exactMatch = editOptions.dosen.find(
-                      (d: any) =>
-                        d.name.toLowerCase() === e.target.value.toLowerCase(),
-                    );
-                    setEditForm({ ...editForm, penguji2_id: exactMatch?.id });
-                    setShowDropdownAnggota1(true);
-                  }}
-                  onFocus={() => setShowDropdownAnggota1(true)}
-                  onBlur={() =>
-                    setTimeout(() => setShowDropdownAnggota1(false), 200)
-                  }
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                {!!searchAnggota1 && !editForm.penguji2_id && (
-                  <p className="text-xs text-red-500 mt-1">
-                    Tidak ada dosen bernama "{searchAnggota1}"
-                  </p>
-                )}
-                {!!showDropdownAnggota1 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {editOptions.dosen
-                      .filter(
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="relative">
+                  <label className="block text-xs font-semibold text-gray-900 mb-1">
+                    👨🏫 Anggota Penguji I
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ketik nama anggota penguji I..."
+                    value={searchAnggota1}
+                    onChange={(e) => {
+                      setSearchAnggota1(e.target.value);
+                      const exactMatch = editOptions.dosen.find(
                         (d: any) =>
-                          !searchAnggota1 ||
-                          d.name
-                            .toLowerCase()
-                            .includes(searchAnggota1.toLowerCase()),
-                      )
-                      .map((d: any) => (
-                        <div
-                          key={d.id}
-                          onClick={() => {
-                            setEditForm({ ...editForm, penguji2_id: d.id });
-                            setSearchAnggota1(d.name);
-                            setShowDropdownAnggota1(false);
-                          }}
-                          className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
-                        >
-                          {d.name}
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-              <div className="relative">
-                <label className="block text-sm font-medium mb-2">
-                  Anggota Penguji II
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ketik nama anggota penguji II..."
-                  value={searchAnggota2}
-                  onChange={(e) => {
-                    setSearchAnggota2(e.target.value);
-                    const exactMatch = editOptions.dosen.find(
-                      (d: any) =>
-                        d.name.toLowerCase() === e.target.value.toLowerCase(),
-                    );
-                    setEditForm({ ...editForm, penguji3_id: exactMatch?.id });
-                    setShowDropdownAnggota2(true);
-                  }}
-                  onFocus={() => setShowDropdownAnggota2(true)}
-                  onBlur={() =>
-                    setTimeout(() => setShowDropdownAnggota2(false), 200)
-                  }
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                {!!searchAnggota2 && !editForm.penguji3_id && (
-                  <p className="text-xs text-red-500 mt-1">
-                    Tidak ada dosen bernama "{searchAnggota2}"
-                  </p>
-                )}
-                {!!showDropdownAnggota2 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {editOptions.dosen
-                      .filter(
+                          d.name.toLowerCase() === e.target.value.toLowerCase(),
+                      );
+                      setEditForm({ ...editForm, penguji2_id: exactMatch?.id });
+                      setShowDropdownAnggota1(true);
+                    }}
+                    onFocus={() => setShowDropdownAnggota1(true)}
+                    onBlur={() =>
+                      setTimeout(() => setShowDropdownAnggota1(false), 200)
+                    }
+                    className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  {!!searchAnggota1 && !editForm.penguji2_id && (
+                    <p className="text-xs text-red-500 mt-1">
+                      Tidak ada dosen "{searchAnggota1}"
+                    </p>
+                  )}
+                  {!!showDropdownAnggota1 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                      {editOptions.dosen
+                        .filter(
+                          (d: any) =>
+                            !searchAnggota1 ||
+                            d.name
+                              .toLowerCase()
+                              .includes(searchAnggota1.toLowerCase()),
+                        )
+                        .map((d: any) => (
+                          <div
+                            key={d.id}
+                            onClick={() => {
+                              setEditForm({ ...editForm, penguji2_id: d.id });
+                              setSearchAnggota1(d.name);
+                              setShowDropdownAnggota1(false);
+                            }}
+                            className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+                          >
+                            {d.name}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+                <div className="relative">
+                  <label className="block text-xs font-semibold text-gray-900 mb-1">
+                    👨🏫 Anggota Penguji II
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ketik nama anggota penguji II..."
+                    value={searchAnggota2}
+                    onChange={(e) => {
+                      setSearchAnggota2(e.target.value);
+                      const exactMatch = editOptions.dosen.find(
                         (d: any) =>
-                          !searchAnggota2 ||
-                          d.name
-                            .toLowerCase()
-                            .includes(searchAnggota2.toLowerCase()),
-                      )
-                      .map((d: any) => (
-                        <div
-                          key={d.id}
-                          onClick={() => {
-                            setEditForm({ ...editForm, penguji3_id: d.id });
-                            setSearchAnggota2(d.name);
-                            setShowDropdownAnggota2(false);
-                          }}
-                          className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
-                        >
-                          {d.name}
-                        </div>
-                      ))}
-                  </div>
-                )}
+                          d.name.toLowerCase() === e.target.value.toLowerCase(),
+                      );
+                      setEditForm({ ...editForm, penguji3_id: exactMatch?.id });
+                      setShowDropdownAnggota2(true);
+                    }}
+                    onFocus={() => setShowDropdownAnggota2(true)}
+                    onBlur={() =>
+                      setTimeout(() => setShowDropdownAnggota2(false), 200)
+                    }
+                    className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  {!!searchAnggota2 && !editForm.penguji3_id && (
+                    <p className="text-xs text-red-500 mt-1">
+                      Tidak ada dosen "{searchAnggota2}"
+                    </p>
+                  )}
+                  {!!showDropdownAnggota2 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                      {editOptions.dosen
+                        .filter(
+                          (d: any) =>
+                            !searchAnggota2 ||
+                            d.name
+                              .toLowerCase()
+                              .includes(searchAnggota2.toLowerCase()),
+                        )
+                        .map((d: any) => (
+                          <div
+                            key={d.id}
+                            onClick={() => {
+                              setEditForm({ ...editForm, penguji3_id: d.id });
+                              setSearchAnggota2(d.name);
+                              setShowDropdownAnggota2(false);
+                            }}
+                            className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+                          >
+                            {d.name}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
               </div>
+
               <div className="relative">
-                <label className="block text-sm font-medium mb-2">
-                  Ruangan
+                <label className="block text-xs font-semibold text-gray-900 mb-1">
+                  🏢 Ruangan
                 </label>
                 <input
                   type="text"
@@ -2195,7 +2209,7 @@ export default function PenjadwalanSidang() {
                   onBlur={() =>
                     setTimeout(() => setShowDropdownRuangan(false), 200)
                   }
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 {!!searchRuangan && !editForm.ruangan_id && (
                   <p className="text-xs text-red-500 mt-1">
@@ -2203,7 +2217,7 @@ export default function PenjadwalanSidang() {
                   </p>
                 )}
                 {!!showDropdownRuangan && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">
                     {editOptions.ruangan
                       .filter(
                         (r: any) =>
@@ -2220,7 +2234,7 @@ export default function PenjadwalanSidang() {
                             setSearchRuangan(r.name);
                             setShowDropdownRuangan(false);
                           }}
-                          className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                          className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
                         >
                           {r.name}
                         </div>
@@ -2232,7 +2246,7 @@ export default function PenjadwalanSidang() {
             <div className="sticky bottom-0 bg-gray-50 p-6 flex justify-end space-x-3 border-t">
               <button
                 onClick={() => setEditModal(null)}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-100"
+                className="px-5 py-2.5 border-2 border-gray-300 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all font-medium"
               >
                 Batal
               </button>
@@ -2278,9 +2292,9 @@ export default function PenjadwalanSidang() {
                     // Error sudah ditangani oleh interceptor
                   }
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 hover:shadow-lg transition-all font-semibold"
               >
-                Simpan
+                💾 Simpan Perubahan
               </button>
             </div>
           </div>

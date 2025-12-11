@@ -95,6 +95,15 @@ export const updatePengaturanSchema = z.object({
   validasi_pembimbing_2: z.boolean().optional(),
   validasi_prodi: z.boolean().optional(),
   validasi_jurusan: z.boolean().optional(),
+  rumus_penilaian: z
+    .string()
+    .min(1, 'Rumus penilaian tidak boleh kosong')
+    .optional(),
+  nilai_minimal_lolos: z
+    .number()
+    .min(0, 'Nilai minimal tidak boleh kurang dari 0')
+    .max(100, 'Nilai minimal tidak boleh lebih dari 100')
+    .optional(),
 });
 
 export type UpdatePengaturanDto = z.infer<typeof updatePengaturanSchema>;

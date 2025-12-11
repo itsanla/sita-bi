@@ -27,12 +27,15 @@ export class PengaturanService {
         setting.key === 'jeda_sidang_menit'
       ) {
         result[setting.key] = parseInt(setting.value, 10);
+      } else if (setting.key === 'nilai_minimal_lolos') {
+        result[setting.key] = parseFloat(setting.value);
       } else if (
         setting.key === 'validasi_pendaftaran_sidang_aktif' ||
         setting.key === 'validasi_pembimbing_1' ||
         setting.key === 'validasi_pembimbing_2' ||
         setting.key === 'validasi_prodi' ||
-        setting.key === 'validasi_jurusan'
+        setting.key === 'validasi_jurusan' ||
+        setting.key === 'tampilkan_rincian_nilai_ke_sekretaris'
       ) {
         result[setting.key] = setting.value === 'true';
       } else if (setting.key === 'waktu_istirahat') {
@@ -384,6 +387,57 @@ export class PengaturanService {
             key: 'jadwal_hari_khusus',
             value: JSON.stringify((data as any).jadwal_hari_khusus),
             deskripsi: 'Jadwal jam operasional khusus untuk hari tertentu (JSON array)',
+          },
+        }),
+      );
+    }
+
+    if ((data as any).rumus_penilaian !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'rumus_penilaian' },
+          update: {
+            value: (data as any).rumus_penilaian,
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'rumus_penilaian',
+            value: (data as any).rumus_penilaian,
+            deskripsi: 'Rumus perhitungan nilai akhir sidang menggunakan p1, p2, p3',
+          },
+        }),
+      );
+    }
+
+    if ((data as any).nilai_minimal_lolos !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'nilai_minimal_lolos' },
+          update: {
+            value: (data as any).nilai_minimal_lolos.toString(),
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'nilai_minimal_lolos',
+            value: (data as any).nilai_minimal_lolos.toString(),
+            deskripsi: 'Nilai minimal untuk lolos sidang (di bawah nilai ini = gagal sidang)',
+          },
+        }),
+      );
+    }
+
+    if ((data as any).tampilkan_rincian_nilai_ke_sekretaris !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'tampilkan_rincian_nilai_ke_sekretaris' },
+          update: {
+            value: (data as any).tampilkan_rincian_nilai_ke_sekretaris.toString(),
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'tampilkan_rincian_nilai_ke_sekretaris',
+            value: (data as any).tampilkan_rincian_nilai_ke_sekretaris.toString(),
+            deskripsi: 'Tampilkan rumus penilaian dan nilai minimal lolos ke sekretaris saat input nilai',
           },
         }),
       );
