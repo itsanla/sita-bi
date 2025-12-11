@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 
 interface Sidang {
   id: number;
+  status_hasil: string | null;
+  selesai_sidang: boolean;
   tugasAkhir: {
     judul: string;
     mahasiswa: {
@@ -202,16 +204,37 @@ export default function PenilaianPage() {
           const penguji2 = sidang.tugasAkhir.peranDosenTa.find(p => p.peran === 'penguji2');
           const penguji3 = sidang.tugasAkhir.peranDosenTa.find(p => p.peran === 'penguji3');
           const isExpanded = selectedSidang === sidang.id;
+          const sudahDinilai = sidang.selesai_sidang && sidang.status_hasil;
+          const statusLulus = sidang.status_hasil === 'lulus';
 
           return (
-            <div key={sidang.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div key={sidang.id} className={`bg-white rounded-lg shadow-sm border-2 p-6 ${
+              sudahDinilai 
+                ? statusLulus 
+                  ? 'border-green-300 bg-green-50' 
+                  : 'border-red-300 bg-red-50'
+                : 'border-gray-200'
+            }`}>
               <div className="mb-4">
-                <h2 className="text-xl font-bold text-gray-900">
-                  {sidang.tugasAkhir.mahasiswa.user.name}
-                </h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  {sidang.tugasAkhir.judul}
-                </p>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {sidang.tugasAkhir.mahasiswa.user.name}
+                    </h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {sidang.tugasAkhir.judul}
+                    </p>
+                  </div>
+                  {sudahDinilai && (
+                    <div className={`px-4 py-2 rounded-lg font-semibold text-sm ${
+                      statusLulus 
+                        ? 'bg-green-600 text-white' 
+                        : 'bg-red-600 text-white'
+                    }`}>
+                      {statusLulus ? '✓ LULUS' : '✗ TIDAK LULUS'}
+                    </div>
+                  )}
+                </div>
                 {jadwal && (
                   <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mt-3">
                     <span className="flex items-center gap-2">
@@ -231,12 +254,23 @@ export default function PenilaianPage() {
               </div>
 
               {!isExpanded ? (
-                <button
-                  onClick={() => setSelectedSidang(sidang.id)}
-                  className="w-full px-4 py-2 bg-red-900 text-white rounded-lg hover:bg-red-800 transition-colors"
-                >
-                  Input Nilai Sidang
-                </button>
+                sudahDinilai ? (
+                  <div className={`w-full px-4 py-3 rounded-lg text-center font-medium ${
+                    statusLulus 
+                      ? 'bg-green-100 text-green-800 border border-green-300' 
+                      : 'bg-red-100 text-red-800 border border-red-300'
+                  }`}>
+                    <CheckCircle className="w-5 h-5 inline-block mr-2" />
+                    Nilai sudah diinput - Mahasiswa {statusLulus ? 'LULUS' : 'TIDAK LULUS'} periode ini
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setSelectedSidang(sidang.id)}
+                    className="w-full px-4 py-2 bg-red-900 text-white rounded-lg hover:bg-red-800 transition-colors"
+                  >
+                    Input Nilai Sidang
+                  </button>
+                )
               ) : (
                 <div className="space-y-4 pt-4 border-t">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -104,6 +104,7 @@ export const updatePengaturanSchema = z.object({
     .min(0, 'Nilai minimal tidak boleh kurang dari 0')
     .max(100, 'Nilai minimal tidak boleh lebih dari 100')
     .optional(),
+  tampilkan_rincian_nilai_ke_sekretaris: z.boolean().optional(),
 });
 
 export type UpdatePengaturanDto = z.infer<typeof updatePengaturanSchema>;
