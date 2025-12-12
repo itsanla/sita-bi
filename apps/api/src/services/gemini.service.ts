@@ -41,11 +41,12 @@ interface GeminiResponse {
 
 class GeminiService {
   private apiKeys: string[] = [];
-  private currentKeyIndex = 0;
+  private primaryModels: string[] = [];
+  private fallbackModel: string = '';
   private readonly baseUrl =
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+    'https://generativelanguage.googleapis.com/v1beta/models';
   private readonly streamBaseUrl =
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent';
+    'https://generativelanguage.googleapis.com/v1beta/models';
   private readonly requestTimeout = 30000; // 30 seconds
   private readonly streamTimeout = 60000; // 60 seconds for streaming
   private readonly documentationPath = path.join(
@@ -66,6 +67,7 @@ class GeminiService {
 
   constructor() {
     this.loadApiKeys();
+    this.loadModels();
   }
 
   private loadApiKeys(): void {
@@ -86,6 +88,21 @@ class GeminiService {
     }
   }
 
+  private loadModels(): void {
+    const primaryEnv = process.env['GEMINI_PRIMARY_MODELS'];
+    const fallbackEnv = process.env['GEMINI_FALLBACK_MODEL'];
+    
+    if (!primaryEnv || !fallbackEnv) {
+      throw new Error('GEMINI_PRIMARY_MODELS and GEMINI_FALLBACK_MODEL must be configured in .env');
+    }
+    
+    this.primaryModels = primaryEnv.split(',').map(m => m.trim()).filter(m => m.length > 0);
+    this.fallbackModel = fallbackEnv.trim();
+    
+    logger.info(`Primary models: ${this.primaryModels.join(', ')}`);
+    logger.info(`Fallback model: ${this.fallbackModel}`);
+  }
+
   private getSystemPrompt(): string {
     // Return cached prompt if still valid
     const now = Date.now();
@@ -97,37 +114,23 @@ class GeminiService {
     }
 
     try {
-      // Read documentation.json
       const documentationData = fs.existsSync(this.documentationPath)
         ? JSON.parse(fs.readFileSync(this.documentationPath, 'utf-8'))
         : null;
 
-      // Read information.json
       const informationData = fs.existsSync(this.informationPath)
         ? JSON.parse(fs.readFileSync(this.informationPath, 'utf-8'))
         : null;
 
-      // Build system prompt
-      let systemPrompt = `Kamu adalah SITABI (Sistem Informasi Tugas Akhir Bahasa Inggris), asisten AI yang membantu mahasiswa jurusan Bahasa Inggris dalam mengelola dan menyelesaikan tugas akhir mereka. Kamu ramah, profesional, dan selalu siap membantu mahasiswa dengan pertanyaan seputar sistem informasi tugas akhir, panduan penulisan, jadwal bimbingan, dan informasi akademik terkait.
-
-SUMBER INFORMASI YANG KAMU MILIKI:
-`;
+      let systemPrompt = ENHANCED_SYSTEM_PROMPT;
 
       if (documentationData !== null) {
-        systemPrompt += `
-1. INFORMASI PATH/LOKASI URL/HALAMAN SISTEM (dari documentation.json):
-${JSON.stringify(documentationData, null, 2)}
-`;
+        systemPrompt += `\n\nINFORMASI PATH/LOKASI URL/HALAMAN SISTEM:\n${JSON.stringify(documentationData, null, 2)}`;
       }
 
       if (informationData !== null) {
-        systemPrompt += `
-2. INFORMASI TUGAS AKHIR & PANDUAN PENGGUNA (dari information.json):
-${JSON.stringify(informationData, null, 2)}
-`;
+        systemPrompt += `\n\nINFORMASI TUGAS AKHIR & PANDUAN PENGGUNA:\n${JSON.stringify(informationData, null, 2)}`;
       }
-
-      systemPrompt += ENHANCED_SYSTEM_PROMPT;
 
       // Cache the prompt
       this.systemPromptCache = systemPrompt;
@@ -136,17 +139,13 @@ ${JSON.stringify(informationData, null, 2)}
       return systemPrompt;
     } catch (error) {
       logger.error('Error loading system prompt data', error);
-      const fallback = `Kamu adalah SITABI (Sistem Informasi Tugas Akhir Bahasa Inggris), asisten AI yang membantu mahasiswa jurusan Bahasa Inggris dalam mengelola dan menyelesaikan tugas akhir mereka. Kamu ramah, profesional, dan selalu siap membantu mahasiswa dengan pertanyaan seputar sistem informasi tugas akhir, panduan penulisan, jadwal bimbingan, dan informasi akademik terkait.`;
-
-      // Cache fallback too
-      this.systemPromptCache = fallback;
+      this.systemPromptCache = ENHANCED_SYSTEM_PROMPT;
       this.systemPromptCacheTime = now;
-
-      return fallback;
+      return ENHANCED_SYSTEM_PROMPT;
     }
   }
 
-  private async callGeminiApi(prompt: string, apiKey: string): Promise<string> {
+  private async callGeminiApi(prompt: string, apiKey: string, model: string): Promise<string> {
     const requestBody: GeminiRequest = {
       systemInstruction: {
         parts: [
@@ -167,7 +166,7 @@ ${JSON.stringify(informationData, null, 2)}
     };
 
     const response = await axios.post<GeminiResponse>(
-      this.baseUrl,
+      `${this.baseUrl}/${model}:generateContent`,
       requestBody,
       {
         headers: {
@@ -233,131 +232,141 @@ ${JSON.stringify(informationData, null, 2)}
 
   async generateContent(prompt: string): Promise<string> {
     if (this.apiKeys.length === 0) {
-      throw new Error(
-        'No Gemini API keys configured. Please add API keys to .env file',
-      );
+      throw new Error('No Gemini API keys configured');
     }
 
-    const attemptedKeys = new Set<number>();
-
-    // Try all API keys starting from current index
-    while (attemptedKeys.size < this.apiKeys.length) {
-      const apiKey = this.apiKeys[this.currentKeyIndex];
-      if (apiKey === undefined) {
-        break;
+    // Try primary models with all API keys
+    for (const model of this.primaryModels) {
+      for (let i = 0; i < this.apiKeys.length; i++) {
+        const apiKey = this.apiKeys[i];
+        if (!apiKey) continue;
+        
+        const keyNumber = i + 1;
+        console.log(`🔄 [Gemini] Trying PRIMARY model: ${model} | API Key: #${keyNumber}`);
+        
+        try {
+          const result = await this.callGeminiApi(prompt, apiKey, model);
+          console.log(`✅ [Gemini] SUCCESS with PRIMARY model: ${model} | API Key: #${keyNumber}`);
+          return result;
+        } catch (error) {
+          console.log(`❌ [Gemini] FAILED PRIMARY model: ${model} | API Key: #${keyNumber}`);
+        }
       }
+    }
 
-      const keyNumber = this.currentKeyIndex + 1;
-
-      logger.debug(`Attempting request with API key #${keyNumber}`);
-
+    // All primary models exhausted, try fallback
+    console.log(`⚠️  [Gemini] All PRIMARY models exhausted, switching to FALLBACK model`);
+    
+    for (let i = 0; i < this.apiKeys.length; i++) {
+      const apiKey = this.apiKeys[i];
+      if (!apiKey) continue;
+      
+      const keyNumber = i + 1;
+      console.log(`🔄 [Gemini] Trying FALLBACK model: ${this.fallbackModel} | API Key: #${keyNumber}`);
+      
       try {
-        const result = await this.callGeminiApi(prompt, apiKey);
-        logger.info(`Success with API key #${keyNumber}`);
+        const result = await this.callGeminiApi(prompt, apiKey, this.fallbackModel);
+        console.log(`✅ [Gemini] SUCCESS with FALLBACK model: ${this.fallbackModel} | API Key: #${keyNumber}`);
         return result;
       } catch (error) {
-        attemptedKeys.add(this.currentKeyIndex);
-        logger.warn(`API key #${keyNumber} failed`, {
-          error: (error as Error).message,
-        });
-        this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
+        console.log(`❌ [Gemini] FAILED FALLBACK model: ${this.fallbackModel} | API Key: #${keyNumber}`);
       }
     }
 
-    logger.error('All Gemini API keys have been tried and failed');
-    throw new Error(
-      'Layanan chatbot tidak tersedia saat ini. Silakan hubungi administrator.',
-    );
+    logger.error('All models and API keys exhausted');
+    throw new Error('All API keys exhausted');
   }
 
   async chat(message: string): Promise<string> {
     return this.generateContent(message);
   }
 
-  // Stream generate content with SSE and conversation history
   async *streamGenerateContentWithHistory(
     prompt: string,
     history: { role: string; content: string }[] = [],
   ): AsyncGenerator<string, void, unknown> {
     if (this.apiKeys.length === 0) {
-      throw new Error(
-        'No Gemini API keys configured. Please add API keys to .env file',
-      );
+      throw new Error('No Gemini API keys configured');
     }
 
-    const attemptedKeys = new Set<number>();
-
-    // Build contents array with history
     const contents: GeminiContent[] = [];
-
-    // Add history messages - convert 'assistant' to 'model' for Gemini API
-    // Only include messages that have content
     for (const msg of history) {
       if (typeof msg.content === 'string' && msg.content.trim().length > 0) {
+        const content = msg.content.trim();
+        if (content.includes('SitaBot sedang tidak dapat digunakan') || 
+            content.includes('baca dokumentasi yang sudah disediakan')) {
+          continue;
+        }
         contents.push({
           parts: [{ text: msg.content }],
           role: msg.role === 'user' ? 'user' : 'model',
         });
       }
     }
-
-    // Add current prompt as user message
-    contents.push({
-      parts: [{ text: prompt }],
-      role: 'user',
-    });
+    contents.push({ parts: [{ text: prompt }], role: 'user' });
 
     const systemInstruction: GeminiSystemInstruction = {
-      parts: [
-        {
-          text: this.getSystemPrompt(),
-        },
-      ],
+      parts: [{ text: this.getSystemPrompt() }],
     };
 
-    // Try all API keys starting from current index
-    while (attemptedKeys.size < this.apiKeys.length) {
-      const apiKey = this.apiKeys[this.currentKeyIndex];
-      if (apiKey === undefined) {
-        break;
+    for (const model of this.primaryModels) {
+      for (let i = 0; i < this.apiKeys.length; i++) {
+        const apiKey = this.apiKeys[i];
+        if (!apiKey) continue;
+        
+        console.log(`🔄 [Gemini Stream] Trying PRIMARY model: ${model} | API Key: #${i + 1}`);
+        
+        try {
+          const response = await axios.post<ReadableStream>(
+            `${this.streamBaseUrl}/${model}:streamGenerateContent?key=${apiKey}&alt=sse`,
+            { systemInstruction, contents },
+            { headers: { 'Content-Type': 'application/json' }, responseType: 'stream', timeout: this.streamTimeout },
+          );
+
+          let buffer = '';
+          for await (const chunk of response.data as unknown as AsyncIterable<Buffer>) {
+            buffer += chunk.toString();
+            const lines = buffer.split('\n');
+            buffer = lines.pop() ?? '';
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6).trim();
+                if (data === '' || data === '[DONE]') continue;
+
+                try {
+                  const parsed = JSON.parse(data) as GeminiResponse;
+                  const text = parsed.candidates?.[0]?.content.parts[0]?.text;
+                  if (text) yield text;
+                } catch { continue; }
+              }
+            }
+          }
+          console.log(`✅ [Gemini Stream] SUCCESS with PRIMARY model: ${model} | API Key: #${i + 1}`);
+          return;
+        } catch (error) {
+          console.log(`❌ [Gemini Stream] FAILED PRIMARY model: ${model} | API Key: #${i + 1}`);
+        }
       }
+    }
 
-      const keyNumber = this.currentKeyIndex + 1;
-      logger.debug(`Attempting streaming request with API key #${keyNumber}`);
-      logger.debug(`Sending ${contents.length} messages to Gemini API`);
+    console.log(`⚠️  [Gemini Stream] All PRIMARY models exhausted, switching to FALLBACK`);
 
+    for (let i = 0; i < this.apiKeys.length; i++) {
+      const apiKey = this.apiKeys[i];
+      if (!apiKey) continue;
+      
+      console.log(`🔄 [Gemini Stream] Trying FALLBACK model: ${this.fallbackModel} | API Key: #${i + 1}`);
+      
       try {
         const response = await axios.post<ReadableStream>(
-          `${this.streamBaseUrl}?key=${apiKey}&alt=sse`,
-          {
-            systemInstruction,
-            contents,
-          },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            responseType: 'stream',
-            timeout: this.streamTimeout,
-          },
+          `${this.streamBaseUrl}/${this.fallbackModel}:streamGenerateContent?key=${apiKey}&alt=sse`,
+          { systemInstruction, contents },
+          { headers: { 'Content-Type': 'application/json' }, responseType: 'stream', timeout: this.streamTimeout },
         );
 
-        const stream = response.data;
         let buffer = '';
-        let lastChunkTime = Date.now();
-        const CHUNK_TIMEOUT = 30000; // 30s between chunks
-
-        // Process stream chunks with timeout
-        for await (const chunk of stream as unknown as AsyncIterable<Buffer>) {
-          // Check for chunk timeout
-          if (Date.now() - lastChunkTime > CHUNK_TIMEOUT) {
-            logger.warn(
-              `Stream timeout - no chunks received for ${CHUNK_TIMEOUT}ms`,
-            );
-            throw new Error('Stream timeout');
-          }
-          lastChunkTime = Date.now();
-
+        for await (const chunk of response.data as unknown as AsyncIterable<Buffer>) {
           buffer += chunk.toString();
           const lines = buffer.split('\n');
           buffer = lines.pop() ?? '';
@@ -365,166 +374,42 @@ ${JSON.stringify(informationData, null, 2)}
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const data = line.slice(6).trim();
-              if (data === '[DONE]') {
-                logger.info(`Streaming completed with API key #${keyNumber}`);
-                return;
-              }
+              if (data === '' || data === '[DONE]') continue;
 
               try {
                 const parsed = JSON.parse(data) as GeminiResponse;
                 const text = parsed.candidates?.[0]?.content.parts[0]?.text;
-                if (text !== undefined) {
-                  yield text;
-                }
-              } catch {
-                // Skip invalid JSON
-                continue;
-              }
+                if (text) yield text;
+              } catch { continue; }
             }
           }
         }
-
-        logger.info(`Streaming success with API key #${keyNumber}`);
+        console.log(`✅ [Gemini Stream] SUCCESS with FALLBACK model: ${this.fallbackModel} | API Key: #${i + 1}`);
         return;
       } catch (error) {
-        attemptedKeys.add(this.currentKeyIndex);
-        logger.warn(`API key #${keyNumber} failed`, {
-          error: (error as Error).message,
-        });
-        this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
+        console.log(`❌ [Gemini Stream] FAILED FALLBACK model: ${this.fallbackModel} | API Key: #${i + 1}`);
       }
     }
 
-    logger.error('All Gemini API keys have been tried and failed');
-    throw new Error(
-      'Layanan chatbot tidak tersedia saat ini. Silakan hubungi administrator.',
-    );
+    throw new Error('All API keys exhausted');
   }
 
-  // Stream generate content with SSE
   async *streamGenerateContent(
     prompt: string,
   ): AsyncGenerator<string, void, unknown> {
-    if (this.apiKeys.length === 0) {
-      throw new Error(
-        'No Gemini API keys configured. Please add API keys to .env file',
-      );
-    }
-
-    const attemptedKeys = new Set<number>();
-
-    // Try all API keys starting from current index
-    while (attemptedKeys.size < this.apiKeys.length) {
-      const apiKey = this.apiKeys[this.currentKeyIndex];
-      if (apiKey === undefined) {
-        break;
-      }
-
-      const keyNumber = this.currentKeyIndex + 1;
-      logger.debug(`Attempting streaming request with API key #${keyNumber}`);
-
-      try {
-        const response = await axios.post<ReadableStream>(
-          `${this.streamBaseUrl}?key=${apiKey}&alt=sse`,
-          {
-            systemInstruction: {
-              parts: [
-                {
-                  text: this.getSystemPrompt(),
-                },
-              ],
-            },
-            contents: [
-              {
-                parts: [{ text: prompt }],
-              },
-            ],
-          },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            responseType: 'stream',
-            timeout: this.streamTimeout,
-          },
-        );
-
-        const stream = response.data;
-        let buffer = '';
-        let lastChunkTime = Date.now();
-        const CHUNK_TIMEOUT = 30000; // 30s between chunks
-
-        // Process stream chunks with timeout
-        for await (const chunk of stream as unknown as AsyncIterable<Buffer>) {
-          // Check for chunk timeout
-          if (Date.now() - lastChunkTime > CHUNK_TIMEOUT) {
-            logger.warn(
-              `Stream timeout - no chunks received for ${CHUNK_TIMEOUT}ms`,
-            );
-            throw new Error('Stream timeout');
-          }
-          lastChunkTime = Date.now();
-
-          buffer += chunk.toString();
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? '';
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6).trim();
-              if (data === '[DONE]') {
-                logger.info(`Streaming completed with API key #${keyNumber}`);
-                return;
-              }
-
-              try {
-                const parsed = JSON.parse(data) as GeminiResponse;
-                const text = parsed.candidates?.[0]?.content.parts[0]?.text;
-                if (text !== undefined) {
-                  yield text;
-                }
-              } catch {
-                // Skip invalid JSON
-                continue;
-              }
-            }
-          }
-        }
-
-        logger.info(`Streaming success with API key #${keyNumber}`);
-        return;
-      } catch (error) {
-        attemptedKeys.add(this.currentKeyIndex);
-        logger.warn(`API key #${keyNumber} failed`, {
-          error: (error as Error).message,
-        });
-        this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
-      }
-    }
-
-    logger.error('All Gemini API keys have been tried and failed');
-    throw new Error(
-      'Layanan chatbot tidak tersedia saat ini. Silakan hubungi administrator.',
-    );
+    return this.streamGenerateContentWithHistory(prompt, []);
   }
 
-  // Get current API key status
   getStatus(): {
     totalKeys: number;
-    currentKeyIndex: number;
-    currentKeyNumber: number;
+    primaryModels: string[];
+    fallbackModel: string;
   } {
     return {
       totalKeys: this.apiKeys.length,
-      currentKeyIndex: this.currentKeyIndex,
-      currentKeyNumber: this.currentKeyIndex + 1,
+      primaryModels: this.primaryModels,
+      fallbackModel: this.fallbackModel,
     };
-  }
-
-  // Reset to first API key (useful for testing or manual reset)
-  resetToFirstKey(): void {
-    this.currentKeyIndex = 0;
-    logger.info('Reset to first API key');
   }
 }
 

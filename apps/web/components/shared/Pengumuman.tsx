@@ -34,12 +34,12 @@ export default function Pengumuman() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('semua');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const fetchPengumuman = async () => {
     try {
-      const endpoint = isMahasiswa
-        ? '/pengumuman/mahasiswa'
-        : '/pengumuman/dosen';
+      const endpoint = '/pengumuman';
       const response = await api.get(endpoint);
       let data = response.data;
       if (data?.data?.data) {
@@ -66,8 +66,7 @@ export default function Pengumuman() {
 
   useEffect(() => {
     fetchPengumuman();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMahasiswa, isDosen]);
+  }, []);
 
   useEffect(() => {
     if (filter === 'semua') {
@@ -79,7 +78,14 @@ export default function Pengumuman() {
       });
       setFilteredPengumuman(filtered);
     }
+    setCurrentPage(1);
   }, [filter, pengumuman]);
+
+  const totalPages = Math.ceil(filteredPengumuman.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedPengumuman = filteredPengumuman.slice(startIndex, startIndex + itemsPerPage);
+  
+  console.log('Pagination:', { total: filteredPengumuman.length, itemsPerPage, totalPages, currentPage });
 
   if (loading) {
     return (
@@ -125,8 +131,9 @@ export default function Pengumuman() {
       </div>
 
       {filteredPengumuman.length > 0 ? (
-        <div className="space-y-4">
-          {filteredPengumuman.map((item) => (
+        <>
+          <div className="space-y-4">
+            {paginatedPengumuman.map((item) => (
             <div
               key={item.id}
               className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-red-200"
@@ -161,8 +168,33 @@ export default function Pengumuman() {
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600">
+                Halaman {currentPage} dari {totalPages} ({filteredPengumuman.length} pengumuman)
+              </p>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                >
+                  Sebelumnya
+                </button>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                >
+                  Selanjutnya
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <div className="text-center py-16 px-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
           <div className="bg-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">

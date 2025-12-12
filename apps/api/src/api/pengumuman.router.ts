@@ -91,6 +91,24 @@ router.delete(
 
 // --- Public/User Routes ---
 router.get(
+  '/',
+  asyncHandler(authMiddleware),
+  asyncHandler(async (req, res): Promise<void> => {
+    const page =
+      req.query['page'] != null
+        ? parseInt(req.query['page'] as string)
+        : undefined;
+    const limit =
+      req.query['limit'] != null
+        ? parseInt(req.query['limit'] as string)
+        : undefined;
+
+    const pengumumans = await pengumumanService.findAll(page, limit);
+    res.status(200).json({ status: 'sukses', data: pengumumans });
+  }),
+);
+
+router.get(
   '/public',
   asyncHandler(async (req, res): Promise<void> => {
     const page =

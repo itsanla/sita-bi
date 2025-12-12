@@ -82,7 +82,7 @@ apiClient.interceptors.response.use(
       (error.response.data as ApiResponse)?.message || error.message;
 
     // Only log unexpected errors (not validation/conflict/smart errors)
-    if (![400, 409, 422, 500].includes(status)) {
+    if (![400, 404, 409, 422, 500].includes(status)) {
       console.error(`[API Response] HTTP ${status}:`, message);
     } else if (status === 500 && message && typeof message === 'string') {
       // Only log 500 if it's not a JSON smart error
@@ -139,7 +139,8 @@ apiClient.interceptors.response.use(
             toast.error('Sesi Anda tidak valid. Silakan login kembali.');
             window.location.href = '/login';
           }
-        } else {
+        } else if (!error.config?.url?.includes('/hasil-mahasiswa')) {
+          // Don't show toast for hasil sidang 404 (normal condition)
           toast.error('Data tidak ditemukan.');
         }
         break;

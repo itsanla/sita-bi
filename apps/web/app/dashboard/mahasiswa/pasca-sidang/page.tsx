@@ -77,15 +77,8 @@ export default function PascaSidangPage() {
       const response = await api.get('/penilaian-sidang/hasil-mahasiswa');
       setSidang(response.data.data || null);
       setPengaturanPenilaian(response.data.pengaturan_penilaian || null);
-    } catch (error: unknown) {
-      const err = error as {
-        response?: { status?: number; data?: { message?: string } };
-      };
-      if (err.response?.status !== 404) {
-        toast.error(
-          err.response?.data?.message || 'Gagal memuat data hasil sidang',
-        );
-      }
+    } catch {
+      // Error handled by interceptor
     } finally {
       setLoading(false);
     }

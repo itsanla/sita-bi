@@ -9,10 +9,12 @@ import { api } from '@/lib/api';
 
 interface JadwalSidangGuardProps {
   children: ReactNode;
+  hasJadwal?: boolean;
 }
 
 export default function JadwalSidangGuard({
   children,
+  hasJadwal = false,
 }: JadwalSidangGuardProps) {
   const { user } = useAuth();
   const { status, loading } = usePenjadwalanSidangStatus();
@@ -84,7 +86,7 @@ export default function JadwalSidangGuard({
   if (status?.status === 'SELESAI' && status.isGenerated) {
     return (
       <div className="space-y-4">
-        {!pendaftaranStatus?.hasPendaftaran && (
+        {!hasJadwal && !pendaftaranStatus?.hasPendaftaran && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
@@ -106,7 +108,7 @@ export default function JadwalSidangGuard({
             </div>
           </div>
         )}
-        {pendaftaranStatus?.hasPendaftaran && pendaftaranStatus?.isValidated && (
+        {(hasJadwal || (pendaftaranStatus?.hasPendaftaran && pendaftaranStatus?.isValidated)) && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
               <Calendar className="w-5 h-5 text-green-600 mt-0.5" />

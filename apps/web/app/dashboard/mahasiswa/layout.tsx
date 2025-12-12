@@ -119,7 +119,7 @@ export default function MahasiswaLayout({ children }: { children: ReactNode }) {
       <main
         className={`min-h-screen transition-all duration-300 flex flex-col pt-16 lg:pt-0 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}
       >
-        <div className="p-0 sm:p-4 lg:p-6 max-w-7xl mx-auto w-full flex-1">
+        <div className="p-2 sm:p-4 lg:p-6 max-w-7xl mx-auto w-full flex-1">
           {children}
         </div>
         <UserFooter />

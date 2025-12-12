@@ -211,7 +211,7 @@ export default function DocumentationContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header - Using same component as landing page */}
-      <HeaderWrapper activeSection="dokumentasi" scrollToSection={() => {}} />
+      <HeaderWrapper mode="static" activePage="docs" scrollToSection={() => {}} />
 
       <div className="flex pt-20">
         {/* Sidebar - Fixed position like Tailwind docs */}

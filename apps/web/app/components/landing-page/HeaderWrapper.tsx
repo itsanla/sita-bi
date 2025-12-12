@@ -5,11 +5,15 @@ import Header from './Header';
 interface HeaderWrapperProps {
   activeSection?: string;
   scrollToSection?: (_id: string) => void;
+  mode?: 'landing' | 'static';
+  activePage?: string;
 }
 
 export default function HeaderWrapper({
   activeSection = 'hero',
   scrollToSection = () => {},
+  mode = 'landing',
+  activePage = '',
 }: HeaderWrapperProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -19,6 +23,8 @@ export default function HeaderWrapper({
       setIsMenuOpen={setIsMenuOpen}
       activeSection={activeSection}
       scrollToSection={scrollToSection}
+      mode={mode}
+      activePage={activePage}
     />
   );
 }

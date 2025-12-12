@@ -1,16 +1,22 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Image from 'next/image';
-import { Home, LogOut, Menu, LucideIcon } from 'lucide-react';
+import { Home, LogOut, Menu, LucideIcon, MessageCircle } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const ChatbotModal = dynamic(() => import('@/app/components/SitaBot/ChatbotModal'), {
+  ssr: false,
+});
 
 interface NavItem {
   href: string;
   icon: LucideIcon;
   label: string;
+  isSitaBot?: boolean;
 }
 
 interface MenuSection {
@@ -30,17 +36,19 @@ interface UserSidebarProps {
 const NavLink = ({
   item,
   sidebarOpen,
+  onClick,
 }: {
   item: NavItem;
   sidebarOpen: boolean;
+  onClick?: () => void;
 }) => {
   const pathname = usePathname();
-  const isActive = pathname === item.href;
+  const isActive = pathname === item.href && !item.isSitaBot;
   const [tooltipPos, setTooltipPos] = React.useState<{
     top: number;
     left: number;
   } | null>(null);
-  const linkRef = React.useRef<HTMLAnchorElement>(null);
+  const linkRef = React.useRef<HTMLAnchorElement | HTMLButtonElement>(null);
 
   const handleMouseEnter = () => {
     if (linkRef.current && !sidebarOpen && !isActive) {
@@ -53,16 +61,20 @@ const NavLink = ({
     setTooltipPos(null);
   };
 
+  const Component = item.isSitaBot ? 'button' : Link;
+  const componentProps = item.isSitaBot
+    ? { onClick, type: 'button' as const }
+    : { href: item.href, prefetch: true };
+
   return (
     <>
       <li>
-        <Link
-          ref={linkRef}
-          href={item.href}
-          prefetch={true}
+        <Component
+          ref={linkRef as any}
+          {...componentProps}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 ease-out ${
+          className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 ease-out w-full text-left ${
             isActive
               ? 'bg-gradient-to-r from-red-900 to-red-800 text-white shadow-md shadow-red-900/20'
               : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100/50 hover:text-red-900 active:scale-[0.98]'
@@ -83,7 +95,7 @@ const NavLink = ({
               {item.label}
             </span>
           )}
-        </Link>
+        </Component>
       </li>
 
       {!sidebarOpen && !isActive && !!tooltipPos && (
@@ -108,6 +120,24 @@ export default function UserSidebar({
   dashboardHref,
 }: UserSidebarProps) {
   const { user, logout } = useAuth();
+  const router = useRouter();
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const handleSitaBotClick = () => {
+    if (isMobile) {
+      router.push('/chatbot');
+    } else {
+      setIsChatOpen(true);
+    }
+  };
 
   return (
     <>
@@ -193,7 +223,7 @@ export default function UserSidebar({
           )}
         </div>
 
-        <div className="p-3 border-b border-gray-200/80">
+        <div className="p-3 border-b border-gray-200/80 space-y-0.5">
           <Link
             href="/"
             prefetch={true}
@@ -215,6 +245,27 @@ export default function UserSidebar({
               </div>
             )}
           </Link>
+          
+          <button
+            onClick={handleSitaBotClick}
+            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100/50 hover:text-red-900 transition-all duration-150 ease-out active:scale-[0.98] relative w-full text-left"
+          >
+            <div className="flex items-center justify-center w-5 h-5 transition-transform duration-150 group-hover:scale-110 group-active:scale-95">
+              <MessageCircle className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
+            </div>
+            {!!sidebarOpen && (
+              <span className="text-sm font-medium tracking-tight">
+                SitaBot AI
+              </span>
+            )}
+
+            {!sidebarOpen && (
+              <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-50 top-1/2 -translate-y-1/2 shadow-xl">
+                SitaBot AI
+                <div className="absolute right-full top-1/2 -translate-y-1/2 -mr-px border-[5px] border-transparent border-r-gray-900"></div>
+              </div>
+            )}
+          </button>
         </div>
 
         <nav className="flex-1 overflow-y-auto overflow-x-hidden p-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
@@ -233,6 +284,7 @@ export default function UserSidebar({
                         key={item.href}
                         item={item}
                         sidebarOpen={sidebarOpen}
+                        onClick={item.isSitaBot ? handleSitaBotClick : undefined}
                       />
                     ))}
                   </ul>
@@ -252,6 +304,7 @@ export default function UserSidebar({
                     key={item.href}
                     item={item}
                     sidebarOpen={sidebarOpen}
+                    onClick={item.isSitaBot ? handleSitaBotClick : undefined}
                   />
                 ))}
               </ul>
@@ -311,6 +364,10 @@ export default function UserSidebar({
           </button>
         </div>
       </aside>
+      
+      {!isMobile && isChatOpen && (
+        <ChatbotModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      )}
     </>
   );
 }

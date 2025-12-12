@@ -10,6 +10,7 @@ import {
   ChevronRight,
   FileDown,
 } from 'lucide-react';
+import Header from '../components/landing-page/Header';
 
 interface Periode {
   tahun: number;
@@ -248,14 +249,23 @@ export default function DataMasterPage() {
   }, [filteredData, page, itemsPerPage]);
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Header
+        isMenuOpen={isMenuOpen}
+        setIsMenuOpen={setIsMenuOpen}
+        mode="static"
+        activePage="data-master"
+      />
+
+      <div className="pt-16">
       <div className="bg-red-900 text-white py-8 md:py-12">
         <div className="container mx-auto px-4">
           <h1 className="text-2xl md:text-4xl font-bold mb-2">Data Master Tugas Akhir</h1>
           <p className="text-sm md:text-base text-red-100">
-            Database Tugas Akhir Politeknik Negeri Padang
+            Database Tugas Akhir Jurusan Bahasa Inggris Politeknik Negeri Padang
           </p>
         </div>
       </div>
@@ -730,6 +740,7 @@ export default function DataMasterPage() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -9,20 +9,9 @@ export default function DosenPengumumanPage() {
 
   const canManage = isJurusan || isProdi;
 
-  if (!canManage) {
-    return (
-      <div className="space-y-6">
-        <Pengumuman />
-      </div>
-    );
+  if (canManage) {
+    return <KelolaPengumuman />;
   }
 
-  return (
-    <div className="space-y-8">
-      <Pengumuman />
-      <div className="border-t-2 border-gray-200 pt-8">
-        <KelolaPengumuman />
-      </div>
-    </div>
-  );
+  return <Pengumuman />;
 }

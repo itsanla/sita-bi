@@ -6,15 +6,19 @@ import Image from 'next/image';
 interface HeaderProps {
   isMenuOpen: boolean;
   setIsMenuOpen: (_isOpen: boolean) => void;
-  activeSection: string;
-  scrollToSection: (_id: string) => void;
+  activeSection?: string;
+  scrollToSection?: (_id: string) => void;
+  mode?: 'landing' | 'static';
+  activePage?: string;
 }
 
 export default function Header({
   isMenuOpen,
   setIsMenuOpen,
-  activeSection,
-  scrollToSection,
+  activeSection = 'hero',
+  scrollToSection = () => {},
+  mode = 'landing',
+  activePage = '',
 }: HeaderProps) {
   return (
     <header className="fixed top-0 inset-x-0 z-40">
@@ -53,37 +57,80 @@ export default function Header({
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-1">
-            {['hero', 'tawarantopik', 'jadwal', 'pengumuman'].map((section) => {
-              const getSectionLabel = () => {
-                if (section === 'hero') return 'Home';
-                if (section === 'tawarantopik') return 'Topik';
-                return section.charAt(0).toUpperCase() + section.slice(1);
-              };
+            {mode === 'landing' ? (
+              <>
+                {['hero', 'tawarantopik', 'jadwal', 'pengumuman'].map((section) => {
+                  const getSectionLabel = () => {
+                    if (section === 'hero') return 'Home';
+                    if (section === 'tawarantopik') return 'Topik';
+                    return section.charAt(0).toUpperCase() + section.slice(1);
+                  };
 
-              return (
+                  return (
+                    <a
+                      key={section}
+                      href={`#${section}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        scrollToSection(section);
+                      }}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                        activeSection === section
+                          ? 'text-red-600 bg-red-50'
+                          : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      {getSectionLabel()}
+                    </a>
+                  );
+                })}
                 <a
-                  key={section}
-                  href={`#${section}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    scrollToSection(section);
-                  }}
+                  href="/dokumentasi"
+                  className="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 transition-colors duration-200"
+                >
+                  Docs
+                </a>
+                <a
+                  href="/data-master"
+                  className="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 transition-colors duration-200"
+                >
+                  Data Master
+                </a>
+              </>
+            ) : (
+              <>
+                <a
+                  href="/"
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                    activeSection === section
+                    activePage === 'home'
                       ? 'text-red-600 bg-red-50'
                       : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
                   }`}
                 >
-                  {getSectionLabel()}
+                  Home
                 </a>
-              );
-            })}
-            <a
-              href="/dokumentasi"
-              className="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 transition-colors duration-200"
-            >
-              Docs
-            </a>
+                <a
+                  href="/data-master"
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                    activePage === 'data-master'
+                      ? 'text-red-600 bg-red-50'
+                      : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
+                  }`}
+                >
+                  Data Master
+                </a>
+                <a
+                  href="/dokumentasi"
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                    activePage === 'docs'
+                      ? 'text-red-600 bg-red-50'
+                      : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
+                  }`}
+                >
+                  Docs
+                </a>
+              </>
+            )}
           </nav>
 
           {/* CTA Button & Mobile Menu */}
@@ -115,40 +162,83 @@ export default function Header({
         {isMenuOpen ? (
           <div className="lg:hidden">
             <div className="pt-2 pb-4 space-y-1">
-              {['hero', 'tawarantopik', 'jadwal', 'pengumuman'].map(
-                (section) => {
-                  const getMobileSectionLabel = () => {
-                    if (section === 'hero') return 'Home';
-                    if (section === 'tawarantopik') return 'Tawaran Topik';
-                    return section.charAt(0).toUpperCase() + section.slice(1);
-                  };
+              {mode === 'landing' ? (
+                <>
+                  {['hero', 'tawarantopik', 'jadwal', 'pengumuman'].map(
+                    (section) => {
+                      const getMobileSectionLabel = () => {
+                        if (section === 'hero') return 'Home';
+                        if (section === 'tawarantopik') return 'Tawaran Topik';
+                        return section.charAt(0).toUpperCase() + section.slice(1);
+                      };
 
-                  return (
-                    <a
-                      key={section}
-                      href={`#${section}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        scrollToSection(section);
-                        setIsMenuOpen(false);
-                      }}
-                      className={`block px-4 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
-                        activeSection === section
-                          ? 'text-red-600 bg-red-50'
-                          : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      {getMobileSectionLabel()}
-                    </a>
-                  );
-                },
+                      return (
+                        <a
+                          key={section}
+                          href={`#${section}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            scrollToSection(section);
+                            setIsMenuOpen(false);
+                          }}
+                          className={`block px-4 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
+                            activeSection === section
+                              ? 'text-red-600 bg-red-50'
+                              : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          {getMobileSectionLabel()}
+                        </a>
+                      );
+                    },
+                  )}
+                  <a
+                    href="/dokumentasi"
+                    className="block px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    Dokumentasi
+                  </a>
+                  <a
+                    href="/data-master"
+                    className="block px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    Data Master
+                  </a>
+                </>
+              ) : (
+                <>
+                  <a
+                    href="/"
+                    className={`block px-4 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
+                      activePage === 'home'
+                        ? 'text-red-600 bg-red-50'
+                        : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    Home
+                  </a>
+                  <a
+                    href="/data-master"
+                    className={`block px-4 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
+                      activePage === 'data-master'
+                        ? 'text-red-600 bg-red-50'
+                        : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    Data Master
+                  </a>
+                  <a
+                    href="/dokumentasi"
+                    className={`block px-4 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
+                      activePage === 'docs'
+                        ? 'text-red-600 bg-red-50'
+                        : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    Docs
+                  </a>
+                </>
               )}
-              <a
-                href="/dokumentasi"
-                className="block px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 transition-colors duration-200"
-              >
-                Dokumentasi
-              </a>
               <div className="pt-4 pb-2">
                 <a
                   href="/login"

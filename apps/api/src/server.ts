@@ -68,8 +68,10 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
 
     try {
       // Disconnect database
-      await PrismaService.disconnect();
-      console.warn('✅ Database disconnected');
+      if (PrismaService && typeof PrismaService.disconnect === 'function') {
+        await PrismaService.disconnect();
+        console.warn('✅ Database disconnected');
+      }
     } catch (err) {
       console.error('❌ Error during database cleanup:', err);
     }
