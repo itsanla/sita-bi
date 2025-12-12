@@ -229,21 +229,21 @@ async function main() {
   console.log('📅 Creating periode TA...');
   const periodeAktif = await prisma.periodeTa.create({
     data: {
-      tahun: 2024,
-      nama: 'Periode TA 2024',
+      tahun: 2025,
+      nama: 'Periode TA 2025',
       status: 'AKTIF',
-      tanggal_buka: new Date('2024-01-01T08:00:00+07:00'),
+      tanggal_buka: new Date('2025-01-01T08:00:00+07:00'),
       dibuka_oleh: admin.id,
     },
   });
 
   const periodeTidakAktif = await prisma.periodeTa.create({
     data: {
-      tahun: 2023,
-      nama: 'Periode TA 2023',
+      tahun: 2024,
+      nama: 'Periode TA 2024',
       status: 'SELESAI',
-      tanggal_buka: new Date('2023-01-01T08:00:00+07:00'),
-      tanggal_tutup: new Date('2023-12-31T17:00:00+07:00'),
+      tanggal_buka: new Date('2024-01-01T08:00:00+07:00'),
+      tanggal_tutup: new Date('2024-12-31T17:00:00+07:00'),
       dibuka_oleh: admin.id,
       ditutup_oleh: admin.id,
     },
@@ -251,10 +251,10 @@ async function main() {
 
   const periodePersiapan = await prisma.periodeTa.create({
     data: {
-      tahun: 2025,
-      nama: 'Periode TA 2025',
+      tahun: 2026,
+      nama: 'Periode TA 2026',
       status: 'PERSIAPAN',
-      tanggal_buka: new Date('2025-02-01T08:00:00+07:00'),
+      tanggal_buka: new Date('2026-02-01T08:00:00+07:00'),
       dibuka_oleh: admin.id,
     },
   });
@@ -429,6 +429,16 @@ async function main() {
 }
 
 main()
+  .then(async () => {
+    // Run seed historis
+    console.log('\n🔄 Running seed historis...');
+    const { execSync } = require('child_process');
+    try {
+      execSync('cd ../../apps/api && npx ts-node src/scripts/seed-data-historis.ts', { stdio: 'inherit' });
+    } catch (error) {
+      console.log('⚠️  Seed historis skipped or failed (this is optional)');
+    }
+  })
   .catch((e) => {
     console.error('❌ Seed failed:', e);
     process.exit(1);

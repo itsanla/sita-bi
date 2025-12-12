@@ -277,16 +277,12 @@ export default function PenjadwalanSidang() {
       const response = await api.get('/jadwal-sidang-smart/export/pdf', {
         responseType: 'blob',
       });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `jadwal-sidang-${Date.now()}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      toast.success('PDF berhasil diunduh');
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      toast.success('PDF berhasil dibuka');
     } catch (error: any) {
-      toast.error('Gagal mengunduh PDF');
+      toast.error('Gagal membuka PDF');
     }
   };
 

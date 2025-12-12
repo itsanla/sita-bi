@@ -32,6 +32,7 @@ import pengaturanRouter from './api/pengaturan.router';
 import periodeRouter from './api/periode.router';
 import aturanValidasiRouter from './api/aturan-validasi.router';
 import penjadwalanSidangRouter from './api/penjadwalan-sidang.router';
+import dataMasterRouter from './api/data-master.router';
 import { errorHandler } from './middlewares/error.middleware';
 import { activityLogger } from './middlewares/logger.middleware';
 import { getUploadPath, getApiRoot } from './utils/upload.config';
@@ -94,11 +95,11 @@ console.warn('⚠️  WhatsApp not connected - Server running without WhatsApp')
 app.get('/health', async (_req, res) => {
   try {
     const whatsappStatus = whatsappService.getStatus();
-    
+
     // Check database connectivity
     const { PrismaService } = await import('./config/prisma');
     await PrismaService.getClient().$queryRaw`SELECT 1`;
-    
+
     res.json({
       status: 'OK',
       timestamp: new Date().toISOString(),
@@ -110,7 +111,7 @@ app.get('/health', async (_req, res) => {
         hasQR: whatsappStatus.hasQR,
       },
     });
-  } catch (error) {
+  } catch {
     res.status(503).json({
       status: 'ERROR',
       timestamp: new Date().toISOString(),
@@ -153,6 +154,7 @@ app.use('/api/pengaturan', pengaturanRouter);
 app.use('/api/periode', periodeRouter);
 app.use('/api/aturan-validasi', aturanValidasiRouter);
 app.use('/api/penjadwalan-sidang', penjadwalanSidangRouter);
+app.use('/api/data-master', dataMasterRouter);
 
 // Error Handling Middleware
 app.use(errorHandler);
