@@ -111,11 +111,6 @@ router.get(
   periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    console.log('=== TAWARAN TOPIK /available DEBUG ===');
-    console.log('Query params:', req.query);
-    console.log('User:', req.user?.id, req.user?.roles?.[0]?.name);
-    console.log('Periode from guard:', req.periode?.id);
-    
     const page =
       req.query['page'] != null
         ? parseInt(req.query['page'] as string)
@@ -126,16 +121,11 @@ router.get(
         : undefined;
     const periodeId = req.query.periode_id ? parseInt(req.query.periode_id as string) : undefined;
     
-    console.log('Parsed params - page:', page, 'limit:', limit, 'periodeId:', periodeId);
-    
     const availableTopics = await tawaranTopikService.findAvailable(
       page,
       limit,
       periodeId,
     );
-    
-    console.log('Available topics result:', availableTopics);
-    console.log('=== END DEBUG ===');
     
     res.status(200).json({ status: 'sukses', data: availableTopics });
   }),
@@ -175,9 +165,7 @@ router.post(
 router.get(
   '/debug',
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    console.log('=== DEBUG ENDPOINT ===');
     const allTopics = await tawaranTopikService.getAllTopics(1, 100);
-    console.log('All topics in database:', allTopics);
     res.status(200).json({ status: 'sukses', data: allTopics });
   }),
 );

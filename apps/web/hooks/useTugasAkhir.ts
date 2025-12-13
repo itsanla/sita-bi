@@ -70,18 +70,13 @@ export function useRecommendedTopics(periodeId?: number | null) {
   const [loading, setLoading] = useState(false);
 
   const fetchRecommendedTitles = async () => {
-    console.log('=== FRONTEND useRecommendedTopics DEBUG ===');
-    console.log('periodeId received:', periodeId);
-    
     if (!periodeId) {
-      console.log('No periodeId, setting empty array');
       setRecommendedTitles([]);
       return;
     }
     
     setLoading(true);
     const url = `/tawaran-topik/available?periode_id=${periodeId}`;
-    console.log('Fetching URL:', url);
     
     try {
       const topicsResponse = await request<{
@@ -94,27 +89,19 @@ export function useRecommendedTopics(periodeId?: number | null) {
           totalPages: number;
         };
       }>(url);
-      console.log('API Response:', topicsResponse);
       
       const responseData = topicsResponse.data;
-      console.log('Response data:', responseData);
-      
       const topicsArray = responseData.data?.data || [];
-      console.log('Topics array:', topicsArray);
-      console.log('Is topics array?', Array.isArray(topicsArray));
       
       setRecommendedTitles(topicsArray);
     } catch (error) {
-      console.error('Error fetching recommended topics:', error);
       setRecommendedTitles([]);
     } finally {
       setLoading(false);
-      console.log('=== END FRONTEND DEBUG ===');
     }
   };
 
   useEffect(() => {
-    console.log('useEffect triggered, periodeId:', periodeId);
     fetchRecommendedTitles();
   }, [periodeId]);
 

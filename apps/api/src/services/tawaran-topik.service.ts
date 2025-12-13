@@ -66,19 +66,13 @@ export class TawaranTopikService {
     limit: number;
     totalPages: number;
   }> {
-    console.log('=== SERVICE findAvailable DEBUG ===');
-    console.log('Input params - page:', page, 'limit:', limit, 'periodeId:', periodeId);
-    
     const whereClause = {
       kuota: { gt: 0 },
       deleted_at: null,
       ...(periodeId && { periode_ta_id: periodeId }),
     };
     
-    console.log('Where clause:', JSON.stringify(whereClause, null, 2));
-    
     const total = await this.prisma.tawaranTopik.count({ where: whereClause });
-    console.log('Total count:', total);
     
     const data = await this.prisma.tawaranTopik.findMany({
       where: whereClause,
@@ -103,10 +97,6 @@ export class TawaranTopikService {
       skip: (page - 1) * limit,
       take: limit,
     });
-    
-    console.log('Found data count:', data.length);
-    console.log('Sample data:', data.slice(0, 2));
-    console.log('=== END SERVICE DEBUG ===');
     
     return {
       data: data,

@@ -42,12 +42,7 @@ export default function RecommendedTopics({
     setCurrentPage(1);
   }, [searchQuery]);
   
-  console.log('=== RecommendedTopics Component DEBUG ===');
-  console.log('selectedPeriodeId from context:', selectedPeriodeId);
-  console.log('recommendedTitles:', recommendedTitles);
-  console.log('loading:', loading);
-  console.log('recommendedTitles.length:', recommendedTitles.length);
-  console.log('=== END Component DEBUG ===');
+
 
   if (loading) {
     return (

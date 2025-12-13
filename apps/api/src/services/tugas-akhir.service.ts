@@ -260,10 +260,7 @@ export class TugasAkhirService {
   }
 
   async findAllTitles(periodeId?: number): Promise<{ judul: string; mahasiswa: { user: { name: string } } }[]> {
-    console.log('=== findAllTitles DEBUG ===');
-    console.log('periodeId:', periodeId);
-    
-    const result = await this.prisma.tugasAkhir.findMany({
+    return this.prisma.tugasAkhir.findMany({
       where: periodeId ? { periode_ta_id: periodeId } : undefined,
       select: {
         judul: true,
@@ -281,12 +278,6 @@ export class TugasAkhirService {
         judul: 'asc',
       },
     });
-    
-    console.log('Result count:', result.length);
-    console.log('Sample result:', result[0]);
-    console.log('=== END DEBUG ===');
-    
-    return result;
   }
 
   async approve(tugasAkhirId: number, approverId: number): Promise<TugasAkhir> {
