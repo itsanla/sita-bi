@@ -12,6 +12,21 @@ export const periodeGuard = () => {
   ): Promise<void> => {
     try {
       const userRole = req.user?.role;
+      const periodeIdHeader = req.headers['x-periode-id'];
+      const periodeId =
+        periodeIdHeader !== undefined
+          ? parseInt(periodeIdHeader as string, 10)
+          : undefined;
+
+      if (periodeId !== undefined && !Number.isNaN(periodeId)) {
+        const periode = await periodeService.getPeriodeById(periodeId);
+        if (periode !== null) {
+          req.periode = periode;
+          next();
+          return;
+        }
+      }
+
       const activePeriode = await periodeService.getActivePeriode();
 
       if (userRole === Role.jurusan || userRole === Role.admin) {

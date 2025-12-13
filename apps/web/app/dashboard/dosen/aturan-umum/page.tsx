@@ -56,6 +56,8 @@ interface Pengaturan {
   rumus_penilaian?: string;
   nilai_minimal_lolos?: number;
   tampilkan_rincian_nilai_ke_sekretaris?: boolean;
+  cek_similaritas_semua_periode?: boolean;
+  nonaktifkan_cek_similaritas?: boolean;
 }
 
 export default function AturanTugasAkhirPage() {
@@ -88,6 +90,8 @@ export default function AturanTugasAkhirPage() {
     rumus_penilaian: '(p1 + p2 + p3) / 3',
     nilai_minimal_lolos: 60,
     tampilkan_rincian_nilai_ke_sekretaris: true,
+    cek_similaritas_semua_periode: false,
+    nonaktifkan_cek_similaritas: false,
   });
   const [originalPengaturan, setOriginalPengaturan] = useState<Pengaturan>({
     max_similaritas_persen: 80,
@@ -114,6 +118,8 @@ export default function AturanTugasAkhirPage() {
     rumus_penilaian: '(p1 + p2 + p3) / 3',
     nilai_minimal_lolos: 60,
     tampilkan_rincian_nilai_ke_sekretaris: true,
+    cek_similaritas_semua_periode: false,
+    nonaktifkan_cek_similaritas: false,
   });
   const [ruanganBaru, setRuanganBaru] = useState('');
   const [syaratBaru, setSyaratBaru] = useState({ key: '', label: '' });
@@ -212,6 +218,8 @@ export default function AturanTugasAkhirPage() {
         rumus_penilaian: data.rumus_penilaian ?? '(p1 + p2 + p3) / 3',
         nilai_minimal_lolos: data.nilai_minimal_lolos ?? 60,
         tampilkan_rincian_nilai_ke_sekretaris: data.tampilkan_rincian_nilai_ke_sekretaris ?? true,
+        cek_similaritas_semua_periode: data.cek_similaritas_semua_periode ?? false,
+        nonaktifkan_cek_similaritas: data.nonaktifkan_cek_similaritas ?? false,
       };
       console.log('Settings:', settings);
       setPengaturan(settings);
@@ -490,26 +498,94 @@ export default function AturanTugasAkhirPage() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">
             Aturan Judul
           </h2>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Maksimal Persentase Similaritas (%)
-            </label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              value={pengaturan.max_similaritas_persen}
-              onChange={(e) =>
-                setPengaturan({
-                  ...pengaturan,
-                  max_similaritas_persen: parseInt(e.target.value) || 0,
-                })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
-            />
-            <p className="text-sm text-gray-500">
-              Dokumen dengan similaritas di atas nilai ini akan ditolak
-            </p>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Maksimal Persentase Similaritas (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={pengaturan.max_similaritas_persen}
+                onChange={(e) =>
+                  setPengaturan({
+                    ...pengaturan,
+                    max_similaritas_persen: parseInt(e.target.value) || 0,
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-900 focus:border-transparent"
+              />
+              <p className="text-sm text-gray-500">
+                Dokumen dengan similaritas di atas nilai ini akan ditolak
+              </p>
+            </div>
+            
+            {/* Toggle Nonaktifkan Pengecekan Similaritas */}
+            <div className="space-y-2 pt-4 border-t">
+              <label className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200 cursor-pointer hover:bg-red-100">
+                <div>
+                  <span className="block text-sm font-medium text-gray-700">
+                    Nonaktifkan Pengecekan Kemiripan Judul
+                  </span>
+                  <span className="block text-xs text-gray-500 mt-1">
+                    Jika diaktifkan, sistem tidak akan melakukan pengecekan kemiripan judul sama sekali
+                  </span>
+                </div>
+                <div className="relative ml-4">
+                  <input
+                    type="checkbox"
+                    checked={pengaturan.nonaktifkan_cek_similaritas ?? false}
+                    onChange={(e) =>
+                      setPengaturan({
+                        ...pengaturan,
+                        nonaktifkan_cek_similaritas: e.target.checked,
+                      })
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                </div>
+              </label>
+            </div>
+            
+            {/* Toggle Pengecekan Semua Periode - hanya tampil jika pengecekan tidak dinonaktifkan */}
+            {!pengaturan.nonaktifkan_cek_similaritas && (
+              <div className="space-y-2 pt-4 border-t">
+                <label className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200 cursor-pointer hover:bg-blue-100">
+                  <div>
+                    <span className="block text-sm font-medium text-gray-700">
+                      Cek Kemiripan Judul dari Semua Periode
+                    </span>
+                    <span className="block text-xs text-gray-500 mt-1">
+                      <strong>ON:</strong> Cek semua judul TA historis (2014-2024) + judul TA periode aktif + tawaran topik periode aktif<br/>
+                      <strong>OFF:</strong> Hanya cek judul TA periode aktif + tawaran topik periode aktif
+                    </span>
+                  </div>
+                  <div className="relative ml-4">
+                    <input
+                      type="checkbox"
+                      checked={pengaturan.cek_similaritas_semua_periode ?? false}
+                      onChange={(e) =>
+                        setPengaturan({
+                          ...pengaturan,
+                          cek_similaritas_semua_periode: e.target.checked,
+                        })
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </div>
+                </label>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-xs text-amber-800">
+                    <span className="font-semibold">Contoh:</span> Jika periode aktif adalah 2025:<br/>
+                    • <strong>Toggle ON:</strong> Cek kemiripan dengan judul TA 2014-2024 + judul TA 2025 + tawaran topik 2025<br/>
+                    • <strong>Toggle OFF:</strong> Hanya cek kemiripan dengan judul TA 2025 + tawaran topik 2025
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

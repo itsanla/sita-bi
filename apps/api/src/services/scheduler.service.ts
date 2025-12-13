@@ -1,8 +1,8 @@
 import cron from 'node-cron';
 import { PrismaClient, StatusTugasAkhir } from '@repo/db';
 import { EmailService } from './email.service';
-import type { WhatsappService } from './whatsapp.service';
-import { whatsappService } from './whatsapp.service';
+import type { WahaWhatsAppService } from './waha-whatsapp.service';
+import { whatsappService } from './waha-whatsapp.service';
 
 export class SchedulerService {
   private prisma: PrismaClient;

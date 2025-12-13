@@ -1,5 +1,6 @@
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { usePeriode } from '@/context/PeriodeContext';
 
 interface DashboardStats {
   tugasAkhir: {
@@ -55,70 +56,97 @@ const RETRY_COUNT = 3;
 const RETRY_DELAY = 1000;
 
 export function useDashboardStats(): UseQueryResult<DashboardStats> {
+  const { selectedPeriodeId } = usePeriode();
   return useQuery<DashboardStats>({
-    queryKey: ['mahasiswaDashboardStats'],
+    queryKey: ['mahasiswaDashboardStats', selectedPeriodeId],
     queryFn: async () => {
-      const response = await api.get('/dashboard/mahasiswa/stats');
+      const params = selectedPeriodeId
+        ? `?periode_ta_id=${selectedPeriodeId}`
+        : '';
+      const response = await api.get(`/dashboard/mahasiswa/stats${params}`);
       return response.data.data;
     },
     staleTime: STALE_TIME,
     retry: RETRY_COUNT,
     retryDelay: RETRY_DELAY,
+    enabled: !!selectedPeriodeId,
   });
 }
 
 export function useDashboardActivities(limit = 10): UseQueryResult<Activity[]> {
+  const { selectedPeriodeId } = usePeriode();
   return useQuery<Activity[]>({
-    queryKey: ['mahasiswaActivities', limit],
+    queryKey: ['mahasiswaActivities', limit, selectedPeriodeId],
     queryFn: async () => {
+      const params = selectedPeriodeId
+        ? `&periode_ta_id=${selectedPeriodeId}`
+        : '';
       const response = await api.get(
-        `/dashboard/mahasiswa/activities?limit=${limit}`,
+        `/dashboard/mahasiswa/activities?limit=${limit}${params}`,
       );
       return response.data.data;
     },
     staleTime: STALE_TIME,
     retry: RETRY_COUNT,
     retryDelay: RETRY_DELAY,
+    enabled: !!selectedPeriodeId,
   });
 }
 
 export function useDashboardSchedule(limit = 5): UseQueryResult<Schedule[]> {
+  const { selectedPeriodeId } = usePeriode();
   return useQuery<Schedule[]>({
-    queryKey: ['mahasiswaSchedule', limit],
+    queryKey: ['mahasiswaSchedule', limit, selectedPeriodeId],
     queryFn: async () => {
+      const params = selectedPeriodeId
+        ? `&periode_ta_id=${selectedPeriodeId}`
+        : '';
       const response = await api.get(
-        `/dashboard/mahasiswa/schedule?limit=${limit}`,
+        `/dashboard/mahasiswa/schedule?limit=${limit}${params}`,
       );
       return response.data.data;
     },
     staleTime: STALE_TIME,
     retry: RETRY_COUNT,
     retryDelay: RETRY_DELAY,
+    enabled: !!selectedPeriodeId,
   });
 }
 
 export function useDashboardProgress(): UseQueryResult<ProgressData> {
+  const { selectedPeriodeId } = usePeriode();
   return useQuery<ProgressData>({
-    queryKey: ['mahasiswaProgress'],
+    queryKey: ['mahasiswaProgress', selectedPeriodeId],
     queryFn: async () => {
-      const response = await api.get('/dashboard/mahasiswa/progress');
+      const params = selectedPeriodeId
+        ? `?periode_ta_id=${selectedPeriodeId}`
+        : '';
+      const response = await api.get(`/dashboard/mahasiswa/progress${params}`);
       return response.data.data;
     },
     staleTime: STALE_TIME,
     retry: RETRY_COUNT,
     retryDelay: RETRY_DELAY,
+    enabled: !!selectedPeriodeId,
   });
 }
 
 export function useSystemStats(): UseQueryResult<SystemStats> {
+  const { selectedPeriodeId } = usePeriode();
   return useQuery<SystemStats>({
-    queryKey: ['systemStats'],
+    queryKey: ['systemStats', selectedPeriodeId],
     queryFn: async () => {
-      const response = await api.get('/dashboard/mahasiswa/system-stats');
+      const params = selectedPeriodeId
+        ? `?periode_ta_id=${selectedPeriodeId}`
+        : '';
+      const response = await api.get(
+        `/dashboard/mahasiswa/system-stats${params}`,
+      );
       return response.data.data;
     },
-    staleTime: STALE_TIME * 2, // 10 minutes for system stats
+    staleTime: STALE_TIME * 2,
     retry: RETRY_COUNT,
     retryDelay: RETRY_DELAY,
+    enabled: !!selectedPeriodeId,
   });
 }

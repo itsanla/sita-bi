@@ -63,47 +63,82 @@ export function useTugasAkhir() {
   return { tugasAkhir, loading, error, refetch: fetchData, deleteTugasAkhir };
 }
 
-export function useRecommendedTopics() {
+export function useRecommendedTopics(periodeId?: number | null) {
   const [recommendedTitles, setRecommendedTitles] = useState<TawaranTopik[]>(
     [],
   );
   const [loading, setLoading] = useState(false);
 
   const fetchRecommendedTitles = async () => {
+    console.log('=== FRONTEND useRecommendedTopics DEBUG ===');
+    console.log('periodeId received:', periodeId);
+    
+    if (!periodeId) {
+      console.log('No periodeId, setting empty array');
+      setRecommendedTitles([]);
+      return;
+    }
+    
     setLoading(true);
+    const url = `/tawaran-topik/available?periode_id=${periodeId}`;
+    console.log('Fetching URL:', url);
+    
     try {
       const topicsResponse = await request<{
-        data: TawaranTopik[];
-      }>('/tawaran-topik/available');
-      const data = topicsResponse.data;
-      setRecommendedTitles(Array.isArray(data) ? data : []);
-    } catch {
+        status: string;
+        data: {
+          data: TawaranTopik[];
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+        };
+      }>(url);
+      console.log('API Response:', topicsResponse);
+      
+      const responseData = topicsResponse.data;
+      console.log('Response data:', responseData);
+      
+      const topicsArray = responseData.data?.data || [];
+      console.log('Topics array:', topicsArray);
+      console.log('Is topics array?', Array.isArray(topicsArray));
+      
+      setRecommendedTitles(topicsArray);
+    } catch (error) {
+      console.error('Error fetching recommended topics:', error);
       setRecommendedTitles([]);
     } finally {
       setLoading(false);
+      console.log('=== END FRONTEND DEBUG ===');
     }
   };
 
   useEffect(() => {
+    console.log('useEffect triggered, periodeId:', periodeId);
     fetchRecommendedTitles();
-  }, []);
+  }, [periodeId]);
 
   return { recommendedTitles, loading, refetch: fetchRecommendedTitles };
 }
 
-export function useAllTitles() {
-  const [allTitles, setAllTitles] = useState<{ judul: string }[]>([]);
+export function useAllTitles(periodeId?: number | null) {
+  const [allTitles, setAllTitles] = useState<{ judul: string; mahasiswa: { user: { name: string } } }[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchAllTitles = async () => {
+    if (!periodeId) {
+      setAllTitles([]);
+      return;
+    }
+    
     setLoading(true);
     try {
-      const titlesResponse = await request<{ data: { judul: string }[] }>(
-        '/tugas-akhir/all-titles',
+      const titlesResponse = await request<{ data: { judul: string; mahasiswa: { user: { name: string } } }[] }>(
+        `/tugas-akhir/all-titles?periode_id=${periodeId}`,
       );
       setAllTitles(titlesResponse.data.data || []);
     } catch {
-      // Silently fail
+      setAllTitles([]);
     } finally {
       setLoading(false);
     }
@@ -111,7 +146,7 @@ export function useAllTitles() {
 
   useEffect(() => {
     fetchAllTitles();
-  }, []);
+  }, [periodeId]);
 
   return { allTitles, loading, refetch: fetchAllTitles };
 }

@@ -15,8 +15,8 @@ export const updateDataDiriSchema = z.object({
   ipk: z.number().min(0).max(4).optional(),
 
   // Data Dosen
-  bidang_keahlian: z.string().optional(),
-  jabatan: z.string().optional(),
+  bidang_keahlian: z.string().nullable().optional(),
+  jabatan: z.string().nullable().optional(),
 });
 
 export type UpdateDataDiriDto = z.infer<typeof updateDataDiriSchema>;

@@ -4,7 +4,7 @@ import {
   type NotificationHistory,
 } from '@prisma/client';
 import { EmailService } from './email.service';
-import { whatsappService } from './whatsapp.service';
+import { whatsappService } from './waha-whatsapp.service';
 import { getSocketIO } from '../socket';
 
 const prisma = new PrismaClient();

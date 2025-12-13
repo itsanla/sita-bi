@@ -1,4 +1,4 @@
-import { Client, LocalAuth, type Message } from 'whatsapp-web.js';
+import { Client, NoAuth, type Message } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
 import path from 'path';
 import fs from 'fs';
@@ -36,7 +36,8 @@ export class WhatsAppService {
   private readonly sessionDir: string;
   private isInitializing = false;
   private qrLoggedOnce = false;
-  private initTimeout: NodeJS.Timeout | null = null;
+  private sessionSaved = false;
+  private isReconnecting = false;
 
   constructor() {
     // Simpan session di directory dalam project, bukan di root system
@@ -55,28 +56,26 @@ export class WhatsAppService {
   }
 
   /**
-   * Initialize WhatsApp Client
+   * Force initialize WhatsApp Client (for manual QR generation)
    */
-  async initialize(): Promise<void> {
-    if (this.isInitializing) {
-      console.warn('WhatsApp is already initializing...');
-      return;
+  async forceInitialize(): Promise<void> {
+    // Reset state
+    if (this.client != null) {
+      try {
+        await this.logout();
+      } catch (err) {
+        // Ignore
+      }
     }
     
-    if (this.client != null) {
-      console.warn('WhatsApp already initialized');
-      return;
-    }
-
     this.isInitializing = true;
     console.warn('🚀 Initializing WhatsApp...');
 
     this.client = new Client({
-      authStrategy: new LocalAuth({
-        dataPath: this.sessionDir,
-      }),
+      authStrategy: new NoAuth(),
       puppeteer: {
         headless: true,
+        userDataDir: path.join(this.sessionDir, 'session'),
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -90,63 +89,8 @@ export class WhatsAppService {
       },
     });
 
-    // Event: QR Code received
-    this.client.on('qr', (qr) => {
-      this.qrCode = qr;
-      if (!this.qrLoggedOnce) {
-        console.warn('📱 QR Code generated. Access at: GET /api/whatsapp/qr');
-        this.qrLoggedOnce = true;
-        
-        // Auto-cancel after 5 minutes if not scanned
-        this.initTimeout = setTimeout(() => {
-          if (!this.isReady) {
-            console.warn('⏱️  WhatsApp QR timeout - canceling initialization');
-            void this.logout();
-          }
-        }, 5 * 60 * 1000);
-      }
-    });
+    this.setupClientEvents();
 
-    // Event: Client is ready
-    this.client.on('ready', () => {
-      console.warn('✅ WhatsApp connected');
-      this.isReady = true;
-      this.qrCode = null;
-      this.qrLoggedOnce = false;
-      if (this.initTimeout) {
-        clearTimeout(this.initTimeout);
-        this.initTimeout = null;
-      }
-    });
-
-    // Event: Authentication successful
-    this.client.on('authenticated', () => {
-      console.warn('🔐 WhatsApp authenticated');
-    });
-
-    // Event: Authentication failure
-    this.client.on('auth_failure', (msg) => {
-      console.error('❌ WhatsApp auth failed:', msg);
-      this.isReady = false;
-    });
-
-    // Event: Client disconnected
-    this.client.on('disconnected', (reason) => {
-      console.warn('⚠️  WhatsApp disconnected:', reason);
-      this.isReady = false;
-      this.client = null;
-    });
-
-    // Event: Incoming message
-    this.client.on('message', (msg: Message) => {
-      void (async (): Promise<void> => {
-        if (msg.body.toLowerCase() === 'ping') {
-          await msg.reply('pong 🏓');
-        }
-      })();
-    });
-
-    // Initialize the client
     try {
       await this.client.initialize();
     } catch (error) {
@@ -154,6 +98,152 @@ export class WhatsAppService {
       throw error;
     }
     this.isInitializing = false;
+  }
+
+  /**
+   * Initialize WhatsApp Client (auto-reconnect only)
+   */
+  async initialize(): Promise<void> {
+    if (this.isInitializing) {
+      console.warn('WhatsApp is already initializing...');
+      return;
+    }
+    
+    if (this.client != null && this.isReady) {
+      console.warn('WhatsApp already initialized and ready');
+      return;
+    }
+    
+    // Force cleanup if client exists but not ready
+    if (this.client != null && !this.isReady) {
+      console.warn('Cleaning up stale client...');
+      this.client = null;
+    }
+
+    this.isInitializing = true;
+    
+    // Check if session exists
+    const sessionPath = path.join(this.sessionDir, 'session');
+    const hasSession = fs.existsSync(sessionPath);
+    
+    if (!hasSession) {
+      console.warn('💬 No session found. Visit /api/whatsapp/qr to connect');
+      this.isInitializing = false;
+      return;
+    }
+    
+    this.isReconnecting = true;
+    console.warn('🔄 Reconnecting with existing session...');
+    console.warn(`Session path: ${sessionPath}`);
+
+    this.client = new Client({
+      authStrategy: new NoAuth(),
+      puppeteer: {
+        headless: true,
+        userDataDir: path.join(this.sessionDir, 'session'),
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process',
+          '--disable-gpu',
+        ],
+      },
+    });
+
+    this.setupClientEvents();
+
+    // Initialize the client (don't await - let it run async)
+    console.warn('🔧 Starting client.initialize()...');
+    
+    const reconnectTimeout = setTimeout(() => {
+      if (!this.isReady && this.isReconnecting) {
+        console.warn('⏰ Reconnect timeout (60s) - session may be invalid');
+        console.warn('💬 Visit /api/whatsapp/qr to generate new QR code');
+        this.isReconnecting = false;
+      }
+    }, 60000);
+    
+    this.client.initialize().catch((error) => {
+      console.error('❌ client.initialize() error:', error);
+      this.isInitializing = false;
+      this.isReconnecting = false;
+      clearTimeout(reconnectTimeout);
+    });
+    
+    this.isInitializing = false;
+  }
+
+  /**
+   * Setup client event handlers
+   */
+  private setupClientEvents(): void {
+    if (!this.client) {
+      console.error('❌ setupClientEvents: client is null!');
+      return;
+    }
+
+    console.warn('🔧 Setting up event handlers...');
+    
+    this.client.on('loading_screen', (percent, message) => {
+      console.warn(`🔄 Loading: ${percent}% - ${message}`);
+    });
+    
+    this.client.on('remote_session_saved', () => {
+      this.sessionSaved = true;
+      console.warn('💾 Session saved to disk');
+    });
+
+    this.client.on('qr', (qr) => {
+      this.qrCode = qr;
+      if (!this.qrLoggedOnce && !this.isReconnecting) {
+        console.warn('📱 QR Code generated. Access at: GET /api/whatsapp/qr');
+        this.qrLoggedOnce = true;
+      }
+    });
+
+    this.client.on('ready', () => {
+      if (this.isReconnecting) {
+        console.warn('✅ WhatsApp reconnected successfully');
+        this.isReconnecting = false;
+      } else {
+        console.warn('✅ WhatsApp connected');
+      }
+      this.isReady = true;
+      this.qrCode = null;
+      this.qrLoggedOnce = false;
+      
+      if (this.sessionSaved) {
+        console.warn('✅ Session is valid and saved');
+      } else {
+        console.warn('⚠️  Session not yet saved - may not persist on restart');
+      }
+    });
+
+    this.client.on('authenticated', () => {
+      console.warn('🔐 WhatsApp authenticated');
+    });
+
+    this.client.on('auth_failure', (msg) => {
+      console.error('❌ WhatsApp auth failed:', msg);
+      this.isReady = false;
+    });
+
+    this.client.on('disconnected', (reason) => {
+      console.warn('⚠️  WhatsApp disconnected:', reason);
+      this.isReady = false;
+    });
+
+    this.client.on('message', (msg: Message) => {
+      void (async (): Promise<void> => {
+        if (msg.body.toLowerCase() === 'ping') {
+          await msg.reply('pong 🏓');
+        }
+      })();
+    });
   }
 
   /**
@@ -344,10 +434,20 @@ export class WhatsAppService {
   async logout(): Promise<void> {
     if (this.client != null) {
       try {
+        const browser = (this.client as any).pupBrowser;
+        if (browser) {
+          await browser.close();
+        }
+      } catch (err) {
+        // Ignore
+      }
+      
+      try {
         await this.client.destroy();
       } catch (err) {
-        // Ignore errors during cleanup
+        // Ignore
       }
+      
       this.client = null;
       this.isReady = false;
       this.qrCode = null;

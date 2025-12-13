@@ -12,6 +12,7 @@ import {
 
 const router: Router = Router();
 const dashboardService = new DashboardService();
+const UNAUTHORIZED_MESSAGE = 'Akses ditolak: ID pengguna tidak ditemukan.';
 
 /**
  * GET /api/dashboard/mahasiswa/stats
@@ -26,12 +27,16 @@ router.get(
     if (userId === undefined) {
       response.status(401).json({
         status: 'gagal',
-        message: 'Akses ditolak: ID pengguna tidak ditemukan.',
+        message: UNAUTHORIZED_MESSAGE,
       });
       return;
     }
 
-    const stats = await dashboardService.getMahasiswaStats(userId);
+    const periodeId =
+      req.query['periode_ta_id'] !== undefined
+        ? parseInt(req.query['periode_ta_id'] as string, 10)
+        : undefined;
+    const stats = await dashboardService.getMahasiswaStats(userId, periodeId);
     response.status(200).json({ status: 'sukses', data: stats });
   }),
 );
@@ -50,17 +55,23 @@ router.get(
     if (userId === undefined) {
       response.status(401).json({
         status: 'gagal',
-        message: 'Akses ditolak: ID pengguna tidak ditemukan.',
+        message: UNAUTHORIZED_MESSAGE,
       });
       return;
     }
 
-    const limit = req.query['limit']
-      ? parseInt(req.query['limit'] as string, 10)
-      : 10;
+    const limit =
+      req.query['limit'] !== undefined
+        ? parseInt(req.query['limit'] as string, 10)
+        : 10;
+    const periodeId =
+      req.query['periode_ta_id'] !== undefined
+        ? parseInt(req.query['periode_ta_id'] as string, 10)
+        : undefined;
     const activities = await dashboardService.getMahasiswaActivities(
       userId,
       limit,
+      periodeId,
     );
     response.status(200).json({ status: 'sukses', data: activities });
   }),
@@ -80,15 +91,24 @@ router.get(
     if (userId === undefined) {
       response.status(401).json({
         status: 'gagal',
-        message: 'Akses ditolak: ID pengguna tidak ditemukan.',
+        message: UNAUTHORIZED_MESSAGE,
       });
       return;
     }
 
-    const limit = req.query['limit']
-      ? parseInt(req.query['limit'] as string, 10)
-      : 5;
-    const schedule = await dashboardService.getMahasiswaSchedule(userId, limit);
+    const limit =
+      req.query['limit'] !== undefined
+        ? parseInt(req.query['limit'] as string, 10)
+        : 5;
+    const periodeId =
+      req.query['periode_ta_id'] !== undefined
+        ? parseInt(req.query['periode_ta_id'] as string, 10)
+        : undefined;
+    const schedule = await dashboardService.getMahasiswaSchedule(
+      userId,
+      limit,
+      periodeId,
+    );
     response.status(200).json({ status: 'sukses', data: schedule });
   }),
 );
@@ -106,12 +126,19 @@ router.get(
     if (userId === undefined) {
       response.status(401).json({
         status: 'gagal',
-        message: 'Akses ditolak: ID pengguna tidak ditemukan.',
+        message: UNAUTHORIZED_MESSAGE,
       });
       return;
     }
 
-    const progress = await dashboardService.getMahasiswaProgress(userId);
+    const periodeId =
+      req.query['periode_ta_id'] !== undefined
+        ? parseInt(req.query['periode_ta_id'] as string, 10)
+        : undefined;
+    const progress = await dashboardService.getMahasiswaProgress(
+      userId,
+      periodeId,
+    );
     response.status(200).json({ status: 'sukses', data: progress });
   }),
 );
@@ -124,8 +151,12 @@ router.get(
   '/mahasiswa/system-stats',
   asyncHandler(authMiddleware),
   authorizeRoles([Role.mahasiswa]),
-  asyncHandler(async (_req: Request, response: Response): Promise<void> => {
-    const stats = await dashboardService.getSystemStats();
+  asyncHandler(async (req: Request, response: Response): Promise<void> => {
+    const periodeId =
+      req.query['periode_ta_id'] !== undefined
+        ? parseInt(req.query['periode_ta_id'] as string, 10)
+        : undefined;
+    const stats = await dashboardService.getSystemStats(periodeId);
     response.status(200).json({ status: 'sukses', data: stats });
   }),
 );

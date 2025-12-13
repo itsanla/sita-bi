@@ -1,7 +1,15 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { LogIn, Mail, Lock, Eye, EyeOff, Sparkles } from 'lucide-react';
+import {
+  LogIn,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Sparkles,
+  ArrowLeft,
+} from 'lucide-react';
 import { api } from '@/lib/api';
 
 export default function LoginPage() {
@@ -60,9 +68,9 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error('Login error:', err);
-      const errorMessage = 
-        err.response?.data?.message || 
-        err.message || 
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
         'Terjadi kesalahan saat login';
       setError(errorMessage);
       setLoading(false);
@@ -74,6 +82,14 @@ export default function LoginPage() {
       {/* Decorative elements */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-rose-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-amber-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
+
+      <Link
+        href="/"
+        className="hidden md:flex absolute top-8 left-8 items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:shadow-xl text-gray-700 hover:text-rose-600 transition-all z-20 group"
+      >
+        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+        <span className="font-medium">Home</span>
+      </Link>
 
       <div className="max-w-md w-full relative z-10">
         {/* Main card */}

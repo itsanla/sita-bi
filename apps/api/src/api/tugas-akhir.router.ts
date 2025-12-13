@@ -29,7 +29,17 @@ router.post(
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
     const SIMILARITY_BLOCK_THRESHOLD = await getMaxSimilaritasPersen();
     const { judul } = req.body;
-    const results = await tugasAkhirService.checkSimilarity(judul);
+    const periodeId = req.periode?.id;
+    
+    if (periodeId === undefined) {
+      response.status(403).json({
+        status: 'gagal',
+        message: 'Periode TA tidak ditemukan',
+      });
+      return;
+    }
+    
+    const results = await tugasAkhirService.checkSimilarity(judul, periodeId);
 
     const isBlocked = results.some(
       (result) => result.similarity >= SIMILARITY_BLOCK_THRESHOLD,
@@ -224,8 +234,9 @@ router.delete(
 router.get(
   '/all-titles',
   asyncHandler(authMiddleware),
-  asyncHandler(async (_req: Request, response: Response): Promise<void> => {
-    const titles = await tugasAkhirService.findAllTitles();
+  asyncHandler(async (req: Request, response: Response): Promise<void> => {
+    const periodeId = req.query.periode_id ? parseInt(req.query.periode_id as string) : undefined;
+    const titles = await tugasAkhirService.findAllTitles(periodeId);
     response.status(200).json({ status: STATUS_SUKSES, data: titles });
   }),
 );

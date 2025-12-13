@@ -9,6 +9,7 @@ import {
   Sparkles,
   Send,
 } from 'lucide-react';
+import { toast } from 'sonner';
 // import Button from '@/app/components/ui/Button'; // Removed unused import
 import { useSimilarityCheck, useSubmitTitle } from '@/hooks/useTugasAkhir';
 
@@ -52,7 +53,9 @@ export default function SimilarityForm({
     }
     try {
       await submitTitle(judulMandiri, () => {
-        alert('Successfully submitted title for approval.');
+        toast.success('Judul berhasil diajukan', {
+          description: 'Judul tugas akhir Anda telah dikirim untuk persetujuan pembimbing',
+        });
         reset();
         onSuccess();
       });
@@ -112,25 +115,27 @@ export default function SimilarityForm({
                 </div>
               </div>
             </div>
-            <div className="flex items-start gap-2 p-2.5 bg-[#123053]/5 rounded-lg border border-[#123053]/20">
-              <div className="flex-shrink-0 mt-0.5">
-                <svg
-                  className="h-3.5 w-3.5 text-[#123053]"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2 p-2.5 bg-[#123053]/5 rounded-lg border border-[#123053]/20">
+                <div className="flex-shrink-0 mt-0.5">
+                  <svg
+                    className="h-3.5 w-3.5 text-[#123053]"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <p className="text-xs text-[#123053] leading-normal">
+                  <span className="font-semibold">Tips:</span> Pastikan judul Anda
+                  jelas, spesifik, dan menggambarkan fokus penelitian. Hindari
+                  judul yang terlalu umum atau terlalu panjang.
+                </p>
               </div>
-              <p className="text-xs text-[#123053] leading-normal">
-                <span className="font-semibold">Tips:</span> Pastikan judul Anda
-                jelas, spesifik, dan menggambarkan fokus penelitian. Hindari
-                judul yang terlalu umum atau terlalu panjang.
-              </p>
             </div>
           </div>
 
@@ -241,24 +246,26 @@ export default function SimilarityForm({
               ))}
             </div>
           ) : (
-            <div className="relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200 p-4">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-full blur-xl -mr-12 -mt-12"></div>
+            <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-sky-50 rounded-xl border border-blue-200 p-4">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-xl -mr-12 -mt-12"></div>
               <div className="relative flex items-start gap-3">
                 <div className="flex-shrink-0">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-green-500/20 rounded-lg blur-md"></div>
-                    <div className="relative bg-gradient-to-br from-green-600 to-emerald-600 p-2.5 rounded-lg shadow-md">
+                    <div className="absolute inset-0 bg-blue-500/20 rounded-lg blur-md"></div>
+                    <div className="relative bg-gradient-to-br from-blue-600 to-sky-600 p-2.5 rounded-lg shadow-md">
                       <CheckCircle className="h-5 w-5 text-white" />
                     </div>
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-bold text-green-900 text-base mb-1">
-                    Kabar Baik!
+                  <h4 className="font-bold text-blue-900 text-base mb-1">
+                    Pengecekan Selesai
                   </h4>
-                  <p className="text-green-800 text-sm leading-normal">
-                    Tidak ditemukan kemiripan signifikan dengan judul yang sudah
-                    ada. Judul Anda unik dan siap untuk diajukan ke sistem.
+                  <p className="text-blue-800 text-sm leading-normal">
+                    {threshold === 0 
+                      ? 'Pengecekan kemiripan judul dinonaktifkan oleh sistem. Judul Anda dapat langsung diajukan tanpa pemeriksaan kemiripan.'
+                      : 'Tidak ditemukan kemiripan signifikan dengan judul yang sudah ada. Judul Anda unik dan siap untuk diajukan ke sistem.'
+                    }
                   </p>
                 </div>
               </div>

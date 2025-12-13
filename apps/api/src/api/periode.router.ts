@@ -5,6 +5,7 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
 import { Role } from '../middlewares/auth.middleware';
 import { auditLog } from '../middlewares/audit.middleware';
+import { autoEnrollMiddleware } from '../middlewares/auto-enroll.middleware';
 
 const router = Router();
 const periodeService = new PeriodeService();
@@ -29,6 +30,52 @@ router.get(
     res.json({
       status: 'sukses',
       data: periode,
+    });
+  }),
+);
+
+router.get(
+  '/mahasiswa',
+  asyncHandler(authMiddleware),
+  authorizeRoles([Role.mahasiswa]),
+  autoEnrollMiddleware,
+  asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+    if (userId === undefined) {
+      res.status(401).json({
+        status: 'gagal',
+        message: 'Pengguna tidak ditemukan',
+      });
+      return;
+    }
+
+    const periodes = await periodeService.getMahasiswaPeriodes(userId);
+    res.json({
+      status: 'sukses',
+      data: periodes,
+    });
+  }),
+);
+
+router.get(
+  '/dosen',
+  asyncHandler(authMiddleware),
+  authorizeRoles([Role.dosen, Role.kaprodi, Role.jurusan]),
+  autoEnrollMiddleware,
+  asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+    if (userId === undefined) {
+      res.status(401).json({
+        status: 'gagal',
+        message: 'Pengguna tidak ditemukan',
+      });
+      return;
+    }
+
+    const periodes = await periodeService.getDosenPeriodes(userId);
+    res.json({
+      status: 'sukses',
+      data: periodes,
     });
   }),
 );

@@ -1,7 +1,7 @@
 import type { Request, Response, Router as ExpressRouter } from 'express';
 import { Router } from 'express';
 import asyncHandler from '../utils/asyncHandler';
-import { whatsappService } from '../services/whatsapp.service';
+import { whatsappService } from '../services/waha-whatsapp.service';
 import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router: ExpressRouter = Router();
@@ -14,7 +14,7 @@ router.post(
   '/initialize',
   asyncHandler(async (_req: Request, res: Response): Promise<void> => {
     try {
-      await whatsappService.initialize();
+      await whatsappService.forceInitialize();
       res.json({
         success: true,
         message: 'WhatsApp initialization started',
@@ -37,6 +37,19 @@ router.get('/status', authMiddleware, (_req: Request, res: Response): void => {
   const status = whatsappService.getStatus();
   res.json({
     success: true,
+    data: status,
+  });
+});
+
+/**
+ * GET /api/whatsapp/health
+ * Health check without auth (for testing)
+ */
+router.get('/health', (_req: Request, res: Response): void => {
+  const status = whatsappService.getStatus();
+  res.json({
+    success: true,
+    connected: status.isReady,
     data: status,
   });
 });

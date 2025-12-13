@@ -3,6 +3,7 @@
 import { useState, FormEvent, ChangeEvent, ComponentType } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import {
   UserPlus,
   User,
@@ -15,7 +16,9 @@ import {
   Users,
   Hash,
   Phone,
+  ArrowLeft,
 } from 'lucide-react';
+import { normalizePhoneNumber, validatePhoneNumber } from '@/lib/phone-utils';
 
 // --- InputField Component (Refactored) ---
 interface InputFieldProps {
@@ -80,7 +83,7 @@ export default function RegisterPage() {
     nim: '',
     prodi: 'D3',
     phone_number: '',
-    kelas: '3A',
+    kelas: 'A',
     password: '',
     password_confirmation: '',
   });
@@ -94,7 +97,19 @@ export default function RegisterPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    if (name === 'phone_number') {
+      // Hanya izinkan angka dan +
+      const cleanValue = value.replace(/[^0-9+]/g, '');
+      setFormData((prev) => ({ ...prev, [name]: cleanValue }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const getFullKelas = () => {
+    const prodiPrefix = formData.prodi === 'D3' ? '3' : '4';
+    return `${prodiPrefix}${formData.kelas}`;
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -108,8 +123,22 @@ export default function RegisterPage() {
       return;
     }
 
-    const { name, email, nim, prodi, phone_number, kelas, password } = formData;
-    const payload = { name, email, nim, prodi, phone_number, kelas, password };
+    if (!validatePhoneNumber(formData.phone_number)) {
+      setError('Format nomor HP tidak valid. Gunakan format 08xxx, 628xxx, atau +628xxx');
+      setLoading(false);
+      return;
+    }
+
+    const { name, email, nim, prodi, phone_number, password } = formData;
+    const payload = {
+      name,
+      email,
+      nim,
+      prodi,
+      phone_number: normalizePhoneNumber(phone_number),
+      kelas: getFullKelas(),
+      password,
+    };
 
     try {
       const response = await fetch('/api/auth/register', {
@@ -126,11 +155,14 @@ export default function RegisterPage() {
         throw new Error(data.message || 'Something went wrong');
       }
 
-      alert(data.message);
+      toast.success(
+        data.message || 'Registrasi berhasil! Silakan cek email Anda.',
+      );
       router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
     } catch (err) {
       const error = err as Error;
       setError(error.message);
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
@@ -141,6 +173,14 @@ export default function RegisterPage() {
       <div className="absolute top-0 left-0 w-96 h-96 bg-rose-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-amber-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
 
+      <Link
+        href="/"
+        className="hidden md:flex absolute top-8 left-8 items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:shadow-xl text-gray-700 hover:text-rose-600 transition-all z-20 group"
+      >
+        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+        <span className="font-medium">Home</span>
+      </Link>
+
       <div className="max-w-md w-full relative z-10">
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
           <div className="bg-gradient-to-r from-rose-600 via-red-700 to-amber-600 p-8 text-center relative">
@@ -149,10 +189,8 @@ export default function RegisterPage() {
               <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl mb-4 shadow-lg">
                 <Sparkles className="w-8 h-8 text-white" />
               </div>
-              <h1 className="text-3xl font-bold text-white mb-2">
-                Create Account
-              </h1>
-              <p className="text-white/90 text-sm">Join SITA-BI today!</p>
+              <h1 className="text-3xl font-bold text-white mb-2">Buat Akun</h1>
+              <p className="text-white/90 text-sm">Bergabung dengan SITA-BI!</p>
             </div>
           </div>
 
@@ -162,7 +200,7 @@ export default function RegisterPage() {
                 id="name"
                 name="name"
                 type="text"
-                placeholder="Full Name"
+                placeholder="Nama Lengkap"
                 value={formData.name}
                 icon={User}
                 onChange={handleChange}
@@ -171,7 +209,7 @@ export default function RegisterPage() {
                 id="email"
                 name="email"
                 type="email"
-                placeholder="Email Address"
+                placeholder="Alamat Email"
                 value={formData.email}
                 icon={Mail}
                 onChange={handleChange}
@@ -186,15 +224,17 @@ export default function RegisterPage() {
                   icon={Hash}
                   onChange={handleChange}
                 />
-                <InputField
-                  id="phone_number"
-                  name="phone_number"
-                  type="text"
-                  placeholder="No. HP (08...)"
-                  value={formData.phone_number}
-                  icon={Phone}
-                  onChange={handleChange}
-                />
+                <div>
+                  <InputField
+                    id="phone_number"
+                    name="phone_number"
+                    type="text"
+                    placeholder="08xxxxxxxxx"
+                    value={formData.phone_number}
+                    icon={Phone}
+                    onChange={handleChange}
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -224,11 +264,11 @@ export default function RegisterPage() {
                       onChange={handleChange}
                       className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-rose-600 focus:ring-4 focus:ring-rose-100 outline-none transition-all duration-200 bg-gray-50 focus:bg-white"
                     >
-                      <option value="3A">3A</option>
-                      <option value="3B">3B</option>
-                      <option value="3C">3C</option>
-                      <option value="4A">4A</option>
-                      <option value="4B">4B</option>
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                      <option value="D">D</option>
+                      <option value="E">E</option>
                     </select>
                   </div>
                 </div>
@@ -237,7 +277,7 @@ export default function RegisterPage() {
                 id="password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Password"
+                placeholder="Kata Sandi"
                 value={formData.password}
                 icon={Lock}
                 isPassword={true}
@@ -249,7 +289,7 @@ export default function RegisterPage() {
                 id="password_confirmation"
                 name="password_confirmation"
                 type={showConfirmPassword ? 'text' : 'password'}
-                placeholder="Confirm Password"
+                placeholder="Konfirmasi Kata Sandi"
                 value={formData.password_confirmation}
                 icon={Lock}
                 isPassword={true}
@@ -274,11 +314,11 @@ export default function RegisterPage() {
                 {loading ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Registering...</span>
+                    <span>Mendaftar...</span>
                   </>
                 ) : (
                   <>
-                    <span>Create Account</span>
+                    <span>Buat Akun</span>
                     <UserPlus className="w-5 h-5" />
                   </>
                 )}
@@ -291,7 +331,7 @@ export default function RegisterPage() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-4 bg-white text-gray-500">
-                  Already have an account?
+                  Sudah punya akun?
                 </span>
               </div>
             </div>
@@ -301,15 +341,15 @@ export default function RegisterPage() {
                 href="/login"
                 className="inline-flex items-center justify-center w-full px-6 py-3 rounded-xl border-2 border-rose-600 text-rose-600 font-semibold hover:bg-rose-50 transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0"
               >
-                Sign In Instead
+                Masuk
               </Link>
             </div>
           </div>
         </div>
 
         <p className="text-center text-gray-500 text-xs mt-6">
-          By creating an account, you agree to our Terms of Service and Privacy
-          Policy
+          Dengan membuat akun, Anda menyetujui Ketentuan Layanan dan Kebijakan
+          Privasi kami
         </p>
       </div>
     </div>

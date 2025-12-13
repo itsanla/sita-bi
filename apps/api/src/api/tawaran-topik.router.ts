@@ -26,7 +26,17 @@ router.post(
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const SIMILARITY_BLOCK_THRESHOLD = await getMaxSimilaritasPersen();
     const { judul_topik } = req.body;
-    const results = await tawaranTopikService.checkSimilarity(judul_topik);
+    const periodeId = req.periode?.id;
+    
+    if (periodeId === undefined) {
+      res.status(403).json({
+        status: 'gagal',
+        message: 'Periode TA tidak ditemukan',
+      });
+      return;
+    }
+    
+    const results = await tawaranTopikService.checkSimilarity(judul_topik, periodeId);
 
     const isBlocked = results.some(
       (result) => result.similarity >= SIMILARITY_BLOCK_THRESHOLD,
@@ -101,6 +111,11 @@ router.get(
   periodeGuard(),
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    console.log('=== TAWARAN TOPIK /available DEBUG ===');
+    console.log('Query params:', req.query);
+    console.log('User:', req.user?.id, req.user?.roles?.[0]?.name);
+    console.log('Periode from guard:', req.periode?.id);
+    
     const page =
       req.query['page'] != null
         ? parseInt(req.query['page'] as string)
@@ -109,10 +124,19 @@ router.get(
       req.query['limit'] != null
         ? parseInt(req.query['limit'] as string)
         : undefined;
+    const periodeId = req.query.periode_id ? parseInt(req.query.periode_id as string) : undefined;
+    
+    console.log('Parsed params - page:', page, 'limit:', limit, 'periodeId:', periodeId);
+    
     const availableTopics = await tawaranTopikService.findAvailable(
       page,
       limit,
+      periodeId,
     );
+    
+    console.log('Available topics result:', availableTopics);
+    console.log('=== END DEBUG ===');
+    
     res.status(200).json({ status: 'sukses', data: availableTopics });
   }),
 );
@@ -131,11 +155,30 @@ router.post(
     if (mahasiswaId === undefined) {
       throw new Error('Mahasiswa tidak ditemukan');
     }
+    const periodeId = req.periode?.id;
+    if (periodeId === undefined) {
+      res.status(403).json({
+        status: 'gagal',
+        message: 'Periode TA tidak ditemukan',
+      });
+      return;
+    }
     const result = await tawaranTopikService.takeTopic(
       parseInt(id, 10),
       mahasiswaId,
+      periodeId,
     );
     res.status(201).json({ status: 'sukses', data: result });
+  }),
+);
+
+router.get(
+  '/debug',
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    console.log('=== DEBUG ENDPOINT ===');
+    const allTopics = await tawaranTopikService.getAllTopics(1, 100);
+    console.log('All topics in database:', allTopics);
+    res.status(200).json({ status: 'sukses', data: allTopics });
   }),
 );
 

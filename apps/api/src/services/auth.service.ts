@@ -196,6 +196,23 @@ export class AuthService {
     });
 
     if (existingUser !== null) {
+      if (
+        existingUser.email_verified_at === null &&
+        existingUser.email === email
+      ) {
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        await prisma.emailVerificationToken.upsert({
+          where: { email: existingUser.email },
+          update: { token: verificationToken, created_at: new Date() },
+          create: { email: existingUser.email, token: verificationToken },
+        });
+
+        await this.emailService.sendVerificationEmail(
+          existingUser.email,
+          verificationToken,
+        );
+        return;
+      }
       throw new HttpError(
         409,
         'User dengan email, NIM, atau nomor HP tersebut sudah ada.',

@@ -14,6 +14,41 @@ interface TimelineItem {
   isError?: boolean;
 }
 
+function getStepDescription(statusTA: string): string {
+  if (
+    [
+      'DISETUJUI',
+      'BIMBINGAN',
+      'LULUS_TANPA_REVISI',
+      'LULUS_DENGAN_REVISI',
+      'SELESAI',
+    ].includes(statusTA)
+  ) {
+    return 'Judul disetujui';
+  }
+  if (statusTA === 'DIAJUKAN') {
+    return 'Menunggu persetujuan judul';
+  }
+  if (statusTA === 'DITOLAK') {
+    return 'Judul ditolak, silakan ajukan ulang';
+  }
+  return 'Belum mengajukan judul';
+}
+
+function getBimbinganStatus(
+  bimbinganCount: number,
+  minBimbingan: number,
+  isBimbinganPhase: boolean,
+): 'completed' | 'current' | 'upcoming' {
+  if (bimbinganCount >= minBimbingan) {
+    return 'completed';
+  }
+  if (isBimbinganPhase) {
+    return 'current';
+  }
+  return 'upcoming';
+}
+
 export default function ProgressTimeline() {
   const { data: progress, isLoading, isError } = useDashboardProgress();
 
@@ -27,42 +62,47 @@ export default function ProgressTimeline() {
 
   const { statusTA, bimbinganCount, minBimbingan, tanggalDisetujui } = progress;
 
+  const isJudulApproved = [
+    'DISETUJUI',
+    'BIMBINGAN',
+    'LULUS_TANPA_REVISI',
+    'LULUS_DENGAN_REVISI',
+    'SELESAI',
+  ].includes(statusTA);
+  const isBimbinganPhase = statusTA === 'BIMBINGAN';
+  const isSidangPhase = ['LULUS_TANPA_REVISI', 'LULUS_DENGAN_REVISI'].includes(
+    statusTA,
+  );
+  const isSelesai = statusTA === 'SELESAI';
+
   const steps: TimelineItem[] = [
     {
       title: 'Pengajuan Judul',
-      description: ['BIMBINGAN', 'SELESAI'].includes(statusTA)
-        ? `Judul disetujui`
-        : 'Menunggu persetujuan judul',
-      status: ['BIMBINGAN', 'SELESAI'].includes(statusTA)
-        ? 'completed'
-        : 'current',
+      description: getStepDescription(statusTA),
+      status: isJudulApproved ? 'completed' : 'current',
       date: tanggalDisetujui,
     },
     {
       title: 'Bimbingan',
       description: `Bimbingan: ${bimbinganCount}/${minBimbingan} sesi terkonfirmasi`,
-      status:
-        bimbinganCount >= minBimbingan
-          ? 'completed'
-          : statusTA === 'BIMBINGAN'
-            ? 'current'
-            : 'upcoming',
-      isError: bimbinganCount < minBimbingan && statusTA === 'BIMBINGAN',
+      status: getBimbinganStatus(
+        bimbinganCount,
+        minBimbingan,
+        isBimbinganPhase,
+      ),
+      isError: bimbinganCount < minBimbingan && isBimbinganPhase,
     },
     {
       title: 'Sidang',
-      description: 'Pendaftaran Sidang Tugas Akhir',
-      status:
-        statusTA === 'SELESAI'
-          ? 'completed'
-          : bimbinganCount >= minBimbingan
-            ? 'current'
-            : 'upcoming',
+      description: isSidangPhase
+        ? 'Sidang selesai'
+        : 'Pendaftaran Sidang Tugas Akhir',
+      status: isSidangPhase || isSelesai ? 'completed' : 'upcoming',
     },
     {
       title: 'Selesai',
-      description: 'Tugas Akhir Selesai',
-      status: statusTA === 'SELESAI' ? 'completed' : 'upcoming',
+      description: isSelesai ? 'Tugas Akhir Selesai' : 'Menunggu penyelesaian',
+      status: isSelesai ? 'completed' : 'upcoming',
     },
   ];
 
@@ -70,53 +110,70 @@ export default function ProgressTimeline() {
   const percentage = Math.round((completedSteps / steps.length) * 100);
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border">
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold">Thesis Journey</h3>
+        <h3 className="text-lg font-bold text-gray-900">
+          Perjalanan Tugas Akhir
+        </h3>
         <div className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-          {percentage}% Complete
+          {percentage}% Selesai
         </div>
       </div>
 
       <div className="space-y-6">
-        {steps.map((item) => (
-          <div key={item.title} className="flex gap-4">
-            <div className="relative flex-shrink-0">
-              {item.status === 'completed' ? (
+        {steps.map((item) => {
+          const renderIcon = () => {
+            if (item.status === 'completed') {
+              return (
                 <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
                 </div>
-              ) : item.status === 'current' ? (
-                item.isError ? (
+              );
+            }
+            if (item.status === 'current') {
+              if (item.isError) {
+                return (
                   <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
                     <AlertTriangle className="h-5 w-5 text-yellow-600" />
                   </div>
-                ) : (
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-blue-600" />
-                  </div>
-                )
-              ) : (
-                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                  <Circle className="h-5 w-5 text-gray-400" />
+                );
+              }
+              return (
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-blue-600" />
                 </div>
-              )}
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <h4
-                  className={`font-semibold ${item.status === 'completed' ? 'text-gray-900' : 'text-gray-500'}`}
-                >
-                  {item.title}
-                </h4>
-                {item.date ? (
-                  <span className="text-xs text-gray-500">{item.date}</span>
-                ) : null}
+              );
+            }
+            return (
+              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                <Circle className="h-5 w-5 text-gray-400" />
               </div>
-              <p className="text-sm text-gray-600">{item.description}</p>
+            );
+          };
+
+          return (
+            <div key={item.title} className="flex gap-4">
+              <div className="relative flex-shrink-0">{renderIcon()}</div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <h4
+                    className={`font-semibold ${
+                      item.status === 'completed'
+                        ? 'text-gray-900'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    {item.title}
+                  </h4>
+                  {!!item.date && (
+                    <span className="text-xs text-gray-500">{item.date}</span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600">{item.description}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

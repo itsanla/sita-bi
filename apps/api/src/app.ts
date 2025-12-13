@@ -36,7 +36,7 @@ import dataMasterRouter from './api/data-master.router';
 import { errorHandler } from './middlewares/error.middleware';
 import { activityLogger } from './middlewares/logger.middleware';
 import { getUploadPath, getApiRoot } from './utils/upload.config';
-import { whatsappService } from './services/whatsapp.service'; // WhatsApp service
+import { whatsappService } from './services/waha-whatsapp.service'; // WhatsApp service
 
 const app: express.Express = express();
 

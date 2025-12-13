@@ -409,6 +409,137 @@ export class PeriodeService {
     return logs;
   }
 
+  async autoEnrollUserToPeriode(userId: number): Promise<void> {
+    const activePeriode = await this.getActivePeriode();
+    if (!activePeriode) return;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { 
+        roles: true,
+        mahasiswa: {
+          include: {
+            tugasAkhir: {
+              include: {
+                sidang: {
+                  where: { status_hasil: { in: ['lulus', 'lulus_revisi'] } }
+                }
+              }
+            }
+          }
+        }
+      },
+    });
+
+    if (!user) return;
+
+    const userRole = user.roles?.[0]?.name;
+    if (!userRole || !['mahasiswa', 'dosen'].includes(userRole)) return;
+
+    // Cek apakah mahasiswa sudah lulus
+    if (userRole === 'mahasiswa' && user.mahasiswa) {
+      const hasGraduated = user.mahasiswa.tugasAkhir?.sidang?.some(
+        s => ['lulus', 'lulus_revisi'].includes(s.status_hasil)
+      );
+      if (hasGraduated) return;
+    }
+
+    // Auto-enroll ke periode aktif
+    try {
+      await prisma.userPeriodeParticipation.upsert({
+        where: {
+          user_id_periode_ta_id: {
+            user_id: userId,
+            periode_ta_id: activePeriode.id,
+          },
+        },
+        update: {},
+        create: {
+          user_id: userId,
+          periode_ta_id: activePeriode.id,
+          role: userRole,
+        },
+      });
+    } catch (error) {
+      // Fallback jika tabel belum ada
+      console.log('Auto-enroll failed, using fallback');
+    }
+  }
+
+  async getMahasiswaPeriodes(userId: number): Promise<PeriodeTa[]> {
+    // Auto-enroll user ke periode aktif
+    await this.autoEnrollUserToPeriode(userId);
+
+    try {
+      const participations = await prisma.userPeriodeParticipation.findMany({
+        where: { user_id: userId },
+        include: {
+          periodeTa: {
+            select: {
+              id: true,
+              tahun: true,
+              nama: true,
+              status: true,
+              tanggal_buka: true,
+              tanggal_tutup: true,
+            },
+          },
+        },
+        orderBy: { periodeTa: { tahun: 'desc' } },
+      });
+
+      return participations.map(p => p.periodeTa);
+    } catch (error) {
+      // Fallback ke metode lama jika tabel baru belum ada
+      const activePeriode = await this.getActivePeriode();
+      return activePeriode ? [activePeriode] : [];
+    }
+  }
+
+  async getDosenPeriodes(userId: number): Promise<PeriodeTa[]> {
+    // Auto-enroll dosen ke periode aktif
+    await this.autoEnrollUserToPeriode(userId);
+
+    try {
+      const participations = await prisma.userPeriodeParticipation.findMany({
+        where: { user_id: userId },
+        include: {
+          periodeTa: {
+            select: {
+              id: true,
+              tahun: true,
+              nama: true,
+              status: true,
+              tanggal_buka: true,
+              tanggal_tutup: true,
+            },
+          },
+        },
+        orderBy: { periodeTa: { tahun: 'desc' } },
+      });
+
+      return participations.map(p => p.periodeTa);
+    } catch (error) {
+      // Fallback ke metode lama jika tabel baru belum ada
+      const activePeriode = await this.getActivePeriode();
+      return activePeriode ? [activePeriode] : [];
+    }
+  }
+
+  async getPeriodeById(periodeId: number): Promise<PeriodeTa | null> {
+    return prisma.periodeTa.findUnique({
+      where: { id: periodeId },
+      select: {
+        id: true,
+        tahun: true,
+        nama: true,
+        status: true,
+        tanggal_buka: true,
+        tanggal_tutup: true,
+      },
+    });
+  }
+
   async batalkanJadwal(periodeId: number): Promise<PeriodeTa> {
     const periode = await prisma.periodeTa.findUnique({
       where: { id: periodeId },

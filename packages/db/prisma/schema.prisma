@@ -6,7 +6,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = "file:./sita_bi.db"
 }
 
 //================================================================================
@@ -145,7 +145,7 @@ model User {
   id                    Int       @id @default(autoincrement())
   name                  String
   email                 String    @unique
-  phone_number          String    @unique
+  phone_number          String
   email_verified_at     DateTime?
   password              String
   photo                 String?
@@ -180,6 +180,7 @@ model User {
   pengajuanPelepasanBimbingan PengajuanPelepasanBimbingan[]
   periodeTaBuka               PeriodeTa[]                     @relation("PeriodePembuka")
   periodeTaTutup              PeriodeTa[]                     @relation("PeriodePenutup")
+  periodeParticipation        UserPeriodeParticipation[]
 
   @@map("users")
 }
@@ -718,6 +719,17 @@ model PasswordResetToken {
   @@map("password_reset_tokens")
 }
 
+model EmailChangeOtp {
+  id         Int      @id @default(autoincrement())
+  user_id    Int      @unique
+  email_baru String
+  otp        String
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  @@map("email_change_otp")
+}
+
 model NotifikasiTA {
   id             Int      @id @default(autoincrement())
   user_id        Int
@@ -818,6 +830,22 @@ model PenjadwalanSidang {
   @@map("penjadwalan_sidang")
 }
 
+model UserPeriodeParticipation {
+  id             Int       @id @default(autoincrement())
+  user_id        Int
+  periode_ta_id  Int
+  role           String    // 'mahasiswa' atau 'dosen'
+  is_graduated   Boolean   @default(false)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  user      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  periodeTa PeriodeTa @relation(fields: [periode_ta_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, periode_ta_id])
+  @@map("user_periode_participation")
+}
+
 model PeriodeTa {
   id                    Int           @id @default(autoincrement())
   tahun                 Int           @unique
@@ -844,6 +872,7 @@ model PeriodeTa {
   nilaiSidang           NilaiSidang[]
   dokumenTa             DokumenTa[]
   penjadwalanSidang     PenjadwalanSidang[]
+  userParticipation     UserPeriodeParticipation[]
 
   @@map("periode_ta")
 }

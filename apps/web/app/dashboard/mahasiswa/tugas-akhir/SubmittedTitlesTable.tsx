@@ -3,18 +3,23 @@
 import { useMemo, useState } from 'react';
 import { Search, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAllTitles } from '@/hooks/useTugasAkhir';
+import { usePeriode } from '@/context/PeriodeContext';
 import TableSkeleton from '@/app/components/loading/TableSkeleton';
 
 export default function SubmittedTitlesTable() {
-  const { allTitles, loading } = useAllTitles();
+  const { selectedPeriodeId } = usePeriode();
+  const { allTitles, loading } = useAllTitles(selectedPeriodeId);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 5;
 
   const filteredTitles = useMemo(() => {
     if (!searchQuery.trim()) return allTitles;
     const lowerQuery = searchQuery.toLowerCase();
-    return allTitles.filter((t) => t.judul.toLowerCase().includes(lowerQuery));
+    return allTitles.filter((t) => 
+      t.judul.toLowerCase().includes(lowerQuery) ||
+      t.mahasiswa?.user?.name?.toLowerCase().includes(lowerQuery)
+    );
   }, [allTitles, searchQuery]);
 
   // Pagination
@@ -51,11 +56,10 @@ export default function SubmittedTitlesTable() {
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-bold text-gray-800 mb-1">
-                Semua Judul yang Diajukan
+                Judul TA Periode Ini
               </h2>
               <p className="text-gray-600 text-sm leading-normal">
-                Database lengkap berisi {allTitles.length} judul tugas akhir
-                yang telah diajukan mahasiswa
+                Daftar {allTitles.length} judul tugas akhir yang diajukan pada periode yang dipilih
               </p>
             </div>
           </div>
@@ -85,7 +89,7 @@ export default function SubmittedTitlesTable() {
             </div>
             <input
               type="text"
-              placeholder="Cari berdasarkan judul tugas akhir..."
+              placeholder="Cari judul TA atau nama mahasiswa..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-3 focus:ring-maroon-900/10 focus:border-maroon-900 hover:border-gray-300 transition-all duration-300 text-sm text-gray-800 placeholder-gray-400"
@@ -131,6 +135,9 @@ export default function SubmittedTitlesTable() {
                       Judul Tugas Akhir
                     </div>
                   </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                    Mahasiswa
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -138,23 +145,28 @@ export default function SubmittedTitlesTable() {
                   currentItems.map((title, index) => (
                     <tr
                       key={index}
-                      className="group hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-transparent transition-all duration-300"
+                      className="hover:bg-gray-100 transition-colors duration-200"
                     >
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-gray-100 to-slate-100 rounded-lg text-sm font-semibold text-gray-700 group-hover:from-maroon-900 group-hover:to-maroon-800 group-hover:text-white group-hover:scale-105 transition-all duration-300 shadow-sm">
+                        <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-gray-100 to-slate-100 rounded-lg text-sm font-semibold text-gray-700 shadow-sm">
                           {startIndex + index + 1}
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-sm text-gray-800 leading-normal group-hover:text-gray-900 transition-all duration-300">
+                        <p className="text-sm text-gray-800 leading-normal">
                           {title.judul}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-sm text-gray-800 leading-normal">
+                          {title.mahasiswa?.user?.name || 'N/A'}
                         </p>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={2} className="px-4 py-12 text-center">
+                    <td colSpan={3} className="px-4 py-12 text-center">
                       <div className="flex flex-col items-center gap-4">
                         <div className="relative">
                           <div className="absolute inset-0 bg-gray-300/50 rounded-xl blur-lg"></div>
@@ -166,12 +178,12 @@ export default function SubmittedTitlesTable() {
                           <p className="text-gray-800 font-bold text-base mb-1">
                             {searchQuery
                               ? 'Tidak Ada Hasil Pencarian'
-                              : 'Belum Ada Data'}
+                              : 'Belum Ada Judul TA'}
                           </p>
                           <p className="text-gray-600 text-sm leading-normal">
                             {searchQuery
-                              ? `Tidak ditemukan judul yang cocok dengan kata kunci "${searchQuery}". Coba gunakan kata kunci lain.`
-                              : 'Belum ada judul tugas akhir yang terdaftar dalam database sistem.'}
+                              ? `Tidak ditemukan judul yang cocok dengan kata kunci "${searchQuery}" pada periode ini.`
+                              : 'Belum ada judul tugas akhir yang diajukan pada periode yang dipilih.'}
                           </p>
                         </div>
                       </div>

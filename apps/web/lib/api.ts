@@ -36,12 +36,19 @@ apiClient.interceptors.request.use(
           config.headers.Authorization = `Bearer ${token}`;
         }
       }
+
+      const periodeId = localStorage.getItem('selectedPeriodeId');
+      if (periodeId && config.headers) {
+        config.headers['x-periode-id'] = periodeId;
+      }
     }
-    
-    if (config.url?.includes('/similarity') || config.url?.includes('/check-similarity')) {
+    if (
+      config.url?.includes('/similarity') ||
+      config.url?.includes('/check-similarity')
+    ) {
       config.timeout = 60000;
     }
-    
+
     return config;
   },
   (error: AxiosError) => {

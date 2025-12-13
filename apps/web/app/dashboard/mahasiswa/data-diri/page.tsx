@@ -16,6 +16,7 @@ import {
   Award,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { normalizePhoneNumber, validatePhoneNumber, formatPhoneForDisplay } from '@/lib/phone-utils';
 
 export default function DataDiriMahasiswaPage() {
   const { user } = useAuth();
@@ -65,7 +66,7 @@ export default function DataDiriMahasiswaPage() {
         setFormData({
           name: data.data.name || '',
           email: data.data.email || '',
-          phone_number: data.data.phone_number || '',
+          phone_number: formatPhoneForDisplay(data.data.phone_number || ''),
           alamat: data.data.alamat || '',
           tanggal_lahir: data.data.tanggal_lahir
             ? new Date(data.data.tanggal_lahir).toISOString().split('T')[0]
@@ -87,9 +88,14 @@ export default function DataDiriMahasiswaPage() {
     setSaving(true);
 
     try {
+      if (!validatePhoneNumber(formData.phone_number)) {
+        toast.error('Format nomor HP tidak valid. Gunakan format 08xxx, 628xxx, atau +628xxx');
+        return;
+      }
+
       const payload: Record<string, string | number | null> = {
         name: formData.name,
-        phone_number: formData.phone_number,
+        phone_number: normalizePhoneNumber(formData.phone_number),
         alamat: formData.alamat || null,
         tempat_lahir: formData.tempat_lahir || null,
         jenis_kelamin: formData.jenis_kelamin || null,
@@ -148,7 +154,8 @@ export default function DataDiriMahasiswaPage() {
           konfirmasi_password: '',
         });
       } else {
-        toast.error(data.message || 'Gagal mengubah password');
+        const errorMessage = data.errors?.[0]?.message || data.message || 'Gagal mengubah password';
+        toast.error(errorMessage);
       }
     } catch {
       toast.error('Terjadi kesalahan saat mengubah password');
@@ -298,8 +305,12 @@ export default function DataDiriMahasiswaPage() {
                   setFormData({ ...formData, phone_number: e.target.value })
                 }
                 className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#7f1d1d] focus:ring-4 focus:ring-[#7f1d1d]/10 outline-none transition-all bg-gray-50 focus:bg-white"
+                placeholder="08xxxxxxxxx"
                 required
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Format: 08xxx, 628xxx, atau +628xxx
+              </p>
             </div>
 
             <div>

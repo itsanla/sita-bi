@@ -2,6 +2,7 @@
 
 import { ReactNode, useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
+import { PeriodeProvider } from '@/context/PeriodeContext';
 import UserSidebar from '@/components/shared/UserSidebar';
 import UserFooter from '@/components/shared/UserFooter';
 import Unauthorized from '@/components/shared/Unauthorized';
@@ -107,23 +108,25 @@ export default function MahasiswaLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <UserSidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        navItems={navItems}
-        menuTitle="Menu Mahasiswa"
-        dashboardHref="/dashboard/mahasiswa"
-      />
+    <PeriodeProvider>
+      <div className="min-h-screen bg-gray-50">
+        <UserSidebar
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          navItems={navItems}
+          menuTitle="Menu Mahasiswa"
+          dashboardHref="/dashboard/mahasiswa"
+        />
 
-      <main
-        className={`min-h-screen transition-all duration-300 flex flex-col pt-16 lg:pt-0 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}
-      >
-        <div className="p-2 sm:p-4 lg:p-6 max-w-7xl mx-auto w-full flex-1">
-          {children}
-        </div>
-        <UserFooter />
-      </main>
-    </div>
+        <main
+          className={`min-h-screen transition-all duration-300 flex flex-col pt-16 lg:pt-0 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}
+        >
+          <div className="p-2 sm:p-4 lg:p-6 max-w-7xl mx-auto w-full flex-1">
+            {children}
+          </div>
+          <UserFooter />
+        </main>
+      </div>
+    </PeriodeProvider>
   );
 }

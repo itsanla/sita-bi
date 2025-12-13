@@ -5,9 +5,24 @@ import { BookOpen, MessagesSquare, Calendar, Award } from 'lucide-react';
 import { DashboardCardSkeleton } from '@/components/Suspense/LoadingFallback';
 import EmptyState from '@/components/shared/EmptyState';
 import { useDashboardStats } from '@/hooks/useDashboardData';
+import { useBimbinganMahasiswa } from '@/hooks/useBimbingan';
 
 export default function DashboardStats() {
   const { data: stats, isLoading, isError } = useDashboardStats();
+  const { data: bimbingan } = useBimbinganMahasiswa();
+
+  const bimbinganSelesai =
+    bimbingan?.filter((b) => b.is_konfirmasi).length ?? 0;
+  const bimbinganBulanIni =
+    bimbingan?.filter((b) => {
+      if (!b.tanggal_bimbingan) return false;
+      const date = new Date(b.tanggal_bimbingan);
+      const now = new Date();
+      return (
+        date.getMonth() === now.getMonth() &&
+        date.getFullYear() === now.getFullYear()
+      );
+    }).length ?? 0;
 
   if (isLoading) {
     return (
@@ -33,8 +48,8 @@ export default function DashboardStats() {
     },
     {
       title: 'Sesi Bimbingan',
-      value: stats.bimbingan.total,
-      subtitle: `${stats.bimbingan.bulanIni} Bulan ini`,
+      value: bimbinganSelesai,
+      subtitle: `${bimbinganBulanIni} Bulan ini`,
       icon: MessagesSquare,
       gradient: 'from-emerald-500 to-green-500',
     },

@@ -17,6 +17,7 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { normalizePhoneNumber, validatePhoneNumber, formatPhoneForDisplay } from '@/lib/phone-utils';
 
 export default function DataDiriDosenPage() {
   const { user } = useAuth();
@@ -44,6 +45,13 @@ export default function DataDiriDosenPage() {
     baru: false,
     konfirmasi: false,
   });
+  const [emailData, setEmailData] = useState({
+    email_baru: '',
+    otp: '',
+  });
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   useEffect(() => {
     fetchDataDiri();
@@ -60,7 +68,7 @@ export default function DataDiriDosenPage() {
         setFormData({
           name: data.data.name || '',
           email: data.data.email || '',
-          phone_number: data.data.phone_number || '',
+          phone_number: formatPhoneForDisplay(data.data.phone_number || ''),
           alamat: data.data.alamat || '',
           tanggal_lahir: data.data.tanggal_lahir
             ? new Date(data.data.tanggal_lahir).toISOString().split('T')[0]
@@ -83,16 +91,21 @@ export default function DataDiriDosenPage() {
     setSaving(true);
 
     try {
+      if (!validatePhoneNumber(formData.phone_number)) {
+        toast.error('Format nomor HP tidak valid. Gunakan format 08xxx, 628xxx, atau +628xxx');
+        return;
+      }
+
       const payload: Record<string, string | number | null> = {
         name: formData.name,
-        phone_number: formData.phone_number,
-        alamat: formData.alamat || null,
-        tempat_lahir: formData.tempat_lahir || null,
-        jenis_kelamin: formData.jenis_kelamin || null,
-        bidang_keahlian: formData.bidang_keahlian || null,
-        jabatan: formData.jabatan || null,
+        phone_number: normalizePhoneNumber(formData.phone_number),
       };
 
+      if (formData.alamat) payload.alamat = formData.alamat;
+      if (formData.tempat_lahir) payload.tempat_lahir = formData.tempat_lahir;
+      if (formData.jenis_kelamin) payload.jenis_kelamin = formData.jenis_kelamin;
+      if (formData.bidang_keahlian) payload.bidang_keahlian = formData.bidang_keahlian;
+      if (formData.jabatan) payload.jabatan = formData.jabatan;
       if (formData.tanggal_lahir) {
         payload.tanggal_lahir = new Date(formData.tanggal_lahir).toISOString();
       }
@@ -109,6 +122,7 @@ export default function DataDiriDosenPage() {
       const data = await response.json();
       if (data.status === 'sukses') {
         toast.success('Data diri berhasil diperbarui');
+        await fetchDataDiri();
       } else {
         toast.error(data.message || 'Gagal memperbarui data diri');
       }
@@ -148,6 +162,70 @@ export default function DataDiriDosenPage() {
       toast.error('Terjadi kesalahan saat mengubah password');
     } finally {
       setSavingPassword(false);
+    }
+  };
+
+  const handleRequestOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSendingOtp(true);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/data-diri/email/request-otp`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify({ email_baru: emailData.email_baru }),
+        },
+      );
+
+      const data = await response.json();
+      if (data.status === 'sukses') {
+        toast.success('Kode OTP telah dikirim ke WhatsApp Anda');
+        setOtpSent(true);
+      } else {
+        toast.error(data.message || 'Gagal mengirim OTP');
+      }
+    } catch {
+      toast.error('Terjadi kesalahan saat mengirim OTP');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setVerifyingOtp(true);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/data-diri/email/verify-otp`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify(emailData),
+        },
+      );
+
+      const data = await response.json();
+      if (data.status === 'sukses') {
+        toast.success('Email berhasil diubah');
+        setEmailData({ email_baru: '', otp: '' });
+        setOtpSent(false);
+        await fetchDataDiri();
+      } else {
+        toast.error(data.message || 'Gagal mengubah email');
+      }
+    } catch {
+      toast.error('Terjadi kesalahan saat verifikasi OTP');
+    } finally {
+      setVerifyingOtp(false);
     }
   };
 
@@ -228,8 +306,12 @@ export default function DataDiriDosenPage() {
                   setFormData({ ...formData, phone_number: e.target.value })
                 }
                 className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#7f1d1d] focus:ring-4 focus:ring-[#7f1d1d]/10 outline-none transition-all bg-gray-50 focus:bg-white"
+                placeholder="08xxxxxxxxx"
                 required
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Format: 08xxx, 628xxx, atau +628xxx
+              </p>
             </div>
 
             <div>
@@ -500,6 +582,117 @@ export default function DataDiriDosenPage() {
             </button>
           </div>
         </form>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+          <div className="bg-[#7f1d1d]/10 p-2 rounded-lg">
+            <Mail className="w-5 h-5 text-[#7f1d1d]" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-800">Ubah Email</h2>
+        </div>
+
+        {!otpSent ? (
+          <form onSubmit={handleRequestOtp} className="space-y-6">
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <Mail className="w-4 h-4 text-[#7f1d1d]" />
+                Email Saat Ini
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                disabled
+                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <Mail className="w-4 h-4 text-[#7f1d1d]" />
+                Email Baru
+              </label>
+              <input
+                type="email"
+                value={emailData.email_baru}
+                onChange={(e) =>
+                  setEmailData({ ...emailData, email_baru: e.target.value })
+                }
+                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#7f1d1d] focus:ring-4 focus:ring-[#7f1d1d]/10 outline-none transition-all bg-gray-50 focus:bg-white"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Kode OTP akan dikirim ke WhatsApp Anda
+              </p>
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-gray-200">
+              <button
+                type="submit"
+                disabled={sendingOtp}
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#7f1d1d] to-[#991b1b] text-white font-semibold hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {sendingOtp ? 'Mengirim...' : 'Kirim Kode OTP'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleVerifyOtp} className="space-y-6">
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <Mail className="w-4 h-4 text-[#7f1d1d]" />
+                Email Baru
+              </label>
+              <input
+                type="email"
+                value={emailData.email_baru}
+                disabled
+                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <Lock className="w-4 h-4 text-[#7f1d1d]" />
+                Kode OTP
+              </label>
+              <input
+                type="text"
+                value={emailData.otp}
+                onChange={(e) =>
+                  setEmailData({ ...emailData, otp: e.target.value })
+                }
+                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#7f1d1d] focus:ring-4 focus:ring-[#7f1d1d]/10 outline-none transition-all bg-gray-50 focus:bg-white"
+                required
+                maxLength={6}
+                placeholder="Masukkan 6 digit kode OTP"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Cek WhatsApp Anda untuk kode OTP
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => {
+                  setOtpSent(false);
+                  setEmailData({ email_baru: '', otp: '' });
+                }}
+                className="px-6 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={verifyingOtp}
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#7f1d1d] to-[#991b1b] text-white font-semibold hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {verifyingOtp ? 'Memverifikasi...' : 'Verifikasi & Ubah Email'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

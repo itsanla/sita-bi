@@ -1,18 +1,23 @@
 'use client';
 
 import { useAuth } from '../../../../context/AuthContext';
-import { Sparkles, TrendingUp } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+
+function getGreeting(hour: number): string {
+  if (hour < 12) {
+    return 'Selamat Pagi';
+  }
+  if (hour < 18) {
+    return 'Selamat Siang';
+  }
+  return 'Selamat Malam';
+}
 
 export default function WelcomeSection() {
   const { user } = useAuth();
 
   const currentHour = new Date().getHours();
-  const greeting =
-    currentHour < 12
-      ? 'Selamat Pagi'
-      : currentHour < 18
-        ? 'Selamat Siang'
-        : 'Selamat Malam';
+  const greeting = getGreeting(currentHour);
 
   return (
     <div className="group relative overflow-hidden bg-gradient-to-br from-red-900 via-red-800 to-red-900 rounded-2xl p-8 shadow-lg border border-red-700/20 hover:shadow-2xl transition-all duration-500">
@@ -66,11 +71,7 @@ export default function WelcomeSection() {
           <div className="hidden md:flex flex-col items-end gap-2">
             <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 group-hover:bg-white/20 transition-all duration-300">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-white text-sm font-medium">Active</span>
-            </div>
-            <div className="flex items-center gap-1 text-white/80 text-xs">
-              <TrendingUp className="w-3 h-3" />
-              <span>Progress 75%</span>
+              <span className="text-white text-sm font-medium">Aktif</span>
             </div>
           </div>
         </div>
@@ -79,16 +80,20 @@ export default function WelcomeSection() {
         <div className="flex flex-wrap gap-2 mt-4">
           <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1 text-xs font-medium text-white hover:bg-white/20 transition-all duration-300 cursor-pointer">
             <span className="w-1.5 h-1.5 bg-blue-300 rounded-full"></span>
-            NIM: {user?.nim || '-'}
+            NIM: {user?.mahasiswa?.nim || user?.nim || '-'}
           </span>
-          <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1 text-xs font-medium text-white hover:bg-white/20 transition-all duration-300 cursor-pointer">
-            <span className="w-1.5 h-1.5 bg-green-300 rounded-full"></span>
-            Semester 7
-          </span>
-          <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1 text-xs font-medium text-white hover:bg-white/20 transition-all duration-300 cursor-pointer">
-            <span className="w-1.5 h-1.5 bg-purple-300 rounded-full"></span>
-            Teknik Informatika
-          </span>
+          {!!user?.mahasiswa?.prodi && (
+            <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1 text-xs font-medium text-white hover:bg-white/20 transition-all duration-300 cursor-pointer">
+              <span className="w-1.5 h-1.5 bg-purple-300 rounded-full"></span>
+              {user.mahasiswa.prodi}
+            </span>
+          )}
+          {!!user?.mahasiswa?.kelas && (
+            <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1 text-xs font-medium text-white hover:bg-white/20 transition-all duration-300 cursor-pointer">
+              <span className="w-1.5 h-1.5 bg-green-300 rounded-full"></span>
+              Kelas {user.mahasiswa.kelas}
+            </span>
+          )}
         </div>
       </div>
 

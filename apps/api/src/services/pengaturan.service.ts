@@ -35,7 +35,9 @@ export class PengaturanService {
         setting.key === 'validasi_pembimbing_2' ||
         setting.key === 'validasi_prodi' ||
         setting.key === 'validasi_jurusan' ||
-        setting.key === 'tampilkan_rincian_nilai_ke_sekretaris'
+        setting.key === 'tampilkan_rincian_nilai_ke_sekretaris' ||
+        setting.key === 'cek_similaritas_semua_periode' ||
+        setting.key === 'nonaktifkan_cek_similaritas'
       ) {
         result[setting.key] = setting.value === 'true';
       } else if (setting.key === 'waktu_istirahat') {
@@ -438,6 +440,40 @@ export class PengaturanService {
             key: 'tampilkan_rincian_nilai_ke_sekretaris',
             value: (data as any).tampilkan_rincian_nilai_ke_sekretaris.toString(),
             deskripsi: 'Tampilkan rumus penilaian dan nilai minimal lolos ke sekretaris saat input nilai',
+          },
+        }),
+      );
+    }
+
+    if ((data as any).cek_similaritas_semua_periode !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'cek_similaritas_semua_periode' },
+          update: {
+            value: (data as any).cek_similaritas_semua_periode.toString(),
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'cek_similaritas_semua_periode',
+            value: (data as any).cek_similaritas_semua_periode.toString(),
+            deskripsi: 'Jika diaktifkan, pengecekan kemiripan judul akan menggunakan semua judul dari semua periode termasuk periode 2014',
+          },
+        }),
+      );
+    }
+
+    if ((data as any).nonaktifkan_cek_similaritas !== undefined) {
+      updates.push(
+        prisma.pengaturanSistem.upsert({
+          where: { key: 'nonaktifkan_cek_similaritas' },
+          update: {
+            value: (data as any).nonaktifkan_cek_similaritas.toString(),
+            updated_at: new Date(),
+          },
+          create: {
+            key: 'nonaktifkan_cek_similaritas',
+            value: (data as any).nonaktifkan_cek_similaritas.toString(),
+            deskripsi: 'Jika diaktifkan, pengecekan kemiripan judul akan dinonaktifkan sepenuhnya',
           },
         }),
       );

@@ -9,7 +9,7 @@ import { HttpError } from '../middlewares/error.middleware';
 import prisma from '../config/database';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { whatsappService } from './whatsapp.service';
+import { whatsappService } from './waha-whatsapp.service';
 
 interface DataDiriResponse {
   id: number;
@@ -148,7 +148,7 @@ export class DataDiriService {
     dosen: Dosen | null,
     dto: UpdateDataDiriDto,
   ): Promise<void> {
-    if (userRole === 'dosen' && dosen !== null) {
+    if (dosen !== null) {
       const dosenUpdateData: Prisma.DosenUpdateInput = {};
       if (dto.bidang_keahlian !== undefined) {
         dosenUpdateData.bidang_keahlian = dto.bidang_keahlian;

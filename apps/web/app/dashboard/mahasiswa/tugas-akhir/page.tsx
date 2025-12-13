@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Trash2, BookOpen, Users, CheckCircle2, Edit3 } from 'lucide-react';
+import { toast } from 'sonner';
 import PeriodeGuard from '@/components/shared/PeriodeGuard';
 import { useTugasAkhir } from '@/hooks/useTugasAkhir';
 import { getStatusChip } from '@/app/components/ui/StatusChip';
@@ -16,19 +17,22 @@ export default function TugasAkhirPage() {
     useTugasAkhir();
   const [selectedTitle, setSelectedTitle] = useState('');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const handleDeleteTugasAkhir = async () => {
-    if (
-      !confirm(
-        'Are you sure you want to delete your thesis submission? This action cannot be undone.',
-      )
-    )
-      return;
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteTugasAkhir = async () => {
     try {
       await deleteTugasAkhir();
-      alert('Submission successfully deleted.');
+      toast.success('Pengajuan berhasil dihapus', {
+        description: 'Tugas akhir Anda telah dihapus dari sistem',
+      });
     } catch (err) {
-      alert(`Error: ${(err as Error).message}`);
+      toast.error('Gagal menghapus pengajuan', {
+        description: (err as Error).message,
+      });
     }
   };
 
@@ -40,12 +44,14 @@ export default function TugasAkhirPage() {
     setShowConfirmDialog(false);
     try {
       await deleteTugasAkhir();
-      alert(
-        'Judul berhasil dihapus. Silakan ajukan judul baru dengan pengecekan similaritas.',
-      );
+      toast.success('Judul berhasil dihapus', {
+        description: 'Silakan ajukan judul baru dengan pengecekan similaritas',
+      });
       refetch();
     } catch (err) {
-      alert(`Gagal: ${(err as Error).message}`);
+      toast.error('Gagal menghapus judul', {
+        description: (err as Error).message,
+      });
     }
   };
 
@@ -121,19 +127,22 @@ export default function TugasAkhirPage() {
                   jelajahi topik rekomendasi dari dosen pembimbing
                 </p>
 
-                {/* Stats Pills */}
-                <div className="flex flex-wrap items-center gap-2 mt-4">
-                  <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">
-                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-xs font-medium text-gray-700">
-                      Sistem Aktif
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-maroon-900" />
-                    <span className="text-xs font-medium text-gray-700">
-                      Proses Otomatis
-                    </span>
+                {/* Important Notice */}
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <svg className="h-4 w-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-amber-800 mb-1">Catatan</p>
+                      <p className="text-xs text-amber-700 leading-normal">
+                        Semua aturan pengecekan kemiripan judul (persentase maksimal, scope pengecekan, dan status aktif/nonaktif) 
+                        <span className="font-semibold">, ditentukan dan diatur secara dinamis oleh pihak jurusan</span>. 
+                        Jika judul Anda ditolak karena kemiripan, silakan ubah judul atau hubungi jurusan untuk informasi lebih lanjut.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -274,6 +283,17 @@ export default function TugasAkhirPage() {
           cancelText="Batal"
           onConfirm={handleConfirmEdit}
           variant="warning"
+        />
+
+        <ConfirmDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          title="Hapus Pengajuan Tugas Akhir"
+          description="Apakah Anda yakin ingin menghapus pengajuan tugas akhir ini? Tindakan ini tidak dapat dibatalkan."
+          confirmText="Ya, Hapus"
+          cancelText="Batal"
+          onConfirm={confirmDeleteTugasAkhir}
+          variant="danger"
         />
       </div>
     </PeriodeGuard>
