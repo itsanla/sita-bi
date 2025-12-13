@@ -14,6 +14,7 @@ import { getMaxSimilaritasPersen } from '../utils/business-rules';
 
 const router: Router = Router();
 const tawaranTopikService = new TawaranTopikService();
+const PERIODE_NOT_FOUND_MESSAGE = 'Periode TA tidak ditemukan';
 
 // Apply JWT Auth and Roles Guard globally for this router
 router.use(asyncHandler(authMiddleware));
@@ -27,16 +28,19 @@ router.post(
     const SIMILARITY_BLOCK_THRESHOLD = await getMaxSimilaritasPersen();
     const { judul_topik } = req.body;
     const periodeId = req.periode?.id;
-    
+
     if (periodeId === undefined) {
       res.status(403).json({
         status: 'gagal',
-        message: 'Periode TA tidak ditemukan',
+        message: PERIODE_NOT_FOUND_MESSAGE,
       });
       return;
     }
-    
-    const results = await tawaranTopikService.checkSimilarity(judul_topik, periodeId);
+
+    const results = await tawaranTopikService.checkSimilarity(
+      judul_topik,
+      periodeId,
+    );
 
     const isBlocked = results.some(
       (result) => result.similarity >= SIMILARITY_BLOCK_THRESHOLD,
@@ -67,7 +71,7 @@ router.post(
     if (periodeId === undefined) {
       res.status(403).json({
         status: 'gagal',
-        message: 'Periode TA tidak ditemukan',
+        message: PERIODE_NOT_FOUND_MESSAGE,
       });
       return;
     }
@@ -119,14 +123,16 @@ router.get(
       req.query['limit'] != null
         ? parseInt(req.query['limit'] as string)
         : undefined;
-    const periodeId = req.query.periode_id ? parseInt(req.query.periode_id as string) : undefined;
-    
+    const periodeId = req.query.periode_id != null
+      ? parseInt(req.query.periode_id as string)
+      : undefined;
+
     const availableTopics = await tawaranTopikService.findAvailable(
       page,
       limit,
       periodeId,
     );
-    
+
     res.status(200).json({ status: 'sukses', data: availableTopics });
   }),
 );
@@ -137,7 +143,7 @@ router.post(
   authorizeRoles([Role.mahasiswa]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
-    if (id == null) {
+    if (id == null || id === '') {
       res.status(400).json({ status: 'gagal', message: 'ID Topik diperlukan' });
       return;
     }
@@ -149,7 +155,7 @@ router.post(
     if (periodeId === undefined) {
       res.status(403).json({
         status: 'gagal',
-        message: 'Periode TA tidak ditemukan',
+        message: PERIODE_NOT_FOUND_MESSAGE,
       });
       return;
     }

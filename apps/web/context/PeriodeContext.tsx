@@ -57,6 +57,7 @@ export function PeriodeProvider({ children }: { children: ReactNode }) {
         let periodesData: PeriodeTa[] = [];
         
         const userRole = user.roles?.[0]?.name;
+        console.log('PeriodeContext Debug:', { userRole, activeData });
         
         if (userRole === 'mahasiswa') {
           // Mahasiswa: periode yang pernah diikuti
@@ -66,15 +67,34 @@ export function PeriodeProvider({ children }: { children: ReactNode }) {
           // Admin: semua periode untuk analisis dan pelaporan
           const allPeriodesRes = await api.get('/periode');
           periodesData = allPeriodesRes.data.data as PeriodeTa[];
-        } else {
+        } else if (['dosen', 'kaprodi', 'jurusan'].includes(userRole)) {
           // Dosen/Kaprodi/Jurusan: periode yang pernah mereka handle
           const dosenPeriodesRes = await api.get('/periode/dosen');
           periodesData = dosenPeriodesRes.data.data as PeriodeTa[];
+          console.log('Dosen periodes response:', periodesData);
+          
+          // Jika tidak ada periode dari API tapi ada periode aktif, tambahkan periode aktif
+          if (periodesData.length === 0 && activeData) {
+            periodesData = [activeData];
+          }
+        } else {
+          // Fallback untuk role lain
+          periodesData = activeData ? [activeData] : [];
         }
 
         setPeriodes(periodesData);
         setActivePeriode(activeData);
-        setSelectedPeriodeId(activeData?.id ?? null);
+        
+        // Set selected periode: prioritas dari localStorage, fallback ke active periode
+        const savedPeriodeId = typeof window !== 'undefined' 
+          ? localStorage.getItem('selectedPeriodeId') 
+          : null;
+        
+        if (savedPeriodeId && periodesData.some(p => p.id === parseInt(savedPeriodeId))) {
+          setSelectedPeriodeId(parseInt(savedPeriodeId));
+        } else {
+          setSelectedPeriodeId(activeData?.id ?? null);
+        }
       } catch (error) {
         console.error('Gagal memuat periode:', error);
       } finally {

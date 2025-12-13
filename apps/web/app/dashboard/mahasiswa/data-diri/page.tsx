@@ -102,12 +102,14 @@ export default function DataDiriMahasiswaPage() {
       };
 
       if (formData.tanggal_lahir) {
-        payload.tanggal_lahir = new Date(formData.tanggal_lahir).toISOString();
+        payload.tanggal_lahir = formData.tanggal_lahir;
       }
 
       if (formData.ipk) {
         payload.ipk = parseFloat(formData.ipk);
       }
+
+      console.log('Payload yang dikirim:', payload);
 
       const response = await fetch(`${API_BASE_URL}/data-diri`, {
         method: 'PATCH',
@@ -118,13 +120,22 @@ export default function DataDiriMahasiswaPage() {
         body: JSON.stringify(payload),
       });
 
+      console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', data);
+      if (data.errors) {
+        data.errors.forEach((error, index) => {
+          console.log(`Error ${index + 1}:`, error);
+        });
+      }
+      
       if (data.status === 'sukses') {
         toast.success('Data diri berhasil diperbarui');
       } else {
         toast.error(data.message || 'Gagal memperbarui data diri');
       }
-    } catch {
+    } catch (error) {
+      console.error('Error:', error);
       toast.error('Terjadi kesalahan saat menyimpan data');
     } finally {
       setSaving(false);

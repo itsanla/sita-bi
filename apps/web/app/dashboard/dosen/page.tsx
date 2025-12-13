@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '../../../context/AuthContext';
+import { PeriodeSelector } from '@/components/PeriodeSelector';
+import WelcomeSection from './components/WelcomeSection';
 
 export default function DosenDashboardPage() {
   const { user } = useAuth();
@@ -80,7 +82,12 @@ export default function DosenDashboardPage() {
   const visibleCards = featureCards.filter((card) => card.show);
 
   return (
-    <div className="bg-white p-8 rounded-2xl shadow-lg">
+    <div className="space-y-8 pb-8">
+      <div className="flex justify-end">
+        <PeriodeSelector />
+      </div>
+      <WelcomeSection />
+      <div className="bg-white p-8 rounded-2xl shadow-lg">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-800 mb-2">
           Selamat Datang, {user?.nama}
@@ -117,6 +124,7 @@ export default function DosenDashboardPage() {
             </div>
           </Link>
         ))}
+      </div>
       </div>
     </div>
   );

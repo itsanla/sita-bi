@@ -359,7 +359,8 @@ router.get(
     }
 
     try {
-      const result = await pengajuanService.getAvailableMahasiswa();
+      const periodeId = req.query.periode_ta_id ? parseInt(req.query.periode_ta_id as string) : undefined;
+      const result = await pengajuanService.getAvailableMahasiswa(periodeId);
       res.status(200).json({ status: MSG_SUKSES, data: result });
     } catch (error) {
       res.status(500).json({

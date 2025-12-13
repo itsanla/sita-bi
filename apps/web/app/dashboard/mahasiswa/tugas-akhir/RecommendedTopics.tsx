@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { BookMarked, CheckCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  BookMarked,
+  CheckCircle,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useRecommendedTopics } from '@/hooks/useTugasAkhir';
 import { usePeriode } from '@/context/PeriodeContext';
@@ -13,13 +19,22 @@ interface RecommendedTopicsProps {
 }
 
 export default function RecommendedTopics({
-  onSelectTitle,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onSelectTitle: _onSelectTitle,
 }: RecommendedTopicsProps) {
   const { selectedPeriodeId } = usePeriode();
-  const { recommendedTitles, loading, refetch } = useRecommendedTopics(selectedPeriodeId);
+  const { recommendedTitles, loading } = useRecommendedTopics(selectedPeriodeId);
   const [applying, setApplying] = useState<number | null>(null);
-  const [showConfirm, setShowConfirm] = useState<{id: number, title: string} | null>(null);
-  const [showDetail, setShowDetail] = useState<{id: number, title: string, description: string, dosen: string} | null>(null);
+  const [showConfirm, setShowConfirm] = useState<{
+    id: number;
+    title: string;
+  } | null>(null);
+  const [showDetail, setShowDetail] = useState<{
+    id: number;
+    title: string;
+    description: string;
+    dosen: string;
+  } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -27,22 +42,24 @@ export default function RecommendedTopics({
   const filteredTopics = useMemo(() => {
     if (!searchQuery.trim()) return recommendedTitles;
     const lowerQuery = searchQuery.toLowerCase();
-    return recommendedTitles.filter(topic => 
-      topic.judul_topik.toLowerCase().includes(lowerQuery) ||
-      topic.deskripsi.toLowerCase().includes(lowerQuery)
+    return recommendedTitles.filter(
+      (topic) =>
+        topic.judul_topik.toLowerCase().includes(lowerQuery) ||
+        topic.deskripsi.toLowerCase().includes(lowerQuery),
     );
   }, [recommendedTitles, searchQuery]);
 
   const totalPages = Math.ceil(filteredTopics.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentTopics = filteredTopics.slice(startIndex, startIndex + itemsPerPage);
+  const currentTopics = filteredTopics.slice(
+    startIndex,
+    startIndex + itemsPerPage,
+  );
 
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
-  
-
+  }, []);
 
   if (loading) {
     return (
@@ -69,7 +86,8 @@ export default function RecommendedTopics({
               Tidak Ada Topik di Periode Ini
             </p>
             <p className="text-gray-600 text-sm leading-normal">
-              Belum ada topik rekomendasi yang tersedia untuk periode yang dipilih.
+              Belum ada topik rekomendasi yang tersedia untuk periode yang
+              dipilih.
             </p>
           </div>
         </div>
@@ -78,41 +96,46 @@ export default function RecommendedTopics({
   }
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-white to-slate-50/50 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
-      {/* Decorative elements */}
-      <div className="absolute top-0 right-0 w-48 h-48 bg-slate-500/5 rounded-full blur-3xl -mr-24 -mt-24"></div>
+    <div className="relative overflow-hidden bg-white md:bg-gradient-to-br md:from-white md:to-slate-50/50 rounded-xl border border-gray-200 md:border-slate-200 shadow-sm md:hover:shadow-md md:transition-all md:duration-300">
+      {/* Decorative elements - Hidden on mobile */}
+      <div className="hidden md:block absolute top-0 right-0 w-48 h-48 bg-slate-500/5 rounded-full blur-3xl -mr-24 -mt-24"></div>
 
-      <div className="relative p-6">
+      <div className="relative p-4 md:p-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 md:mb-6">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">
               <div className="relative">
-                <div className="absolute inset-0 bg-slate-600/20 rounded-xl blur-md"></div>
-                <div className="relative bg-gradient-to-br from-slate-700 to-gray-800 p-2.5 rounded-xl shadow-md hover:scale-105 transition-transform duration-300">
-                  <BookMarked className="h-5 w-5 text-white" />
+                <div className="hidden md:block absolute inset-0 bg-slate-600/20 rounded-xl blur-md"></div>
+                <div className="relative bg-slate-700 md:bg-gradient-to-br md:from-slate-700 md:to-gray-800 p-2 md:p-2.5 rounded-lg md:rounded-xl shadow-sm md:shadow-md md:hover:scale-105 md:transition-transform md:duration-300">
+                  <BookMarked className="h-4 w-4 md:h-5 md:w-5 text-white" />
                 </div>
               </div>
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-bold text-gray-800 mb-1">
+              <h2 className="text-base md:text-lg font-bold text-gray-800 mb-1">
                 Topik Rekomendasi
               </h2>
               <p className="text-gray-600 text-sm leading-normal">
-                Daftar {recommendedTitles.length} topik rekomendasi dari dosen untuk periode yang dipilih
+                Daftar {recommendedTitles.length} topik rekomendasi dari dosen
+                untuk periode yang dipilih
               </p>
             </div>
           </div>
 
           {/* Stats Badge */}
-          <div className="flex items-center gap-2 bg-gradient-to-br from-maroon-900 to-maroon-800 text-white px-4 py-2.5 rounded-xl shadow-md hover:scale-105 transition-transform duration-300">
-            <div className="text-right">
-              <p className="text-lg font-bold">{filteredTopics.length}</p>
+          <div className="flex items-center gap-2 bg-gradient-to-br from-maroon-900 to-maroon-800 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-xl shadow-md hover:scale-105 transition-transform duration-300 w-full sm:w-auto justify-center">
+            <div className="text-center sm:text-right">
+              <p className="text-base md:text-lg font-bold">
+                {filteredTopics.length}
+              </p>
               <p className="text-xs text-white/80">Hasil Ditemukan</p>
             </div>
             <div className="w-px h-8 bg-white/20"></div>
-            <div className="text-left">
-              <p className="text-base font-semibold">{recommendedTitles.length}</p>
+            <div className="text-center sm:text-left">
+              <p className="text-sm md:text-base font-semibold">
+                {recommendedTitles.length}
+              </p>
               <p className="text-xs text-white/80">Total Topik</p>
             </div>
           </div>
@@ -120,10 +143,10 @@ export default function RecommendedTopics({
 
         {/* Search Bar */}
         <div className="mb-6 relative group/search">
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-500/10 to-gray-500/10 rounded-xl opacity-0 group-hover/search:opacity-100 blur-lg transition-opacity duration-500"></div>
+          <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-slate-500/10 to-gray-500/10 rounded-xl opacity-0 group-hover/search:opacity-100 blur-lg transition-opacity duration-500"></div>
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2">
-              <div className="bg-slate-100 p-1.5 rounded-lg group-hover/search:bg-slate-200 transition-colors duration-300">
+              <div className="bg-slate-100 p-1.5 rounded-lg md:group-hover/search:bg-slate-200 md:transition-colors md:duration-300">
                 <Search className="h-4 w-4 text-slate-600" />
               </div>
             </div>
@@ -134,7 +157,7 @@ export default function RecommendedTopics({
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-3 focus:ring-maroon-900/10 focus:border-maroon-900 hover:border-gray-300 transition-all duration-300 text-sm text-gray-800 placeholder-gray-400"
             />
-            {searchQuery ? (
+            {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
                 className="absolute right-4 top-1/2 -translate-y-1/2 bg-gray-100 hover:bg-gray-200 p-1.5 rounded-lg transition-colors duration-200 group/clear"
@@ -153,7 +176,7 @@ export default function RecommendedTopics({
                   />
                 </svg>
               </button>
-            ) : null}
+            )}
           </div>
         </div>
 
@@ -163,22 +186,22 @@ export default function RecommendedTopics({
             <table className="w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide w-20">
+                  <th className="px-2 md:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide w-12 md:w-20">
                     <div className="flex items-center gap-1.5">
                       <div className="w-1.5 h-1.5 bg-maroon-900 rounded-full"></div>
-                      No
+                      <span className="hidden sm:inline">No</span>
                     </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  <th className="px-2 md:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
                     <div className="flex items-center gap-1.5">
                       <BookMarked className="h-3.5 w-3.5 text-maroon-900" />
                       Judul Topik
                     </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  <th className="px-2 md:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide hidden md:table-cell">
                     Dosen
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  <th className="px-2 md:px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wide">
                     Aksi
                   </th>
                 </tr>
@@ -189,29 +212,49 @@ export default function RecommendedTopics({
                     <tr
                       key={topic.id}
                       className="hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
-                      onClick={() => setShowDetail({id: topic.id, title: topic.judul_topik, description: topic.deskripsi, dosen: topic.dosenPencetus.name})}
+                      onClick={() =>
+                        setShowDetail({
+                          id: topic.id,
+                          title: topic.judul_topik,
+                          description: topic.deskripsi,
+                          dosen: topic.dosenPencetus.name,
+                        })
+                      }
                     >
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-gray-100 to-slate-100 rounded-lg text-sm font-semibold text-gray-700 shadow-sm">
+                      <td className="px-2 md:px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center justify-center w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-gray-100 to-slate-100 rounded-lg text-xs md:text-sm font-semibold text-gray-700 shadow-sm">
                           {startIndex + idx + 1}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <p className="text-sm text-gray-800 leading-normal font-medium">
-                          {topic.judul_topik}
-                        </p>
+                      <td className="px-2 md:px-4 py-3">
+                        <div>
+                          <p className="text-sm text-gray-800 leading-normal font-medium line-clamp-2">
+                            {topic.judul_topik}
+                          </p>
+                          <p className="text-xs text-gray-600 mt-1 md:hidden">
+                            {topic.dosenPencetus.name}
+                          </p>
+                        </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-2 md:px-4 py-3 hidden md:table-cell">
                         <p className="text-sm text-gray-800 leading-normal">
                           {topic.dosenPencetus.name}
                         </p>
                       </td>
-                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <td
+                        className="px-2 md:px-4 py-3"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <div className="flex justify-center">
                           <button
-                            onClick={() => setShowConfirm({id: topic.id, title: topic.judul_topik})}
+                            onClick={() =>
+                              setShowConfirm({
+                                id: topic.id,
+                                title: topic.judul_topik,
+                              })
+                            }
                             disabled={applying === topic.id}
-                            className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50 font-semibold shadow-sm hover:shadow-md transition-all duration-300"
+                            className="px-3 md:px-4 py-2 bg-green-600 text-white text-xs md:text-sm rounded-lg hover:bg-green-700 disabled:opacity-50 font-semibold shadow-sm hover:shadow-md transition-all duration-300"
                           >
                             {applying === topic.id ? 'Mengambil...' : 'Ambil'}
                           </button>
@@ -221,19 +264,21 @@ export default function RecommendedTopics({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4} className="px-4 py-12 text-center">
+                    <td colSpan={4} className="px-4 py-8 md:py-12 text-center">
                       <div className="flex flex-col items-center gap-4">
                         <div className="relative">
                           <div className="absolute inset-0 bg-gray-300/50 rounded-xl blur-lg"></div>
-                          <div className="relative bg-gradient-to-br from-gray-200 to-slate-200 w-16 h-16 rounded-xl flex items-center justify-center shadow-md">
-                            <Search className="h-8 w-8 text-gray-500" />
+                          <div className="relative bg-gradient-to-br from-gray-200 to-slate-200 w-12 h-12 md:w-16 md:h-16 rounded-xl flex items-center justify-center shadow-md">
+                            <Search className="h-6 w-6 md:h-8 md:w-8 text-gray-500" />
                           </div>
                         </div>
-                        <div className="max-w-md">
-                          <p className="text-gray-800 font-bold text-base mb-1">
-                            {searchQuery ? 'Tidak Ada Hasil Pencarian' : 'Tidak Ada Topik Tersedia'}
+                        <div className="max-w-md px-4">
+                          <p className="text-gray-800 font-bold text-sm md:text-base mb-1">
+                            {searchQuery
+                              ? 'Tidak Ada Hasil Pencarian'
+                              : 'Tidak Ada Topik Tersedia'}
                           </p>
-                          <p className="text-gray-600 text-sm leading-normal">
+                          <p className="text-gray-600 text-xs md:text-sm leading-normal">
                             {searchQuery
                               ? `Tidak ditemukan topik yang cocok dengan kata kunci "${searchQuery}".`
                               : 'Belum ada topik rekomendasi yang tersedia untuk periode ini.'}
@@ -249,7 +294,7 @@ export default function RecommendedTopics({
         </div>
 
         {/* Pagination */}
-        {filteredTopics.length > 0 && (
+        {filteredTopics.length > 0 && totalPages > 1 && (
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-gradient-to-r from-slate-50 to-gray-50 rounded-xl border border-gray-200">
             {/* Info Text */}
             <div className="flex items-center gap-2">
@@ -300,7 +345,8 @@ export default function RecommendedTopics({
 
                     const showEllipsis =
                       (page === currentPage - 2 && currentPage > 3) ||
-                      (page === currentPage + 2 && currentPage < totalPages - 2);
+                      (page === currentPage + 2 &&
+                        currentPage < totalPages - 2);
 
                     if (!showPage && !showEllipsis) return null;
 
@@ -348,30 +394,52 @@ export default function RecommendedTopics({
           </div>
         )}
       </div>
-      
+
       {/* Detail Overlay */}
       {showDetail && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowDetail(null)}>
-          <div className="bg-white rounded-lg p-6 max-w-lg mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-xl font-bold text-gray-900 mb-4">{showDetail.title}</h3>
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2"><strong>Dosen:</strong> {showDetail.dosen}</p>
-              <p className="text-sm text-gray-600"><strong>Deskripsi:</strong></p>
-              <p className="text-gray-700 mt-1">{showDetail.description}</p>
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setShowDetail(null)}
+        >
+          <div
+            className="bg-white rounded-lg p-4 md:p-6 max-w-lg w-full shadow-xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4 leading-tight">
+              {showDetail.title}
+            </h3>
+            <div className="mb-4 space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-800 mb-1">
+                  Dosen:
+                </p>
+                <p className="text-sm text-gray-600">{showDetail.dosen}</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-800 mb-1">
+                  Deskripsi:
+                </p>
+                <p className="text-sm text-gray-700 leading-normal">
+                  {showDetail.description}
+                </p>
+              </div>
             </div>
-            <div className="flex gap-3 justify-end">
+            <div className="flex flex-col sm:flex-row gap-3 justify-end">
               <button
                 onClick={() => setShowDetail(null)}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm font-medium"
               >
                 Tutup
               </button>
               <button
                 onClick={() => {
                   setShowDetail(null);
-                  setShowConfirm({id: showDetail.id, title: showDetail.title});
+                  setShowConfirm({
+                    id: showDetail.id,
+                    title: showDetail.title,
+                  });
                 }}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
               >
                 Ambil Topik
               </button>
@@ -382,20 +450,22 @@ export default function RecommendedTopics({
 
       {/* Confirmation Overlay */}
       {showConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-4 md:p-6 max-w-md w-full shadow-xl">
             <div className="text-center">
-              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <CheckCircle className="h-10 w-10 md:h-12 md:w-12 text-green-500 mx-auto mb-4" />
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
                 Konfirmasi Pengambilan Topik
               </h3>
-              <p className="text-gray-600 mb-6">
-                Apakah Anda yakin ingin mengambil topik <strong>"{showConfirm.title}"</strong> sebagai judul tugas akhir Anda?
+              <p className="text-sm md:text-base text-gray-600 mb-6 leading-normal">
+                Apakah Anda yakin ingin mengambil topik{' '}
+                <strong className="break-words">&quot;{showConfirm.title}&quot;</strong>{' '}
+                sebagai judul tugas akhir Anda?
               </p>
-              <div className="flex gap-3 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={() => setShowConfirm(null)}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm font-medium"
                 >
                   Batal
                 </button>
@@ -407,7 +477,8 @@ export default function RecommendedTopics({
                         method: 'POST',
                       });
                       toast.success('Topik berhasil diambil', {
-                        description: 'Topik telah diambil sebagai tugas akhir Anda',
+                        description:
+                          'Topik telah diambil sebagai tugas akhir Anda',
                       });
                       setTimeout(() => {
                         window.location.reload();
@@ -421,7 +492,7 @@ export default function RecommendedTopics({
                     setShowConfirm(null);
                   }}
                   disabled={applying === showConfirm.id}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors text-sm font-medium"
                 >
                   {applying === showConfirm.id ? 'Mengambil...' : 'Ya, Ambil'}
                 </button>

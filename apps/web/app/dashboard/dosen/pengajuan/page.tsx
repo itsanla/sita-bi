@@ -10,6 +10,7 @@ import {
   lazy,
 } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { usePeriode } from '@/context/PeriodeContext';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -66,6 +67,7 @@ const MSG_TIDAK_DAPAT_TERHUBUNG = 'Tidak dapat terhubung ke server';
 
 export default function PengajuanDosenPage() {
   const { user } = useAuth();
+  const { selectedPeriodeId } = usePeriode();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,28 +111,30 @@ export default function PengajuanDosenPage() {
   }>({ open: false, mahasiswaId: 0, mahasiswaName: '' });
 
   const { data: mahasiswaData, isLoading: mahasiswaLoading } = useQuery({
-    queryKey: ['mahasiswa-tersedia', user?.id],
+    queryKey: ['mahasiswa-tersedia', user?.id, selectedPeriodeId],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/pengajuan/mahasiswa-tersedia`, {
+      const params = selectedPeriodeId ? `?periode_ta_id=${selectedPeriodeId}` : '';
+      const res = await fetch(`${API_BASE_URL}/pengajuan/mahasiswa-tersedia${params}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       return res.json();
     },
     staleTime: 30000,
-    enabled: !!user?.id,
+    enabled: !!user?.id && !!selectedPeriodeId,
   });
 
   const { data: pengajuanData, isLoading: pengajuanLoading } = useQuery({
-    queryKey: [QUERY_KEY_PENGAJUAN_DOSEN, user?.id],
+    queryKey: [QUERY_KEY_PENGAJUAN_DOSEN, user?.id, selectedPeriodeId],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/pengajuan/dosen`, {
+      const params = selectedPeriodeId ? `?periode_ta_id=${selectedPeriodeId}` : '';
+      const res = await fetch(`${API_BASE_URL}/pengajuan/dosen${params}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       return res.json();
     },
     staleTime: 10000,
     refetchInterval: 30000,
-    enabled: !!user?.id,
+    enabled: !!user?.id && !!selectedPeriodeId,
   });
 
   const mahasiswaList = useMemo(
@@ -424,8 +428,10 @@ export default function PengajuanDosenPage() {
           return a.user.name.localeCompare(b.user.name);
         if (mahasiswaSortBy === 'nama_desc')
           return b.user.name.localeCompare(a.user.name);
-        if (mahasiswaSortBy === 'ipk_desc') return 0; // IPK tertinggi (placeholder)
-        if (mahasiswaSortBy === 'ipk_asc') return 0; // IPK terendah (placeholder)
+        if (mahasiswaSortBy === 'ipk_desc') 
+          return (b.ipk || 0) - (a.ipk || 0);
+        if (mahasiswaSortBy === 'ipk_asc') 
+          return (a.ipk || 0) - (b.ipk || 0);
         return 0;
       });
   }, [mahasiswaList, deferredSearchQuery, mahasiswaSortBy]);
@@ -826,7 +832,9 @@ export default function PengajuanDosenPage() {
                         <td className="px-4 py-3 text-sm text-gray-600">
                           {mahasiswa.nim}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">-</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {mahasiswa.ipk ? mahasiswa.ipk.toFixed(2) : '-'}
+                        </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-1 h-6 items-center">
                             {!!mahasiswa.has_pembimbing1 && (
@@ -1415,7 +1423,7 @@ export default function PengajuanDosenPage() {
                         <div>
                           <p className="text-xs text-gray-500 uppercase">IPK</p>
                           <p className="text-sm font-semibold text-gray-900">
-                            -
+                            {mahasiswa.ipk ? mahasiswa.ipk.toFixed(2) : '-'}
                           </p>
                         </div>
                         <div>

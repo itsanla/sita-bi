@@ -1,5 +1,6 @@
 import { PrismaClient } from '@repo/db';
 import { PengaturanService } from './pengaturan.service';
+import { NotificationHelperService } from './notification-helper.service';
 
 const JUDUL_DEFAULT = 'Judul Tugas Akhir (Belum Ditentukan)';
 const STATUS_MENUNGGU_KONFIRMASI = 'MENUNGGU_KONFIRMASI';
@@ -96,7 +97,7 @@ export class PengajuanService {
     }
 
     // Buat pengajuan baru
-    return this.prisma.pengajuanBimbingan.create({
+    const pengajuan = await this.prisma.pengajuanBimbingan.create({
       data: {
         mahasiswa_id: mahasiswaId,
         dosen_id: dosenId,
@@ -109,6 +110,15 @@ export class PengajuanService {
         dosen: { include: { user: true } },
       },
     });
+
+    // Kirim notifikasi WhatsApp ke dosen
+    await NotificationHelperService.sendPengajuanPembimbingNotification(
+      pengajuan.dosen.user.phone_number,
+      pengajuan.mahasiswa.user.name,
+      peran
+    );
+
+    return pengajuan;
   }
 
   // Method untuk dosen menawarkan ke mahasiswa
@@ -183,7 +193,7 @@ export class PengajuanService {
     }
 
     // Buat tawaran baru
-    return this.prisma.pengajuanBimbingan.create({
+    const tawaran = await this.prisma.pengajuanBimbingan.create({
       data: {
         mahasiswa_id: mahasiswaId,
         dosen_id: dosenId,
@@ -196,6 +206,15 @@ export class PengajuanService {
         dosen: { include: { user: true } },
       },
     });
+
+    // Kirim notifikasi WhatsApp ke mahasiswa
+    await NotificationHelperService.sendTawaranPembimbingNotification(
+      tawaran.mahasiswa.user.phone_number,
+      tawaran.dosen.user.name,
+      peran
+    );
+
+    return tawaran;
   }
 
   // Method untuk menerima pengajuan
@@ -315,6 +334,22 @@ export class PengajuanService {
         },
       });
 
+      // Kirim notifikasi WhatsApp
+      const isDosenAccepting = pengajuan.diinisiasi_oleh === 'mahasiswa';
+      const recipientPhone = isDosenAccepting 
+        ? pengajuan.mahasiswa.user.phone_number 
+        : pengajuan.dosen.user.phone_number;
+      const acceptorName = isDosenAccepting 
+        ? pengajuan.dosen.user.name 
+        : pengajuan.mahasiswa.user.name;
+      
+      await NotificationHelperService.sendPengajuanDisetujuiNotification(
+        recipientPhone,
+        acceptorName,
+        pengajuan.peran_yang_diajukan as 'pembimbing1' | 'pembimbing2',
+        isDosenAccepting
+      );
+
       // Batalkan pengajuan lain untuk peran yang sama
       await tx.pengajuanBimbingan.updateMany({
         where: {
@@ -381,6 +416,22 @@ export class PengajuanService {
       },
     });
 
+    // Kirim notifikasi WhatsApp
+    const isDosenRejecting = pengajuan.diinisiasi_oleh === 'mahasiswa';
+    const recipientPhone = isDosenRejecting 
+      ? pengajuan.mahasiswa.user.phone_number 
+      : pengajuan.dosen.user.phone_number;
+    const rejectorName = isDosenRejecting 
+      ? pengajuan.dosen.user.name 
+      : pengajuan.mahasiswa.user.name;
+    
+    await NotificationHelperService.sendPengajuanDitolakNotification(
+      recipientPhone,
+      rejectorName,
+      pengajuan.peran_yang_diajukan as 'pembimbing1' | 'pembimbing2',
+      isDosenRejecting
+    );
+
     return updatedPengajuan;
   }
 
@@ -432,6 +483,22 @@ export class PengajuanService {
         dosen: { include: { user: true } },
       },
     });
+
+    // Kirim notifikasi WhatsApp
+    const isStudentCanceling = pengajuan.diinisiasi_oleh === 'mahasiswa';
+    const recipientPhone = isStudentCanceling 
+      ? pengajuan.dosen.user.phone_number 
+      : pengajuan.mahasiswa.user.phone_number;
+    const cancelerName = isStudentCanceling 
+      ? pengajuan.mahasiswa.user.name 
+      : pengajuan.dosen.user.name;
+    
+    await NotificationHelperService.sendPengajuanDibatalkanNotification(
+      recipientPhone,
+      cancelerName,
+      pengajuan.peran_yang_diajukan as 'pembimbing1' | 'pembimbing2',
+      isStudentCanceling
+    );
 
     return updatedPengajuan;
   }
@@ -546,11 +613,20 @@ export class PengajuanService {
   }
 
   // Method untuk mendapatkan list mahasiswa tersedia (untuk dosen)
-  async getAvailableMahasiswa(): Promise<unknown> {
+  async getAvailableMahasiswa(periodeId?: number): Promise<unknown> {
+    const whereClause: any = {};
+    if (periodeId) {
+      whereClause.tugasAkhir = {
+        periode_ta_id: periodeId
+      };
+    }
+
     const mahasiswaList = await this.prisma.mahasiswa.findMany({
+      where: whereClause,
       include: {
         user: { select: { id: true, name: true, email: true } },
         tugasAkhir: {
+          where: periodeId ? { periode_ta_id: periodeId } : {},
           include: {
             peranDosenTa: {
               where: {
@@ -577,6 +653,7 @@ export class PengajuanService {
         nim: m.nim,
         prodi: m.prodi,
         kelas: m.kelas,
+        ipk: m.ipk,
         judul_ta: tugasAkhir?.judul ?? 'Belum menentukan judul',
         has_pembimbing1: hasPembimbing1,
         has_pembimbing2: hasPembimbing2,
@@ -623,7 +700,7 @@ export class PengajuanService {
     }
 
     // Buat pengajuan pelepasan
-    return this.prisma.pengajuanPelepasanBimbingan.create({
+    const pengajuanPelepasan = await this.prisma.pengajuanPelepasanBimbingan.create({
       data: {
         peran_dosen_ta_id: peranDosenTaId,
         diajukan_oleh_user_id: userId,
@@ -639,6 +716,24 @@ export class PengajuanService {
         diajukanOleh: true,
       },
     });
+
+    // Kirim notifikasi WhatsApp
+    const isDosenYangMengajukan = isDosen;
+    const recipientPhone = isDosenYangMengajukan 
+      ? peranDosen.tugasAkhir.mahasiswa.user.phone_number 
+      : peranDosen.dosen.user.phone_number;
+    const requesterName = isDosenYangMengajukan 
+      ? peranDosen.dosen.user.name 
+      : peranDosen.tugasAkhir.mahasiswa.user.name;
+    
+    await NotificationHelperService.sendPelepasanBimbinganNotification(
+      recipientPhone,
+      requesterName,
+      peranDosen.peran as 'pembimbing1' | 'pembimbing2',
+      isDosenYangMengajukan
+    );
+
+    return pengajuanPelepasan;
   }
 
   // Method untuk konfirmasi pelepasan bimbingan
@@ -763,6 +858,21 @@ export class PengajuanService {
         });
       }
 
+      // Kirim notifikasi WhatsApp untuk konfirmasi pelepasan
+      const isDosenYangKonfirmasi = isDosen;
+      const recipientPhone = isDosenYangKonfirmasi 
+        ? pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user.phone_number 
+        : pengajuan.peranDosenTa.dosen.user.phone_number;
+      const confirmerName = isDosenYangKonfirmasi 
+        ? pengajuan.peranDosenTa.dosen.user.name 
+        : pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user.name;
+      
+      await NotificationHelperService.sendPelepasanDikonfirmasiNotification(
+        recipientPhone,
+        confirmerName,
+        pengajuan.peranDosenTa.peran as 'pembimbing1' | 'pembimbing2'
+      );
+
       return pengajuan;
     });
   }
@@ -802,7 +912,7 @@ export class PengajuanService {
       throw new Error('Anda tidak bisa menolak pengajuan Anda sendiri');
     }
 
-    return this.prisma.pengajuanPelepasanBimbingan.update({
+    const updatedPengajuan = await this.prisma.pengajuanPelepasanBimbingan.update({
       where: { id: pengajuanId },
       data: { status: 'DITOLAK' },
       include: {
@@ -814,6 +924,23 @@ export class PengajuanService {
         },
       },
     });
+
+    // Kirim notifikasi WhatsApp untuk penolakan pelepasan
+    const isDosenYangMenolak = isDosen;
+    const recipientPhone = isDosenYangMenolak 
+      ? pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user.phone_number 
+      : pengajuan.peranDosenTa.dosen.user.phone_number;
+    const rejectorName = isDosenYangMenolak 
+      ? pengajuan.peranDosenTa.dosen.user.name 
+      : pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user.name;
+    
+    await NotificationHelperService.sendPelepasanDitolakNotification(
+      recipientPhone,
+      rejectorName,
+      pengajuan.peranDosenTa.peran as 'pembimbing1' | 'pembimbing2'
+    );
+
+    return updatedPengajuan;
   }
 
   // Method untuk membatalkan pelepasan bimbingan (oleh yang mengajukan)

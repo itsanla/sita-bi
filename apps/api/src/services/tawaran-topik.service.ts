@@ -69,11 +69,11 @@ export class TawaranTopikService {
     const whereClause = {
       kuota: { gt: 0 },
       deleted_at: null,
-      ...(periodeId && { periode_ta_id: periodeId }),
+      ...(periodeId !== undefined && { periode_ta_id: periodeId }),
     };
-    
+
     const total = await this.prisma.tawaranTopik.count({ where: whereClause });
-    
+
     const data = await this.prisma.tawaranTopik.findMany({
       where: whereClause,
       include: {
@@ -97,7 +97,7 @@ export class TawaranTopikService {
       skip: (page - 1) * limit,
       take: limit,
     });
-    
+
     return {
       data: data,
       total: total,
@@ -107,19 +107,25 @@ export class TawaranTopikService {
     };
   }
 
-   async takeTopic(topicId: number, mahasiswaId: number, periodeId: number): Promise<unknown> {
+  async takeTopic(
+    topicId: number,
+    mahasiswaId: number,
+    periodeId: number,
+  ): Promise<unknown> {
     return this.prisma.$transaction(async (prisma) => {
       const topic = await prisma.tawaranTopik.findFirst({
-        where: { 
-          id: topicId, 
-          kuota: { gt: 0 }, 
+        where: {
+          id: topicId,
+          kuota: { gt: 0 },
           deleted_at: null,
-          periode_ta_id: periodeId
+          periode_ta_id: periodeId,
         },
       });
 
       if (topic === null) {
-        throw new Error('Topik tidak ditemukan, kuota sudah habis, atau bukan dari periode yang dipilih');
+        throw new Error(
+          'Topik tidak ditemukan, kuota sudah habis, atau bukan dari periode yang dipilih',
+        );
       }
 
       const activeTugasAkhir = await prisma.tugasAkhir.findFirst({
@@ -219,20 +225,24 @@ export class TawaranTopikService {
     periodeId: number,
   ): Promise<{ id: number; judul: string; similarity: number }[]> {
     // Cek apakah pengecekan similaritas dinonaktifkan
-    const nonaktifkanCek = await this.pengaturanService.getPengaturanByKey('nonaktifkan_cek_similaritas');
+    const nonaktifkanCek = await this.pengaturanService.getPengaturanByKey(
+      'nonaktifkan_cek_similaritas',
+    );
     if (nonaktifkanCek === 'true') {
       return [];
     }
 
     // Cek pengaturan apakah menggunakan semua periode atau hanya periode tertentu
-    const cekSemuaPeriode = await this.pengaturanService.getPengaturanByKey('cek_similaritas_semua_periode');
+    const cekSemuaPeriode = await this.pengaturanService.getPengaturanByKey(
+      'cek_similaritas_semua_periode',
+    );
     const useAllPeriods = cekSemuaPeriode === 'true';
 
     let allTitles: { id: number; judul: string }[] = [];
-    
+
     if (useAllPeriods) {
       // Toggle ON: Cek semua judul TA dari periode lain (2014-2024, tanpa tawaran topik) + judul TA periode aktif + tawaran topik periode aktif
-      
+
       // 1. Ambil semua judul TA dari periode selain periode aktif (2014-2024)
       const historicalTitles = await this.prisma.tugasAkhir.findMany({
         where: {
@@ -241,52 +251,58 @@ export class TawaranTopikService {
         select: { id: true, judul: true },
         distinct: ['judul'],
       });
-      
+
       // 2. Ambil judul TA dari periode aktif (2025)
       const currentPeriodTitles = await this.prisma.tugasAkhir.findMany({
         where: { periode_ta_id: periodeId },
         select: { id: true, judul: true },
         distinct: ['judul'],
       });
-      
+
       // 3. Ambil tawaran topik dari periode aktif (2025)
       const currentPeriodTopics = await this.prisma.tawaranTopik.findMany({
-        where: { 
+        where: {
           periode_ta_id: periodeId,
-          deleted_at: null 
+          deleted_at: null,
         },
         select: { id: true, judul_topik: true },
       });
-      
+
       // Gabungkan semua judul
       allTitles = [
         ...historicalTitles,
         ...currentPeriodTitles,
-        ...currentPeriodTopics.map(topic => ({ id: topic.id, judul: topic.judul_topik }))
+        ...currentPeriodTopics.map((topic) => ({
+          id: topic.id,
+          judul: topic.judul_topik,
+        })),
       ];
     } else {
       // Toggle OFF: Hanya cek judul TA periode aktif + tawaran topik periode aktif
-      
+
       // 1. Ambil judul TA dari periode aktif (2025)
       const currentPeriodTitles = await this.prisma.tugasAkhir.findMany({
         where: { periode_ta_id: periodeId },
         select: { id: true, judul: true },
         distinct: ['judul'],
       });
-      
+
       // 2. Ambil tawaran topik dari periode aktif (2025)
       const currentPeriodTopics = await this.prisma.tawaranTopik.findMany({
-        where: { 
+        where: {
           periode_ta_id: periodeId,
-          deleted_at: null 
+          deleted_at: null,
         },
         select: { id: true, judul_topik: true },
       });
-      
+
       // Gabungkan judul TA dan tawaran topik dari periode aktif
       allTitles = [
         ...currentPeriodTitles,
-        ...currentPeriodTopics.map(topic => ({ id: topic.id, judul: topic.judul_topik }))
+        ...currentPeriodTopics.map((topic) => ({
+          id: topic.id,
+          judul: topic.judul_topik,
+        })),
       ];
     }
 

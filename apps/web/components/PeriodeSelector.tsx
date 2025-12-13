@@ -12,6 +12,13 @@ export function PeriodeSelector() {
     loading,
   } = usePeriode();
 
+  console.log('PeriodeSelector Debug:', {
+    selectedPeriodeId,
+    periodes,
+    activePeriode,
+    loading
+  });
+
   if (loading) {
     return <div className="h-10 w-48 animate-pulse bg-gray-200 rounded-lg" />;
   }

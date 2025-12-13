@@ -4,11 +4,10 @@ export const updateDataDiriSchema = z.object({
   // Data User (umum)
   name: z.string().optional(),
   phone_number: z.string().optional(),
-  alamat: z.string().optional(),
-  // eslint-disable-next-line @typescript-eslint/no-deprecated, sonarjs/deprecation
-  tanggal_lahir: z.string().datetime().optional(),
-  tempat_lahir: z.string().optional(),
-  jenis_kelamin: z.enum(['Laki-laki', 'Perempuan']).optional(),
+  alamat: z.string().nullable().optional(),
+  tanggal_lahir: z.string().optional(),
+  tempat_lahir: z.string().nullable().optional(),
+  jenis_kelamin: z.enum(['Laki-laki', 'Perempuan']).nullable().optional(),
   photo: z.string().optional(),
 
   // Data Mahasiswa

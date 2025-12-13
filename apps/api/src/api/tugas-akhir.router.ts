@@ -30,7 +30,7 @@ router.post(
     const SIMILARITY_BLOCK_THRESHOLD = await getMaxSimilaritasPersen();
     const { judul } = req.body;
     const periodeId = req.periode?.id;
-    
+
     if (periodeId === undefined) {
       response.status(403).json({
         status: 'gagal',
@@ -38,7 +38,7 @@ router.post(
       });
       return;
     }
-    
+
     const results = await tugasAkhirService.checkSimilarity(judul, periodeId);
 
     const isBlocked = results.some(
@@ -76,119 +76,13 @@ router.post(
   }),
 );
 
-// TODO: Implement findAllForValidation method in TugasAkhirService
-/*
-router.get(
-  '/validasi',
-  asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
-  asyncHandler(async (req: Request, response: Response): Promise<void> => {
-    if (req.user == null) {
-      response.status(401).json({ status: 'gagal', message: 'Unauthorized' });
-      return;
-    }
-    const page =
-      req.query['page'] != null ? parseInt(req.query['page'] as string) : undefined;
-    const limit =
-      req.query['limit'] != null ? parseInt(req.query['limit'] as string) : undefined;
-    const tugasAkhirList = await tugasAkhirService.findAllForValidation(
-      req.user,
-      page,
-      limit,
-    );
-    response.status(200).json({ status: 'sukses', data: tugasAkhirList });
-  }),
-);
-*/
 
-// TODO: Implement approve method in TugasAkhirService
-/*
-router.patch(
-  '/:id/approve',
-  asyncHandler(authMiddleware),
-  asyncHandler(tugasAkhirGuard), // Custom guard for Tugas Akhir
-  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
-  asyncHandler(async (req: Request, response: Response): Promise<void> => {
-    const { id } = req.params;
-    if (id == null) {
-      response
-        .status(400)
-        .json({ status: 'gagal', message: 'ID Tugas Akhir diperlukan' });
-      return;
-    }
-    const approverId = req.user?.id;
-    if (approverId === undefined) {
-      response.status(401).json({
-        status: 'gagal',
-        message: 'Akses ditolak: ID pemberi persetujuan tidak ditemukan.',
-      });
-      return;
-    }
-    const approvedTugasAkhir = await tugasAkhirService.approve(
-      parseInt(id, 10),
-      approverId,
-    );
-    response.status(200).json({ status: 'sukses', data: approvedTugasAkhir });
-  }),
-);
-*/
 
-// TODO: Implement reject method in TugasAkhirService
-/*
-router.patch(
-  '/:id/reject',
-  asyncHandler(authMiddleware),
-  asyncHandler(tugasAkhirGuard), // Custom guard for Tugas Akhir
-  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
-  validate(rejectTugasAkhirSchema),
-  asyncHandler(async (req: Request, response: Response): Promise<void> => {
-    const { id } = req.params;
-    if (id == null) {
-      response
-        .status(400)
-        .json({ status: 'gagal', message: 'ID Tugas Akhir diperlukan' });
-      return;
-    }
-    const rejecterId = req.user?.id;
-    if (rejecterId === undefined) {
-      response.status(401).json({
-        status: 'gagal',
-        message: 'Akses ditolak: ID penolak tidak ditemukan.',
-      });
-      return;
-    }
-    const { alasan_penolakan } = req.body;
-    const rejectedTugasAkhir = await tugasAkhirService.reject(
-      parseInt(id, 10),
-      rejecterId,
-      alasan_penolakan,
-    );
-    response.status(200).json({ status: 'sukses', data: rejectedTugasAkhir });
-  }),
-);
-*/
 
-// TODO: Implement cekKemiripan method in TugasAkhirService
-/*
-router.post(
-  '/:id/cek-kemiripan',
-  asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
-  asyncHandler(async (req: Request, response: Response): Promise<void> => {
-    const { id } = req.params;
-    if (id == null) {
-      response
-        .status(400)
-        .json({ status: 'gagal', message: 'ID Tugas Akhir diperlukan' });
-      return;
-    }
-    const kemiripanResult = await tugasAkhirService.cekKemiripan(
-      parseInt(id, 10),
-    );
-    response.status(200).json({ status: 'sukses', data: kemiripanResult });
-  }),
-);
-*/
+
+
+
+
 
 router.get(
   '/my-ta',
@@ -235,7 +129,9 @@ router.get(
   '/all-titles',
   asyncHandler(authMiddleware),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
-    const periodeId = req.query.periode_id ? parseInt(req.query.periode_id as string) : undefined;
+    const periodeId = req.query.periode_id != null
+      ? parseInt(req.query.periode_id as string)
+      : undefined;
     const titles = await tugasAkhirService.findAllTitles(periodeId);
     response.status(200).json({ status: STATUS_SUKSES, data: titles });
   }),

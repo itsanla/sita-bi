@@ -4,6 +4,7 @@ interface NotificationData {
   recipientPhone?: string;
   tanggal?: string;
   mahasiswaNama?: string;
+  dosenNama?: string;
   catatan?: string;
   feedback?: string;
   waktu?: string;
@@ -12,6 +13,9 @@ interface NotificationData {
   pembimbing?: string;
   isi?: string;
   author?: string;
+  peran?: string;
+  acceptorName?: string;
+  rejectorName?: string;
 }
 
 export class WahaWhatsAppService {
@@ -273,6 +277,36 @@ export class WahaWhatsAppService {
           message += `${data.judul ?? 'Pengumuman'}\n\n`;
           message += `${data.isi ?? ''}\n\n`;
           message += `_Diumumkan oleh: ${data.author ?? 'Admin'}_`;
+          break;
+
+        case 'PENGAJUAN_PEMBIMBING':
+          recipient = data.recipientPhone ?? '';
+          message = `🔔 *Pengajuan Pembimbing*\n\n`;
+          message += `Mahasiswa ${data.mahasiswaNama ?? '-'} mengajukan permohonan kepada Anda untuk menjadi ${data.peran ?? 'pembimbing'}.\n\n`;
+          message += `Silahkan lihat detailnya pada link berikut:\n`;
+          message += `${process.env['FRONTEND_URL'] || 'http://localhost:3001'}/dashboard/dosen/pengajuan`;
+          break;
+
+        case 'TAWARAN_PEMBIMBING':
+          recipient = data.recipientPhone ?? '';
+          message = `🔔 *Tawaran Pembimbing*\n\n`;
+          message += `${data.dosenNama ?? 'Dosen'} menawarkan diri untuk menjadi ${data.peran ?? 'pembimbing'} Anda.\n\n`;
+          message += `Silahkan lihat detailnya pada link berikut:\n`;
+          message += `${process.env['FRONTEND_URL'] || 'http://localhost:3001'}/dashboard/mahasiswa/pengajuan`;
+          break;
+
+        case 'PENGAJUAN_DISETUJUI':
+          recipient = data.recipientPhone ?? '';
+          message = `✅ *Pengajuan Disetujui*\n\n`;
+          message += `${data.acceptorName ?? 'Pihak terkait'} telah menyetujui pengajuan untuk menjadi ${data.peran ?? 'pembimbing'}.\n\n`;
+          message += `Silahkan lihat detailnya pada dashboard Anda.`;
+          break;
+
+        case 'PENGAJUAN_DITOLAK':
+          recipient = data.recipientPhone ?? '';
+          message = `❌ *Pengajuan Ditolak*\n\n`;
+          message += `${data.rejectorName ?? 'Pihak terkait'} telah menolak pengajuan untuk menjadi ${data.peran ?? 'pembimbing'}.\n\n`;
+          message += `Silahkan lihat detailnya pada dashboard Anda.`;
           break;
 
         default:

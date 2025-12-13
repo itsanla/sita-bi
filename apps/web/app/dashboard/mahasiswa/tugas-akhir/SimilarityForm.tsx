@@ -10,7 +10,6 @@ import {
   Send,
 } from 'lucide-react';
 import { toast } from 'sonner';
-// import Button from '@/app/components/ui/Button'; // Removed unused import
 import { useSimilarityCheck, useSubmitTitle } from '@/hooks/useTugasAkhir';
 
 interface SimilarityFormProps {
@@ -54,7 +53,8 @@ export default function SimilarityForm({
     try {
       await submitTitle(judulMandiri, () => {
         toast.success('Judul berhasil diajukan', {
-          description: 'Judul tugas akhir Anda telah dikirim untuk persetujuan pembimbing',
+          description:
+            'Judul tugas akhir Anda telah dikirim untuk persetujuan pembimbing',
         });
         reset();
         onSuccess();
@@ -65,24 +65,24 @@ export default function SimilarityForm({
   };
 
   return (
-    <div className="group relative overflow-hidden bg-gradient-to-br from-white via-white to-gray-50/30 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-300">
-      {/* Decorative Elements */}
-      <div className="absolute top-0 right-0 w-48 h-48 bg-[#123053]/5 rounded-full blur-3xl -mr-24 -mt-24 group-hover:bg-[#123053]/10 transition-colors duration-500"></div>
-      <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#123053]/5 rounded-full blur-3xl -ml-16 -mb-16 group-hover:bg-[#123053]/10 transition-colors duration-500"></div>
+    <div className="group relative overflow-hidden bg-white md:bg-gradient-to-br md:from-white md:via-white md:to-gray-50/30 rounded-xl border border-gray-200 shadow-sm md:hover:shadow-md md:hover:border-gray-300 md:transition-all md:duration-300">
+      {/* Decorative Elements - Hidden on mobile */}
+      <div className="hidden md:block absolute top-0 right-0 w-48 h-48 bg-[#123053]/5 rounded-full blur-3xl -mr-24 -mt-24 group-hover:bg-[#123053]/10 transition-colors duration-500"></div>
+      <div className="hidden md:block absolute bottom-0 left-0 w-32 h-32 bg-[#123053]/5 rounded-full blur-3xl -ml-16 -mb-16 group-hover:bg-[#123053]/10 transition-colors duration-500"></div>
 
-      <div className="relative p-6">
+      <div className="relative p-4 md:p-6">
         {/* Header */}
-        <div className="flex items-start gap-3 mb-6">
+        <div className="flex items-start gap-3 mb-4 md:mb-6">
           <div className="flex-shrink-0">
             <div className="relative">
-              <div className="absolute inset-0 bg-[#123053]/20 rounded-xl blur-md"></div>
-              <div className="relative bg-gradient-to-br from-[#123053] to-[#0d1f36] p-2.5 rounded-xl shadow-md group-hover:scale-105 group-hover:rotate-3 transition-all duration-300">
-                <Sparkles className="h-5 w-5 text-white" />
+              <div className="hidden md:block absolute inset-0 bg-[#123053]/20 rounded-xl blur-md"></div>
+              <div className="relative bg-[#123053] md:bg-gradient-to-br md:from-[#123053] md:to-[#0d1f36] p-2 md:p-2.5 rounded-lg md:rounded-xl shadow-sm md:shadow-md md:group-hover:scale-105 md:group-hover:rotate-3 md:transition-all md:duration-300">
+                <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-white" />
               </div>
             </div>
           </div>
           <div className="flex-1">
-            <h2 className="text-lg font-bold text-gray-800 mb-1">
+            <h2 className="text-base md:text-lg font-bold text-gray-800 mb-1">
               Ajukan Judul Sendiri
             </h2>
             <p className="text-gray-600 text-sm leading-normal">
@@ -131,9 +131,9 @@ export default function SimilarityForm({
                   </svg>
                 </div>
                 <p className="text-xs text-[#123053] leading-normal">
-                  <span className="font-semibold">Tips:</span> Pastikan judul Anda
-                  jelas, spesifik, dan menggambarkan fokus penelitian. Hindari
-                  judul yang terlalu umum atau terlalu panjang.
+                  <span className="font-semibold">Tips:</span> Pastikan judul
+                  Anda jelas, spesifik, dan menggambarkan fokus penelitian.
+                  Hindari judul yang terlalu umum atau terlalu panjang.
                 </p>
               </div>
             </div>
@@ -162,16 +162,16 @@ export default function SimilarityForm({
 
       {/* Similarity Results */}
       {!!similarityResults && (
-        <div className="relative space-y-4 p-6 border-t border-gray-200">
+        <div className="relative space-y-4 p-4 md:p-6 border-t border-gray-200">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="absolute inset-0 bg-[#123053]/20 rounded-lg blur-md"></div>
-              <div className="relative bg-gradient-to-br from-[#123053] to-[#0d1f36] p-2 rounded-lg shadow-md">
-                <Search className="h-4 w-4 text-white" />
+              <div className="hidden md:block absolute inset-0 bg-[#123053]/20 rounded-lg blur-md"></div>
+              <div className="relative bg-[#123053] md:bg-gradient-to-br md:from-[#123053] md:to-[#0d1f36] p-1.5 md:p-2 rounded-lg shadow-sm md:shadow-md">
+                <Search className="h-3.5 w-3.5 md:h-4 md:w-4 text-white" />
               </div>
             </div>
             <div>
-              <h3 className="text-base font-bold text-gray-800">
+              <h3 className="text-sm md:text-base font-bold text-gray-800">
                 Hasil Pemeriksaan Kemiripan
               </h3>
               <p className="text-xs text-gray-600">
@@ -189,30 +189,33 @@ export default function SimilarityForm({
                   className="group/result relative overflow-hidden bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-300"
                 >
                   {/* Colored left border based on similarity */}
-                  <div
-                    className={`absolute left-0 top-0 bottom-0 w-1 ${
-                      result.similarity >= threshold
-                        ? 'bg-gradient-to-b from-red-500 to-red-600'
-                        : result.similarity >= 50
-                          ? 'bg-gradient-to-b from-amber-500 to-amber-600'
-                          : 'bg-gradient-to-b from-green-500 to-green-600'
-                    }`}
-                  ></div>
+                  {(() => {
+                    const getBorderColor = () => {
+                      if (result.similarity >= threshold) return 'bg-gradient-to-b from-red-500 to-red-600';
+                      if (result.similarity >= 50) return 'bg-gradient-to-b from-amber-500 to-amber-600';
+                      return 'bg-gradient-to-b from-green-500 to-green-600';
+                    };
+                    return (
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${getBorderColor()}`}></div>
+                    );
+                  })()}
 
-                  <div className="flex items-center gap-3 p-3 pl-4">
+                  <div className="flex items-center gap-2 md:gap-3 p-3 pl-4">
                     {/* Number Badge */}
                     <div className="flex-shrink-0">
-                      <div
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-semibold shadow-sm group-hover/result:scale-105 transition-transform duration-300 ${
-                          result.similarity >= threshold
-                            ? 'bg-red-100 text-red-700'
-                            : result.similarity >= 50
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-green-100 text-green-700'
-                        }`}
-                      >
-                        {idx + 1}
-                      </div>
+                      {(() => {
+                        const getBadgeColor = () => {
+                          if (result.similarity >= threshold) return 'bg-red-100 text-red-700';
+                          if (result.similarity >= 50) return 'bg-amber-100 text-amber-700';
+                          return 'bg-green-100 text-green-700';
+                        };
+                        return (
+                          <div className={`w-6 h-6 md:w-7 md:h-7 rounded-lg flex items-center justify-center text-xs font-semibold shadow-sm md:group-hover/result:scale-105 md:transition-transform md:duration-300 ${getBadgeColor()}`}>
+                            {idx + 1}
+                          </div>
+                        );
+                      })()}
+
                     </div>
 
                     {/* Title */}
@@ -225,18 +228,20 @@ export default function SimilarityForm({
                     {/* Similarity Badge */}
                     <div className="flex-shrink-0">
                       <div className="flex flex-col items-end gap-0.5">
-                        <div
-                          className={`px-3 py-1.5 rounded-lg font-semibold text-xs shadow-sm group-hover/result:scale-105 transition-transform duration-300 ${
-                            result.similarity >= threshold
-                              ? 'bg-gradient-to-r from-red-500 to-red-600 text-white'
-                              : result.similarity >= 50
-                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white'
-                                : 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                          }`}
-                        >
-                          {result.similarity}%
-                        </div>
-                        <span className="text-xs font-medium text-gray-500">
+                        {(() => {
+                          const getSimilarityColor = () => {
+                            if (result.similarity >= threshold) return 'bg-red-500 md:bg-gradient-to-r md:from-red-500 md:to-red-600 text-white';
+                            if (result.similarity >= 50) return 'bg-amber-500 md:bg-gradient-to-r md:from-amber-500 md:to-amber-600 text-white';
+                            return 'bg-green-500 md:bg-gradient-to-r md:from-green-500 md:to-green-600 text-white';
+                          };
+                          return (
+                            <div className={`px-2 md:px-3 py-1 md:py-1.5 rounded-lg font-semibold text-xs shadow-sm md:group-hover/result:scale-105 md:transition-transform md:duration-300 ${getSimilarityColor()}`}>
+                              {result.similarity}%
+                            </div>
+                          );
+                        })()}
+
+                        <span className="text-xs font-medium text-gray-500 hidden sm:block">
                           Kemiripan
                         </span>
                       </div>
@@ -262,10 +267,9 @@ export default function SimilarityForm({
                     Pengecekan Selesai
                   </h4>
                   <p className="text-blue-800 text-sm leading-normal">
-                    {threshold === 0 
+                    {threshold === 0
                       ? 'Pengecekan kemiripan judul dinonaktifkan oleh sistem. Judul Anda dapat langsung diajukan tanpa pemeriksaan kemiripan.'
-                      : 'Tidak ditemukan kemiripan signifikan dengan judul yang sudah ada. Judul Anda unik dan siap untuk diajukan ke sistem.'
-                    }
+                      : 'Tidak ditemukan kemiripan signifikan dengan judul yang sudah ada. Judul Anda unik dan siap untuk diajukan ke sistem.'}
                   </p>
                 </div>
               </div>
