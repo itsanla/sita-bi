@@ -2,6 +2,9 @@
 import React from 'react';
 import { Menu, X } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { useAuth } from '../../../context/AuthContext';
+import { useRBAC } from '../../../hooks/useRBAC';
 
 interface HeaderProps {
   isMenuOpen: boolean;
@@ -20,6 +23,22 @@ export default function Header({
   mode = 'landing',
   activePage = '',
 }: HeaderProps) {
+  const { isAuthenticated } = useAuth();
+  const { isMahasiswa, isDosen, isAdmin } = useRBAC();
+
+  const getDashboardUrl = () => {
+    if (isMahasiswa) {
+      return '/dashboard/mahasiswa';
+    }
+    if (isDosen) {
+      return '/dashboard/dosen';
+    }
+    if (isAdmin) {
+      return '/dashboard/admin';
+    }
+    
+    return '/dashboard';
+  };
   return (
     <header className="fixed top-0 inset-x-0 z-40">
       {/* Backdrop with blur effect */}
@@ -59,31 +78,33 @@ export default function Header({
           <nav className="hidden lg:flex items-center space-x-1">
             {mode === 'landing' ? (
               <>
-                {['hero', 'tawarantopik', 'jadwal', 'pengumuman'].map((section) => {
-                  const getSectionLabel = () => {
-                    if (section === 'hero') return 'Home';
-                    if (section === 'tawarantopik') return 'Topik';
-                    return section.charAt(0).toUpperCase() + section.slice(1);
-                  };
+                {['hero', 'tawarantopik', 'jadwal', 'pengumuman'].map(
+                  (section) => {
+                    const getSectionLabel = () => {
+                      if (section === 'hero') return 'Home';
+                      if (section === 'tawarantopik') return 'Topik';
+                      return section.charAt(0).toUpperCase() + section.slice(1);
+                    };
 
-                  return (
-                    <a
-                      key={section}
-                      href={`#${section}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        scrollToSection(section);
-                      }}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                        activeSection === section
-                          ? 'text-red-600 bg-red-50'
-                          : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      {getSectionLabel()}
-                    </a>
-                  );
-                })}
+                    return (
+                      <a
+                        key={section}
+                        href={`#${section}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scrollToSection(section);
+                        }}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                          activeSection === section
+                            ? 'text-red-600 bg-red-50'
+                            : 'text-gray-700 hover:text-red-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {getSectionLabel()}
+                      </a>
+                    );
+                  },
+                )}
                 <a
                   href="/dokumentasi"
                   className="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 transition-colors duration-200"
@@ -99,7 +120,7 @@ export default function Header({
               </>
             ) : (
               <>
-                <a
+                <Link
                   href="/"
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
                     activePage === 'home'
@@ -108,7 +129,7 @@ export default function Header({
                   }`}
                 >
                   Home
-                </a>
+                </Link>
                 <a
                   href="/data-master"
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
@@ -135,12 +156,21 @@ export default function Header({
 
           {/* CTA Button & Mobile Menu */}
           <div className="flex items-center space-x-4">
-            <a
-              href="/login"
-              className="hidden sm:inline-flex items-center px-5 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
-            >
-              Login
-            </a>
+            {isAuthenticated ? (
+              <Link
+                href={getDashboardUrl()}
+                className="hidden sm:inline-flex items-center px-5 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <a
+                href="/login"
+                className="hidden sm:inline-flex items-center px-5 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+              >
+                Login
+              </a>
+            )}
 
             {/* Mobile menu button */}
             <button
@@ -169,7 +199,9 @@ export default function Header({
                       const getMobileSectionLabel = () => {
                         if (section === 'hero') return 'Home';
                         if (section === 'tawarantopik') return 'Tawaran Topik';
-                        return section.charAt(0).toUpperCase() + section.slice(1);
+                        return (
+                          section.charAt(0).toUpperCase() + section.slice(1)
+                        );
                       };
 
                       return (
@@ -207,7 +239,7 @@ export default function Header({
                 </>
               ) : (
                 <>
-                  <a
+                  <Link
                     href="/"
                     className={`block px-4 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
                       activePage === 'home'
@@ -216,7 +248,7 @@ export default function Header({
                     }`}
                   >
                     Home
-                  </a>
+                  </Link>
                   <a
                     href="/data-master"
                     className={`block px-4 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
@@ -240,12 +272,21 @@ export default function Header({
                 </>
               )}
               <div className="pt-4 pb-2">
-                <a
-                  href="/login"
-                  className="block w-full text-center px-4 py-2 border border-transparent rounded-md text-base font-medium text-white bg-red-600 hover:bg-red-700 transition-colors duration-200"
-                >
-                  Login
-                </a>
+                {isAuthenticated ? (
+                  <Link
+                    href={getDashboardUrl()}
+                    className="block w-full text-center px-4 py-2 border border-transparent rounded-md text-base font-medium text-white bg-red-600 hover:bg-red-700 transition-colors duration-200"
+                  >
+                    Dashboard
+                  </Link>
+                ) : (
+                  <a
+                    href="/login"
+                    className="block w-full text-center px-4 py-2 border border-transparent rounded-md text-base font-medium text-white bg-red-600 hover:bg-red-700 transition-colors duration-200"
+                  >
+                    Login
+                  </a>
+                )}
               </div>
             </div>
           </div>

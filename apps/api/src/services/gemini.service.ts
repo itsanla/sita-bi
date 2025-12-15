@@ -42,7 +42,7 @@ interface GeminiResponse {
 class GeminiService {
   private apiKeys: string[] = [];
   private primaryModels: string[] = [];
-  private fallbackModel: string = '';
+  private fallbackModel = '';
   private readonly baseUrl =
     'https://generativelanguage.googleapis.com/v1beta/models';
   private readonly streamBaseUrl =
@@ -91,14 +91,19 @@ class GeminiService {
   private loadModels(): void {
     const primaryEnv = process.env['GEMINI_PRIMARY_MODELS'];
     const fallbackEnv = process.env['GEMINI_FALLBACK_MODEL'];
-    
+
     if (!primaryEnv || !fallbackEnv) {
-      throw new Error('GEMINI_PRIMARY_MODELS and GEMINI_FALLBACK_MODEL must be configured in .env');
+      throw new Error(
+        'GEMINI_PRIMARY_MODELS and GEMINI_FALLBACK_MODEL must be configured in .env',
+      );
     }
-    
-    this.primaryModels = primaryEnv.split(',').map(m => m.trim()).filter(m => m.length > 0);
+
+    this.primaryModels = primaryEnv
+      .split(',')
+      .map((m) => m.trim())
+      .filter((m) => m.length > 0);
     this.fallbackModel = fallbackEnv.trim();
-    
+
     logger.info(`Primary models: ${this.primaryModels.join(', ')}`);
     logger.info(`Fallback model: ${this.fallbackModel}`);
   }
@@ -145,7 +150,11 @@ class GeminiService {
     }
   }
 
-  private async callGeminiApi(prompt: string, apiKey: string, model: string): Promise<string> {
+  private async callGeminiApi(
+    prompt: string,
+    apiKey: string,
+    model: string,
+  ): Promise<string> {
     const requestBody: GeminiRequest = {
       systemInstruction: {
         parts: [
@@ -240,36 +249,54 @@ class GeminiService {
       for (let i = 0; i < this.apiKeys.length; i++) {
         const apiKey = this.apiKeys[i];
         if (!apiKey) continue;
-        
+
         const keyNumber = i + 1;
-        console.log(`🔄 [Gemini] Trying PRIMARY model: ${model} | API Key: #${keyNumber}`);
-        
+        console.log(
+          `🔄 [Gemini] Trying PRIMARY model: ${model} | API Key: #${keyNumber}`,
+        );
+
         try {
           const result = await this.callGeminiApi(prompt, apiKey, model);
-          console.log(`✅ [Gemini] SUCCESS with PRIMARY model: ${model} | API Key: #${keyNumber}`);
+          console.log(
+            `✅ [Gemini] SUCCESS with PRIMARY model: ${model} | API Key: #${keyNumber}`,
+          );
           return result;
         } catch (error) {
-          console.log(`❌ [Gemini] FAILED PRIMARY model: ${model} | API Key: #${keyNumber}`);
+          console.log(
+            `❌ [Gemini] FAILED PRIMARY model: ${model} | API Key: #${keyNumber}`,
+          );
         }
       }
     }
 
     // All primary models exhausted, try fallback
-    console.log(`⚠️  [Gemini] All PRIMARY models exhausted, switching to FALLBACK model`);
-    
+    console.log(
+      `⚠️  [Gemini] All PRIMARY models exhausted, switching to FALLBACK model`,
+    );
+
     for (let i = 0; i < this.apiKeys.length; i++) {
       const apiKey = this.apiKeys[i];
       if (!apiKey) continue;
-      
+
       const keyNumber = i + 1;
-      console.log(`🔄 [Gemini] Trying FALLBACK model: ${this.fallbackModel} | API Key: #${keyNumber}`);
-      
+      console.log(
+        `🔄 [Gemini] Trying FALLBACK model: ${this.fallbackModel} | API Key: #${keyNumber}`,
+      );
+
       try {
-        const result = await this.callGeminiApi(prompt, apiKey, this.fallbackModel);
-        console.log(`✅ [Gemini] SUCCESS with FALLBACK model: ${this.fallbackModel} | API Key: #${keyNumber}`);
+        const result = await this.callGeminiApi(
+          prompt,
+          apiKey,
+          this.fallbackModel,
+        );
+        console.log(
+          `✅ [Gemini] SUCCESS with FALLBACK model: ${this.fallbackModel} | API Key: #${keyNumber}`,
+        );
         return result;
       } catch (error) {
-        console.log(`❌ [Gemini] FAILED FALLBACK model: ${this.fallbackModel} | API Key: #${keyNumber}`);
+        console.log(
+          `❌ [Gemini] FAILED FALLBACK model: ${this.fallbackModel} | API Key: #${keyNumber}`,
+        );
       }
     }
 
@@ -293,8 +320,10 @@ class GeminiService {
     for (const msg of history) {
       if (typeof msg.content === 'string' && msg.content.trim().length > 0) {
         const content = msg.content.trim();
-        if (content.includes('SitaBot sedang tidak dapat digunakan') || 
-            content.includes('baca dokumentasi yang sudah disediakan')) {
+        if (
+          content.includes('SitaBot sedang tidak dapat digunakan') ||
+          content.includes('baca dokumentasi yang sudah disediakan')
+        ) {
           continue;
         }
         contents.push({
@@ -313,14 +342,20 @@ class GeminiService {
       for (let i = 0; i < this.apiKeys.length; i++) {
         const apiKey = this.apiKeys[i];
         if (!apiKey) continue;
-        
-        console.log(`🔄 [Gemini Stream] Trying PRIMARY model: ${model} | API Key: #${i + 1}`);
-        
+
+        console.log(
+          `🔄 [Gemini Stream] Trying PRIMARY model: ${model} | API Key: #${i + 1}`,
+        );
+
         try {
           const response = await axios.post<ReadableStream>(
             `${this.streamBaseUrl}/${model}:streamGenerateContent?key=${apiKey}&alt=sse`,
             { systemInstruction, contents },
-            { headers: { 'Content-Type': 'application/json' }, responseType: 'stream', timeout: this.streamTimeout },
+            {
+              headers: { 'Content-Type': 'application/json' },
+              responseType: 'stream',
+              timeout: this.streamTimeout,
+            },
           );
 
           let buffer = '';
@@ -338,31 +373,45 @@ class GeminiService {
                   const parsed = JSON.parse(data) as GeminiResponse;
                   const text = parsed.candidates?.[0]?.content.parts[0]?.text;
                   if (text) yield text;
-                } catch { continue; }
+                } catch {
+                  continue;
+                }
               }
             }
           }
-          console.log(`✅ [Gemini Stream] SUCCESS with PRIMARY model: ${model} | API Key: #${i + 1}`);
+          console.log(
+            `✅ [Gemini Stream] SUCCESS with PRIMARY model: ${model} | API Key: #${i + 1}`,
+          );
           return;
         } catch (error) {
-          console.log(`❌ [Gemini Stream] FAILED PRIMARY model: ${model} | API Key: #${i + 1}`);
+          console.log(
+            `❌ [Gemini Stream] FAILED PRIMARY model: ${model} | API Key: #${i + 1}`,
+          );
         }
       }
     }
 
-    console.log(`⚠️  [Gemini Stream] All PRIMARY models exhausted, switching to FALLBACK`);
+    console.log(
+      `⚠️  [Gemini Stream] All PRIMARY models exhausted, switching to FALLBACK`,
+    );
 
     for (let i = 0; i < this.apiKeys.length; i++) {
       const apiKey = this.apiKeys[i];
       if (!apiKey) continue;
-      
-      console.log(`🔄 [Gemini Stream] Trying FALLBACK model: ${this.fallbackModel} | API Key: #${i + 1}`);
-      
+
+      console.log(
+        `🔄 [Gemini Stream] Trying FALLBACK model: ${this.fallbackModel} | API Key: #${i + 1}`,
+      );
+
       try {
         const response = await axios.post<ReadableStream>(
           `${this.streamBaseUrl}/${this.fallbackModel}:streamGenerateContent?key=${apiKey}&alt=sse`,
           { systemInstruction, contents },
-          { headers: { 'Content-Type': 'application/json' }, responseType: 'stream', timeout: this.streamTimeout },
+          {
+            headers: { 'Content-Type': 'application/json' },
+            responseType: 'stream',
+            timeout: this.streamTimeout,
+          },
         );
 
         let buffer = '';
@@ -380,14 +429,20 @@ class GeminiService {
                 const parsed = JSON.parse(data) as GeminiResponse;
                 const text = parsed.candidates?.[0]?.content.parts[0]?.text;
                 if (text) yield text;
-              } catch { continue; }
+              } catch {
+                continue;
+              }
             }
           }
         }
-        console.log(`✅ [Gemini Stream] SUCCESS with FALLBACK model: ${this.fallbackModel} | API Key: #${i + 1}`);
+        console.log(
+          `✅ [Gemini Stream] SUCCESS with FALLBACK model: ${this.fallbackModel} | API Key: #${i + 1}`,
+        );
         return;
       } catch (error) {
-        console.log(`❌ [Gemini Stream] FAILED FALLBACK model: ${this.fallbackModel} | API Key: #${i + 1}`);
+        console.log(
+          `❌ [Gemini Stream] FAILED FALLBACK model: ${this.fallbackModel} | API Key: #${i + 1}`,
+        );
       }
     }
 

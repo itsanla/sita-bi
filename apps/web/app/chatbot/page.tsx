@@ -24,7 +24,7 @@ export default function ChatbotPage() {
 
   const handleSendClick = () => {
     if (!input.trim() || isLoading) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const fakeEvent: any = { preventDefault: () => {} };
     void handleSubmit(fakeEvent);
   };
@@ -111,7 +111,9 @@ export default function ChatbotPage() {
                         h2: ({ children }) => (
                           <h2
                             className={`text-sm font-bold mb-1.5 mt-1.5 ${
-                              msg.role === 'user' ? 'text-white' : 'text-red-900'
+                              msg.role === 'user'
+                                ? 'text-white'
+                                : 'text-red-900'
                             }`}
                           >
                             {children}
@@ -120,7 +122,9 @@ export default function ChatbotPage() {
                         p: ({ children }) => (
                           <p
                             className={`mb-1.5 text-sm leading-relaxed ${
-                              msg.role === 'user' ? 'text-white' : 'text-gray-700'
+                              msg.role === 'user'
+                                ? 'text-white'
+                                : 'text-gray-700'
                             }`}
                           >
                             {children}
@@ -129,7 +133,9 @@ export default function ChatbotPage() {
                         strong: ({ children }) => (
                           <strong
                             className={`font-semibold ${
-                              msg.role === 'user' ? 'text-white' : 'text-red-800'
+                              msg.role === 'user'
+                                ? 'text-white'
+                                : 'text-red-800'
                             }`}
                           >
                             {children}
@@ -159,7 +165,9 @@ export default function ChatbotPage() {
                         li: ({ children }) => (
                           <li
                             className={`ml-2 text-sm ${
-                              msg.role === 'user' ? 'text-white' : 'text-gray-700'
+                              msg.role === 'user'
+                                ? 'text-white'
+                                : 'text-gray-700'
                             }`}
                           >
                             {children}
@@ -181,7 +189,7 @@ export default function ChatbotPage() {
               ))
           )}
 
-          {isLoading &&
+          {!!isLoading &&
             !(
               messages.length > 0 &&
               messages[messages.length - 1]?.role === 'assistant' &&

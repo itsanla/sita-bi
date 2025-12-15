@@ -37,7 +37,6 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (_req, file, cb) => {
-    // eslint-disable-next-line sonarjs/pseudo-random
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
     cb(null, `${uniqueSuffix}-${sanitizedName}`);
@@ -233,10 +232,11 @@ router.post(
       throw new BadRequestError(ERROR_MSG_NO_USER_ID);
     }
 
-    const { tugas_akhir_id } = req.body;
+    const { tugas_akhir_id, pembimbing_peran } = req.body;
     const newSesi = await bimbinganService.createEmptySesi(
       tugas_akhir_id,
       userId,
+      pembimbing_peran,
     );
     res.status(201).json({ status: 'sukses', data: newSesi });
   }),

@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { PeriodeService } from '../services/periode.service';
 
 const periodeService = new PeriodeService();
@@ -6,11 +6,11 @@ const periodeService = new PeriodeService();
 export const autoEnrollMiddleware = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
-    if (userId) {
+    if (userId != null) {
       await periodeService.autoEnrollUserToPeriode(userId);
     }
   } catch (error) {

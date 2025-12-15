@@ -79,7 +79,7 @@ const prodiMenuItems = [
   {
     href: '/dashboard/dosen/fitur-prodi-1',
     icon: Award,
-    label: 'Fitur Prodi 1',
+    label: 'Monitor Prodi',
   },
   {
     href: '/dashboard/dosen/fitur-prodi-2',

@@ -24,11 +24,12 @@ export default function JadwalSidangMahasiswaPage() {
     try {
       const response = await api.get('/jadwal-sidang-smart/jadwal');
       const allJadwal = response.data.data || [];
-      
+
       const myJadwal = allJadwal.find(
-        (j: any) => j.sidang.tugasAkhir.mahasiswa_id === tugasAkhir?.mahasiswa_id,
+        (j: any) =>
+          j.sidang.tugasAkhir.mahasiswa_id === tugasAkhir?.mahasiswa_id,
       );
-      
+
       setJadwal(myJadwal || null);
     } catch {
       // Error handled by interceptor
@@ -62,7 +63,9 @@ export default function JadwalSidangMahasiswaPage() {
                   <div className="absolute inset-0 border-4 border-red-200 rounded-full"></div>
                   <div className="absolute inset-0 border-4 border-red-900 border-t-transparent rounded-full animate-spin"></div>
                 </div>
-                <p className="text-sm font-medium text-gray-600">Memuat jadwal...</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Memuat jadwal...
+                </p>
               </div>
             </div>
           </JadwalSidangGuard>
@@ -92,32 +95,44 @@ export default function JadwalSidangMahasiswaPage() {
                   Belum Ada Jadwal Sidang
                 </h2>
                 <p className="text-sm text-gray-600">
-                  Jadwal sidang Anda belum tersedia. Silakan hubungi admin atau ketua jurusan.
+                  Jadwal sidang Anda belum tersedia. Silakan hubungi admin atau
+                  ketua jurusan.
                 </p>
               </div>
             ) : jadwal ? (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 <div className="bg-gradient-to-r from-red-900 to-red-800 px-6 py-4">
-                  <h2 className="text-lg font-bold text-white">Detail Jadwal Sidang</h2>
+                  <h2 className="text-lg font-bold text-white">
+                    Detail Jadwal Sidang
+                  </h2>
                 </div>
                 <div className="p-6 space-y-6">
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Judul Tugas Akhir</h3>
-                    <p className="text-gray-900">{jadwal.sidang.tugasAkhir.judul}</p>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                      Judul Tugas Akhir
+                    </h3>
+                    <p className="text-gray-900">
+                      {jadwal.sidang.tugasAkhir.judul}
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg">
                       <Calendar className="w-5 h-5 text-blue-600 mt-0.5" />
                       <div>
-                        <p className="text-xs font-semibold text-gray-600 mb-1">Tanggal</p>
+                        <p className="text-xs font-semibold text-gray-600 mb-1">
+                          Tanggal
+                        </p>
                         <p className="text-sm font-medium text-gray-900">
-                          {new Date(jadwal.tanggal).toLocaleDateString('id-ID', {
-                            weekday: 'long',
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
-                          })}
+                          {new Date(jadwal.tanggal).toLocaleDateString(
+                            'id-ID',
+                            {
+                              weekday: 'long',
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                            },
+                          )}
                         </p>
                       </div>
                     </div>
@@ -125,7 +140,9 @@ export default function JadwalSidangMahasiswaPage() {
                     <div className="flex items-start space-x-3 p-4 bg-green-50 rounded-lg">
                       <Clock className="w-5 h-5 text-green-600 mt-0.5" />
                       <div>
-                        <p className="text-xs font-semibold text-gray-600 mb-1">Waktu</p>
+                        <p className="text-xs font-semibold text-gray-600 mb-1">
+                          Waktu
+                        </p>
                         <p className="text-sm font-medium text-gray-900">
                           {jadwal.waktu_mulai} - {jadwal.waktu_selesai} WIB
                         </p>
@@ -135,7 +152,9 @@ export default function JadwalSidangMahasiswaPage() {
                     <div className="flex items-start space-x-3 p-4 bg-purple-50 rounded-lg">
                       <MapPin className="w-5 h-5 text-purple-600 mt-0.5" />
                       <div>
-                        <p className="text-xs font-semibold text-gray-600 mb-1">Ruangan</p>
+                        <p className="text-xs font-semibold text-gray-600 mb-1">
+                          Ruangan
+                        </p>
                         <p className="text-sm font-medium text-gray-900">
                           {jadwal.ruangan.nama_ruangan}
                         </p>
@@ -146,13 +165,18 @@ export default function JadwalSidangMahasiswaPage() {
                   <div>
                     <div className="flex items-center space-x-2 mb-3">
                       <Users className="w-5 h-5 text-gray-600" />
-                      <h3 className="text-sm font-semibold text-gray-700">Tim Penguji</h3>
+                      <h3 className="text-sm font-semibold text-gray-700">
+                        Tim Penguji
+                      </h3>
                     </div>
                     <div className="space-y-2">
                       {jadwal.sidang.tugasAkhir.peranDosenTa
                         .filter((p) => p.peran.startsWith('penguji'))
                         .map((peran, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                          >
                             <span className="text-sm font-medium text-gray-900">
                               {peran.dosen.user.name}
                             </span>
@@ -170,7 +194,8 @@ export default function JadwalSidangMahasiswaPage() {
 
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <p className="text-sm text-amber-800">
-                      <span className="font-semibold">Catatan:</span> Harap hadir 15 menit sebelum waktu sidang dimulai.
+                      <span className="font-semibold">Catatan:</span> Harap
+                      hadir 15 menit sebelum waktu sidang dimulai.
                     </p>
                   </div>
 

@@ -34,8 +34,11 @@ export default function SyaratSidangWidget() {
     if (user && selectedPeriodeId) fetchTugasAkhir();
   }, [user, selectedPeriodeId]);
 
-  const { data: eligibility, isLoading: eligibilityLoading, error } =
-    useCheckEligibility(tugasAkhirId);
+  const {
+    data: eligibility,
+    isLoading: eligibilityLoading,
+    error,
+  } = useCheckEligibility(tugasAkhirId);
 
   console.log('SyaratSidangWidget Debug:', {
     user: !!user,
@@ -44,7 +47,7 @@ export default function SyaratSidangWidget() {
     loading,
     eligibilityLoading,
     eligibility,
-    error
+    error,
   });
 
   if (loading || eligibilityLoading) {
@@ -86,7 +89,9 @@ export default function SyaratSidangWidget() {
         <div className="mt-4 p-3 bg-red-50 rounded-lg">
           <div className="flex gap-2 text-xs text-red-700 items-center">
             <AlertCircle className="h-4 w-4" />
-            <span>Silakan daftar tugas akhir dan mulai bimbingan terlebih dahulu</span>
+            <span>
+              Silakan daftar tugas akhir dan mulai bimbingan terlebih dahulu
+            </span>
           </div>
         </div>
 
@@ -102,7 +107,11 @@ export default function SyaratSidangWidget() {
   }
 
   if (!eligibility?.data) {
-    return <EmptyState message={`Gagal memuat syarat sidang. Error: ${error?.message || 'Unknown'}`} />;
+    return (
+      <EmptyState
+        message={`Gagal memuat syarat sidang. Error: ${error?.message || 'Unknown'}`}
+      />
+    );
   }
 
   const { eligible, message, validBimbingan, minRequired, isDrafValid } =

@@ -144,7 +144,6 @@ export class AuthService {
       },
     });
 
-    // eslint-disable-next-line sonarjs/no-unused-vars
     const { password: _password, ...userWithoutPassword } = user;
 
     // Generate JWT token with full user data (no DB query needed in middleware)
@@ -276,7 +275,6 @@ export class AuthService {
       throw new HttpError(410, 'Token verifikasi sudah kedaluwarsa.');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await prisma.$transaction(async (tx: any) => {
       await tx.user.update({
         where: { email: verificationToken.email },
@@ -340,7 +338,6 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await prisma.$transaction(async (tx: any) => {
       await tx.user.update({
         where: { email: resetToken.email },
@@ -413,7 +410,6 @@ export class AuthService {
       throw new HttpError(404, 'User tidak ditemukan.');
     }
 
-    // eslint-disable-next-line sonarjs/no-unused-vars
     const { password: _password, ...userWithoutPassword } = user;
 
     // Transform dosen data to include assigned mahasiswa

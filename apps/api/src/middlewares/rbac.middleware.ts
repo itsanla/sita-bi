@@ -34,11 +34,9 @@ export const validateProdiScope = (requiredProdi?: 'D3' | 'D4') => {
       }
 
       if (requiredProdi && userProdi !== requiredProdi) {
-        res
-          .status(403)
-          .json({
-            message: `${ERROR_MESSAGES.PRODI_SCOPE_DENIED} ${requiredProdi}`,
-          });
+        res.status(403).json({
+          message: `${ERROR_MESSAGES.PRODI_SCOPE_DENIED} ${requiredProdi}`,
+        });
         return;
       }
 

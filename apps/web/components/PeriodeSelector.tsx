@@ -16,7 +16,7 @@ export function PeriodeSelector() {
     selectedPeriodeId,
     periodes,
     activePeriode,
-    loading
+    loading,
   });
 
   if (loading) {

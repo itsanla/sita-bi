@@ -45,7 +45,9 @@ router.post(
 
       try {
         // Stream the response with word-by-word splitting
-        for await (const chunk of geminiService.streamGenerateContent(message)) {
+        for await (const chunk of geminiService.streamGenerateContent(
+          message,
+        )) {
           const parts = chunk.split(/(\s+)/); // Split but keep whitespace
           for (const part of parts) {
             if (part.length > 0) {
@@ -61,10 +63,15 @@ router.post(
         logger.info('Stream completed successfully', { userId: req.user?.id });
       } catch (streamError) {
         const errorMessage = (streamError as Error).message;
-        const frontendUrl = process.env['FRONTEND_URL'] || 'http://localhost:3001';
+        const frontendUrl =
+          process.env['FRONTEND_URL'] || 'http://localhost:3001';
         logger.error('Stream error:', errorMessage);
-        
-        if (errorMessage.includes('All API keys exhausted') || errorMessage.includes('Anda sudah mencapai limit') || errorMessage.includes('API keys')) {
+
+        if (
+          errorMessage.includes('All API keys exhausted') ||
+          errorMessage.includes('Anda sudah mencapai limit') ||
+          errorMessage.includes('API keys')
+        ) {
           res.write(
             `data: ${JSON.stringify({ type: 'error', error: `Maaf, SitaBot sedang tidak dapat digunakan. Silakan baca dokumentasi yang sudah disediakan di ${frontendUrl}/dokumentasi` })}\n\n`,
           );
@@ -143,10 +150,15 @@ router.post(
         logger.info('Public stream completed successfully');
       } catch (streamError) {
         const errorMessage = (streamError as Error).message;
-        const frontendUrl = process.env['FRONTEND_URL'] || 'http://localhost:3001';
+        const frontendUrl =
+          process.env['FRONTEND_URL'] || 'http://localhost:3001';
         logger.error('Stream error:', errorMessage);
-        
-        if (errorMessage.includes('All API keys exhausted') || errorMessage.includes('Anda sudah mencapai limit') || errorMessage.includes('API keys')) {
+
+        if (
+          errorMessage.includes('All API keys exhausted') ||
+          errorMessage.includes('Anda sudah mencapai limit') ||
+          errorMessage.includes('API keys')
+        ) {
           res.write(
             `data: ${JSON.stringify({ type: 'error', error: `Maaf, SitaBot sedang tidak dapat digunakan. Silakan baca dokumentasi yang sudah disediakan di ${frontendUrl}/dokumentasi` })}\n\n`,
           );
@@ -197,7 +209,11 @@ router.post(
       const frontendUrl = process.env['FRONTEND_URL'];
 
       // Check if it's the "all keys exhausted" error
-      if (errorMessage.includes('All API keys exhausted') || errorMessage.includes('Anda sudah mencapai limit') || errorMessage.includes('API keys')) {
+      if (
+        errorMessage.includes('All API keys exhausted') ||
+        errorMessage.includes('Anda sudah mencapai limit') ||
+        errorMessage.includes('API keys')
+      ) {
         res.status(429).json({
           success: false,
           error: `Maaf, SitaBot sedang tidak dapat digunakan. Silakan baca dokumentasi yang sudah disediakan di ${frontendUrl}/dokumentasi`,
@@ -234,9 +250,14 @@ router.post(
       });
     } catch (error) {
       const errorMessage = (error as Error).message;
-      const frontendUrl = process.env['FRONTEND_URL'] || 'http://localhost:3001';
+      const frontendUrl =
+        process.env['FRONTEND_URL'] || 'http://localhost:3001';
 
-      if (errorMessage.includes('All API keys exhausted') || errorMessage.includes('Anda sudah mencapai limit') || errorMessage.includes('API keys')) {
+      if (
+        errorMessage.includes('All API keys exhausted') ||
+        errorMessage.includes('Anda sudah mencapai limit') ||
+        errorMessage.includes('API keys')
+      ) {
         res.status(429).json({
           success: false,
           error: `Maaf, SitaBot sedang tidak dapat digunakan. Silakan baca dokumentasi yang sudah disediakan di ${frontendUrl}/dokumentasi`,

@@ -1823,7 +1823,9 @@ export default function PenjadwalanSidang() {
                   <span>PERINGATAN PENTING</span>
                 </p>
                 <p className="text-sm text-red-800 leading-relaxed">
-                  Yakin ingin menghapus <span className="font-bold">SEMUA jadwal sidang</span> yang sudah dibuat?
+                  Yakin ingin menghapus{' '}
+                  <span className="font-bold">SEMUA jadwal sidang</span> yang
+                  sudah dibuat?
                 </p>
                 <p className="text-sm text-red-900 font-semibold mt-2">
                   Tindakan ini tidak dapat dibatalkan!
@@ -1832,7 +1834,9 @@ export default function PenjadwalanSidang() {
 
               <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
                 <p className="text-sm text-amber-900">
-                  📊 <span className="font-semibold">Info:</span> Semua mahasiswa akan dikembalikan ke status "Siap Sidang" dan dapat dijadwalkan ulang.
+                  📊 <span className="font-semibold">Info:</span> Semua
+                  mahasiswa akan dikembalikan ke status "Siap Sidang" dan dapat
+                  dijadwalkan ulang.
                 </p>
               </div>
             </div>
@@ -1878,13 +1882,20 @@ export default function PenjadwalanSidang() {
                   ⚠️ PERINGATAN PENTING
                 </p>
                 <p className="text-sm text-red-800 leading-relaxed">
-                  Menghapus jadwal akan membuat mahasiswa <span className="font-bold">{deleteModal.sidang.tugasAkhir.mahasiswa.user.name}</span> gagal sidang periode ini dengan status "KHUSUS".
+                  Menghapus jadwal akan membuat mahasiswa{' '}
+                  <span className="font-bold">
+                    {deleteModal.sidang.tugasAkhir.mahasiswa.user.name}
+                  </span>{' '}
+                  gagal sidang periode ini dengan status "KHUSUS".
                 </p>
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-800">
-                  💡 <span className="font-semibold">Catatan:</span> Jika ingin mengubah jadwal mahasiswa, gunakan tombol <span className="font-semibold">"Edit"</span> sebagai gantinya.
+                  💡 <span className="font-semibold">Catatan:</span> Jika ingin
+                  mengubah jadwal mahasiswa, gunakan tombol{' '}
+                  <span className="font-semibold">"Edit"</span> sebagai
+                  gantinya.
                 </p>
               </div>
 
@@ -1924,9 +1935,11 @@ export default function PenjadwalanSidang() {
                   try {
                     await api.delete(
                       `/jadwal-sidang-smart/jadwal/${deleteModal.id}`,
-                      { data: { alasan: deleteReason } }
+                      { data: { alasan: deleteReason } },
                     );
-                    toast.success('Jadwal berhasil dihapus dan mahasiswa ditandai gagal sidang');
+                    toast.success(
+                      'Jadwal berhasil dihapus dan mahasiswa ditandai gagal sidang',
+                    );
                     setDeleteModal(null);
                     setDeleteReason('');
                     fetchJadwal();
@@ -1969,10 +1982,13 @@ export default function PenjadwalanSidang() {
             <div className="p-6 space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-sm text-blue-800">
-                  <span className="font-semibold">Info:</span> Edit jadwal untuk <span className="font-semibold">{editModal.sidang.tugasAkhir.mahasiswa.user.name}</span>
+                  <span className="font-semibold">Info:</span> Edit jadwal untuk{' '}
+                  <span className="font-semibold">
+                    {editModal.sidang.tugasAkhir.mahasiswa.user.name}
+                  </span>
                 </p>
               </div>
-              
+
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-gray-900 mb-1">

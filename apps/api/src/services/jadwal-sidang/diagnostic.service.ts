@@ -4,7 +4,7 @@ import type { PengaturanJadwal } from './types';
 export class DiagnosticService {
   async runSmartDiagnostic(
     pengaturan: PengaturanJadwal,
-    getPengaturanByKey: (key: string) => Promise<string>
+    getPengaturanByKey: (key: string) => Promise<string>,
   ): Promise<{
     success: boolean;
     error?: {
@@ -24,15 +24,23 @@ export class DiagnosticService {
       warnings: { problems: string[]; suggestions: string[] } | null;
     };
   }> {
-    const mahasiswaCount = await prisma.mahasiswa.count({ where: { siap_sidang: true } });
+    const mahasiswaCount = await prisma.mahasiswa.count({
+      where: { siap_sidang: true },
+    });
     const totalDosen = await prisma.dosen.count();
     const ruanganCount = pengaturan.ruangan_sidang.length;
     const hariLiburCount = pengaturan.hari_libur_tetap.length;
 
-    const [jamMulai = 0, menitMulai = 0] = pengaturan.jam_mulai_sidang.split(':').map(Number);
-    const [jamSelesai = 0, menitSelesai = 0] = pengaturan.jam_selesai_sidang.split(':').map(Number);
-    const totalMenit = jamSelesai * 60 + menitSelesai - (jamMulai * 60 + menitMulai);
-    const durasiPerSidang = pengaturan.durasi_sidang_menit + pengaturan.jeda_sidang_menit;
+    const [jamMulai = 0, menitMulai = 0] = pengaturan.jam_mulai_sidang
+      .split(':')
+      .map(Number);
+    const [jamSelesai = 0, menitSelesai = 0] = pengaturan.jam_selesai_sidang
+      .split(':')
+      .map(Number);
+    const totalMenit =
+      jamSelesai * 60 + menitSelesai - (jamMulai * 60 + menitMulai);
+    const durasiPerSidang =
+      pengaturan.durasi_sidang_menit + pengaturan.jeda_sidang_menit;
     const slotPerHari = Math.floor(totalMenit / durasiPerSidang) * ruanganCount;
     const hariKerja = 7 - hariLiburCount;
 
@@ -45,7 +53,8 @@ export class DiagnosticService {
         error: {
           status: 'TIDAK_ADA_MAHASISWA',
           masalah: 'Tidak ada mahasiswa yang siap sidang.',
-          saran: 'Pastikan ada mahasiswa dengan status "siap_sidang = true" di sistem.',
+          saran:
+            'Pastikan ada mahasiswa dengan status "siap_sidang = true" di sistem.',
           detail: { mahasiswaCount: 0 },
         },
       };
@@ -57,7 +66,8 @@ export class DiagnosticService {
         error: {
           status: 'TIDAK_ADA_RUANGAN',
           masalah: 'Tidak ada ruangan sidang yang tersedia.',
-          saran: 'Tambahkan minimal 1 ruangan di menu Aturan Umum → Ruangan Sidang.',
+          saran:
+            'Tambahkan minimal 1 ruangan di menu Aturan Umum → Ruangan Sidang.',
           detail: { ruanganCount: 0 },
         },
       };
@@ -81,7 +91,8 @@ export class DiagnosticService {
         error: {
           status: 'SEMUA_HARI_LIBUR',
           masalah: 'Semua hari (Senin-Minggu) diatur sebagai hari libur.',
-          saran: 'Uncheck beberapa hari di menu Aturan Umum → Hari Libur Tetap agar ada hari kerja untuk sidang.',
+          saran:
+            'Uncheck beberapa hari di menu Aturan Umum → Hari Libur Tetap agar ada hari kerja untuk sidang.',
           detail: { hariLiburCount, hariKerja: 0 },
         },
       };
@@ -99,12 +110,19 @@ export class DiagnosticService {
       };
     }
 
-    const maxPembimbingAktifStr = await getPengaturanByKey('max_pembimbing_aktif');
-    const maxPembimbingAktif = parseInt(maxPembimbingAktifStr !== '' ? maxPembimbingAktifStr : '4', 10);
+    const maxPembimbingAktifStr = await getPengaturanByKey(
+      'max_pembimbing_aktif',
+    );
+    const maxPembimbingAktif = parseInt(
+      maxPembimbingAktifStr !== '' ? maxPembimbingAktifStr : '4',
+      10,
+    );
     const marginPersen = totalDosen > 0 ? maxPembimbingAktif / totalDosen : 0.2;
     const totalSlotDosen = totalDosen * pengaturan.max_mahasiswa_uji_per_dosen;
     const slotDibutuhkan = mahasiswaCount * 3;
-    const slotDibutuhkanDenganMargin = Math.ceil(slotDibutuhkan * (1 + marginPersen));
+    const slotDibutuhkanDenganMargin = Math.ceil(
+      slotDibutuhkan * (1 + marginPersen),
+    );
 
     if (totalSlotDosen < slotDibutuhkanDenganMargin) {
       const kuotaMinimal = Math.ceil(slotDibutuhkanDenganMargin / totalDosen);
@@ -177,15 +195,20 @@ export class DiagnosticService {
         error: {
           status: 'TIDAK_ADA_SLOT_WAKTU',
           masalah: 'Tidak ada slot waktu yang tersedia per hari.',
-          saran: 'Perlebar jam operasional atau tambah ruangan di menu Aturan Umum.',
+          saran:
+            'Perlebar jam operasional atau tambah ruangan di menu Aturan Umum.',
           detail: { slotPerHari: 0, totalMenit, durasiPerSidang },
         },
       };
     }
 
     if (hariDibutuhkan > 60) {
-      problems.push(`Estimasi butuh ${hariDibutuhkan} hari kerja untuk ${mahasiswaCount} mahasiswa.`);
-      suggestions.push(`Tambah ruangan (sekarang: ${ruanganCount}) atau perlebar jam operasional untuk mempercepat.`);
+      problems.push(
+        `Estimasi butuh ${hariDibutuhkan} hari kerja untuk ${mahasiswaCount} mahasiswa.`,
+      );
+      suggestions.push(
+        `Tambah ruangan (sekarang: ${ruanganCount}) atau perlebar jam operasional untuk mempercepat.`,
+      );
     }
 
     return {

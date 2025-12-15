@@ -371,7 +371,8 @@ export class PengaturanService {
           create: {
             key: 'waktu_istirahat',
             value: JSON.stringify((data as any).waktu_istirahat),
-            deskripsi: 'Waktu istirahat tambahan di tengah jadwal sidang (JSON array)',
+            deskripsi:
+              'Waktu istirahat tambahan di tengah jadwal sidang (JSON array)',
           },
         }),
       );
@@ -388,7 +389,8 @@ export class PengaturanService {
           create: {
             key: 'jadwal_hari_khusus',
             value: JSON.stringify((data as any).jadwal_hari_khusus),
-            deskripsi: 'Jadwal jam operasional khusus untuk hari tertentu (JSON array)',
+            deskripsi:
+              'Jadwal jam operasional khusus untuk hari tertentu (JSON array)',
           },
         }),
       );
@@ -405,7 +407,8 @@ export class PengaturanService {
           create: {
             key: 'rumus_penilaian',
             value: (data as any).rumus_penilaian,
-            deskripsi: 'Rumus perhitungan nilai akhir sidang menggunakan p1, p2, p3',
+            deskripsi:
+              'Rumus perhitungan nilai akhir sidang menggunakan p1, p2, p3',
           },
         }),
       );
@@ -422,7 +425,8 @@ export class PengaturanService {
           create: {
             key: 'nilai_minimal_lolos',
             value: (data as any).nilai_minimal_lolos.toString(),
-            deskripsi: 'Nilai minimal untuk lolos sidang (di bawah nilai ini = gagal sidang)',
+            deskripsi:
+              'Nilai minimal untuk lolos sidang (di bawah nilai ini = gagal sidang)',
           },
         }),
       );
@@ -433,13 +437,18 @@ export class PengaturanService {
         prisma.pengaturanSistem.upsert({
           where: { key: 'tampilkan_rincian_nilai_ke_sekretaris' },
           update: {
-            value: (data as any).tampilkan_rincian_nilai_ke_sekretaris.toString(),
+            value: (
+              data as any
+            ).tampilkan_rincian_nilai_ke_sekretaris.toString(),
             updated_at: new Date(),
           },
           create: {
             key: 'tampilkan_rincian_nilai_ke_sekretaris',
-            value: (data as any).tampilkan_rincian_nilai_ke_sekretaris.toString(),
-            deskripsi: 'Tampilkan rumus penilaian dan nilai minimal lolos ke sekretaris saat input nilai',
+            value: (
+              data as any
+            ).tampilkan_rincian_nilai_ke_sekretaris.toString(),
+            deskripsi:
+              'Tampilkan rumus penilaian dan nilai minimal lolos ke sekretaris saat input nilai',
           },
         }),
       );
@@ -456,7 +465,8 @@ export class PengaturanService {
           create: {
             key: 'cek_similaritas_semua_periode',
             value: (data as any).cek_similaritas_semua_periode.toString(),
-            deskripsi: 'Jika diaktifkan, pengecekan kemiripan judul akan menggunakan semua judul dari semua periode termasuk periode 2014',
+            deskripsi:
+              'Jika diaktifkan, pengecekan kemiripan judul akan menggunakan semua judul dari semua periode termasuk periode 2014',
           },
         }),
       );
@@ -473,7 +483,8 @@ export class PengaturanService {
           create: {
             key: 'nonaktifkan_cek_similaritas',
             value: (data as any).nonaktifkan_cek_similaritas.toString(),
-            deskripsi: 'Jika diaktifkan, pengecekan kemiripan judul akan dinonaktifkan sepenuhnya',
+            deskripsi:
+              'Jika diaktifkan, pengecekan kemiripan judul akan dinonaktifkan sepenuhnya',
           },
         }),
       );

@@ -15,10 +15,14 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { normalizePhoneNumber, validatePhoneNumber, formatPhoneForDisplay } from '@/lib/phone-utils';
+import {
+  normalizePhoneNumber,
+  validatePhoneNumber,
+  formatPhoneForDisplay,
+} from '@/lib/phone-utils';
 
 export default function DataDiriAdminPage() {
-  const { user } = useAuth();
+  useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
@@ -51,13 +55,12 @@ export default function DataDiriAdminPage() {
 
   useEffect(() => {
     fetchDataDiri();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchDataDiri = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/data-diri`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       const data = await response.json();
       if (data.status === 'sukses') {
@@ -86,7 +89,9 @@ export default function DataDiriAdminPage() {
 
     try {
       if (!validatePhoneNumber(formData.phone_number)) {
-        toast.error('Format nomor HP tidak valid. Gunakan format 08xxx, 628xxx, atau +628xxx');
+        toast.error(
+          'Format nomor HP tidak valid. Gunakan format 08xxx, 628xxx, atau +628xxx',
+        );
         return;
       }
 
@@ -106,7 +111,7 @@ export default function DataDiriAdminPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify(payload),
       });
@@ -133,7 +138,7 @@ export default function DataDiriAdminPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify(passwordData),
       });
@@ -167,7 +172,7 @@ export default function DataDiriAdminPage() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
           body: JSON.stringify({ email_baru: emailData.email_baru }),
         },
@@ -198,7 +203,7 @@ export default function DataDiriAdminPage() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
           body: JSON.stringify(emailData),
         },

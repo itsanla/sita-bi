@@ -15,14 +15,12 @@ router.get(
   asyncHandler(async (_req, res) => {
     let aturan = await prisma.aturanValidasi.findFirst();
 
-    if (!aturan) {
-      aturan = await prisma.aturanValidasi.create({
-        data: {
-          mode_validasi_judul: ModeValidasi.KEDUA_PEMBIMBING,
-          mode_validasi_draf: ModeValidasi.KEDUA_PEMBIMBING,
-        },
-      });
-    }
+    aturan ??= await prisma.aturanValidasi.create({
+      data: {
+        mode_validasi_judul: ModeValidasi.KEDUA_PEMBIMBING,
+        mode_validasi_draf: ModeValidasi.KEDUA_PEMBIMBING,
+      },
+    });
 
     res.json({ status: 'sukses', data: aturan });
   }),
@@ -34,7 +32,10 @@ router.put(
   asyncHandler(async (req, res) => {
     const { mode_validasi_judul, mode_validasi_draf } = req.body;
 
-    if (!mode_validasi_judul || !mode_validasi_draf) {
+    if (
+      typeof mode_validasi_judul !== 'string' ||
+      typeof mode_validasi_draf !== 'string'
+    ) {
       throw new BadRequestError('Mode validasi harus diisi');
     }
 

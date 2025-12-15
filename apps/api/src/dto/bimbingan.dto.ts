@@ -15,13 +15,16 @@ export const setJadwalSchema = z.object({
     }),
   jam_bimbingan: z
     .string()
-    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:mm)'),
+    .regex(/^([0-1]?\d|2[0-3]):[0-5]\d$/, 'Invalid time format (HH:mm)'),
 });
 
 export type SetJadwalDto = z.infer<typeof setJadwalSchema>;
 
 export const createSesiSchema = z.object({
   tugas_akhir_id: z.number().int('tugas_akhir_id must be an integer'),
+  pembimbing_peran: z.enum(['pembimbing1', 'pembimbing2'], {
+    required_error: 'Pilih pembimbing yang akan melakukan bimbingan',
+  }),
 });
 
 export type CreateSesiDto = z.infer<typeof createSesiSchema>;
@@ -34,10 +37,10 @@ export const setJadwalSesiSchema = z.object({
     }),
   jam_bimbingan: z
     .string()
-    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:mm)'),
+    .regex(/^([0-1]?\d|2[0-3]):[0-5]\d$/, 'Invalid time format (HH:mm)'),
   jam_selesai: z
     .string()
-    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:mm)')
+    .regex(/^([0-1]?\d|2[0-3]):[0-5]\d$/, 'Invalid time format (HH:mm)')
     .optional(),
 });
 

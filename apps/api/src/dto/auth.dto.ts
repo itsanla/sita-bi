@@ -10,13 +10,11 @@ export type LoginDto = z.infer<typeof loginSchema>;
 
 export const registerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
   email: z.string().email('Format email tidak valid'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   phone_number: z.string().min(1, 'Phone number is required'),
   nim: z.string().min(1, 'NIM is required'),
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
-  prodi: z.nativeEnum(Prodi),
+  prodi: z.enum([Prodi.D3, Prodi.D4]),
   kelas: z.string().min(1, 'Kelas is required'),
 });
 
@@ -29,7 +27,6 @@ export const verifyEmailSchema = z.object({
 export type VerifyEmailDto = z.infer<typeof verifyEmailSchema>;
 
 export const forgotPasswordSchema = z.object({
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
   email: z.string().email('Format email tidak valid'),
 });
 

@@ -37,9 +37,11 @@ export function useTAStatus() {
         return;
       }
 
-      const pembimbingList = tugasAkhir.peranDosenTa?.filter(
-        (p: { peran: string }) => p.peran === 'pembimbing1' || p.peran === 'pembimbing2'
-      ) || [];
+      const pembimbingList =
+        tugasAkhir.peranDosenTa?.filter(
+          (p: { peran: string }) =>
+            p.peran === 'pembimbing1' || p.peran === 'pembimbing2',
+        ) || [];
       const hasPembimbing = pembimbingList.length >= 2;
       const isJudulValidated =
         tugasAkhir.judul_divalidasi_p1 || tugasAkhir.judul_divalidasi_p2;
@@ -47,13 +49,16 @@ export function useTAStatus() {
       // Fetch eligibility from backend API
       let isEligibleForSidang = false;
       try {
-        const eligibilityResponse = await api.get(`/bimbingan/eligibility/${tugasAkhir.id}`);
+        const eligibilityResponse = await api.get(
+          `/bimbingan/eligibility/${tugasAkhir.id}`,
+        );
         isEligibleForSidang = eligibilityResponse.data?.data?.eligible || false;
       } catch {
         // Fallback to old logic if API fails
         const validBimbinganCount =
           tugasAkhir.bimbinganTa?.filter(
-            (b: { status_bimbingan: string }) => b.status_bimbingan === 'selesai',
+            (b: { status_bimbingan: string }) =>
+              b.status_bimbingan === 'selesai',
           ).length || 0;
         const latestDokumen = tugasAkhir.dokumenTa?.[0];
         const isDrafValidatedP1 = !!latestDokumen?.divalidasi_oleh_p1;

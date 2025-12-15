@@ -75,7 +75,7 @@ export class LogService {
       where.user_id = parseInt(filters.user_id, 10);
     if (filters.entity_id !== undefined && filters.entity_id.length > 0)
       where.entity_id = parseInt(filters.entity_id, 10);
-    
+
     // Filter by date (YYYY-MM-DD)
     if (filters.date !== undefined && filters.date.length > 0) {
       const startOfDay = new Date(filters.date);

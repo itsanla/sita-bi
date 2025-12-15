@@ -1,13 +1,12 @@
 import cron from 'node-cron';
 import { PrismaClient, StatusTugasAkhir } from '@repo/db';
 import { EmailService } from './email.service';
-import type { WahaWhatsAppService } from './waha-whatsapp.service';
 import { whatsappService } from './waha-whatsapp.service';
 
 export class SchedulerService {
   private prisma: PrismaClient;
   private emailService: EmailService;
-  private waService: WhatsappService;
+  private waService: typeof whatsappService;
 
   constructor() {
     this.prisma = new PrismaClient();
@@ -79,7 +78,7 @@ export class SchedulerService {
 
       await this.emailService.sendEmail(mhs.email, 'Reminder Sidang H-3', msg);
       const waStatus = this.waService.getStatus();
-      if (waStatus.isReady === true) {
+      if (waStatus.isReady) {
         try {
           await this.waService.sendMessage(mhs.phone_number, msg);
         } catch (e: unknown) {

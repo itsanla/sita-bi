@@ -1,9 +1,4 @@
 'use client';
-/* eslint-disable sonarjs/cognitive-complexity */
-/* eslint-disable sonarjs/no-duplicate-string */
-/* eslint-disable sonarjs/no-nested-conditional */
-/* eslint-disable sonarjs/no-identical-functions */
-/* eslint-disable react-hooks/exhaustive-deps */
 
 import {
   useState,
@@ -421,7 +416,6 @@ export default function PengajuanMahasiswaPage() {
 
   const filteredDosen = useMemo(() => {
     return dosenList
-      .filter((d) => d.available)
       .filter(
         (d) =>
           d.user.name
@@ -620,7 +614,7 @@ export default function PengajuanMahasiswaPage() {
                       {dosenList.length}
                     </p>
                     <p className="text-xs text-red-100 mt-1">
-                      {filteredDosen.length} tersedia
+                      {dosenList.filter((d) => d.available).length} tersedia
                     </p>
                   </div>
                   <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 rounded-xl flex items-center justify-center">
@@ -767,6 +761,7 @@ export default function PengajuanMahasiswaPage() {
                       <button
                         onClick={() => handleAjukan(dosen.id, dosen.user.name)}
                         disabled={
+                          !dosen.available ||
                           (selectedPeran === 'pembimbing1' &&
                             (hasPembimbing1 || pengajuanAktifP1 >= 3)) ||
                           (selectedPeran === 'pembimbing2' &&
@@ -775,7 +770,7 @@ export default function PengajuanMahasiswaPage() {
                         className="w-full sm:w-auto px-4 py-2 bg-[#7f1d1d] text-white rounded-lg text-sm font-semibold hover:bg-[#991b1b] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 flex-shrink-0"
                       >
                         <Send className="w-4 h-4" />
-                        <span>Ajukan</span>
+                        <span>{dosen.available ? 'Ajukan' : 'Penuh'}</span>
                       </button>
                     </div>
                   </div>

@@ -127,6 +127,15 @@ router.get(
   }),
 );
 
+router.get(
+  '/mahasiswa/prodi',
+  authorizeRoles([Role.prodi_d3, Role.prodi_d4, Role.jurusan]),
+  asyncHandler(async (req, res) => {
+    const mahasiswaList = await usersService.findAllMahasiswaWithTA();
+    res.status(200).json({ status: 'sukses', data: mahasiswaList });
+  }),
+);
+
 router.patch(
   '/dosen/:id',
   authorizeRoles([Role.admin, Role.jurusan]),

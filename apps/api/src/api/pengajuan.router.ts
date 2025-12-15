@@ -39,10 +39,6 @@ router.post(
     const mahasiswaId = req.user.mahasiswa.id;
     const { dosenId, peran } = req.body;
 
-    console.log('Request body:', req.body);
-    console.log('dosenId:', dosenId, 'type:', typeof dosenId);
-    console.log('peran:', peran);
-
     if (dosenId === undefined || dosenId === null) {
       res.status(400).json({
         status: MSG_GAGAL,
@@ -359,7 +355,10 @@ router.get(
     }
 
     try {
-      const periodeId = req.query.periode_ta_id ? parseInt(req.query.periode_ta_id as string) : undefined;
+      const periodeId =
+        req.query.periode_ta_id !== undefined
+          ? parseInt(req.query.periode_ta_id as string, 10)
+          : undefined;
       const result = await pengajuanService.getAvailableMahasiswa(periodeId);
       res.status(200).json({ status: MSG_SUKSES, data: result });
     } catch (error) {

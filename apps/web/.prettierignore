@@ -1,0 +1,18 @@
+# Generated files
+.next/
+out/
+build/
+dist/
+
+# Dependencies
+node_modules/
+
+# Environment files
+.env*
+
+# Logs
+*.log
+
+# Other
+coverage/
+.turbo/

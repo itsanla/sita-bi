@@ -204,6 +204,47 @@ export class BimbinganService {
     return false;
   }
 
+  async detectScheduleConflictsExcluding(
+    dosenId: number,
+    tanggal: Date,
+    jam: string,
+    excludeBimbinganId: number,
+    durationMinutes = 60,
+  ): Promise<boolean> {
+    const startTime = this.timeStringToMinutes(jam);
+    const endTime = startTime + durationMinutes;
+
+    const [bimbinganConflicts, sidangConflicts] = await Promise.all([
+      this.repository.findBimbinganConflicts(dosenId, tanggal),
+      this.repository.findSidangConflicts(dosenId, tanggal),
+    ]);
+
+    for (const bimbingan of bimbinganConflicts) {
+      // Skip sesi yang sedang diubah
+      if ('id' in bimbingan && bimbingan.id === excludeBimbinganId) {
+        continue;
+      }
+      
+      if (bimbingan.jam_bimbingan !== null && bimbingan.jam_bimbingan !== '') {
+        const bStart = this.timeStringToMinutes(bimbingan.jam_bimbingan);
+        const bEnd = bStart + 60;
+        if (this.isOverlap(startTime, endTime, bStart, bEnd)) {
+          return true;
+        }
+      }
+    }
+
+    for (const jadwal of sidangConflicts) {
+      const jStart = this.timeStringToMinutes(jadwal.waktu_mulai);
+      const jEnd = this.timeStringToMinutes(jadwal.waktu_selesai);
+      if (this.isOverlap(startTime, endTime, jStart, jEnd)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   async suggestAvailableSlots(
     dosenId: number,
     tanggalStr: string,
@@ -515,6 +556,26 @@ export class BimbinganService {
           throw new NotFoundError(ERROR_MSG_NO_ACCESS);
         }
 
+        // Validasi bahwa dosen yang menyelesaikan adalah dosen yang sesuai dengan peran sesi
+        if ('peran' in bimbingan && 'tugas_akhir_id' in bimbingan) {
+          const tugasAkhir = await tx.tugasAkhir.findUnique({
+            where: { id: bimbingan.tugas_akhir_id as number },
+            include: { peranDosenTa: true },
+          });
+          
+          if (tugasAkhir) {
+            const peranDosen = tugasAkhir.peranDosenTa.find(
+              (p) => p.dosen_id === dosenId && p.peran === bimbingan.peran
+            );
+            
+            if (!peranDosen) {
+              throw new UnauthorizedError(
+                `Hanya ${bimbingan.peran} yang dapat menyelesaikan sesi bimbingan ini`
+              );
+            }
+          }
+        }
+
         if (bimbingan.status_bimbingan !== 'dijadwalkan') {
           throw new ConflictError(
             'Hanya sesi dengan status "dijadwalkan" yang dapat diselesaikan',
@@ -669,6 +730,7 @@ export class BimbinganService {
   async createEmptySesi(
     tugasAkhirId: number,
     userId: number,
+    pembimbingPeran: 'pembimbing1' | 'pembimbing2',
   ): Promise<unknown> {
     const tugasAkhir = await this.prisma.tugasAkhir.findUnique({
       where: { id: tugasAkhirId },
@@ -700,11 +762,11 @@ export class BimbinganService {
     const nextSesi = currentCount + 1;
 
     const dosenPembimbing = tugasAkhir.peranDosenTa.find(
-      (p) => p.peran === 'pembimbing1' || p.peran === 'pembimbing2',
+      (p) => p.peran === pembimbingPeran,
     );
 
     if (dosenPembimbing === undefined) {
-      throw new NotFoundError(ERROR_MSG_PEMBIMBING_NOT_ASSIGNED);
+      throw new NotFoundError(`${pembimbingPeran} belum ditugaskan`);
     }
 
     const newSesi = await this.repository.createEmptySesi(
@@ -716,7 +778,7 @@ export class BimbinganService {
 
     await this.logActivity(
       userId,
-      `Membuat sesi bimbingan ke-${nextSesi} untuk TA ID ${tugasAkhirId}`,
+      `Membuat sesi bimbingan ke-${nextSesi} dengan ${pembimbingPeran} untuk TA ID ${tugasAkhirId}`,
     );
 
     return newSesi;
@@ -745,10 +807,11 @@ export class BimbinganService {
     const tanggalDate = new Date(tanggal);
     const dosenId = bimbingan.dosen_id as number;
 
-    const hasConflict = await this.detectScheduleConflicts(
+    const hasConflict = await this.detectScheduleConflictsExcluding(
       dosenId,
       tanggalDate,
       jamMulai,
+      bimbinganId,
     );
     if (hasConflict) {
       throw new ConflictError(
@@ -786,6 +849,26 @@ export class BimbinganService {
     );
     if (bimbingan === null || typeof bimbingan !== 'object') {
       throw new NotFoundError(ERROR_MSG_NO_ACCESS);
+    }
+
+    // Validasi bahwa dosen yang mengkonfirmasi adalah dosen yang sesuai dengan peran sesi
+    if ('peran' in bimbingan && 'dosen_id' in bimbingan) {
+      const tugasAkhir = await this.prisma.tugasAkhir.findUnique({
+        where: { id: bimbingan.tugas_akhir_id as number },
+        include: { peranDosenTa: true },
+      });
+      
+      if (tugasAkhir) {
+        const peranDosen = tugasAkhir.peranDosenTa.find(
+          (p) => p.dosen_id === (dosen.id as number) && p.peran === bimbingan.peran
+        );
+        
+        if (!peranDosen) {
+          throw new UnauthorizedError(
+            `Hanya ${bimbingan.peran} yang dapat memvalidasi sesi bimbingan ini`
+          );
+        }
+      }
     }
 
     const hasTanggal =
@@ -898,6 +981,26 @@ export class BimbinganService {
     );
     if (bimbingan === null || typeof bimbingan !== 'object') {
       throw new NotFoundError(ERROR_MSG_SESI_NOT_FOUND);
+    }
+
+    // Validasi bahwa dosen yang membatalkan adalah dosen yang sesuai dengan peran sesi
+    if ('peran' in bimbingan && 'tugas_akhir_id' in bimbingan) {
+      const tugasAkhir = await this.prisma.tugasAkhir.findUnique({
+        where: { id: bimbingan.tugas_akhir_id as number },
+        include: { peranDosenTa: true },
+      });
+      
+      if (tugasAkhir) {
+        const peranDosen = tugasAkhir.peranDosenTa.find(
+          (p) => p.dosen_id === (dosen.id as number) && p.peran === bimbingan.peran
+        );
+        
+        if (!peranDosen) {
+          throw new UnauthorizedError(
+            `Hanya ${bimbingan.peran} yang dapat membatalkan validasi sesi bimbingan ini`
+          );
+        }
+      }
     }
 
     if (bimbingan.status_bimbingan !== 'selesai') {

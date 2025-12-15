@@ -12,8 +12,12 @@ export class DosenAvailabilityService {
       where: { status: 'AKTIF' },
     });
 
-    const [jamMulai = 0, menitMulai = 0] = slot.waktu_mulai.split(':').map(Number);
-    const [jamSelesai = 0, menitSelesai = 0] = slot.waktu_selesai.split(':').map(Number);
+    const [jamMulai = 0, menitMulai = 0] = slot.waktu_mulai
+      .split(':')
+      .map(Number);
+    const [jamSelesai = 0, menitSelesai = 0] = slot.waktu_selesai
+      .split(':')
+      .map(Number);
     const slotStart = jamMulai * 60 + menitMulai;
     const slotEnd = jamSelesai * 60 + menitSelesai;
     const jedaMinutes = pengaturan.jeda_sidang_menit;
@@ -35,8 +39,12 @@ export class DosenAvailabilityService {
     const softBusyDosenIds = new Set<number>();
 
     dosenBusy.forEach((jadwal) => {
-      const [jMulai = 0, mMulai = 0] = jadwal.waktu_mulai.split(':').map(Number);
-      const [jSelesai = 0, mSelesai = 0] = jadwal.waktu_selesai.split(':').map(Number);
+      const [jMulai = 0, mMulai = 0] = jadwal.waktu_mulai
+        .split(':')
+        .map(Number);
+      const [jSelesai = 0, mSelesai = 0] = jadwal.waktu_selesai
+        .split(':')
+        .map(Number);
       const existingStart = jMulai * 60 + mMulai;
       const existingEnd = jSelesai * 60 + mSelesai;
 
@@ -46,12 +54,18 @@ export class DosenAvailabilityService {
         (slotStart <= existingStart && slotEnd >= existingEnd);
 
       const hasSoftOverlap =
-        (slotStart >= existingStart - jedaMinutes && slotStart < existingEnd + jedaMinutes) ||
-        (slotEnd > existingStart - jedaMinutes && slotEnd <= existingEnd + jedaMinutes) ||
+        (slotStart >= existingStart - jedaMinutes &&
+          slotStart < existingEnd + jedaMinutes) ||
+        (slotEnd > existingStart - jedaMinutes &&
+          slotEnd <= existingEnd + jedaMinutes) ||
         (slotStart <= existingStart && slotEnd >= existingEnd);
 
       jadwal.sidang.tugasAkhir.peranDosenTa.forEach((peran) => {
-        if (['penguji1', 'penguji2', 'penguji3', 'pembimbing1'].includes(peran.peran)) {
+        if (
+          ['penguji1', 'penguji2', 'penguji3', 'pembimbing1'].includes(
+            peran.peran,
+          )
+        ) {
           if (hasExactOverlap) {
             busyDosenIds.add(peran.dosen_id);
           } else if (hasSoftOverlap) {

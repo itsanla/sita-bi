@@ -191,12 +191,16 @@ export default function SimilarityForm({
                   {/* Colored left border based on similarity */}
                   {(() => {
                     const getBorderColor = () => {
-                      if (result.similarity >= threshold) return 'bg-gradient-to-b from-red-500 to-red-600';
-                      if (result.similarity >= 50) return 'bg-gradient-to-b from-amber-500 to-amber-600';
+                      if (result.similarity >= threshold)
+                        return 'bg-gradient-to-b from-red-500 to-red-600';
+                      if (result.similarity >= 50)
+                        return 'bg-gradient-to-b from-amber-500 to-amber-600';
                       return 'bg-gradient-to-b from-green-500 to-green-600';
                     };
                     return (
-                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${getBorderColor()}`}></div>
+                      <div
+                        className={`absolute left-0 top-0 bottom-0 w-1 ${getBorderColor()}`}
+                      ></div>
                     );
                   })()}
 
@@ -205,17 +209,20 @@ export default function SimilarityForm({
                     <div className="flex-shrink-0">
                       {(() => {
                         const getBadgeColor = () => {
-                          if (result.similarity >= threshold) return 'bg-red-100 text-red-700';
-                          if (result.similarity >= 50) return 'bg-amber-100 text-amber-700';
+                          if (result.similarity >= threshold)
+                            return 'bg-red-100 text-red-700';
+                          if (result.similarity >= 50)
+                            return 'bg-amber-100 text-amber-700';
                           return 'bg-green-100 text-green-700';
                         };
                         return (
-                          <div className={`w-6 h-6 md:w-7 md:h-7 rounded-lg flex items-center justify-center text-xs font-semibold shadow-sm md:group-hover/result:scale-105 md:transition-transform md:duration-300 ${getBadgeColor()}`}>
+                          <div
+                            className={`w-6 h-6 md:w-7 md:h-7 rounded-lg flex items-center justify-center text-xs font-semibold shadow-sm md:group-hover/result:scale-105 md:transition-transform md:duration-300 ${getBadgeColor()}`}
+                          >
                             {idx + 1}
                           </div>
                         );
                       })()}
-
                     </div>
 
                     {/* Title */}
@@ -230,12 +237,16 @@ export default function SimilarityForm({
                       <div className="flex flex-col items-end gap-0.5">
                         {(() => {
                           const getSimilarityColor = () => {
-                            if (result.similarity >= threshold) return 'bg-red-500 md:bg-gradient-to-r md:from-red-500 md:to-red-600 text-white';
-                            if (result.similarity >= 50) return 'bg-amber-500 md:bg-gradient-to-r md:from-amber-500 md:to-amber-600 text-white';
+                            if (result.similarity >= threshold)
+                              return 'bg-red-500 md:bg-gradient-to-r md:from-red-500 md:to-red-600 text-white';
+                            if (result.similarity >= 50)
+                              return 'bg-amber-500 md:bg-gradient-to-r md:from-amber-500 md:to-amber-600 text-white';
                             return 'bg-green-500 md:bg-gradient-to-r md:from-green-500 md:to-green-600 text-white';
                           };
                           return (
-                            <div className={`px-2 md:px-3 py-1 md:py-1.5 rounded-lg font-semibold text-xs shadow-sm md:group-hover/result:scale-105 md:transition-transform md:duration-300 ${getSimilarityColor()}`}>
+                            <div
+                              className={`px-2 md:px-3 py-1 md:py-1.5 rounded-lg font-semibold text-xs shadow-sm md:group-hover/result:scale-105 md:transition-transform md:duration-300 ${getSimilarityColor()}`}
+                            >
                               {result.similarity}%
                             </div>
                           );

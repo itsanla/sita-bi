@@ -1,7 +1,7 @@
 export const normalizePhoneNumber = (phone: string): string => {
   // Remove all non-digit characters except +
   const cleaned = phone.replace(/[^\d+]/g, '');
-  
+
   // Handle different formats
   if (cleaned.startsWith('+628')) {
     return cleaned;
@@ -10,7 +10,7 @@ export const normalizePhoneNumber = (phone: string): string => {
   } else if (cleaned.startsWith('08')) {
     return '+628' + cleaned.substring(2);
   }
-  
+
   return cleaned;
 };
 

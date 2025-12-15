@@ -97,7 +97,7 @@ export default function RegisterPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    
+
     if (name === 'phone_number') {
       // Hanya izinkan angka dan +
       const cleanValue = value.replace(/[^0-9+]/g, '');
@@ -124,7 +124,9 @@ export default function RegisterPage() {
     }
 
     if (!validatePhoneNumber(formData.phone_number)) {
-      setError('Format nomor HP tidak valid. Gunakan format 08xxx, 628xxx, atau +628xxx');
+      setError(
+        'Format nomor HP tidak valid. Gunakan format 08xxx, 628xxx, atau +628xxx',
+      );
       setLoading(false);
       return;
     }

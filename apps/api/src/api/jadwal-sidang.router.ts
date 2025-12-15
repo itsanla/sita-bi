@@ -61,7 +61,10 @@ router.get(
   asyncHandler(async (req, res) => {
     console.log('[BACKEND API] 🔍 GET /mahasiswa-gagal called');
     const mahasiswa = await service.getMahasiswaGagalSidang();
-    console.log('[BACKEND API] 📊 Returning mahasiswa gagal:', mahasiswa.length);
+    console.log(
+      '[BACKEND API] 📊 Returning mahasiswa gagal:',
+      mahasiswa.length,
+    );
 
     res.json({
       status: 'sukses',
@@ -110,7 +113,10 @@ router.delete(
     const id = parseInt(req.params.id);
     const { alasan } = req.body;
     await service.deleteJadwal(id, alasan);
-    res.json({ status: 'sukses', message: 'Jadwal berhasil dihapus dan mahasiswa ditandai gagal sidang' });
+    res.json({
+      status: 'sukses',
+      message: 'Jadwal berhasil dihapus dan mahasiswa ditandai gagal sidang',
+    });
   }),
 );
 

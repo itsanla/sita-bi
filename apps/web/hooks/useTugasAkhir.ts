@@ -74,10 +74,10 @@ export function useRecommendedTopics(periodeId?: number | null) {
       setRecommendedTitles([]);
       return;
     }
-    
+
     setLoading(true);
     const url = `/tawaran-topik/available?periode_id=${periodeId}`;
-    
+
     try {
       const topicsResponse = await request<{
         status: string;
@@ -89,10 +89,10 @@ export function useRecommendedTopics(periodeId?: number | null) {
           totalPages: number;
         };
       }>(url);
-      
+
       const responseData = topicsResponse.data;
       const topicsArray = responseData.data?.data || [];
-      
+
       setRecommendedTitles(topicsArray);
     } catch (error) {
       setRecommendedTitles([]);
@@ -109,7 +109,9 @@ export function useRecommendedTopics(periodeId?: number | null) {
 }
 
 export function useAllTitles(periodeId?: number | null) {
-  const [allTitles, setAllTitles] = useState<{ judul: string; mahasiswa: { user: { name: string } } }[]>([]);
+  const [allTitles, setAllTitles] = useState<
+    { judul: string; mahasiswa: { user: { name: string } } }[]
+  >([]);
   const [loading, setLoading] = useState(false);
 
   const fetchAllTitles = async () => {
@@ -117,12 +119,12 @@ export function useAllTitles(periodeId?: number | null) {
       setAllTitles([]);
       return;
     }
-    
+
     setLoading(true);
     try {
-      const titlesResponse = await request<{ data: { judul: string; mahasiswa: { user: { name: string } } }[] }>(
-        `/tugas-akhir/all-titles?periode_id=${periodeId}`,
-      );
+      const titlesResponse = await request<{
+        data: { judul: string; mahasiswa: { user: { name: string } } }[];
+      }>(`/tugas-akhir/all-titles?periode_id=${periodeId}`);
       setAllTitles(titlesResponse.data.data || []);
     } catch {
       setAllTitles([]);

@@ -1,9 +1,7 @@
 'use client';
 
 import { useAuth } from '../../../../context/AuthContext';
-import { usePeriode } from '../../../../context/PeriodeContext';
 import { Sparkles } from 'lucide-react';
-import { useEffect } from 'react';
 
 function getGreeting(hour: number): string {
   if (hour < 12) {
@@ -17,7 +15,6 @@ function getGreeting(hour: number): string {
 
 export default function WelcomeSection() {
   const { user } = useAuth();
-  const { activePeriode, refreshPeriodes } = usePeriode();
 
   const currentHour = new Date().getHours();
   const greeting = getGreeting(currentHour);

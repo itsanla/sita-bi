@@ -122,7 +122,6 @@ export default function DosenBimbinganPage() {
       toast.success('Judul berhasil divalidasi');
       fetchData();
     } catch (error: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const errorMessage =
         (error as any)?.response?.data?.message || 'Gagal validasi judul';
       toast.error(errorMessage);
@@ -139,7 +138,6 @@ export default function DosenBimbinganPage() {
       toast.success('Validasi judul berhasil dibatalkan');
       fetchData();
     } catch (error: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const errorMessage =
         (error as any)?.response?.data?.message ||
         'Gagal batalkan validasi judul';
@@ -154,7 +152,6 @@ export default function DosenBimbinganPage() {
       toast.success('Draf berhasil divalidasi');
       fetchData();
     } catch (error: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const errorMessage =
         (error as any)?.response?.data?.message || 'Gagal validasi draf';
       toast.error(errorMessage);
@@ -168,7 +165,6 @@ export default function DosenBimbinganPage() {
       toast.success('Validasi draf berhasil dibatalkan');
       fetchData();
     } catch (error: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const errorMessage =
         (error as any)?.response?.data?.message ||
         'Gagal batalkan validasi draf';
@@ -252,13 +248,16 @@ export default function DosenBimbinganPage() {
 
   return (
     <PeriodeGuard>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h1 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <Users size={28} />
-            Mahasiswa Bimbingan
-          </h1>
+      <div className="min-h-screen bg-gray-50 p-4 lg:p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-700 rounded-lg flex items-center justify-center">
+                <Users className="text-white" size={24} />
+              </div>
+              Mahasiswa Bimbingan
+            </h1>
 
           {mahasiswaList.length === 0 ? (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
@@ -290,25 +289,30 @@ export default function DosenBimbinganPage() {
               </div>
             </div>
           ) : (
-            <div className="flex gap-2 flex-wrap">
-              {mahasiswaList.map((mhs, idx) => (
-                <button
-                  key={mhs.id}
-                  onClick={() => setSelectedMahasiswa(idx)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                    selectedMahasiswa === idx
-                      ? 'bg-red-800 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Mahasiswa Bimbingan {idx + 1}
-                </button>
-              ))}
-            </div>
+              <div className="flex gap-3 flex-wrap">
+                {mahasiswaList.map((mhs, idx) => (
+                  <button
+                    key={mhs.id}
+                    onClick={() => setSelectedMahasiswa(idx)}
+                    className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+                      selectedMahasiswa === idx
+                        ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg transform scale-105'
+                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 hover:border-gray-300 hover:shadow-md'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${
+                        selectedMahasiswa === idx ? 'bg-white' : 'bg-red-500'
+                      }`} />
+                      Mahasiswa {idx + 1}
+                    </div>
+                  </button>
+                ))}
+              </div>
           )}
-        </div>
+          </div>
 
-        {!!tugasAkhir && (
+          {!!tugasAkhir && (
           <>
             {/* Komponen 1: Info Mahasiswa */}
             <div className="bg-white p-6 rounded-lg shadow">
@@ -661,19 +665,26 @@ export default function DosenBimbinganPage() {
             </div>
 
             {/* Komponen 4: Sesi Bimbingan */}
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h2 className="text-xl font-bold mb-4">Daftar Sesi Bimbingan</h2>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <Calendar className="text-purple-600" size={20} />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900">Daftar Sesi Bimbingan</h2>
+              </div>
               <div className="space-y-4">
                 {tugasAkhir.bimbinganTa.map((sesi) => (
                   <div
                     key={sesi.id}
-                    className="bg-white rounded-lg shadow border"
+                    className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200"
                   >
                     <div
-                      className={`p-4 flex justify-between items-center cursor-pointer ${
+                      className={`p-5 flex justify-between items-center cursor-pointer ${
                         sesi.status_bimbingan === 'selesai'
-                          ? 'bg-green-50'
-                          : 'bg-gray-50'
+                          ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-l-green-500'
+                          : sesi.tanggal_bimbingan
+                          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-l-blue-500'
+                          : 'bg-gradient-to-r from-gray-50 to-slate-50 border-l-4 border-l-gray-400'
                       }`}
                       onClick={() =>
                         setSelectedSesi(
@@ -681,38 +692,77 @@ export default function DosenBimbinganPage() {
                         )
                       }
                     >
-                      <div className="flex items-center gap-3">
-                        {sesi.status_bimbingan === 'selesai' ? (
-                          <CheckCircle className="text-green-600" size={24} />
-                        ) : (
-                          <XCircle className="text-gray-400" size={24} />
-                        )}
-                        <div>
-                          <h3 className="font-bold">
-                            Sesi Bimbingan #{sesi.sesi_ke}
-                          </h3>
-                          <p className="text-sm text-gray-600">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                          sesi.status_bimbingan === 'selesai'
+                            ? 'bg-green-500 shadow-lg'
+                            : sesi.tanggal_bimbingan
+                            ? 'bg-blue-500 shadow-lg'
+                            : 'bg-gray-400'
+                        }`}>
+                          {sesi.status_bimbingan === 'selesai' ? (
+                            <CheckCircle className="text-white" size={20} />
+                          ) : sesi.tanggal_bimbingan ? (
+                            <Calendar className="text-white" size={20} />
+                          ) : (
+                            <XCircle className="text-white" size={20} />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-1">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              Sesi #{sesi.sesi_ke}
+                            </h3>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              sesi.peran === 'pembimbing1'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-purple-100 text-purple-700'
+                            }`}>
+                              {sesi.peran === 'pembimbing1' ? 'Pembimbing 1' : 'Pembimbing 2'}
+                            </span>
+                          </div>
+                          <p className="text-gray-600 mb-1">
                             {sesi.tanggal_bimbingan
-                              ? new Date(
-                                  sesi.tanggal_bimbingan,
-                                ).toLocaleDateString('id-ID')
+                              ? new Date(sesi.tanggal_bimbingan).toLocaleDateString('id-ID')
                               : 'Belum dijadwalkan'}
                             {!!sesi.jam_bimbingan && ` • ${sesi.jam_bimbingan}`}
                             {!!sesi.jam_selesai && ` - ${sesi.jam_selesai}`}
                           </p>
+                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <FileText size={14} />
+                              {sesi.lampiran.length} lampiran
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MessageSquare size={14} />
+                              {sesi.catatan.length} catatan
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         {sesi.status_bimbingan !== 'selesai' &&
-                          !!sesi.tanggal_bimbingan && (
+                          !!sesi.tanggal_bimbingan &&
+                          sesi.peran === currentDosenPeran && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleKonfirmasiSesi(sesi.id);
                               }}
-                              className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                              className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg text-sm font-medium hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md hover:shadow-lg"
                             >
-                              Validasi
+                              Validasi Sesi
+                            </button>
+                          )}
+                        {sesi.status_bimbingan !== 'selesai' &&
+                          !!sesi.tanggal_bimbingan &&
+                          sesi.peran !== currentDosenPeran && (
+                            <button
+                              disabled
+                              className="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg text-sm font-medium cursor-not-allowed"
+                              title={`Hanya ${sesi.peran === 'pembimbing1' ? 'Pembimbing 1' : 'Pembimbing 2'} yang dapat memvalidasi sesi ini`}
+                            >
+                              Tidak Dapat Validasi
                             </button>
                           )}
                         {sesi.status_bimbingan === 'selesai' &&
@@ -722,9 +772,9 @@ export default function DosenBimbinganPage() {
                                 e.stopPropagation();
                                 handleBatalkanValidasi(sesi.id);
                               }}
-                              className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                              className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg text-sm font-medium hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-md hover:shadow-lg"
                             >
-                              Batalkan
+                              Batalkan Validasi
                             </button>
                           )}
                       </div>
@@ -852,6 +902,7 @@ export default function DosenBimbinganPage() {
             </div>
           </>
         )}
+        </div>
       </div>
     </PeriodeGuard>
   );

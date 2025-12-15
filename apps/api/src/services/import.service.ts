@@ -109,8 +109,7 @@ export class ImportService {
         const existingDosen = await this.prisma.dosen.findUnique({
           where: { nip },
         });
-        if (existingDosen !== null)
-          errorList.push(`NIP ${nip} already exists`);
+        if (existingDosen !== null) errorList.push(`NIP ${nip} already exists`);
       }
 
       if (errorList.length > 0) {

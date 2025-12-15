@@ -50,7 +50,7 @@ export class DashboardErrorBoundary extends Component<Props, State> {
             <p className="text-gray-600 mb-6">
               Maaf, terjadi kesalahan saat memuat dashboard. Silakan coba lagi.
             </p>
-            {this.state.error && (
+            {!!this.state.error && (
               <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
                 <p className="text-sm text-gray-700 font-mono">
                   {this.state.error.message}

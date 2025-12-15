@@ -113,10 +113,15 @@ export default function PengajuanDosenPage() {
   const { data: mahasiswaData, isLoading: mahasiswaLoading } = useQuery({
     queryKey: ['mahasiswa-tersedia', user?.id, selectedPeriodeId],
     queryFn: async () => {
-      const params = selectedPeriodeId ? `?periode_ta_id=${selectedPeriodeId}` : '';
-      const res = await fetch(`${API_BASE_URL}/pengajuan/mahasiswa-tersedia${params}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
+      const params = selectedPeriodeId
+        ? `?periode_ta_id=${selectedPeriodeId}`
+        : '';
+      const res = await fetch(
+        `${API_BASE_URL}/pengajuan/mahasiswa-tersedia${params}`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        },
+      );
       return res.json();
     },
     staleTime: 30000,
@@ -126,7 +131,9 @@ export default function PengajuanDosenPage() {
   const { data: pengajuanData, isLoading: pengajuanLoading } = useQuery({
     queryKey: [QUERY_KEY_PENGAJUAN_DOSEN, user?.id, selectedPeriodeId],
     queryFn: async () => {
-      const params = selectedPeriodeId ? `?periode_ta_id=${selectedPeriodeId}` : '';
+      const params = selectedPeriodeId
+        ? `?periode_ta_id=${selectedPeriodeId}`
+        : '';
       const res = await fetch(`${API_BASE_URL}/pengajuan/dosen${params}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
@@ -428,10 +435,8 @@ export default function PengajuanDosenPage() {
           return a.user.name.localeCompare(b.user.name);
         if (mahasiswaSortBy === 'nama_desc')
           return b.user.name.localeCompare(a.user.name);
-        if (mahasiswaSortBy === 'ipk_desc') 
-          return (b.ipk || 0) - (a.ipk || 0);
-        if (mahasiswaSortBy === 'ipk_asc') 
-          return (a.ipk || 0) - (b.ipk || 0);
+        if (mahasiswaSortBy === 'ipk_desc') return (b.ipk || 0) - (a.ipk || 0);
+        if (mahasiswaSortBy === 'ipk_asc') return (a.ipk || 0) - (b.ipk || 0);
         return 0;
       });
   }, [mahasiswaList, deferredSearchQuery, mahasiswaSortBy]);
@@ -676,18 +681,23 @@ export default function PengajuanDosenPage() {
                         <div className="flex gap-2 w-full sm:w-auto sm:flex-shrink-0">
                           <button
                             onClick={() => handleAction(pengajuan.id, 'terima')}
-                            disabled={kuotaPenuh}
+                            disabled={kuotaPenuh || actionMutation.isPending}
                             className="flex-1 sm:flex-none px-3 py-1.5 text-xs font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5"
                           >
                             <CheckCircle className="w-3.5 h-3.5" />
-                            Terima
+                            {actionMutation.isPending
+                              ? 'Memproses...'
+                              : 'Terima'}
                           </button>
                           <button
                             onClick={() => handleAction(pengajuan.id, 'tolak')}
-                            className="flex-1 sm:flex-none px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all flex items-center justify-center gap-1.5"
+                            disabled={actionMutation.isPending}
+                            className="flex-1 sm:flex-none px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5"
                           >
                             <XCircle className="w-3.5 h-3.5" />
-                            Tolak
+                            {actionMutation.isPending
+                              ? 'Memproses...'
+                              : 'Tolak'}
                           </button>
                         </div>
                       </div>

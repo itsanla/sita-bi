@@ -30,7 +30,8 @@ export default function PendaftaranSidangGuard({
             Pendaftaran Sidang Ditutup
           </h2>
           <p className="text-sm text-gray-600 mb-4">
-            Jadwal sidang telah dipublish. Pendaftaran sidang untuk periode ini sudah ditutup.
+            Jadwal sidang telah dipublish. Pendaftaran sidang untuk periode ini
+            sudah ditutup.
           </p>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-center justify-center gap-2 text-blue-800">

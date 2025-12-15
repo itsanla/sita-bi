@@ -13,7 +13,7 @@ export const activityLogger = (
 
   res.on('finish', () => {
     const duration = Date.now() - start;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const userId = (req as any).user?.id as number | undefined;
 
     // Don't log GET requests to avoid noise, unless it's critical

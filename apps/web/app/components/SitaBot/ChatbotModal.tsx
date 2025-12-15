@@ -69,7 +69,7 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
 
   const handleSendClick = () => {
     if (!input.trim() || isLoading) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const fakeEvent: any = { preventDefault: () => {} };
     void handleSubmit(fakeEvent);
   };
@@ -368,7 +368,7 @@ export default function ChatbotModal({ isOpen, onClose }: ChatbotModalProps) {
                     ))
                 )}
 
-                {isLoading &&
+                {!!isLoading &&
                   !(
                     messages.length > 0 &&
                     messages[messages.length - 1]?.role === 'assistant' &&

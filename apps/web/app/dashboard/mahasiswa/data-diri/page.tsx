@@ -16,10 +16,14 @@ import {
   Award,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { normalizePhoneNumber, validatePhoneNumber, formatPhoneForDisplay } from '@/lib/phone-utils';
+import {
+  normalizePhoneNumber,
+  validatePhoneNumber,
+  formatPhoneForDisplay,
+} from '@/lib/phone-utils';
 
 export default function DataDiriMahasiswaPage() {
-  const { user } = useAuth();
+  useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
@@ -53,13 +57,12 @@ export default function DataDiriMahasiswaPage() {
 
   useEffect(() => {
     fetchDataDiri();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchDataDiri = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/data-diri`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       const data = await response.json();
       if (data.status === 'sukses') {
@@ -89,7 +92,9 @@ export default function DataDiriMahasiswaPage() {
 
     try {
       if (!validatePhoneNumber(formData.phone_number)) {
-        toast.error('Format nomor HP tidak valid. Gunakan format 08xxx, 628xxx, atau +628xxx');
+        toast.error(
+          'Format nomor HP tidak valid. Gunakan format 08xxx, 628xxx, atau +628xxx',
+        );
         return;
       }
 
@@ -109,33 +114,23 @@ export default function DataDiriMahasiswaPage() {
         payload.ipk = parseFloat(formData.ipk);
       }
 
-      console.log('Payload yang dikirim:', payload);
-
       const response = await fetch(`${API_BASE_URL}/data-diri`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify(payload),
       });
 
-      console.log('Response status:', response.status);
       const data = await response.json();
-      console.log('Response data:', data);
-      if (data.errors) {
-        data.errors.forEach((error, index) => {
-          console.log(`Error ${index + 1}:`, error);
-        });
-      }
-      
+
       if (data.status === 'sukses') {
         toast.success('Data diri berhasil diperbarui');
       } else {
         toast.error(data.message || 'Gagal memperbarui data diri');
       }
-    } catch (error) {
-      console.error('Error:', error);
+    } catch {
       toast.error('Terjadi kesalahan saat menyimpan data');
     } finally {
       setSaving(false);
@@ -151,7 +146,7 @@ export default function DataDiriMahasiswaPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify(passwordData),
       });
@@ -165,7 +160,10 @@ export default function DataDiriMahasiswaPage() {
           konfirmasi_password: '',
         });
       } else {
-        const errorMessage = data.errors?.[0]?.message || data.message || 'Gagal mengubah password';
+        const errorMessage =
+          data.errors?.[0]?.message ||
+          data.message ||
+          'Gagal mengubah password';
         toast.error(errorMessage);
       }
     } catch {
@@ -186,7 +184,7 @@ export default function DataDiriMahasiswaPage() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
           body: JSON.stringify({ email_baru: emailData.email_baru }),
         },
@@ -217,7 +215,7 @@ export default function DataDiriMahasiswaPage() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
           body: JSON.stringify(emailData),
         },

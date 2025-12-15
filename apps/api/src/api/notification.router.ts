@@ -16,7 +16,8 @@ router.get('/history', authenticateJWT, (req: Request, res: Response) => {
       const userId = req.user.id;
       const history = await notificationService.getHistory(userId);
       res.json(history);
-    } catch (_error) {
+    } catch (error) {
+      console.error('Failed to fetch notification history:', error);
       res.status(500).json({ error: 'Failed to fetch notification history' });
     }
   })();

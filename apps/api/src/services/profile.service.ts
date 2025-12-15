@@ -1,16 +1,13 @@
 import type { User, Prisma } from '@repo/db';
-// import { PrismaClient } from '@repo/db'; // Unused
 import type { UpdateProfileDto } from '../dto/profile.dto';
 import * as bcrypt from 'bcrypt';
-import { UsersService } from './users.service'; // Will be created next
+import { UsersService } from './users.service';
 
 export class ProfileService {
-  // private prisma: PrismaClient; // Unused
   private usersService: UsersService;
 
   constructor() {
-    // this.prisma = new PrismaClient(); // Unused
-    this.usersService = new UsersService(); // Instantiate UsersService
+    this.usersService = new UsersService();
   }
 
   async getProfile(userId: number): Promise<Partial<User>> {
@@ -18,7 +15,7 @@ export class ProfileService {
     if (user === null) {
       throw new Error('User not found.');
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     const { password, ...result } = user;
     return result;
   }

@@ -29,9 +29,9 @@ router.get(
         : undefined;
 
     // Ensure filters are strings and respect exactOptionalPropertyTypes
-    const filters: { 
-      module?: string; 
-      user_id?: string; 
+    const filters: {
+      module?: string;
+      user_id?: string;
       entity_id?: string;
       date?: string;
     } = {};

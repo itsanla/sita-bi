@@ -76,14 +76,6 @@ router.post(
   }),
 );
 
-
-
-
-
-
-
-
-
 router.get(
   '/my-ta',
   asyncHandler(authMiddleware),
@@ -129,9 +121,10 @@ router.get(
   '/all-titles',
   asyncHandler(authMiddleware),
   asyncHandler(async (req: Request, response: Response): Promise<void> => {
-    const periodeId = req.query.periode_id != null
-      ? parseInt(req.query.periode_id as string)
-      : undefined;
+    const periodeId =
+      req.query.periode_id != null
+        ? parseInt(req.query.periode_id as string)
+        : undefined;
     const titles = await tugasAkhirService.findAllTitles(periodeId);
     response.status(200).json({ status: STATUS_SUKSES, data: titles });
   }),

@@ -39,26 +39,26 @@ export class UsersService {
 
     try {
       return await this.prisma.user.create({
-      data: {
-        name: dto.name,
-        email: dto.email,
-        password: hashedPassword,
-        phone_number: dto.phone_number ?? null,
-        roles: {
-          connect: { name: Role.mahasiswa },
-        },
-        mahasiswa: {
-          create: {
-            nim: dto.nim,
-            prodi: dto.prodi,
-            kelas: dto.kelas,
+        data: {
+          name: dto.name,
+          email: dto.email,
+          password: hashedPassword,
+          phone_number: dto.phone_number ?? null,
+          roles: {
+            connect: { name: Role.mahasiswa },
+          },
+          mahasiswa: {
+            create: {
+              nim: dto.nim,
+              prodi: dto.prodi,
+              kelas: dto.kelas,
+            },
           },
         },
-      },
-      include: {
-        mahasiswa: true,
-      },
-    });
+        include: {
+          mahasiswa: true,
+        },
+      });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -99,26 +99,26 @@ export class UsersService {
 
     try {
       return await this.prisma.user.create({
-      data: {
-        name: dto.name,
-        email: dto.email,
-        password: hashedPassword,
-        phone_number: dto.phone_number ?? null,
-        roles: {
-          connect: rolesToConnect,
-        },
-        dosen: {
-          create: {
-            nip: dto.nip,
-            prodi: dto.prodi ?? null,
+        data: {
+          name: dto.name,
+          email: dto.email,
+          password: hashedPassword,
+          phone_number: dto.phone_number ?? null,
+          roles: {
+            connect: rolesToConnect,
+          },
+          dosen: {
+            create: {
+              nip: dto.nip,
+              prodi: dto.prodi ?? null,
+            },
           },
         },
-      },
-      include: {
-        dosen: true,
-        roles: true,
-      },
-    });
+        include: {
+          dosen: true,
+          roles: true,
+        },
+      });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -347,28 +347,32 @@ export class UsersService {
 
     // Proteksi 1: Tidak bisa hapus diri sendiri
     if (currentUserId && id === currentUserId) {
-      const err: any = new Error('Anda tidak dapat menghapus akun Anda sendiri');
+      const err: any = new Error(
+        'Anda tidak dapat menghapus akun Anda sendiri',
+      );
       err.statusCode = 403;
       throw err;
     }
 
     // Proteksi 2: Cek apakah user adalah admin
-    const isAdmin = user.roles.some(role => role.name === 'admin');
+    const isAdmin = user.roles.some((role) => role.name === 'admin');
     if (isAdmin) {
       // Hitung jumlah admin yang ada
       const adminCount = await this.prisma.user.count({
         where: {
           roles: {
             some: {
-              name: 'admin'
-            }
-          }
-        }
+              name: 'admin',
+            },
+          },
+        },
       });
 
       // Proteksi 3: Minimal harus ada 1 admin
       if (adminCount <= 1) {
-        const err: any = new Error('Tidak dapat menghapus admin terakhir. Sistem harus memiliki minimal 1 admin.');
+        const err: any = new Error(
+          'Tidak dapat menghapus admin terakhir. Sistem harus memiliki minimal 1 admin.',
+        );
         err.statusCode = 403;
         throw err;
       }
@@ -397,9 +401,11 @@ export class UsersService {
     });
   }
 
-  async bulkDeleteUsers(ids: number[]): Promise<{ count: number; failed: number[] }> {
+  async bulkDeleteUsers(
+    ids: number[],
+  ): Promise<{ count: number; failed: number[] }> {
     const results = { count: 0, failed: [] as number[] };
-    
+
     for (const id of ids) {
       try {
         await this.prisma.user.delete({ where: { id } });
@@ -408,7 +414,71 @@ export class UsersService {
         results.failed.push(id);
       }
     }
-    
+
     return results;
+  }
+
+  async findAllMahasiswaWithTA(): Promise<unknown[]> {
+    const mahasiswa = await this.prisma.mahasiswa.findMany({
+      where: {
+        tugasAkhir: {
+          periodeTa: {
+            status: 'AKTIF',
+          },
+        },
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+        tugasAkhir: {
+          include: {
+            peranDosenTa: {
+              include: {
+                dosen: {
+                  include: {
+                    user: {
+                      select: {
+                        name: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            bimbinganTa: {
+              select: {
+                id: true,
+                sesi_ke: true,
+                status_bimbingan: true,
+                tanggal_bimbingan: true,
+                peran: true,
+              },
+              orderBy: {
+                sesi_ke: 'asc',
+              },
+            },
+            dokumenTa: {
+              select: {
+                divalidasi_oleh_p1: true,
+                divalidasi_oleh_p2: true,
+              },
+              orderBy: {
+                version: 'desc',
+              },
+              take: 1,
+            },
+          },
+        },
+      },
+      orderBy: {
+        nim: 'asc',
+      },
+    });
+
+    return mahasiswa;
   }
 }

@@ -30,11 +30,10 @@ export class PenilaianService {
       const isAllowed = peranDosen.some(
         (p) =>
           p.dosen_id === dosenId &&
-          (p.peran.startsWith('pembimbing') === true ||
-            p.peran.startsWith('penguji') === true),
+          (p.peran.startsWith('pembimbing') || p.peran.startsWith('penguji')),
       );
 
-      if (isAllowed === false) {
+      if (!isAllowed) {
         throw new Error(
           'You are not authorized to submit a score for this defense.',
         );
@@ -53,8 +52,7 @@ export class PenilaianService {
       // --- Finalize Logic ---
       const jumlahPenilai = peranDosen.filter(
         (p) =>
-          p.peran.startsWith('pembimbing') === true ||
-          p.peran.startsWith('penguji') === true,
+          p.peran.startsWith('pembimbing') || p.peran.startsWith('penguji'),
       ).length;
       const currentCount = sidang._count.nilaiSidang ?? 0;
       const jumlahNilaiMasuk = Number(currentCount) + 1;

@@ -138,11 +138,13 @@ export const getMinBimbinganValid = async (): Promise<number> => {
  * Mengembalikan 0 jika pengecekan similaritas dinonaktifkan
  */
 export const getMaxSimilaritasPersen = async (): Promise<number> => {
-  const nonaktifkanCek = await pengaturanService.getPengaturanByKey('nonaktifkan_cek_similaritas');
+  const nonaktifkanCek = await pengaturanService.getPengaturanByKey(
+    'nonaktifkan_cek_similaritas',
+  );
   if (nonaktifkanCek === 'true') {
     return 0;
   }
-  
+
   const value = await pengaturanService.getPengaturanByKey(
     'max_similaritas_persen',
   );

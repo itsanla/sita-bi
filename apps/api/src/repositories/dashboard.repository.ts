@@ -1,9 +1,17 @@
-import { PrismaClient, StatusTugasAkhir, StatusBimbingan } from '@repo/db';
+import type { PrismaClient } from '@repo/db';
+import { StatusBimbingan } from '@repo/db';
 
 export class DashboardRepository {
   constructor(private prisma: PrismaClient) {}
 
-  async getMahasiswaWithTugasAkhir(userId: number) {
+  async getMahasiswaWithTugasAkhir(userId: number): Promise<{
+    id: number;
+    tugasAkhir: {
+      id: number;
+      bimbinganTa: unknown[];
+      pendaftaranSidang: unknown[];
+    } | null;
+  } | null> {
     return this.prisma.mahasiswa.findUnique({
       where: { user_id: userId },
       include: {
@@ -25,7 +33,7 @@ export class DashboardRepository {
     });
   }
 
-  async getAllTugasAkhir() {
+  async getAllTugasAkhir(): Promise<{ status: string }[]> {
     return this.prisma.tugasAkhir.findMany({
       select: {
         status: true,
@@ -33,7 +41,11 @@ export class DashboardRepository {
     });
   }
 
-  async getTugasAkhirByMahasiswaId(mahasiswaId: number) {
+  async getTugasAkhirByMahasiswaId(mahasiswaId: number): Promise<{
+    id: number;
+    approver: unknown;
+    rejecter: unknown;
+  } | null> {
     return this.prisma.tugasAkhir.findFirst({
       where: { mahasiswa_id: mahasiswaId },
       include: {
@@ -43,7 +55,10 @@ export class DashboardRepository {
     });
   }
 
-  async getBimbinganByMahasiswaId(mahasiswaId: number, limit: number) {
+  async getBimbinganByMahasiswaId(
+    mahasiswaId: number,
+    limit: number,
+  ): Promise<unknown[]> {
     return this.prisma.bimbinganTA.findMany({
       where: {
         tugasAkhir: {
@@ -69,7 +84,7 @@ export class DashboardRepository {
     mahasiswaId: number,
     today: Date,
     limit: number,
-  ) {
+  ): Promise<unknown[]> {
     return this.prisma.bimbinganTA.findMany({
       where: {
         tugasAkhir: {
@@ -100,7 +115,7 @@ export class DashboardRepository {
     mahasiswaId: number,
     today: Date,
     limit: number,
-  ) {
+  ): Promise<unknown[]> {
     return this.prisma.jadwalSidang.findMany({
       where: {
         sidang: {
@@ -127,7 +142,7 @@ export class DashboardRepository {
     });
   }
 
-  async getSystemCounts() {
+  async getSystemCounts(): Promise<[number, number, number]> {
     return Promise.all([
       this.prisma.dosen.count(),
       this.prisma.mahasiswa.count(),

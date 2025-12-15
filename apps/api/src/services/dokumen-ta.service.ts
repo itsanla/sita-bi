@@ -82,10 +82,16 @@ export class DokumenTAService {
     }
 
     // Check if this specific pembimbing already validated
-    if (peranDosen.peran === 'pembimbing1' && dokumen.divalidasi_oleh_p1 !== null) {
+    if (
+      peranDosen.peran === 'pembimbing1' &&
+      dokumen.divalidasi_oleh_p1 !== null
+    ) {
       throw new UnauthorizedError('Anda sudah memvalidasi draf ini');
     }
-    if (peranDosen.peran === 'pembimbing2' && dokumen.divalidasi_oleh_p2 !== null) {
+    if (
+      peranDosen.peran === 'pembimbing2' &&
+      dokumen.divalidasi_oleh_p2 !== null
+    ) {
       throw new UnauthorizedError('Anda sudah memvalidasi draf ini');
     }
 

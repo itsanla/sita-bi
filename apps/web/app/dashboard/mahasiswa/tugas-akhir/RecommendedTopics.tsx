@@ -19,11 +19,11 @@ interface RecommendedTopicsProps {
 }
 
 export default function RecommendedTopics({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onSelectTitle: _onSelectTitle,
 }: RecommendedTopicsProps) {
   const { selectedPeriodeId } = usePeriode();
-  const { recommendedTitles, loading } = useRecommendedTopics(selectedPeriodeId);
+  const { recommendedTitles, loading } =
+    useRecommendedTopics(selectedPeriodeId);
   const [applying, setApplying] = useState<number | null>(null);
   const [showConfirm, setShowConfirm] = useState<{
     id: number;
@@ -157,7 +157,7 @@ export default function RecommendedTopics({
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-3 focus:ring-maroon-900/10 focus:border-maroon-900 hover:border-gray-300 transition-all duration-300 text-sm text-gray-800 placeholder-gray-400"
             />
-            {searchQuery && (
+            {!!searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
                 className="absolute right-4 top-1/2 -translate-y-1/2 bg-gray-100 hover:bg-gray-200 p-1.5 rounded-lg transition-colors duration-200 group/clear"
@@ -396,7 +396,7 @@ export default function RecommendedTopics({
       </div>
 
       {/* Detail Overlay */}
-      {showDetail && (
+      {!!showDetail && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={() => setShowDetail(null)}
@@ -449,7 +449,7 @@ export default function RecommendedTopics({
       )}
 
       {/* Confirmation Overlay */}
-      {showConfirm && (
+      {!!showConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-4 md:p-6 max-w-md w-full shadow-xl">
             <div className="text-center">
@@ -459,7 +459,9 @@ export default function RecommendedTopics({
               </h3>
               <p className="text-sm md:text-base text-gray-600 mb-6 leading-normal">
                 Apakah Anda yakin ingin mengambil topik{' '}
-                <strong className="break-words">&quot;{showConfirm.title}&quot;</strong>{' '}
+                <strong className="break-words">
+                  &quot;{showConfirm.title}&quot;
+                </strong>{' '}
                 sebagai judul tugas akhir Anda?
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">

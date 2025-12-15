@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-/* eslint-disable no-undef */
+ 
 module.exports = {
   content: [
     './app/**/*.{js,ts,jsx,tsx,mdx}',

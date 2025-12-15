@@ -190,8 +190,6 @@ function PenugasanPageContent() {
   // Removed unused getLoadBadgeColor
 
   const renderDosenOption = (d: DosenLoad) => {
-    const capacity = getCapacity(d.id);
-    const available = isAvailable(d.id);
     const isFull = assignType === 'pembimbing' && d.bimbinganLoad >= 4;
     return (
       <option key={d.id} value={d.id} disabled={isFull}>

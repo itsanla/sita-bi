@@ -415,19 +415,19 @@ export class PeriodeService {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { 
+      include: {
         roles: true,
         mahasiswa: {
           include: {
             tugasAkhir: {
               include: {
                 sidang: {
-                  where: { status_hasil: { in: ['lulus', 'lulus_revisi'] } }
-                }
-              }
-            }
-          }
-        }
+                  where: { status_hasil: { in: ['lulus', 'lulus_revisi'] } },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -438,8 +438,8 @@ export class PeriodeService {
 
     // Cek apakah mahasiswa sudah lulus
     if (userRole === 'mahasiswa' && user.mahasiswa) {
-      const hasGraduated = user.mahasiswa.tugasAkhir?.sidang?.some(
-        s => ['lulus', 'lulus_revisi'].includes(s.status_hasil)
+      const hasGraduated = user.mahasiswa.tugasAkhir?.sidang?.some((s) =>
+        ['lulus', 'lulus_revisi'].includes(s.status_hasil),
       );
       if (hasGraduated) return;
     }
@@ -488,7 +488,7 @@ export class PeriodeService {
         orderBy: { periodeTa: { tahun: 'desc' } },
       });
 
-      return participations.map(p => p.periodeTa);
+      return participations.map((p) => p.periodeTa);
     } catch (error) {
       // Fallback ke metode lama jika tabel baru belum ada
       const activePeriode = await this.getActivePeriode();
@@ -518,7 +518,7 @@ export class PeriodeService {
         orderBy: { periodeTa: { tahun: 'desc' } },
       });
 
-      return participations.map(p => p.periodeTa);
+      return participations.map((p) => p.periodeTa);
     } catch (error) {
       // Fallback ke metode lama jika tabel baru belum ada
       const activePeriode = await this.getActivePeriode();

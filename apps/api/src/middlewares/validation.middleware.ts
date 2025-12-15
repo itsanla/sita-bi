@@ -1,8 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
-import type { ZodSchema } from 'zod';
-import { ZodError } from 'zod';
+import { ZodError, type z } from 'zod';
 
-export const validate = (schema: ZodSchema) => {
+export const validate = (schema: z.ZodType) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     try {
       const validated = schema.parse(req.body);

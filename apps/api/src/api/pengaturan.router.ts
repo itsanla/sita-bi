@@ -13,7 +13,14 @@ const pengaturanService = new PengaturanService();
 router.get(
   '/',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.admin, Role.jurusan, Role.mahasiswa, Role.dosen, Role.prodi_d3, Role.prodi_d4]),
+  authorizeRoles([
+    Role.admin,
+    Role.jurusan,
+    Role.mahasiswa,
+    Role.dosen,
+    Role.prodi_d3,
+    Role.prodi_d4,
+  ]),
   asyncHandler(async (req, res) => {
     const pengaturan = await pengaturanService.getPengaturan();
     res.json({

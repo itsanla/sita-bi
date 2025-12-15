@@ -115,7 +115,7 @@ export class PengajuanService {
     await NotificationHelperService.sendPengajuanPembimbingNotification(
       pengajuan.dosen.user.phone_number,
       pengajuan.mahasiswa.user.name,
-      peran
+      peran,
     );
 
     return pengajuan;
@@ -211,7 +211,7 @@ export class PengajuanService {
     await NotificationHelperService.sendTawaranPembimbingNotification(
       tawaran.mahasiswa.user.phone_number,
       tawaran.dosen.user.name,
-      peran
+      peran,
     );
 
     return tawaran;
@@ -336,18 +336,18 @@ export class PengajuanService {
 
       // Kirim notifikasi WhatsApp
       const isDosenAccepting = pengajuan.diinisiasi_oleh === 'mahasiswa';
-      const recipientPhone = isDosenAccepting 
-        ? pengajuan.mahasiswa.user.phone_number 
+      const recipientPhone = isDosenAccepting
+        ? pengajuan.mahasiswa.user.phone_number
         : pengajuan.dosen.user.phone_number;
-      const acceptorName = isDosenAccepting 
-        ? pengajuan.dosen.user.name 
+      const acceptorName = isDosenAccepting
+        ? pengajuan.dosen.user.name
         : pengajuan.mahasiswa.user.name;
-      
+
       await NotificationHelperService.sendPengajuanDisetujuiNotification(
         recipientPhone,
         acceptorName,
         pengajuan.peran_yang_diajukan as 'pembimbing1' | 'pembimbing2',
-        isDosenAccepting
+        isDosenAccepting,
       );
 
       // Batalkan pengajuan lain untuk peran yang sama
@@ -418,18 +418,18 @@ export class PengajuanService {
 
     // Kirim notifikasi WhatsApp
     const isDosenRejecting = pengajuan.diinisiasi_oleh === 'mahasiswa';
-    const recipientPhone = isDosenRejecting 
-      ? pengajuan.mahasiswa.user.phone_number 
+    const recipientPhone = isDosenRejecting
+      ? pengajuan.mahasiswa.user.phone_number
       : pengajuan.dosen.user.phone_number;
-    const rejectorName = isDosenRejecting 
-      ? pengajuan.dosen.user.name 
+    const rejectorName = isDosenRejecting
+      ? pengajuan.dosen.user.name
       : pengajuan.mahasiswa.user.name;
-    
+
     await NotificationHelperService.sendPengajuanDitolakNotification(
       recipientPhone,
       rejectorName,
       pengajuan.peran_yang_diajukan as 'pembimbing1' | 'pembimbing2',
-      isDosenRejecting
+      isDosenRejecting,
     );
 
     return updatedPengajuan;
@@ -486,18 +486,18 @@ export class PengajuanService {
 
     // Kirim notifikasi WhatsApp
     const isStudentCanceling = pengajuan.diinisiasi_oleh === 'mahasiswa';
-    const recipientPhone = isStudentCanceling 
-      ? pengajuan.dosen.user.phone_number 
+    const recipientPhone = isStudentCanceling
+      ? pengajuan.dosen.user.phone_number
       : pengajuan.mahasiswa.user.phone_number;
-    const cancelerName = isStudentCanceling 
-      ? pengajuan.mahasiswa.user.name 
+    const cancelerName = isStudentCanceling
+      ? pengajuan.mahasiswa.user.name
       : pengajuan.dosen.user.name;
-    
+
     await NotificationHelperService.sendPengajuanDibatalkanNotification(
       recipientPhone,
       cancelerName,
       pengajuan.peran_yang_diajukan as 'pembimbing1' | 'pembimbing2',
-      isStudentCanceling
+      isStudentCanceling,
     );
 
     return updatedPengajuan;
@@ -614,10 +614,16 @@ export class PengajuanService {
 
   // Method untuk mendapatkan list mahasiswa tersedia (untuk dosen)
   async getAvailableMahasiswa(periodeId?: number): Promise<unknown> {
-    const whereClause: any = {};
-    if (periodeId) {
+    interface WhereClause {
+      tugasAkhir?: {
+        periode_ta_id: number;
+      };
+    }
+
+    const whereClause: WhereClause = {};
+    if (periodeId !== undefined && periodeId > 0) {
       whereClause.tugasAkhir = {
-        periode_ta_id: periodeId
+        periode_ta_id: periodeId,
       };
     }
 
@@ -626,7 +632,10 @@ export class PengajuanService {
       include: {
         user: { select: { id: true, name: true, email: true } },
         tugasAkhir: {
-          where: periodeId ? { periode_ta_id: periodeId } : {},
+          where:
+            periodeId !== undefined && periodeId > 0
+              ? { periode_ta_id: periodeId }
+              : {},
           include: {
             peranDosenTa: {
               where: {
@@ -700,37 +709,40 @@ export class PengajuanService {
     }
 
     // Buat pengajuan pelepasan
-    const pengajuanPelepasan = await this.prisma.pengajuanPelepasanBimbingan.create({
-      data: {
-        peran_dosen_ta_id: peranDosenTaId,
-        diajukan_oleh_user_id: userId,
-        status: STATUS_MENUNGGU_KONFIRMASI,
-      },
-      include: {
-        peranDosenTa: {
-          include: {
-            dosen: { include: { user: true } },
-            tugasAkhir: { include: { mahasiswa: { include: { user: true } } } },
-          },
+    const pengajuanPelepasan =
+      await this.prisma.pengajuanPelepasanBimbingan.create({
+        data: {
+          peran_dosen_ta_id: peranDosenTaId,
+          diajukan_oleh_user_id: userId,
+          status: STATUS_MENUNGGU_KONFIRMASI,
         },
-        diajukanOleh: true,
-      },
-    });
+        include: {
+          peranDosenTa: {
+            include: {
+              dosen: { include: { user: true } },
+              tugasAkhir: {
+                include: { mahasiswa: { include: { user: true } } },
+              },
+            },
+          },
+          diajukanOleh: true,
+        },
+      });
 
     // Kirim notifikasi WhatsApp
     const isDosenYangMengajukan = isDosen;
-    const recipientPhone = isDosenYangMengajukan 
-      ? peranDosen.tugasAkhir.mahasiswa.user.phone_number 
+    const recipientPhone = isDosenYangMengajukan
+      ? peranDosen.tugasAkhir.mahasiswa.user.phone_number
       : peranDosen.dosen.user.phone_number;
-    const requesterName = isDosenYangMengajukan 
-      ? peranDosen.dosen.user.name 
+    const requesterName = isDosenYangMengajukan
+      ? peranDosen.dosen.user.name
       : peranDosen.tugasAkhir.mahasiswa.user.name;
-    
+
     await NotificationHelperService.sendPelepasanBimbinganNotification(
       recipientPhone,
       requesterName,
       peranDosen.peran as 'pembimbing1' | 'pembimbing2',
-      isDosenYangMengajukan
+      isDosenYangMengajukan,
     );
 
     return pengajuanPelepasan;
@@ -805,7 +817,10 @@ export class PengajuanService {
       });
 
       // Reset validasi judul jika dosen adalah pembimbing yang memvalidasi
-      const updateData: { judul_divalidasi_p1?: boolean; judul_divalidasi_p2?: boolean } = {};
+      const updateData: {
+        judul_divalidasi_p1?: boolean;
+        judul_divalidasi_p2?: boolean;
+      } = {};
       if (pengajuan.peranDosenTa.peran === 'pembimbing1') {
         updateData.judul_divalidasi_p1 = false;
       } else if (pengajuan.peranDosenTa.peran === 'pembimbing2') {
@@ -860,17 +875,17 @@ export class PengajuanService {
 
       // Kirim notifikasi WhatsApp untuk konfirmasi pelepasan
       const isDosenYangKonfirmasi = isDosen;
-      const recipientPhone = isDosenYangKonfirmasi 
-        ? pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user.phone_number 
+      const recipientPhone = isDosenYangKonfirmasi
+        ? pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user.phone_number
         : pengajuan.peranDosenTa.dosen.user.phone_number;
-      const confirmerName = isDosenYangKonfirmasi 
-        ? pengajuan.peranDosenTa.dosen.user.name 
+      const confirmerName = isDosenYangKonfirmasi
+        ? pengajuan.peranDosenTa.dosen.user.name
         : pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user.name;
-      
+
       await NotificationHelperService.sendPelepasanDikonfirmasiNotification(
         recipientPhone,
         confirmerName,
-        pengajuan.peranDosenTa.peran as 'pembimbing1' | 'pembimbing2'
+        pengajuan.peranDosenTa.peran as 'pembimbing1' | 'pembimbing2',
       );
 
       return pengajuan;
@@ -912,32 +927,35 @@ export class PengajuanService {
       throw new Error('Anda tidak bisa menolak pengajuan Anda sendiri');
     }
 
-    const updatedPengajuan = await this.prisma.pengajuanPelepasanBimbingan.update({
-      where: { id: pengajuanId },
-      data: { status: 'DITOLAK' },
-      include: {
-        peranDosenTa: {
-          include: {
-            dosen: { include: { user: true } },
-            tugasAkhir: { include: { mahasiswa: { include: { user: true } } } },
+    const updatedPengajuan =
+      await this.prisma.pengajuanPelepasanBimbingan.update({
+        where: { id: pengajuanId },
+        data: { status: 'DITOLAK' },
+        include: {
+          peranDosenTa: {
+            include: {
+              dosen: { include: { user: true } },
+              tugasAkhir: {
+                include: { mahasiswa: { include: { user: true } } },
+              },
+            },
           },
         },
-      },
-    });
+      });
 
     // Kirim notifikasi WhatsApp untuk penolakan pelepasan
     const isDosenYangMenolak = isDosen;
-    const recipientPhone = isDosenYangMenolak 
-      ? pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user.phone_number 
+    const recipientPhone = isDosenYangMenolak
+      ? pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user.phone_number
       : pengajuan.peranDosenTa.dosen.user.phone_number;
-    const rejectorName = isDosenYangMenolak 
-      ? pengajuan.peranDosenTa.dosen.user.name 
+    const rejectorName = isDosenYangMenolak
+      ? pengajuan.peranDosenTa.dosen.user.name
       : pengajuan.peranDosenTa.tugasAkhir.mahasiswa.user.name;
-    
+
     await NotificationHelperService.sendPelepasanDitolakNotification(
       recipientPhone,
       rejectorName,
-      pengajuan.peranDosenTa.peran as 'pembimbing1' | 'pembimbing2'
+      pengajuan.peranDosenTa.peran as 'pembimbing1' | 'pembimbing2',
     );
 
     return updatedPengajuan;

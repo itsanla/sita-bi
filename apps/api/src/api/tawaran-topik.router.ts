@@ -123,9 +123,10 @@ router.get(
       req.query['limit'] != null
         ? parseInt(req.query['limit'] as string)
         : undefined;
-    const periodeId = req.query.periode_id != null
-      ? parseInt(req.query.periode_id as string)
-      : undefined;
+    const periodeId =
+      req.query.periode_id != null
+        ? parseInt(req.query.periode_id as string)
+        : undefined;
 
     const availableTopics = await tawaranTopikService.findAvailable(
       page,

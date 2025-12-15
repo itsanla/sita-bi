@@ -163,7 +163,7 @@ export default function KelolaSidangPage() {
                 </select>
               )}
             />
-            {errors.sidang_id && (
+            {!!errors.sidang_id && (
               <p className="text-red-500 text-sm mt-1">
                 {errors.sidang_id.message}
               </p>
@@ -185,7 +185,7 @@ export default function KelolaSidangPage() {
                 />
               )}
             />
-            {errors.tanggal && (
+            {!!errors.tanggal && (
               <p className="text-red-500 text-sm mt-1">
                 {errors.tanggal.message}
               </p>
@@ -214,7 +214,7 @@ export default function KelolaSidangPage() {
                 </select>
               )}
             />
-            {errors.ruangan_id && (
+            {!!errors.ruangan_id && (
               <p className="text-red-500 text-sm mt-1">
                 {errors.ruangan_id.message}
               </p>
@@ -236,7 +236,7 @@ export default function KelolaSidangPage() {
                 />
               )}
             />
-            {errors.waktu_mulai && (
+            {!!errors.waktu_mulai && (
               <p className="text-red-500 text-sm mt-1">
                 {errors.waktu_mulai.message}
               </p>
@@ -258,7 +258,7 @@ export default function KelolaSidangPage() {
                 />
               )}
             />
-            {errors.waktu_selesai && (
+            {!!errors.waktu_selesai && (
               <p className="text-red-500 text-sm mt-1">
                 {errors.waktu_selesai.message}
               </p>
@@ -293,13 +293,13 @@ export default function KelolaSidangPage() {
           </div>
         </div>
 
-        {conflictCheckMutation.isPending && (
+        {!!conflictCheckMutation.isPending && (
           <div className="flex items-center gap-2 text-gray-600 bg-gray-50 p-3 rounded-lg">
             <Loader className="w-4 h-4 animate-spin" />
             <span className="text-sm">Memeriksa konflik...</span>
           </div>
         )}
-        {conflictResult && (
+        {!!conflictResult && (
           <div
             className={`flex items-center gap-2 p-3 rounded-lg ${conflictResult.hasConflict ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}
           >

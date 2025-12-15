@@ -1,8 +1,11 @@
-/* eslint-disable no-console */
-type LogLevel = 'info' | 'warn' | 'error' | 'debug';
+type LogLevel = 'debug' | 'error' | 'info' | 'warn';
 
 class Logger {
-  private formatMessage(level: LogLevel, message: string, meta?: unknown): string {
+  private formatMessage(
+    level: LogLevel,
+    message: string,
+    meta?: unknown,
+  ): string {
     const timestamp = new Date().toISOString();
     const metaStr = meta !== undefined ? ` ${JSON.stringify(meta)}` : '';
     return `[${timestamp}] [${level.toUpperCase()}] ${message}${metaStr}`;

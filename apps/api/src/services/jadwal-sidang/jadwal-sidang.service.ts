@@ -36,28 +36,32 @@ export class JadwalSidangService {
     this.schedulingLoop = new SchedulingLoopService();
   }
 
-  async generateJadwalOtomatis(): Promise<{
-    mahasiswa: string;
-    nim: string;
-    ketua: string;
-    sekretaris: string;
-    anggota1: string;
-    anggota2: string;
-    hari_tanggal: string;
-    pukul: string;
-    ruangan: string;
-  }[]> {
+  async generateJadwalOtomatis(): Promise<
+    {
+      mahasiswa: string;
+      nim: string;
+      ketua: string;
+      sekretaris: string;
+      anggota1: string;
+      anggota2: string;
+      hari_tanggal: string;
+      pukul: string;
+      ruangan: string;
+    }[]
+  > {
     const pengaturan = await this.pengaturanService.getPengaturan();
 
     const diagnostic = await this.diagnostic.runSmartDiagnostic(
       pengaturan,
-      (key: string) => this.pengaturanService.getPengaturanByKey(key)
+      (key: string) => this.pengaturanService.getPengaturanByKey(key),
     );
     if (!diagnostic.success) {
       throw new Error(JSON.stringify(diagnostic.error));
     }
 
-    const ruanganIds = await this.pengaturanService.getRuanganIds(pengaturan.ruangan_sidang);
+    const ruanganIds = await this.pengaturanService.getRuanganIds(
+      pengaturan.ruangan_sidang,
+    );
 
     const mahasiswaSiapData = await prisma.mahasiswa.findMany({
       where: { siap_sidang: true },
@@ -66,10 +70,16 @@ export class JadwalSidangService {
         tugasAkhir: {
           include: {
             peranDosenTa: {
-              where: { peran: { in: [PeranDosen.pembimbing1, PeranDosen.pembimbing2] } },
+              where: {
+                peran: { in: [PeranDosen.pembimbing1, PeranDosen.pembimbing2] },
+              },
               include: { dosen: { include: { user: true } } },
             },
-            sidang: { where: { is_active: true }, orderBy: { created_at: 'desc' }, take: 1 },
+            sidang: {
+              where: { is_active: true },
+              orderBy: { created_at: 'desc' },
+              take: 1,
+            },
           },
         },
       },
@@ -79,11 +89,19 @@ export class JadwalSidangService {
       throw new Error('Tidak ada mahasiswa yang siap sidang.');
     }
 
-    const mahasiswaSiap = await this.generatorHelper.prepareMahasiswaSiap(mahasiswaSiapData);
+    const mahasiswaSiap =
+      await this.generatorHelper.prepareMahasiswaSiap(mahasiswaSiapData);
 
-    const maxPembimbingAktifStr = await this.pengaturanService.getPengaturanByKey('max_pembimbing_aktif');
-    const maxPembimbingAktif = parseInt(maxPembimbingAktifStr !== '' ? maxPembimbingAktifStr : '4', 10);
-    await this.generatorHelper.validatePembimbingLoad(mahasiswaSiap, maxPembimbingAktif);
+    const maxPembimbingAktifStr =
+      await this.pengaturanService.getPengaturanByKey('max_pembimbing_aktif');
+    const maxPembimbingAktif = parseInt(
+      maxPembimbingAktifStr !== '' ? maxPembimbingAktifStr : '4',
+      10,
+    );
+    await this.generatorHelper.validatePembimbingLoad(
+      mahasiswaSiap,
+      maxPembimbingAktif,
+    );
 
     const results: {
       mahasiswa: string;
@@ -100,14 +118,26 @@ export class JadwalSidangService {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() + 1);
 
-    for (let dayOffset = 0; unscheduled.length > 0 && dayOffset < 365; dayOffset++) {
+    for (
+      let dayOffset = 0;
+      unscheduled.length > 0 && dayOffset < 365;
+      dayOffset++
+    ) {
       const tanggal = new Date(startDate);
       tanggal.setDate(tanggal.getDate() + dayOffset);
 
-      const slots = this.slotGenerator.generateTimeSlots(tanggal, pengaturan, ruanganIds);
+      const slots = this.slotGenerator.generateTimeSlots(
+        tanggal,
+        pengaturan,
+        ruanganIds,
+      );
       if (slots.length === 0) continue;
 
-      const processResult = await this.schedulingLoop.processSlots(slots, unscheduled, pengaturan);
+      const processResult = await this.schedulingLoop.processSlots(
+        slots,
+        unscheduled,
+        pengaturan,
+      );
       results.push(...processResult.results);
       unscheduled = processResult.remaining;
     }
@@ -124,7 +154,7 @@ export class JadwalSidangService {
             nim: firstUnscheduled.tugasAkhir.mahasiswa.nim,
             totalGagal: unscheduled.length,
           },
-        })
+        }),
       );
     }
 
@@ -136,25 +166,29 @@ export class JadwalSidangService {
     return results;
   }
 
-  async getMahasiswaGagalSidang(): Promise<{
-    nama: string;
-    nim: string;
-    prodi: string;
-    kelas: string;
-    status: string;
-    alasan: string;
-  }[]> {
+  async getMahasiswaGagalSidang(): Promise<
+    {
+      nama: string;
+      nim: string;
+      prodi: string;
+      kelas: string;
+      status: string;
+      alasan: string;
+    }[]
+  > {
     return this.crudService.getMahasiswaGagalSidang();
   }
 
-  async getMahasiswaSiapSidang(): Promise<{
-    id: number;
-    status_hasil: string;
-    status_display: string;
-    validator_info: string;
-    rejection_reason: string;
-    tugasAkhir: unknown;
-  }[]> {
+  async getMahasiswaSiapSidang(): Promise<
+    {
+      id: number;
+      status_hasil: string;
+      status_display: string;
+      validator_info: string;
+      rejection_reason: string;
+      tugasAkhir: unknown;
+    }[]
+  > {
     return this.crudService.getMahasiswaSiapSidang();
   }
 
@@ -180,7 +214,7 @@ export class JadwalSidangService {
       penguji1_id?: number;
       penguji2_id?: number;
       penguji3_id?: number;
-    }
+    },
   ): Promise<unknown> {
     return this.updateService.updateJadwal(jadwalId, data);
   }
@@ -193,11 +227,17 @@ export class JadwalSidangService {
     return this.crudService.getEditOptions();
   }
 
-  async moveSchedule(fromDate: string, toDate: string): Promise<{ count: number }> {
+  async moveSchedule(
+    fromDate: string,
+    toDate: string,
+  ): Promise<{ count: number }> {
     return this.crudService.moveSchedule(fromDate, toDate);
   }
 
-  async swapSchedule(jadwal1Id: number, jadwal2Id: number): Promise<{ jadwal1Id: number; jadwal2Id: number }> {
+  async swapSchedule(
+    jadwal1Id: number,
+    jadwal2Id: number,
+  ): Promise<{ jadwal1Id: number; jadwal2Id: number }> {
     return this.crudService.swapSchedule(jadwal1Id, jadwal2Id);
   }
 
@@ -230,7 +270,9 @@ export class JadwalSidangService {
           tanggal_generate: new Date(),
         },
       });
-      console.log('[JADWAL SERVICE] ✅ Record penjadwalan created with status SELESAI');
+      console.log(
+        '[JADWAL SERVICE] ✅ Record penjadwalan created with status SELESAI',
+      );
     }
   }
 }

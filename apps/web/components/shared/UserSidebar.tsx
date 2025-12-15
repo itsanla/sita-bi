@@ -8,9 +8,12 @@ import Image from 'next/image';
 import { Home, LogOut, Menu, LucideIcon, MessageCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
-const ChatbotModal = dynamic(() => import('@/app/components/SitaBot/ChatbotModal'), {
-  ssr: false,
-});
+const ChatbotModal = dynamic(
+  () => import('@/app/components/SitaBot/ChatbotModal'),
+  {
+    ssr: false,
+  },
+);
 
 interface NavItem {
   href: string;
@@ -100,7 +103,7 @@ const NavLink = ({
 
       {!sidebarOpen && !isActive && !!tooltipPos && (
         <div
-          className="fixed ml-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg whitespace-nowrap z-[9999] -translate-y-1/2 pointer-events-none shadow-xl"
+          className="fixed ml-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg whitespace-nowrap z-[100] -translate-y-1/2 pointer-events-none shadow-xl"
           style={{ top: `${tooltipPos.top}px`, left: `${tooltipPos.left}px` }}
         >
           {item.label}
@@ -239,19 +242,22 @@ export default function UserSidebar({
             )}
 
             {!sidebarOpen && (
-              <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-50 top-1/2 -translate-y-1/2 shadow-xl">
+              <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-[100] top-1/2 -translate-y-1/2 shadow-xl">
                 Beranda
                 <div className="absolute right-full top-1/2 -translate-y-1/2 -mr-px border-[5px] border-transparent border-r-gray-900"></div>
               </div>
             )}
           </Link>
-          
+
           <button
             onClick={handleSitaBotClick}
             className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100/50 hover:text-red-900 transition-all duration-150 ease-out active:scale-[0.98] relative w-full text-left"
           >
             <div className="flex items-center justify-center w-5 h-5 transition-transform duration-150 group-hover:scale-110 group-active:scale-95">
-              <MessageCircle className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
+              <MessageCircle
+                className="w-5 h-5 flex-shrink-0"
+                strokeWidth={2}
+              />
             </div>
             {!!sidebarOpen && (
               <span className="text-sm font-medium tracking-tight">
@@ -260,7 +266,7 @@ export default function UserSidebar({
             )}
 
             {!sidebarOpen && (
-              <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-50 top-1/2 -translate-y-1/2 shadow-xl">
+              <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-[100] top-1/2 -translate-y-1/2 shadow-xl">
                 SitaBot AI
                 <div className="absolute right-full top-1/2 -translate-y-1/2 -mr-px border-[5px] border-transparent border-r-gray-900"></div>
               </div>
@@ -284,7 +290,9 @@ export default function UserSidebar({
                         key={item.href}
                         item={item}
                         sidebarOpen={sidebarOpen}
-                        onClick={item.isSitaBot ? handleSitaBotClick : undefined}
+                        onClick={
+                          item.isSitaBot ? handleSitaBotClick : undefined
+                        }
                       />
                     ))}
                   </ul>
@@ -337,7 +345,7 @@ export default function UserSidebar({
                 </span>
               </div>
 
-              <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-50 top-1/2 -translate-y-1/2 shadow-xl">
+              <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-[100] top-1/2 -translate-y-1/2 shadow-xl">
                 {user?.nama || 'User'}
                 <div className="absolute right-full top-1/2 -translate-y-1/2 -mr-px border-[5px] border-transparent border-r-gray-900"></div>
               </div>
@@ -356,7 +364,7 @@ export default function UserSidebar({
             {!!sidebarOpen && <span className="tracking-tight">Logout</span>}
 
             {!sidebarOpen && (
-              <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-50 top-1/2 -translate-y-1/2 shadow-xl">
+              <div className="absolute left-full ml-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 whitespace-nowrap z-[100] top-1/2 -translate-y-1/2 shadow-xl">
                 Logout
                 <div className="absolute right-full top-1/2 -translate-y-1/2 -mr-px border-[5px] border-transparent border-r-gray-900"></div>
               </div>
@@ -364,9 +372,12 @@ export default function UserSidebar({
           </button>
         </div>
       </aside>
-      
-      {!isMobile && isChatOpen && (
-        <ChatbotModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+
+      {!isMobile && !!isChatOpen && (
+        <ChatbotModal
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+        />
       )}
     </>
   );

@@ -4,7 +4,7 @@ import { createServer } from 'http';
 import { initSocket } from './socket';
 import { whatsappService } from './services/waha-whatsapp.service';
 import { SchedulerService } from './services/scheduler.service';
-import { PrismaService } from './config/prisma';
+
 import { startPeriodeCronJob } from './jobs/periode.cron';
 
 const PORT = process.env['PORT'] ?? 3000;
@@ -20,7 +20,7 @@ httpServer.headersTimeout = 66000; // 66 seconds (must be greater than keepAlive
 initSocket(httpServer);
 
 // Initialize Services
-const initializeServices = async () => {
+const initializeServices = async (): Promise<void> => {
   if (process.env['NODE_ENV'] !== 'test') {
     // Auto-initialize WhatsApp
     try {
@@ -41,7 +41,7 @@ httpServer.listen(PORT, async () => {
   console.warn(`Backend server running on port ${PORT}`);
   console.warn(`Health check: /health`);
   console.warn(`Ready for frontend connections`);
-  
+
   // Initialize services after server is listening
   await initializeServices();
 });
@@ -49,17 +49,17 @@ httpServer.listen(PORT, async () => {
 // Graceful shutdown handlers
 const gracefulShutdown = async (signal: string): Promise<void> => {
   console.warn(`\n🛑 ${signal} received - Shutting down...`);
-  
+
   // Force exit after 2 seconds to prevent hanging
   const forceExitTimer = setTimeout(() => {
     console.warn('⚠️  Force exit after timeout');
     process.exit(0);
   }, 2000);
-  
+
   // Stop health check but preserve session
   whatsappService.stopHealthCheck();
   console.warn('✅ WhatsApp health check stopped (session preserved)');
-  
+
   clearTimeout(forceExitTimer);
   console.warn('👋 Shutdown complete');
   process.exit(0);

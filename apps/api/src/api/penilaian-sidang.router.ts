@@ -155,7 +155,6 @@ router.get(
           .replace(/p3/g, nilai3.toString());
 
         try {
-          // eslint-disable-next-line sonarjs/code-eval
           const nilaiAkhir = eval(formula) as number;
           return { ...sidang, nilai_akhir: nilaiAkhir };
         } catch {
@@ -281,7 +280,6 @@ router.post(
 
     let nilaiAkhir: number;
     try {
-      // eslint-disable-next-line sonarjs/code-eval
       nilaiAkhir = eval(formula) as number;
     } catch {
       res.status(500).json({
@@ -517,7 +515,6 @@ router.get(
         .replace(/p3/g, nilai3.toString());
 
       try {
-        // eslint-disable-next-line sonarjs/code-eval
         nilaiAkhir = eval(formula) as number;
       } catch {
         nilaiAkhir = undefined;

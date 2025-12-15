@@ -34,14 +34,12 @@ export const updatePasswordSchema = z
 export type UpdatePasswordDto = z.infer<typeof updatePasswordSchema>;
 
 export const requestEmailOtpSchema = z.object({
-  // eslint-disable-next-line @typescript-eslint/no-deprecated, sonarjs/deprecation
   email_baru: z.string().email('Format email tidak valid'),
 });
 
 export type RequestEmailOtpDto = z.infer<typeof requestEmailOtpSchema>;
 
 export const verifyEmailOtpSchema = z.object({
-  // eslint-disable-next-line @typescript-eslint/no-deprecated, sonarjs/deprecation
   email_baru: z.string().email('Format email tidak valid'),
   otp: z.string().length(6, 'OTP harus 6 digit'),
 });

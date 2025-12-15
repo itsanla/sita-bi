@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const TIME_FORMAT_ERROR = 'Format jam harus HH:mm';
+
 export const updatePengaturanSchema = z.object({
   max_similaritas_persen: z
     .number()
@@ -37,16 +39,18 @@ export const updatePengaturanSchema = z.object({
     .optional(),
   jam_mulai_sidang: z
     .string()
-    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format jam harus HH:mm')
+    .regex(/^([0-1]?\d|2[0-3]):[0-5]\d$/, TIME_FORMAT_ERROR)
     .optional(),
   jam_selesai_sidang: z
     .string()
-    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format jam harus HH:mm')
+    .regex(/^([0-1]?\d|2[0-3]):[0-5]\d$/, TIME_FORMAT_ERROR)
     .optional(),
   waktu_istirahat: z
     .array(
       z.object({
-        waktu: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format jam harus HH:mm'),
+        waktu: z
+          .string()
+          .regex(/^([0-1]?\d|2[0-3]):[0-5]\d$/, TIME_FORMAT_ERROR),
         durasi_menit: z.number().int().min(15, 'Minimal 15 menit'),
       }),
     )
@@ -55,14 +59,28 @@ export const updatePengaturanSchema = z.object({
     .array(
       z.object({
         hari: z.string(),
-        jam_mulai: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format jam harus HH:mm'),
-        jam_selesai: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format jam harus HH:mm'),
-        durasi_sidang_menit: z.number().int().min(30, 'Minimal 30 menit').optional(),
-        jeda_sidang_menit: z.number().int().min(0, 'Minimal 0 menit').optional(),
+        jam_mulai: z
+          .string()
+          .regex(/^([0-1]?\d|2[0-3]):[0-5]\d$/, TIME_FORMAT_ERROR),
+        jam_selesai: z
+          .string()
+          .regex(/^([0-1]?\d|2[0-3]):[0-5]\d$/, TIME_FORMAT_ERROR),
+        durasi_sidang_menit: z
+          .number()
+          .int()
+          .min(30, 'Minimal 30 menit')
+          .optional(),
+        jeda_sidang_menit: z
+          .number()
+          .int()
+          .min(0, 'Minimal 0 menit')
+          .optional(),
         waktu_istirahat: z
           .array(
             z.object({
-              waktu: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format jam harus HH:mm'),
+              waktu: z
+                .string()
+                .regex(/^([0-1]?\d|2[0-3]):[0-5]\d$/, TIME_FORMAT_ERROR),
               durasi_menit: z.number().int().min(15, 'Minimal 15 menit'),
             }),
           )
@@ -70,9 +88,7 @@ export const updatePengaturanSchema = z.object({
       }),
     )
     .optional(),
-  hari_libur_tetap: z
-    .array(z.string())
-    .optional(),
+  hari_libur_tetap: z.array(z.string()).optional(),
   tanggal_libur_khusus: z
     .array(
       z.object({

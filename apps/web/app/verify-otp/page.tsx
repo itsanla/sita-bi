@@ -11,7 +11,9 @@ function VerifyComponent() {
   const token = searchParams.get('token');
   const email = searchParams.get('email');
 
-  const [status, setStatus] = useState<'waiting' | 'verifying' | 'success' | 'failed'>('waiting');
+  const [status, setStatus] = useState<
+    'waiting' | 'verifying' | 'success' | 'failed'
+  >('waiting');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -32,7 +34,8 @@ function VerifyComponent() {
       } catch (err) {
         const error = err as { data?: { message?: string }; message?: string };
         setStatus('failed');
-        const errorMessage = error.data?.message || error.message || 'Terjadi kesalahan.';
+        const errorMessage =
+          error.data?.message || error.message || 'Terjadi kesalahan.';
         setError(errorMessage);
       }
     };
@@ -48,13 +51,16 @@ function VerifyComponent() {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-6">
               <Mail className="w-10 h-10 text-blue-600" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Cek Email Anda</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Cek Email Anda
+            </h1>
             <p className="text-gray-600 mb-4">
               Kami telah mengirim link verifikasi ke{' '}
               <span className="font-semibold">{email}</span>
             </p>
             <p className="text-sm text-gray-500 mb-6">
-              Silakan cek inbox atau folder spam Anda dan klik link verifikasi untuk mengaktifkan akun.
+              Silakan cek inbox atau folder spam Anda dan klik link verifikasi
+              untuk mengaktifkan akun.
             </p>
             <button
               onClick={() => router.push('/login')}
@@ -70,7 +76,9 @@ function VerifyComponent() {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-6">
               <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Memverifikasi Email</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Memverifikasi Email
+            </h1>
             <p className="text-gray-600">Mohon tunggu sebentar...</p>
           </>
         )}
@@ -80,8 +88,12 @@ function VerifyComponent() {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
               <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Verifikasi Berhasil!</h1>
-            <p className="text-gray-600 mb-6">Email Anda telah berhasil diverifikasi.</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Verifikasi Berhasil!
+            </h1>
+            <p className="text-gray-600 mb-6">
+              Email Anda telah berhasil diverifikasi.
+            </p>
             <button
               onClick={() => router.push('/login')}
               className="w-full bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-700 hover:to-red-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200"
@@ -96,9 +108,13 @@ function VerifyComponent() {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100 rounded-full mb-6">
               <XCircle className="w-10 h-10 text-red-600" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Verifikasi Gagal</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Verifikasi Gagal
+            </h1>
             <p className="text-red-600 mb-4">{error}</p>
-            <p className="text-gray-600 mb-6">Silakan coba registrasi ulang atau hubungi admin.</p>
+            <p className="text-gray-600 mb-6">
+              Silakan coba registrasi ulang atau hubungi admin.
+            </p>
             <button
               onClick={() => router.push('/register')}
               className="w-full bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-700 hover:to-red-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200"

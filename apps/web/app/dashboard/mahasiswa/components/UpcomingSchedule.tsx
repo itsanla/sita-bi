@@ -22,11 +22,12 @@ export default function UpcomingSchedule() {
       try {
         setLoading(true);
         let dokumenWajib: string[] = [];
-        
+
         try {
           const pengaturanRes = await api.get('/pengaturan');
-          const syaratData = pengaturanRes.data?.data?.syarat_pendaftaran_sidang;
-          
+          const syaratData =
+            pengaturanRes.data?.data?.syarat_pendaftaran_sidang;
+
           if (Array.isArray(syaratData) && syaratData.length > 0) {
             dokumenWajib = syaratData.map((s: any) => s.label || s.key || s);
           } else {
@@ -35,10 +36,10 @@ export default function UpcomingSchedule() {
         } catch {
           dokumenWajib = [
             'Naskah TA',
-            'Sertifikat TOEIC', 
+            'Sertifikat TOEIC',
             'Transkrip Nilai',
             'Ijazah SLTA',
-            'Surat Bebas Jurusan'
+            'Surat Bebas Jurusan',
           ];
         }
 

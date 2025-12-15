@@ -28,7 +28,10 @@ export class PendaftaranSidangService {
       orderBy: { created_at: 'desc' },
     });
 
-    if (existingRegistration && existingRegistration.status_validasi !== 'rejected') {
+    if (
+      existingRegistration &&
+      existingRegistration.status_validasi !== 'rejected'
+    ) {
       return existingRegistration;
     }
 
@@ -97,9 +100,7 @@ export class PendaftaranSidangService {
     });
   }
 
-  async getRegistrationHistory(
-    mahasiswaId: number,
-  ): Promise<any[]> {
+  async getRegistrationHistory(mahasiswaId: number): Promise<any[]> {
     const history = await this.prisma.pendaftaranSidangHistory.findMany({
       where: { mahasiswa_id: mahasiswaId },
       orderBy: { created_at: 'desc' },
@@ -176,7 +177,6 @@ export class PendaftaranSidangService {
       mahasiswaIds = tugasAkhir.map((ta) => ta.mahasiswa_id);
     }
 
-    
     if (mahasiswaIds.length === 0) {
       return [];
     }
@@ -185,7 +185,6 @@ export class PendaftaranSidangService {
       where: { mahasiswa_id: { in: mahasiswaIds } },
       orderBy: { created_at: 'desc' },
     });
-    
 
     const historyWithDetails = await Promise.all(
       history.map(async (item) => {
@@ -434,7 +433,7 @@ export class PendaftaranSidangService {
       isJurusan,
     });
 
-    let updateData: any = {
+    const updateData: any = {
       validated_at: new Date(),
       validated_by: userId,
     };
@@ -555,7 +554,7 @@ export class PendaftaranSidangService {
     const isProdiD3 = userRoles.includes('prodi_d3');
     const isProdiD4 = userRoles.includes('prodi_d4');
 
-    let whereClause: any = {
+    const whereClause: any = {
       is_submitted: true,
       status_validasi: { in: ['pending', 'approved'] },
     };
@@ -639,7 +638,9 @@ export class PendaftaranSidangService {
     }
 
     if (pendaftaran.status_validasi !== 'approved') {
-      throw new Error('Hanya bisa membatalkan pendaftaran yang sudah disetujui');
+      throw new Error(
+        'Hanya bisa membatalkan pendaftaran yang sudah disetujui',
+      );
     }
 
     const user = await this.prisma.user.findUnique({
@@ -655,13 +656,17 @@ export class PendaftaranSidangService {
     const isJurusan = userRoles.includes('jurusan');
     const isProdiD3 = userRoles.includes('prodi_d3');
     const isProdiD4 = userRoles.includes('prodi_d4');
-    
-    const isPembimbing1 = user.dosen && pendaftaran.tugasAkhir.peranDosenTa.some(
-      (p) => p.peran === 'pembimbing1' && p.dosen.user_id === userId,
-    );
-    const isPembimbing2 = user.dosen && pendaftaran.tugasAkhir.peranDosenTa.some(
-      (p) => p.peran === 'pembimbing2' && p.dosen.user_id === userId,
-    );
+
+    const isPembimbing1 =
+      user.dosen &&
+      pendaftaran.tugasAkhir.peranDosenTa.some(
+        (p) => p.peran === 'pembimbing1' && p.dosen.user_id === userId,
+      );
+    const isPembimbing2 =
+      user.dosen &&
+      pendaftaran.tugasAkhir.peranDosenTa.some(
+        (p) => p.peran === 'pembimbing2' && p.dosen.user_id === userId,
+      );
 
     const updateData: any = {
       status_validasi: 'pending',
@@ -673,17 +678,17 @@ export class PendaftaranSidangService {
       updateData.divalidasi_jurusan = false;
       hasCancelled = true;
     }
-    
+
     if ((isProdiD3 || isProdiD4) && pendaftaran.divalidasi_prodi) {
       updateData.divalidasi_prodi = false;
       hasCancelled = true;
     }
-    
+
     if (isPembimbing1 && pendaftaran.divalidasi_pembimbing_1) {
       updateData.divalidasi_pembimbing_1 = false;
       hasCancelled = true;
     }
-    
+
     if (isPembimbing2 && pendaftaran.divalidasi_pembimbing_2) {
       updateData.divalidasi_pembimbing_2 = false;
       hasCancelled = true;

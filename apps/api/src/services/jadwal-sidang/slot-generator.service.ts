@@ -2,23 +2,47 @@ import type { PengaturanJadwal, TimeSlot } from './types';
 
 export class SlotGeneratorService {
   private isHariLibur(tanggal: Date, pengaturan: PengaturanJadwal): boolean {
-    const hariMap = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+    const hariMap = [
+      'minggu',
+      'senin',
+      'selasa',
+      'rabu',
+      'kamis',
+      'jumat',
+      'sabtu',
+    ];
     const hari = hariMap[tanggal.getDay()];
 
     if (pengaturan.hari_libur_tetap.includes(hari)) return true;
 
     const tanggalStr = tanggal.toISOString().split('T')[0];
-    return pengaturan.tanggal_libur_khusus.some((l) => l.tanggal === tanggalStr);
+    return pengaturan.tanggal_libur_khusus.some(
+      (l) => l.tanggal === tanggalStr,
+    );
   }
 
-  generateTimeSlots(tanggal: Date, pengaturan: PengaturanJadwal, ruanganIds: number[]): TimeSlot[] {
+  generateTimeSlots(
+    tanggal: Date,
+    pengaturan: PengaturanJadwal,
+    ruanganIds: number[],
+  ): TimeSlot[] {
     if (this.isHariLibur(tanggal, pengaturan)) return [];
 
     const slots: TimeSlot[] = [];
-    const hariMap = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+    const hariMap = [
+      'minggu',
+      'senin',
+      'selasa',
+      'rabu',
+      'kamis',
+      'jumat',
+      'sabtu',
+    ];
     const hariIni = hariMap[tanggal.getDay()];
 
-    const jadwalKhusus = (pengaturan.jadwal_hari_khusus ?? []).find((j) => j.hari === hariIni);
+    const jadwalKhusus = (pengaturan.jadwal_hari_khusus ?? []).find(
+      (j) => j.hari === hariIni,
+    );
 
     let jamMulaiSidang = pengaturan.jam_mulai_sidang;
     let jamSelesaiSidang = pengaturan.jam_selesai_sidang;
@@ -29,8 +53,10 @@ export class SlotGeneratorService {
     if (jadwalKhusus) {
       jamMulaiSidang = jadwalKhusus.jam_mulai;
       jamSelesaiSidang = jadwalKhusus.jam_selesai;
-      durasiSidangMenit = jadwalKhusus.durasi_sidang_menit ?? pengaturan.durasi_sidang_menit;
-      jedaSidangMenit = jadwalKhusus.jeda_sidang_menit ?? pengaturan.jeda_sidang_menit;
+      durasiSidangMenit =
+        jadwalKhusus.durasi_sidang_menit ?? pengaturan.durasi_sidang_menit;
+      jedaSidangMenit =
+        jadwalKhusus.jeda_sidang_menit ?? pengaturan.jeda_sidang_menit;
       waktuIstirahatList = jadwalKhusus.waktu_istirahat ?? [];
     }
 

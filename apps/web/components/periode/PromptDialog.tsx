@@ -41,8 +41,8 @@ export default function PromptDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="DialogOverlay" style={{ zIndex: 9998 }} />
-        <Dialog.Content className="DialogContent" style={{ zIndex: 9999 }}>
+        <Dialog.Overlay className="DialogOverlay" style={{ zIndex: 10002 }} />
+        <Dialog.Content className="DialogContent" style={{ zIndex: 10003 }}>
           <div className="bg-white rounded-2xl shadow-2xl p-6 mx-4 max-w-md">
             <div className="flex items-start gap-4 mb-4">
               <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">

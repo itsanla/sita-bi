@@ -2,17 +2,19 @@ import { PrismaClient, ModeValidasi } from '@repo/db';
 
 const prisma = new PrismaClient();
 
-export async function getAturanValidasi() {
+export async function getAturanValidasi(): Promise<{
+  id: number;
+  mode_validasi_judul: ModeValidasi;
+  mode_validasi_draf: ModeValidasi;
+}> {
   let aturan = await prisma.aturanValidasi.findFirst();
 
-  if (!aturan) {
-    aturan = await prisma.aturanValidasi.create({
-      data: {
-        mode_validasi_judul: ModeValidasi.KEDUA_PEMBIMBING,
-        mode_validasi_draf: ModeValidasi.KEDUA_PEMBIMBING,
-      },
-    });
-  }
+  aturan ??= await prisma.aturanValidasi.create({
+    data: {
+      mode_validasi_judul: ModeValidasi.KEDUA_PEMBIMBING,
+      mode_validasi_draf: ModeValidasi.KEDUA_PEMBIMBING,
+    },
+  });
 
   return aturan;
 }
@@ -24,12 +26,12 @@ export function isJudulValid(
 ): boolean {
   // Grandfathering: Jika sudah ada validasi, tetap dianggap valid
   const hasAnyValidation = divalidasiP1 || divalidasiP2;
-  
+
   if (!hasAnyValidation) {
     // Belum ada validasi sama sekali, gunakan aturan baru
     return false;
   }
-  
+
   // Jika sudah ada validasi, cek apakah memenuhi aturan saat ini
   switch (modeValidasi) {
     case ModeValidasi.SALAH_SATU:
@@ -54,12 +56,12 @@ export function isDrafValid(
 ): boolean {
   // Grandfathering: Jika sudah ada validasi, tetap dianggap valid
   const hasAnyValidation = divalidasiP1 !== null || divalidasiP2 !== null;
-  
+
   if (!hasAnyValidation) {
     // Belum ada validasi sama sekali
     return false;
   }
-  
+
   // Jika sudah ada validasi, cek apakah memenuhi aturan saat ini
   switch (modeValidasi) {
     case ModeValidasi.SALAH_SATU:

@@ -17,20 +17,28 @@ export class SchedulingLoopService {
     this.generatorHelper = new GeneratorHelperService();
   }
 
-   
   async tryScheduleSidang(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     sidang: any,
     slot: TimeSlot,
-    pengaturan: PengaturanJadwal
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    pengaturan: PengaturanJadwal,
   ): Promise<{ success: boolean; result?: any }> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pembimbingIds = sidang.tugasAkhir.peranDosenTa.map((p: any) => p.dosen_id);
+    const pembimbingIds = sidang.tugasAkhir.peranDosenTa.map(
+      (p: any) => p.dosen_id,
+    );
 
-    let availableDosen = await this.dosenAvailability.getDosenAvailable(slot, pembimbingIds, pengaturan, false);
+    let availableDosen = await this.dosenAvailability.getDosenAvailable(
+      slot,
+      pembimbingIds,
+      pengaturan,
+      false,
+    );
     if (availableDosen.length < 3) {
-      availableDosen = await this.dosenAvailability.getDosenAvailable(slot, pembimbingIds, pengaturan, true);
+      availableDosen = await this.dosenAvailability.getDosenAvailable(
+        slot,
+        pembimbingIds,
+        pengaturan,
+        true,
+      );
     }
 
     if (availableDosen.length < 3) {
@@ -44,28 +52,33 @@ export class SchedulingLoopService {
     for (let retry = 0; retry < maxRetries && !isValid; retry++) {
       const shuffled = this.scheduler.shuffleArray(availableDosen);
       pengujiIds = shuffled.slice(0, 3);
-      isValid = await this.conflictValidator.validateNoConflict(slot, pengujiIds, pembimbingIds);
+      isValid = await this.conflictValidator.validateNoConflict(
+        slot,
+        pengujiIds,
+        pembimbingIds,
+      );
     }
 
     if (!isValid) {
       return { success: false };
     }
 
-    const pengujiData = await this.generatorHelper.createJadwalTransaction(sidang, slot, pengujiIds);
+    const pengujiData = await this.generatorHelper.createJadwalTransaction(
+      sidang,
+      slot,
+      pengujiIds,
+    );
     const result = this.generatorHelper.formatResult(sidang, pengujiData, slot);
 
     return { success: true, result };
   }
 
-   
   async processSlots(
     slots: TimeSlot[],
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     unscheduled: any[],
-    pengaturan: PengaturanJadwal
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    pengaturan: PengaturanJadwal,
   ): Promise<{ results: any[]; remaining: any[] }> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const results: any[] = [];
     const remaining = [...unscheduled];
 
@@ -77,7 +90,11 @@ export class SchedulingLoopService {
 
       for (let i = 0; i < remaining.length; i++) {
         const sidang = remaining[i];
-        const scheduleResult = await this.tryScheduleSidang(sidang, slot, pengaturan);
+        const scheduleResult = await this.tryScheduleSidang(
+          sidang,
+          slot,
+          pengaturan,
+        );
 
         if (scheduleResult.success && Boolean(scheduleResult.result)) {
           results.push(scheduleResult.result);

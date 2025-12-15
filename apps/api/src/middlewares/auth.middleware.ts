@@ -1,6 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import prisma from '../config/database';
 
 // Define Role locally to avoid rootDir error
 export enum Role {
@@ -24,7 +23,7 @@ export const authMiddleware = async (
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader?.startsWith('Bearer ')) {
       res.status(401).json({ message: 'Unauthorized: No token provided' });
       return;
     }
@@ -32,7 +31,7 @@ export const authMiddleware = async (
     const token = authHeader.substring(7);
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || 'your-secret-key',
+      process.env.JWT_SECRET ?? 'your-secret-key',
     ) as {
       userId: number;
       email: string;
@@ -46,8 +45,8 @@ export const authMiddleware = async (
       id: decoded.userId,
       email: decoded.email,
       role: decoded.role as Role,
-      dosen: decoded.dosen || null,
-      mahasiswa: decoded.mahasiswa || null,
+      dosen: decoded.dosen ?? null,
+      mahasiswa: decoded.mahasiswa ?? null,
     };
 
     next();

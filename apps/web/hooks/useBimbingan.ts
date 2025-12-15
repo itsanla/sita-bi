@@ -40,9 +40,10 @@ export function useBimbinganMahasiswa(): UseQueryResult<Bimbingan[]> {
 
 export function useCreateSesi() {
   return useMutation({
-    mutationFn: async (tugasAkhirId: number) => {
+    mutationFn: async (data: { tugasAkhirId: number; pembimbingPeran: 'pembimbing1' | 'pembimbing2' }) => {
       const response = await api.post('/bimbingan/sesi', {
-        tugas_akhir_id: tugasAkhirId,
+        tugas_akhir_id: data.tugasAkhirId,
+        pembimbing_peran: data.pembimbingPeran,
       });
       return response.data;
     },

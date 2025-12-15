@@ -17,7 +17,11 @@ export class ConflictValidatorService {
     return !existing;
   }
 
-  async validateNoConflict(slot: TimeSlot, pengujiIds: number[], pembimbingIds: number[]): Promise<boolean> {
+  async validateNoConflict(
+    slot: TimeSlot,
+    pengujiIds: number[],
+    pembimbingIds: number[],
+  ): Promise<boolean> {
     const allDosenIds = [...pengujiIds, ...pembimbingIds];
 
     const conflicts = await prisma.jadwalSidang.findMany({
@@ -33,7 +37,9 @@ export class ConflictValidatorService {
               include: {
                 peranDosenTa: {
                   where: {
-                    peran: { in: ['penguji1', 'penguji2', 'penguji3', 'pembimbing1'] },
+                    peran: {
+                      in: ['penguji1', 'penguji2', 'penguji3', 'pembimbing1'],
+                    },
                   },
                 },
               },
@@ -46,10 +52,14 @@ export class ConflictValidatorService {
 
     for (const conflict of conflicts) {
       const conflictDosenIds = conflict.sidang.tugasAkhir.peranDosenTa
-        .filter((p) => ['penguji1', 'penguji2', 'penguji3', 'pembimbing1'].includes(p.peran))
+        .filter((p) =>
+          ['penguji1', 'penguji2', 'penguji3', 'pembimbing1'].includes(p.peran),
+        )
         .map((p) => p.dosen_id);
 
-      const conflictingDosen = allDosenIds.filter((id) => conflictDosenIds.includes(id));
+      const conflictingDosen = allDosenIds.filter((id) =>
+        conflictDosenIds.includes(id),
+      );
 
       if (conflictingDosen.length > 0) {
         return false;

@@ -19,8 +19,12 @@ async function parseCSV(filePath: string): Promise<CSVRow[]> {
     fs.createReadStream(filePath)
       .pipe(csv())
       .on('data', (data) => results.push(data))
-      .on('end', () => resolve(results))
-      .on('error', (error) => reject(error));
+      .on('end', () => {
+        resolve(results);
+      })
+      .on('error', (error) => {
+        reject(error);
+      });
   });
 }
 
@@ -35,13 +39,16 @@ async function seedDataHistoris() {
   console.log('🚀 Mulai seeding data historis...\n');
 
   const arsipDir = path.join(__dirname, '../../uploads/arsip/judul-ta');
-  const files = fs.readdirSync(arsipDir).filter(f => f.endsWith('.csv')).sort();
+  const files = fs
+    .readdirSync(arsipDir)
+    .filter((f) => f.endsWith('.csv'))
+    .sort();
 
   let totalImported = 0;
   const hashedPassword = await bcrypt.hash('TIDAK_ADA_AKSES', 10);
 
   for (const file of files) {
-    const tahun = parseInt(file.match(/\d{4}/)?.[0] || '0');
+    const tahun = parseInt(/\d{4}/.exec(file)?.[0] || '0');
     if (!tahun) continue;
 
     console.log(`📁 Processing: ${file} (Tahun ${tahun})`);
@@ -76,7 +83,9 @@ async function seedDataHistoris() {
 
       try {
         // Cek apakah sudah ada
-        const existingMhs = await prisma.mahasiswa.findUnique({ where: { nim } });
+        const existingMhs = await prisma.mahasiswa.findUnique({
+          where: { nim },
+        });
         if (existingMhs) {
           console.log(`   ⏭️  Skip: ${nim} (sudah ada)`);
           continue;
@@ -126,7 +135,9 @@ async function seedDataHistoris() {
     console.log(`   ✨ Selesai: ${rows.length} data dari ${file}\n`);
   }
 
-  console.log(`\n🎉 Seeding selesai! Total ${totalImported} data berhasil diimport.`);
+  console.log(
+    `\n🎉 Seeding selesai! Total ${totalImported} data berhasil diimport.`,
+  );
 }
 
 seedDataHistoris()

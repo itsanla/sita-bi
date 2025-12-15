@@ -3,7 +3,13 @@
 import { AlertCircle, UserX, FileX, CheckCircle } from 'lucide-react';
 
 interface TANotAllowedProps {
-  type: 'no-ta' | 'no-pembimbing' | 'judul-not-validated' | 'not-registered-sidang' | 'registered-sidang-info' | 'custom';
+  type:
+    | 'no-ta'
+    | 'no-pembimbing'
+    | 'judul-not-validated'
+    | 'not-registered-sidang'
+    | 'registered-sidang-info'
+    | 'custom';
   customMessage?: string;
   customTitle?: string;
 }
@@ -70,8 +76,7 @@ export default function TANotAllowed({
           ),
           bgColorClass: 'bg-gradient-to-br from-red-400 to-red-600',
           title: 'Belum Mendaftar Sidang',
-          message:
-            'Anda belum mendaftar sidang.',
+          message: 'Anda belum mendaftar sidang.',
           actionText:
             'Silakan daftar sidang terlebih dahulu melalui menu Pendaftaran Sidang.',
         };
@@ -87,8 +92,7 @@ export default function TANotAllowed({
           title: 'Sudah Mendaftar Sidang',
           message:
             'Anda sudah mendaftar sidang, jadwal sidang anda akan muncul dihalaman ini saat telah di atur jurusan.',
-          actionText:
-            'Tunggu pengumuman jadwal sidang dari jurusan.',
+          actionText: 'Tunggu pengumuman jadwal sidang dari jurusan.',
         };
       case 'custom':
         return {

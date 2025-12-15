@@ -80,11 +80,11 @@ export class PengumumanService {
       take: limit,
       include: {
         pembuat: {
-          select: { 
+          select: {
             name: true,
             roles: {
-              select: { name: true }
-            }
+              select: { name: true },
+            },
           },
         },
         _count: {

@@ -267,7 +267,11 @@ router.get(
     const allResult: any[] = [];
     allData.forEach((jadwal) => {
       jadwal.sidang.tugasAkhir.peranDosenTa.forEach((peran) => {
-        if (!['pembimbing1', 'penguji1', 'penguji2', 'penguji3'].includes(peran.peran)) {
+        if (
+          !['pembimbing1', 'penguji1', 'penguji2', 'penguji3'].includes(
+            peran.peran,
+          )
+        ) {
           return;
         }
 
@@ -275,12 +279,13 @@ router.get(
           return;
         }
 
-        const peranLabel = {
-          pembimbing1: 'Sekretaris',
-          penguji1: 'Ketua',
-          penguji2: 'Anggota I',
-          penguji3: 'Anggota II',
-        }[peran.peran] || peran.peran;
+        const peranLabel =
+          {
+            pembimbing1: 'Sekretaris',
+            penguji1: 'Ketua',
+            penguji2: 'Anggota I',
+            penguji3: 'Anggota II',
+          }[peran.peran] || peran.peran;
 
         allResult.push({
           nama_dosen: peran.dosen.user.name,
@@ -382,7 +387,10 @@ router.get(
     const buffer = await exportService.generatePDFJudulTA(exportData);
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename=judul-ta-${Date.now()}.pdf`);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename=judul-ta-${Date.now()}.pdf`,
+    );
     res.send(buffer);
   }),
 );
@@ -430,7 +438,15 @@ router.get(
       const anggota2 = peran.find((p) => p.peran === 'penguji3');
 
       const tanggal = new Date(item.tanggal);
-      const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const hariMap = [
+        'Minggu',
+        'Senin',
+        'Selasa',
+        'Rabu',
+        'Kamis',
+        'Jumat',
+        'Sabtu',
+      ];
       const hari = hariMap[tanggal.getDay()];
       const tanggalStr = tanggal.toLocaleDateString('id-ID', {
         day: '2-digit',
@@ -454,7 +470,10 @@ router.get(
     const buffer = await exportService.generatePDF(exportData);
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename=jadwal-sidang-${Date.now()}.pdf`);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename=jadwal-sidang-${Date.now()}.pdf`,
+    );
     res.send(buffer);
   }),
 );
@@ -505,15 +524,21 @@ router.get(
     const exportData: any[] = [];
     jadwalData.forEach((jadwal) => {
       jadwal.sidang.tugasAkhir.peranDosenTa.forEach((peran) => {
-        if (!['pembimbing1', 'penguji1', 'penguji2', 'penguji3'].includes(peran.peran)) return;
+        if (
+          !['pembimbing1', 'penguji1', 'penguji2', 'penguji3'].includes(
+            peran.peran,
+          )
+        )
+          return;
         if (dosen_id && peran.dosen_id !== parseInt(dosen_id as string)) return;
 
-        const peranLabel = {
-          pembimbing1: 'Sekretaris',
-          penguji1: 'Ketua',
-          penguji2: 'Anggota I',
-          penguji3: 'Anggota II',
-        }[peran.peran] || peran.peran;
+        const peranLabel =
+          {
+            pembimbing1: 'Sekretaris',
+            penguji1: 'Ketua',
+            penguji2: 'Anggota I',
+            penguji3: 'Anggota II',
+          }[peran.peran] || peran.peran;
 
         exportData.push({
           no: exportData.length + 1,
@@ -531,7 +556,10 @@ router.get(
     const buffer = await exportService.generatePDFJadwalDosen(exportData);
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename=jadwal-dosen-${Date.now()}.pdf`);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename=jadwal-dosen-${Date.now()}.pdf`,
+    );
     res.send(buffer);
   }),
 );

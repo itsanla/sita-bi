@@ -160,7 +160,7 @@ const UserModal = ({
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
+          {!!error && (
             <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm">
               {error}
             </div>
@@ -822,7 +822,6 @@ export default function KelolaPenggunaPage() {
                   user.lockout_until &&
                   new Date(user.lockout_until) > new Date();
                 const isCurrentUser = currentUserId === user.id;
-                const isAdmin = user.roles.some((r) => r.name === 'admin');
                 return (
                   <tr
                     key={user.id}
@@ -874,7 +873,7 @@ export default function KelolaPenggunaPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
-                        {isLocked && (
+                        {!!isLocked && (
                           <button
                             onClick={() => handleUnlock(user.id)}
                             className="p-2 text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-lg transition-all duration-200"
@@ -969,7 +968,7 @@ export default function KelolaPenggunaPage() {
         )}
       </div>
 
-      {isModalOpen && (
+      {!!isModalOpen && (
         <UserModal
           user={editingUser}
           onClose={handleCloseModal}

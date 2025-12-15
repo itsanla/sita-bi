@@ -5,17 +5,33 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Home, Users, Calendar, Book, FileText, Settings, MessageCircle } from 'lucide-react';
+import {
+  Home,
+  Users,
+  Calendar,
+  Book,
+  FileText,
+  Settings,
+  MessageCircle,
+} from 'lucide-react';
 import dynamic from 'next/dynamic';
 
-const ChatbotModal = dynamic(() => import('@/app/components/SitaBot/ChatbotModal'), {
-  ssr: false,
-});
+const ChatbotModal = dynamic(
+  () => import('@/app/components/SitaBot/ChatbotModal'),
+  {
+    ssr: false,
+  },
+);
 
 const navLinks = {
   admin: [
     { href: '/dashboard/admin', label: 'Dashboard', icon: Home },
-    { href: '#sitabot', label: 'SitaBot AI', icon: MessageCircle, isSitaBot: true },
+    {
+      href: '#sitabot',
+      label: 'SitaBot AI',
+      icon: MessageCircle,
+      isSitaBot: true,
+    },
     { href: '/dashboard/admin/users', label: 'Manajemen User', icon: Users },
     {
       href: '/admin/penjadwalan-sidang',
@@ -27,7 +43,12 @@ const navLinks = {
   ],
   jurusan: [
     { href: '/dashboard/admin', label: 'Dashboard', icon: Home },
-    { href: '#sitabot', label: 'SitaBot AI', icon: MessageCircle, isSitaBot: true },
+    {
+      href: '#sitabot',
+      label: 'SitaBot AI',
+      icon: MessageCircle,
+      isSitaBot: true,
+    },
     { href: '/dashboard/admin/users', label: 'Manajemen User', icon: Users },
     {
       href: '/admin/penjadwalan-sidang',
@@ -38,7 +59,12 @@ const navLinks = {
   ],
   prodi_d3: [
     { href: '/dashboard/admin', label: 'Dashboard', icon: Home },
-    { href: '#sitabot', label: 'SitaBot AI', icon: MessageCircle, isSitaBot: true },
+    {
+      href: '#sitabot',
+      label: 'SitaBot AI',
+      icon: MessageCircle,
+      isSitaBot: true,
+    },
     { href: '/dashboard/admin/users', label: 'Manajemen User', icon: Users },
     {
       href: '/admin/penjadwalan-sidang',
@@ -49,7 +75,12 @@ const navLinks = {
   ],
   prodi_d4: [
     { href: '/dashboard/admin', label: 'Dashboard', icon: Home },
-    { href: '#sitabot', label: 'SitaBot AI', icon: MessageCircle, isSitaBot: true },
+    {
+      href: '#sitabot',
+      label: 'SitaBot AI',
+      icon: MessageCircle,
+      isSitaBot: true,
+    },
     { href: '/dashboard/admin/users', label: 'Manajemen User', icon: Users },
     {
       href: '/admin/penjadwalan-sidang',
@@ -60,13 +91,23 @@ const navLinks = {
   ],
   dosen: [
     { href: '/dashboard/dosen', label: 'Dashboard', icon: Home },
-    { href: '#sitabot', label: 'SitaBot AI', icon: MessageCircle, isSitaBot: true },
+    {
+      href: '#sitabot',
+      label: 'SitaBot AI',
+      icon: MessageCircle,
+      isSitaBot: true,
+    },
     { href: '/dashboard/dosen/bimbingan', label: 'Bimbingan', icon: Book },
     { href: '/dashboard/dosen/sidang', label: 'Sidang', icon: Calendar },
   ],
   mahasiswa: [
     { href: '/dashboard/mahasiswa', label: 'Dashboard', icon: Home },
-    { href: '#sitabot', label: 'SitaBot AI', icon: MessageCircle, isSitaBot: true },
+    {
+      href: '#sitabot',
+      label: 'SitaBot AI',
+      icon: MessageCircle,
+      isSitaBot: true,
+    },
     { href: '/dashboard/mahasiswa/ta', label: 'Tugas Akhir', icon: Book },
     {
       href: '/dashboard/mahasiswa/bimbingan',
@@ -96,7 +137,7 @@ const NavLink = ({
 }) => {
   const pathname = usePathname();
   const isActive = pathname === href;
-  
+
   if (isSitaBot) {
     return (
       <button
@@ -108,7 +149,7 @@ const NavLink = ({
       </button>
     );
   }
-  
+
   return (
     <Link
       href={href}
@@ -125,14 +166,14 @@ export default function Sidebar() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  
+
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  
+
   const handleSitaBotClick = () => {
     if (isMobile) {
       router.push('/chatbot');
@@ -140,7 +181,7 @@ export default function Sidebar() {
       setIsOpen(true);
     }
   };
-  
+
   const role = user?.roles?.[0]?.name || 'mahasiswa';
   const links = navLinks[role as keyof typeof navLinks] || [];
 
@@ -157,7 +198,11 @@ export default function Sidebar() {
           <div className="flex-1 overflow-auto py-2">
             <nav className="grid items-start px-4 text-sm font-medium">
               {links.map((link) => (
-                <NavLink key={link.href} {...link} onClick={link.isSitaBot ? handleSitaBotClick : undefined}>
+                <NavLink
+                  key={link.href}
+                  {...link}
+                  onClick={link.isSitaBot ? handleSitaBotClick : undefined}
+                >
                   {link.label}
                 </NavLink>
               ))}
@@ -165,7 +210,7 @@ export default function Sidebar() {
           </div>
         </div>
       </div>
-      {!isMobile && isOpen && (
+      {!isMobile && !!isOpen && (
         <ChatbotModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
       )}
     </>

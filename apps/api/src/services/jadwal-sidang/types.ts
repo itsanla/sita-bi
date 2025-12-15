@@ -1,6 +1,10 @@
 import { PeranDosen } from '@prisma/client';
 
-export const PERAN_PENGUJI = [PeranDosen.penguji1, PeranDosen.penguji2, PeranDosen.penguji3] as const;
+export const PERAN_PENGUJI = [
+  PeranDosen.penguji1,
+  PeranDosen.penguji2,
+  PeranDosen.penguji3,
+] as const;
 
 export interface PengaturanJadwal {
   max_mahasiswa_uji_per_dosen: number;

@@ -23,7 +23,8 @@ router.post(
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to initialize',
+        message:
+          error instanceof Error ? error.message : 'Failed to initialize',
       });
     }
   }),
@@ -58,11 +59,13 @@ router.get('/health', (_req: Request, res: Response): void => {
  * GET /api/whatsapp/qr
  * Get QR code for scanning (HTML page)
  */
-router.get('/qr', asyncHandler(async (_req: Request, res: Response): Promise<void> => {
-  const status = whatsappService.getStatus();
+router.get(
+  '/qr',
+  asyncHandler(async (_req: Request, res: Response): Promise<void> => {
+    const status = whatsappService.getStatus();
 
-  if (status.isReady) {
-    res.send(`
+    if (status.isReady) {
+      res.send(`
       <!DOCTYPE html>
       <html>
       <head>
@@ -81,11 +84,11 @@ router.get('/qr', asyncHandler(async (_req: Request, res: Response): Promise<voi
       </body>
       </html>
     `);
-    return;
-  }
+      return;
+    }
 
-  if (!status.hasQR && !status.isInitializing) {
-    res.send(`
+    if (!status.hasQR && !status.isInitializing) {
+      res.send(`
       <!DOCTYPE html>
       <html>
       <head>
@@ -122,11 +125,11 @@ router.get('/qr', asyncHandler(async (_req: Request, res: Response): Promise<voi
       </body>
       </html>
     `);
-    return;
-  }
-  
-  if (status.isInitializing) {
-    res.send(`
+      return;
+    }
+
+    if (status.isInitializing) {
+      res.send(`
       <!DOCTYPE html>
       <html>
       <head>
@@ -146,10 +149,10 @@ router.get('/qr', asyncHandler(async (_req: Request, res: Response): Promise<voi
       </body>
       </html>
     `);
-    return;
-  }
+      return;
+    }
 
-  res.send(`
+    res.send(`
     <!DOCTYPE html>
     <html>
     <head>
@@ -189,7 +192,8 @@ router.get('/qr', asyncHandler(async (_req: Request, res: Response): Promise<voi
     </body>
     </html>
   `);
-}));
+  }),
+);
 
 /**
  * POST /api/whatsapp/send
@@ -394,7 +398,8 @@ router.delete(
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to delete session',
+        message:
+          error instanceof Error ? error.message : 'Failed to delete session',
       });
     }
   }),

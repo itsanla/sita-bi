@@ -53,12 +53,12 @@ export function PeriodeProvider({ children }: { children: ReactNode }) {
       try {
         const activeRes = await api.get('/periode/aktif');
         const activeData = activeRes.data.data as PeriodeTa | null;
-        
+
         let periodesData: PeriodeTa[] = [];
-        
+
         const userRole = user.roles?.[0]?.name;
         console.log('PeriodeContext Debug:', { userRole, activeData });
-        
+
         if (userRole === 'mahasiswa') {
           // Mahasiswa: periode yang pernah diikuti
           const mahasiswaPeriodesRes = await api.get('/periode/mahasiswa');
@@ -72,7 +72,7 @@ export function PeriodeProvider({ children }: { children: ReactNode }) {
           const dosenPeriodesRes = await api.get('/periode/dosen');
           periodesData = dosenPeriodesRes.data.data as PeriodeTa[];
           console.log('Dosen periodes response:', periodesData);
-          
+
           // Jika tidak ada periode dari API tapi ada periode aktif, tambahkan periode aktif
           if (periodesData.length === 0 && activeData) {
             periodesData = [activeData];
@@ -84,13 +84,17 @@ export function PeriodeProvider({ children }: { children: ReactNode }) {
 
         setPeriodes(periodesData);
         setActivePeriode(activeData);
-        
+
         // Set selected periode: prioritas dari localStorage, fallback ke active periode
-        const savedPeriodeId = typeof window !== 'undefined' 
-          ? localStorage.getItem('selectedPeriodeId') 
-          : null;
-        
-        if (savedPeriodeId && periodesData.some(p => p.id === parseInt(savedPeriodeId))) {
+        const savedPeriodeId =
+          typeof window !== 'undefined'
+            ? localStorage.getItem('selectedPeriodeId')
+            : null;
+
+        if (
+          savedPeriodeId &&
+          periodesData.some((p) => p.id === parseInt(savedPeriodeId))
+        ) {
           setSelectedPeriodeId(parseInt(savedPeriodeId));
         } else {
           setSelectedPeriodeId(activeData?.id ?? null);

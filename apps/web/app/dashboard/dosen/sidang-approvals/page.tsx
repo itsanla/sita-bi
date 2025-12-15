@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import request from '@/lib/api';
-import { CheckCircle, XCircle, AlertCircle, Eye, FileText } from 'lucide-react';
+import { XCircle, AlertCircle, Eye, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PendaftaranSidang {
@@ -53,7 +53,9 @@ export default function SidangApprovalsPage() {
   const [historyPage, setHistoryPage] = useState(1);
   const itemsPerPage = 5;
   const historyPerPage = 10;
-  const [selectedItem, setSelectedItem] = useState<PendaftaranSidang | null>(null);
+  const [selectedItem, setSelectedItem] = useState<PendaftaranSidang | null>(
+    null,
+  );
   const [syaratSidang, setSyaratSidang] = useState<any[]>([]);
 
   useEffect(() => {
@@ -65,17 +67,13 @@ export default function SidangApprovalsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      console.log('[DEBUG] Fetching data...');
-      console.log('[DEBUG] User:', user);
-      
       const pengaturanRes = await request('/pengaturan');
-      console.log('[DEBUG] Pengaturan response:', pengaturanRes);
-      
-      const pendaftaranRes = await request('/pendaftaran-sidang/list-for-validation');
-      console.log('[DEBUG] Pendaftaran response:', pendaftaranRes);
-      
+
+      const pendaftaranRes = await request(
+        '/pendaftaran-sidang/list-for-validation',
+      );
+
       const historyRes = await request('/pendaftaran-sidang/all-history');
-      console.log('[DEBUG] History response:', historyRes);
 
       const settings = pengaturanRes.data?.data;
       setPengaturan(settings);
@@ -100,15 +98,10 @@ export default function SidangApprovalsPage() {
           (validasiP1 && isDosen) ||
           (validasiP2 && isDosen));
 
-      console.log('[DEBUG] Can validate:', canVal);
       setCanValidate(canVal);
       setPendaftaranList(pendaftaranRes.data?.data || []);
       setAllHistory(historyRes.data?.data || []);
-      console.log('[DEBUG] Data loaded successfully');
-    } catch (err: any) {
-      console.error('[DEBUG] Error in fetchData:', err);
-      console.error('[DEBUG] Error response:', err.response);
-      console.error('[DEBUG] Error message:', err.message);
+    } catch {
       toast.error('Gagal memuat data');
     } finally {
       setLoading(false);
@@ -221,10 +214,18 @@ export default function SidangApprovalsPage() {
           Daftar mahasiswa yang telah mendaftar sidang dan menunggu persetujuan
         </p>
         <div className="flex gap-4 text-xs text-gray-600">
-          <span><span className="font-semibold">P1:</span> Pembimbing 1</span>
-          <span><span className="font-semibold">P2:</span> Pembimbing 2</span>
-          <span><span className="font-semibold">PS:</span> Prodi</span>
-          <span><span className="font-semibold">JU:</span> Jurusan</span>
+          <span>
+            <span className="font-semibold">P1:</span> Pembimbing 1
+          </span>
+          <span>
+            <span className="font-semibold">P2:</span> Pembimbing 2
+          </span>
+          <span>
+            <span className="font-semibold">PS:</span> Prodi
+          </span>
+          <span>
+            <span className="font-semibold">JU:</span> Jurusan
+          </span>
           <span className="ml-4">🟡 Belum validasi</span>
           <span>🟢 Sudah validasi</span>
         </div>
@@ -252,221 +253,245 @@ export default function SidangApprovalsPage() {
       </div>
 
       {(() => {
-        const filtered = pendaftaranList.filter(item => {
-          const matchSearch = searchQuery === '' || 
-            item.tugasAkhir.mahasiswa.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        const filtered = pendaftaranList.filter((item) => {
+          const matchSearch =
+            searchQuery === '' ||
+            item.tugasAkhir.mahasiswa.user.name
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
             item.tugasAkhir.mahasiswa.nim.includes(searchQuery);
-          const matchStatus = filterStatus === 'all' || item.status_validasi === filterStatus;
+          const matchStatus =
+            filterStatus === 'all' || item.status_validasi === filterStatus;
           return matchSearch && matchStatus;
         });
-        
-        if (filtered.length === 0) return (
-        <div className="bg-white p-12 rounded-lg shadow text-center">
-          <p className="text-gray-500">
-            Tidak ada pendaftaran yang perlu divalidasi
-          </p>
-        </div>
-        );
-        
+
+        if (filtered.length === 0)
+          return (
+            <div className="bg-white p-12 rounded-lg shadow text-center">
+              <p className="text-gray-500">
+                Tidak ada pendaftaran yang perlu divalidasi
+              </p>
+            </div>
+          );
+
         const totalPages = Math.ceil(filtered.length / itemsPerPage);
         const startIndex = (currentPage - 1) * itemsPerPage;
-        const paginatedData = filtered.slice(startIndex, startIndex + itemsPerPage);
-        
+        const paginatedData = filtered.slice(
+          startIndex,
+          startIndex + itemsPerPage,
+        );
+
         return (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Mahasiswa
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Prodi
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Judul TA
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Validator
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Aksi
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedData.map((item) => {
-                const showP1 = pengaturan?.validasi_pembimbing_1;
-                const showP2 = pengaturan?.validasi_pembimbing_2;
-                const showProdi = pengaturan?.validasi_prodi;
-                const showJurusan = pengaturan?.validasi_jurusan;
-                
-                return (
-                <tr key={item.id}>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                    <div>
-                      <p>{item.tugasAkhir.mahasiswa.user.name}</p>
-                      <p className="text-xs text-gray-500">{item.tugasAkhir.mahasiswa.nim}</p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.tugasAkhir.mahasiswa.prodi}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                    {item.tugasAkhir.judul}
-                  </td>
-                  <td className="px-6 py-4">
-                    {item.status_validasi === 'approved' ? (
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                        Disetujui
-                      </span>
-                    ) : item.status_validasi === 'rejected' ? (
-                      <div>
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                          Ditolak
-                        </span>
-                        {item.rejection_reason && (
-                          <p className="text-xs text-red-600 mt-1">
-                            {item.rejection_reason}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                        Pending
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <div className="flex gap-1">
-                      {showP1 && (
-                        <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                          item.divalidasi_pembimbing_1 
-                            ? 'bg-green-500 text-white' 
-                            : 'bg-yellow-400 text-gray-800'
-                        }`}>
-                          P1
-                        </span>
-                      )}
-                      {showP2 && (
-                        <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                          item.divalidasi_pembimbing_2 
-                            ? 'bg-green-500 text-white' 
-                            : 'bg-yellow-400 text-gray-800'
-                        }`}>
-                          P2
-                        </span>
-                      )}
-                      {showProdi && (
-                        <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                          item.divalidasi_prodi 
-                            ? 'bg-green-500 text-white' 
-                            : 'bg-yellow-400 text-gray-800'
-                        }`}>
-                          PS
-                        </span>
-                      )}
-                      {showJurusan && (
-                        <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                          item.divalidasi_jurusan 
-                            ? 'bg-green-500 text-white' 
-                            : 'bg-yellow-400 text-gray-800'
-                        }`}>
-                          JU
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex gap-2">
-                      {item.status_validasi === 'pending' ? (
-                        <>
-                          <button
-                            onClick={() => handleValidate(item.id, 'approve')}
-                            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
-                          >
-                            Setuju
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleValidate(
-                                item.id,
-                                'reject',
-                                item.tugasAkhir.mahasiswa.user.name,
-                              )
-                            }
-                            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs"
-                          >
-                            Tolak
-                          </button>
-                          <button
-                            onClick={() => handleViewFiles(item)}
-                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs flex items-center gap-1"
-                          >
-                            <Eye size={14} />
-                            Lihat
-                          </button>
-                        </>
-                      ) : item.status_validasi === 'approved' ? (
-                        <>
-                          <button
-                            onClick={() => handleCancelValidation(item.id)}
-                            className="px-3 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 text-xs"
-                          >
-                            Batalkan
-                          </button>
-                          <button
-                            onClick={() => handleViewFiles(item)}
-                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs flex items-center gap-1"
-                          >
-                            <Eye size={14} />
-                            Lihat
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => handleViewFiles(item)}
-                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs flex items-center gap-1"
-                        >
-                          <Eye size={14} />
-                          Lihat
-                        </button>
-                      )}
-                    </div>
-                  </td>
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Mahasiswa
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Prodi
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Judul TA
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Validator
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Aksi
+                  </th>
                 </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          <div className="px-6 py-4 flex items-center justify-between border-t">
-            <div className="text-sm text-gray-700">
-              Menampilkan {startIndex + 1} - {Math.min(startIndex + itemsPerPage, filtered.length)} dari {filtered.length} data
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Prev
-              </button>
-              <span className="px-3 py-1">
-                {currentPage} / {totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Next
-              </button>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {paginatedData.map((item) => {
+                  const showP1 = pengaturan?.validasi_pembimbing_1;
+                  const showP2 = pengaturan?.validasi_pembimbing_2;
+                  const showProdi = pengaturan?.validasi_prodi;
+                  const showJurusan = pengaturan?.validasi_jurusan;
+
+                  return (
+                    <tr key={item.id}>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                        <div>
+                          <p>{item.tugasAkhir.mahasiswa.user.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {item.tugasAkhir.mahasiswa.nim}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {item.tugasAkhir.mahasiswa.prodi}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                        {item.tugasAkhir.judul}
+                      </td>
+                      <td className="px-6 py-4">
+                        {item.status_validasi === 'approved' ? (
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                            Disetujui
+                          </span>
+                        ) : item.status_validasi === 'rejected' ? (
+                          <div>
+                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                              Ditolak
+                            </span>
+                            {!!item.rejection_reason && (
+                              <p className="text-xs text-red-600 mt-1">
+                                {item.rejection_reason}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                            Pending
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <div className="flex gap-1">
+                          {!!showP1 && (
+                            <span
+                              className={`px-2 py-1 text-xs font-semibold rounded ${
+                                item.divalidasi_pembimbing_1
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-yellow-400 text-gray-800'
+                              }`}
+                            >
+                              P1
+                            </span>
+                          )}
+                          {!!showP2 && (
+                            <span
+                              className={`px-2 py-1 text-xs font-semibold rounded ${
+                                item.divalidasi_pembimbing_2
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-yellow-400 text-gray-800'
+                              }`}
+                            >
+                              P2
+                            </span>
+                          )}
+                          {!!showProdi && (
+                            <span
+                              className={`px-2 py-1 text-xs font-semibold rounded ${
+                                item.divalidasi_prodi
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-yellow-400 text-gray-800'
+                              }`}
+                            >
+                              PS
+                            </span>
+                          )}
+                          {!!showJurusan && (
+                            <span
+                              className={`px-2 py-1 text-xs font-semibold rounded ${
+                                item.divalidasi_jurusan
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-yellow-400 text-gray-800'
+                              }`}
+                            >
+                              JU
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex gap-2">
+                          {item.status_validasi === 'pending' ? (
+                            <>
+                              <button
+                                onClick={() =>
+                                  handleValidate(item.id, 'approve')
+                                }
+                                className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
+                              >
+                                Setuju
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleValidate(
+                                    item.id,
+                                    'reject',
+                                    item.tugasAkhir.mahasiswa.user.name,
+                                  )
+                                }
+                                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs"
+                              >
+                                Tolak
+                              </button>
+                              <button
+                                onClick={() => handleViewFiles(item)}
+                                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs flex items-center gap-1"
+                              >
+                                <Eye size={14} />
+                                Lihat
+                              </button>
+                            </>
+                          ) : item.status_validasi === 'approved' ? (
+                            <>
+                              <button
+                                onClick={() => handleCancelValidation(item.id)}
+                                className="px-3 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 text-xs"
+                              >
+                                Batalkan
+                              </button>
+                              <button
+                                onClick={() => handleViewFiles(item)}
+                                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs flex items-center gap-1"
+                              >
+                                <Eye size={14} />
+                                Lihat
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => handleViewFiles(item)}
+                              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs flex items-center gap-1"
+                            >
+                              <Eye size={14} />
+                              Lihat
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div className="px-6 py-4 flex items-center justify-between border-t">
+              <div className="text-sm text-gray-700">
+                Menampilkan {startIndex + 1} -{' '}
+                {Math.min(startIndex + itemsPerPage, filtered.length)} dari{' '}
+                {filtered.length} data
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Prev
+                </button>
+                <span className="px-3 py-1">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         );
       })()}
 
@@ -511,19 +536,30 @@ export default function SidangApprovalsPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {(() => {
-                  const filteredHistory = allHistory.filter(item => 
-                    filterHistoryStatus === 'all' || item.action === filterHistoryStatus
+                  const filteredHistory = allHistory.filter(
+                    (item) =>
+                      filterHistoryStatus === 'all' ||
+                      item.action === filterHistoryStatus,
                   );
                   const startIdx = (historyPage - 1) * historyPerPage;
-                  return filteredHistory.slice(startIdx, startIdx + historyPerPage);
+                  return filteredHistory.slice(
+                    startIdx,
+                    startIdx + historyPerPage,
+                  );
                 })().map((item) => {
                   const roles = item.validator_role?.split(',') || [];
-                  const roleLabels = roles.map(r => 
-                    r === 'jurusan' ? 'Jurusan' :
-                    r === 'prodi_d3' ? 'Prodi D3' :
-                    r === 'prodi_d4' ? 'Prodi D4' :
-                    r === 'pembimbing1' ? 'Pembimbing 1' :
-                    r === 'pembimbing2' ? 'Pembimbing 2' : r
+                  const roleLabels = roles.map((r) =>
+                    r === 'jurusan'
+                      ? 'Jurusan'
+                      : r === 'prodi_d3'
+                        ? 'Prodi D3'
+                        : r === 'prodi_d4'
+                          ? 'Prodi D4'
+                          : r === 'pembimbing1'
+                            ? 'Pembimbing 1'
+                            : r === 'pembimbing2'
+                              ? 'Pembimbing 2'
+                              : r,
                   );
                   const roleLabel = roleLabels.join(' + ') || 'Pembimbing';
 
@@ -531,17 +567,19 @@ export default function SidangApprovalsPage() {
                     item.action === 'submit'
                       ? 'Mendaftar'
                       : item.action === 'approve'
-                      ? 'Disetujui'
-                      : item.action === 'reject'
-                      ? 'Ditolak'
-                      : item.action;
+                        ? 'Disetujui'
+                        : item.action === 'reject'
+                          ? 'Ditolak'
+                          : item.action;
 
                   return (
                     <tr key={item.id}>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">
                         <div>
                           <p>{item.mahasiswa?.name || '-'}</p>
-                          <p className="text-xs text-gray-500">{item.mahasiswa?.nim || '-'}</p>
+                          <p className="text-xs text-gray-500">
+                            {item.mahasiswa?.nim || '-'}
+                          </p>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">
@@ -575,7 +613,9 @@ export default function SidangApprovalsPage() {
                         {item.validator ? (
                           <div>
                             <p className="font-medium">{item.validator.name}</p>
-                            <p className="text-xs text-gray-500">({roleLabel})</p>
+                            <p className="text-xs text-gray-500">
+                              ({roleLabel})
+                            </p>
                           </div>
                         ) : (
                           <span className="text-gray-400">-</span>
@@ -585,8 +625,8 @@ export default function SidangApprovalsPage() {
                         {item.action === 'reject'
                           ? item.rejection_reason || 'Tidak ada alasan'
                           : item.action === 'approve'
-                          ? 'Pendaftaran disetujui'
-                          : 'Pendaftaran disubmit'}
+                            ? 'Pendaftaran disetujui'
+                            : 'Pendaftaran disubmit'}
                       </td>
                     </tr>
                   );
@@ -595,19 +635,30 @@ export default function SidangApprovalsPage() {
             </table>
             <div className="px-6 py-4 flex items-center justify-between border-t">
               {(() => {
-                const filteredHistory = allHistory.filter(item => 
-                  filterHistoryStatus === 'all' || item.action === filterHistoryStatus
+                const filteredHistory = allHistory.filter(
+                  (item) =>
+                    filterHistoryStatus === 'all' ||
+                    item.action === filterHistoryStatus,
                 );
-                const totalPages = Math.ceil(filteredHistory.length / historyPerPage);
+                const totalPages = Math.ceil(
+                  filteredHistory.length / historyPerPage,
+                );
                 const startIdx = (historyPage - 1) * historyPerPage;
                 return (
                   <>
                     <div className="text-sm text-gray-700">
-                      Menampilkan {startIdx + 1} - {Math.min(startIdx + historyPerPage, filteredHistory.length)} dari {filteredHistory.length} data
+                      Menampilkan {startIdx + 1} -{' '}
+                      {Math.min(
+                        startIdx + historyPerPage,
+                        filteredHistory.length,
+                      )}{' '}
+                      dari {filteredHistory.length} data
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                        onClick={() =>
+                          setHistoryPage((p) => Math.max(1, p - 1))
+                        }
                         disabled={historyPage === 1}
                         className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                       >
@@ -617,7 +668,9 @@ export default function SidangApprovalsPage() {
                         {historyPage} / {totalPages}
                       </span>
                       <button
-                        onClick={() => setHistoryPage(p => Math.min(totalPages, p + 1))}
+                        onClick={() =>
+                          setHistoryPage((p) => Math.min(totalPages, p + 1))
+                        }
                         disabled={historyPage === totalPages}
                         className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                       >
@@ -632,7 +685,7 @@ export default function SidangApprovalsPage() {
         </div>
       )}
 
-      {selectedItem && (
+      {!!selectedItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
@@ -644,22 +697,30 @@ export default function SidangApprovalsPage() {
                 <XCircle size={24} />
               </button>
             </div>
-            
+
             <div className="p-6 space-y-6">
               <div>
-                <h3 className="font-semibold text-lg mb-3">Informasi Mahasiswa</h3>
+                <h3 className="font-semibold text-lg mb-3">
+                  Informasi Mahasiswa
+                </h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-600">Nama</p>
-                    <p className="font-medium">{selectedItem.tugasAkhir.mahasiswa.user.name}</p>
+                    <p className="font-medium">
+                      {selectedItem.tugasAkhir.mahasiswa.user.name}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-600">NIM</p>
-                    <p className="font-medium">{selectedItem.tugasAkhir.mahasiswa.nim}</p>
+                    <p className="font-medium">
+                      {selectedItem.tugasAkhir.mahasiswa.nim}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-600">Prodi</p>
-                    <p className="font-medium">{selectedItem.tugasAkhir.mahasiswa.prodi}</p>
+                    <p className="font-medium">
+                      {selectedItem.tugasAkhir.mahasiswa.prodi}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-600">Status</p>
@@ -687,46 +748,56 @@ export default function SidangApprovalsPage() {
               <div>
                 <h3 className="font-semibold text-lg mb-3">Status Validasi</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  {pengaturan?.validasi_pembimbing_1 && (
+                  {!!pengaturan?.validasi_pembimbing_1 && (
                     <div className="flex items-center gap-2">
-                      <span className={`px-3 py-1 text-xs font-semibold rounded ${
-                        selectedItem.divalidasi_pembimbing_1 
-                          ? 'bg-green-500 text-white' 
-                          : 'bg-gray-200 text-gray-600'
-                      }`}>
-                        {selectedItem.divalidasi_pembimbing_1 ? '✓' : '○'} Pembimbing 1
+                      <span
+                        className={`px-3 py-1 text-xs font-semibold rounded ${
+                          selectedItem.divalidasi_pembimbing_1
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-200 text-gray-600'
+                        }`}
+                      >
+                        {selectedItem.divalidasi_pembimbing_1 ? '✓' : '○'}{' '}
+                        Pembimbing 1
                       </span>
                     </div>
                   )}
-                  {pengaturan?.validasi_pembimbing_2 && (
+                  {!!pengaturan?.validasi_pembimbing_2 && (
                     <div className="flex items-center gap-2">
-                      <span className={`px-3 py-1 text-xs font-semibold rounded ${
-                        selectedItem.divalidasi_pembimbing_2 
-                          ? 'bg-green-500 text-white' 
-                          : 'bg-gray-200 text-gray-600'
-                      }`}>
-                        {selectedItem.divalidasi_pembimbing_2 ? '✓' : '○'} Pembimbing 2
+                      <span
+                        className={`px-3 py-1 text-xs font-semibold rounded ${
+                          selectedItem.divalidasi_pembimbing_2
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-200 text-gray-600'
+                        }`}
+                      >
+                        {selectedItem.divalidasi_pembimbing_2 ? '✓' : '○'}{' '}
+                        Pembimbing 2
                       </span>
                     </div>
                   )}
-                  {pengaturan?.validasi_prodi && (
+                  {!!pengaturan?.validasi_prodi && (
                     <div className="flex items-center gap-2">
-                      <span className={`px-3 py-1 text-xs font-semibold rounded ${
-                        selectedItem.divalidasi_prodi 
-                          ? 'bg-green-500 text-white' 
-                          : 'bg-gray-200 text-gray-600'
-                      }`}>
+                      <span
+                        className={`px-3 py-1 text-xs font-semibold rounded ${
+                          selectedItem.divalidasi_prodi
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-200 text-gray-600'
+                        }`}
+                      >
                         {selectedItem.divalidasi_prodi ? '✓' : '○'} Prodi
                       </span>
                     </div>
                   )}
-                  {pengaturan?.validasi_jurusan && (
+                  {!!pengaturan?.validasi_jurusan && (
                     <div className="flex items-center gap-2">
-                      <span className={`px-3 py-1 text-xs font-semibold rounded ${
-                        selectedItem.divalidasi_jurusan 
-                          ? 'bg-green-500 text-white' 
-                          : 'bg-gray-200 text-gray-600'
-                      }`}>
+                      <span
+                        className={`px-3 py-1 text-xs font-semibold rounded ${
+                          selectedItem.divalidasi_jurusan
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-200 text-gray-600'
+                        }`}
+                      >
                         {selectedItem.divalidasi_jurusan ? '✓' : '○'} Jurusan
                       </span>
                     </div>
@@ -735,23 +806,35 @@ export default function SidangApprovalsPage() {
               </div>
 
               <div>
-                <h3 className="font-semibold text-lg mb-3">Dokumen yang Diupload</h3>
+                <h3 className="font-semibold text-lg mb-3">
+                  Dokumen yang Diupload
+                </h3>
                 <div className="space-y-2">
                   {selectedItem.files.map((file: any) => {
-                    const fileLabel = syaratSidang.find((s: any) => s.key === file.tipe_dokumen)?.label || file.tipe_dokumen;
+                    const fileLabel =
+                      syaratSidang.find((s: any) => s.key === file.tipe_dokumen)
+                        ?.label || file.tipe_dokumen;
                     return (
-                      <div key={file.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                      <div
+                        key={file.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded"
+                      >
                         <div className="flex items-center gap-3">
                           <FileText className="text-red-600" size={24} />
                           <div>
                             <p className="font-medium text-sm">{fileLabel}</p>
-                            <p className="text-xs text-gray-500">{file.original_name}</p>
+                            <p className="text-xs text-gray-500">
+                              {file.original_name}
+                            </p>
                           </div>
                         </div>
                         <button
                           onClick={() => {
                             const fileName = file.file_path.split('/').pop();
-                            window.open(`/uploads/sidang-files/${fileName}`, '_blank');
+                            window.open(
+                              `/uploads/sidang-files/${fileName}`,
+                              '_blank',
+                            );
                           }}
                           className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
                         >
@@ -763,12 +846,17 @@ export default function SidangApprovalsPage() {
                 </div>
               </div>
 
-              {selectedItem.status_validasi === 'rejected' && selectedItem.rejection_reason && (
-                <div>
-                  <h3 className="font-semibold text-lg mb-3 text-red-600">Alasan Penolakan</h3>
-                  <p className="text-sm bg-red-50 p-3 rounded">{selectedItem.rejection_reason}</p>
-                </div>
-              )}
+              {selectedItem.status_validasi === 'rejected' &&
+                !!selectedItem.rejection_reason && (
+                  <div>
+                    <h3 className="font-semibold text-lg mb-3 text-red-600">
+                      Alasan Penolakan
+                    </h3>
+                    <p className="text-sm bg-red-50 p-3 rounded">
+                      {selectedItem.rejection_reason}
+                    </p>
+                  </div>
+                )}
             </div>
           </div>
         </div>
