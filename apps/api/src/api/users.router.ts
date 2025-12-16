@@ -1,11 +1,9 @@
 import { Router } from 'express';
 import asyncHandler from '../utils/asyncHandler';
 import { UsersService } from '../services/users.service';
-import { Role } from '../middlewares/auth.middleware';
-import { authMiddleware } from '../middlewares/auth.middleware';
+import { Role, authMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
-import { Role } from '../middlewares/auth.middleware';
 import { auditLog } from '../middlewares/audit.middleware';
 import { createRateLimiter } from '../middlewares/rate-limit.middleware';
 

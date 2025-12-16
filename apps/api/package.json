@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "nodemon",
     "dev:tsx": "tsx watch --clear-screen=false --ignore 'node_modules/**' --ignore 'dist/**' --ignore 'uploads/**' --ignore '.wwebjs_auth/**' src/server.ts",
-    "build": "pnpm --filter @repo/db build && tsc",
-    "start": "node dist/server.js",
+    "build": "pnpm --filter @repo/db build",
+    "start": "tsx src/server.ts",
     "lint": "pnpm exec eslint \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "format": "prettier --write \"src/**/*.ts\"",

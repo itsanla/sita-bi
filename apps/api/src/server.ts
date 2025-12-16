@@ -13,8 +13,29 @@ const httpServer = createServer(app);
 
 // Set server timeout to prevent hanging connections
 httpServer.timeout = 35000; // 35 seconds (slightly longer than request timeout)
-httpServer.keepAliveTimeout = 65000; // 65 seconds
-httpServer.headersTimeout = 66000; // 66 seconds (must be greater than keepAliveTimeout)
+httpServer.keepAliveTimeout = 30000; // 30 seconds
+httpServer.headersTimeout = 31000; // 31 seconds (must be greater than keepAliveTimeout)
+httpServer.maxHeadersCount = 100;
+
+// Monitor event loop lag
+let lastCheck = Date.now();
+setInterval(() => {
+  const now = Date.now();
+  const lag = now - lastCheck - 1000;
+  if (lag > 100) {
+    console.warn(`[EVENT LOOP LAG] ${lag}ms`);
+  }
+  lastCheck = now;
+}, 1000);
+
+// Monitor memory usage
+setInterval(() => {
+  const used = process.memoryUsage();
+  const mb = (bytes: number) => Math.round(bytes / 1024 / 1024);
+  if (used.heapUsed > 400 * 1024 * 1024) { // Alert if > 400MB
+    console.warn(`[MEMORY] Heap: ${mb(used.heapUsed)}MB / ${mb(used.heapTotal)}MB`);
+  }
+}, 30000);
 
 // Initialize Socket.IO
 initSocket(httpServer);
@@ -22,18 +43,17 @@ initSocket(httpServer);
 // Initialize Services
 const initializeServices = async (): Promise<void> => {
   if (process.env['NODE_ENV'] !== 'test') {
-    // Auto-initialize WhatsApp
-    try {
-      await whatsappService.initialize();
-    } catch (error) {
+    // Auto-initialize WhatsApp (async, non-blocking)
+    whatsappService.initialize().catch((error) => {
       console.error('❌ WhatsApp initialization error:', error);
-    }
+    });
 
-    const schedulerService = new SchedulerService();
-    schedulerService.init();
-
-    // Start periode auto-open cron job
-    startPeriodeCronJob();
+    // Initialize scheduler (async, non-blocking)
+    setImmediate(() => {
+      const schedulerService = new SchedulerService();
+      schedulerService.init();
+      startPeriodeCronJob();
+    });
   }
 };
 
@@ -68,17 +88,28 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-// Handle uncaught errors
-// Don't call gracefulShutdown on uncaught errors in production
-// Let PM2/Docker handle restart
-if (process.env['NODE_ENV'] !== 'production') {
-  process.on('uncaughtException', (err) => {
-    console.error('❌ Uncaught Exception:', err);
+// Handle uncaught errors - always log, restart in production
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+  if (process.env['NODE_ENV'] === 'production') {
+    console.error('🔄 Restarting server...');
+    process.exit(1); // Let process manager restart
+  } else {
     void gracefulShutdown('uncaughtException');
-  });
+  }
+});
 
-  process.on('unhandledRejection', (reason, promise) => {
-    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  if (process.env['NODE_ENV'] === 'production') {
+    console.error('🔄 Restarting server...');
+    process.exit(1); // Let process manager restart
+  } else {
     void gracefulShutdown('unhandledRejection');
-  });
-}
+  }
+});
+
+// Periodic health check
+setInterval(() => {
+  console.log(`[HEALTH] Server alive - ${new Date().toISOString()}`);
+}, 60000); // Every minute

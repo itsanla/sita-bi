@@ -64,9 +64,9 @@ function CreateTopikForm({ onTopicCreated }: { onTopicCreated: () => void }) {
     try {
       const response = await request<{
         data: { results: SimilarityResult[]; isBlocked: boolean };
-      }>('/tawaran-topik/check-similarity', {
+      }>('/tugas-akhir/check-similarity', {
         method: 'POST',
-        data: { judul_topik: judul },
+        data: { judul },
       });
       setSimilarityResults(response.data.data.results || []);
       setIsBlocked(response.data.data.isBlocked || false);

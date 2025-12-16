@@ -136,7 +136,7 @@ export async function getDosenCapacity(dosenId: number): Promise<{
 export async function validatePembimbingAssignment(
   pembimbing1Id: number,
   pembimbing2Id?: number,
-): Promise<{ valid: boolean; errors: string[] }> {
+): Promise<{ isValid: boolean; valid: boolean; errors: string[] }> {
   const errors: string[] = [];
 
   if (pembimbing2Id != null && pembimbing1Id === pembimbing2Id) {
@@ -159,7 +159,7 @@ export async function validatePembimbingAssignment(
     }
   }
 
-  return { valid: errors.length === 0, errors };
+  return { isValid: errors.length === 0, valid: errors.length === 0, errors };
 }
 
 export function validatePengujiAssignment(

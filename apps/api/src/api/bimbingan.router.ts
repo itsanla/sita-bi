@@ -206,10 +206,10 @@ router.post(
       throw new BadRequestError(ERROR_MSG_NO_FILES);
     }
 
-    const files = req.files;
+    const files = req.files as Express.Multer.File[];
     const results = await bimbinganService.addMultipleLampiran(
       parseInt(id, 10),
-      files.map((f) => ({
+      files.map((f: Express.Multer.File) => ({
         path: f.path,
         name: f.originalname,
         type: f.mimetype,

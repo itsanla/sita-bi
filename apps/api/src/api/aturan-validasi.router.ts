@@ -5,7 +5,7 @@ import { authorizeRoles, Role } from '../middlewares/roles.middleware';
 import { PrismaClient, ModeValidasi } from '@repo/db';
 import { BadRequestError } from '../errors/AppError';
 
-const router = Router();
+const router: Router = Router();
 const prisma = new PrismaClient();
 
 router.use(asyncHandler(insecureAuthMiddleware));

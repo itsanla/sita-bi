@@ -5,12 +5,8 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
 import { Role } from '../middlewares/auth.middleware';
-import {
-  createTawaranTopikSchema,
-  checkSimilarityTawaranTopikSchema,
-} from '../dto/tawaran-topik.dto';
+import { createTawaranTopikSchema } from '../dto/tawaran-topik.dto';
 import { periodeGuard } from '../middlewares/periode.middleware';
-import { getMaxSimilaritasPersen } from '../utils/business-rules';
 
 const router: Router = Router();
 const tawaranTopikService = new TawaranTopikService();
@@ -19,43 +15,7 @@ const PERIODE_NOT_FOUND_MESSAGE = 'Periode TA tidak ditemukan';
 // Apply JWT Auth and Roles Guard globally for this router
 router.use(asyncHandler(authMiddleware));
 
-router.post(
-  '/check-similarity',
-  periodeGuard(),
-  authorizeRoles([Role.dosen]),
-  validate(checkSimilarityTawaranTopikSchema),
-  asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const SIMILARITY_BLOCK_THRESHOLD = await getMaxSimilaritasPersen();
-    const { judul_topik } = req.body;
-    const periodeId = req.periode?.id;
 
-    if (periodeId === undefined) {
-      res.status(403).json({
-        status: 'gagal',
-        message: PERIODE_NOT_FOUND_MESSAGE,
-      });
-      return;
-    }
-
-    const results = await tawaranTopikService.checkSimilarity(
-      judul_topik,
-      periodeId,
-    );
-
-    const isBlocked = results.some(
-      (result) => result.similarity >= SIMILARITY_BLOCK_THRESHOLD,
-    );
-
-    res.status(200).json({
-      status: 'sukses',
-      data: {
-        results,
-        isBlocked,
-        threshold: SIMILARITY_BLOCK_THRESHOLD,
-      },
-    });
-  }),
-);
 
 router.post(
   '/',

@@ -43,7 +43,7 @@ export class UsersService {
           name: dto.name,
           email: dto.email,
           password: hashedPassword,
-          phone_number: dto.phone_number ?? null,
+          phone_number: dto.phone_number || '',
           roles: {
             connect: { name: Role.mahasiswa },
           },
@@ -62,7 +62,7 @@ export class UsersService {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
-          const target = (error.meta?.target as string[]) || [];
+          const target = (error.meta?.['target'] as string[]) || [];
           const err: any = new Error();
           err.statusCode = 409;
           if (target.includes('email')) {
@@ -103,7 +103,7 @@ export class UsersService {
           name: dto.name,
           email: dto.email,
           password: hashedPassword,
-          phone_number: dto.phone_number ?? null,
+          phone_number: dto.phone_number || '',
           roles: {
             connect: rolesToConnect,
           },
@@ -122,7 +122,7 @@ export class UsersService {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
-          const target = (error.meta?.target as string[]) || [];
+          const target = (error.meta?.['target'] as string[]) || [];
           const err: any = new Error();
           err.statusCode = 409;
           if (target.includes('email')) {
@@ -459,7 +459,7 @@ export class UsersService {
         
         // Hapus tawaran topik
         await tx.tawaranTopik.deleteMany({
-          where: { dosen_id: dosenId },
+          where: { user_id: user.id },
         });
       }
 

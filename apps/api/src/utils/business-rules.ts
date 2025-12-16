@@ -64,8 +64,8 @@ export const validateTeamComposition = async (
       PeranDosen.penguji2,
       PeranDosen.penguji3,
     ];
-    if (!pengujiRoles.includes(newRole)) {
-      if (newRole === PeranDosen.penguji4) {
+    if (!pengujiRoles.includes(newRole as any)) {
+      if ((newRole as any) === 'penguji4') {
         throw new Error('Maksimal 3 penguji.');
       }
     }

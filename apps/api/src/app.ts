@@ -49,12 +49,15 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request timeout middleware - prevent hanging requests
 app.use((req, res, next) => {
+  const startTime = Date.now();
+  
   // Set timeout for all requests (30 seconds)
   req.setTimeout(30000);
   res.setTimeout(30000);
 
   const timeout = setTimeout(() => {
     if (!res.headersSent) {
+      console.error(`[TIMEOUT] ${req.method} ${req.path} - ${Date.now() - startTime}ms`);
       res.status(408).json({
         status: 'error',
         message: 'Request timeout - server took too long to respond',
@@ -64,7 +67,12 @@ app.use((req, res, next) => {
 
   res.on('finish', () => {
     clearTimeout(timeout);
+    const duration = Date.now() - startTime;
+    if (duration > 5000) {
+      console.warn(`[SLOW] ${req.method} ${req.path} - ${duration}ms`);
+    }
   });
+  
   res.on('close', () => {
     clearTimeout(timeout);
   });
@@ -72,16 +80,26 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(activityLogger);
+// Log all incoming requests (skip OPTIONS to reduce noise)
+app.use((req, res, next) => {
+  if (req.method !== 'OPTIONS') {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  }
+  next();
+});
+
+
 
 // Explicit CORS configuration
-const corsOptions = {
-  origin: process.env.FRONTEND_URL ?? '*', // Allow frontend origin from env
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true, // Allow cookies to be sent
-};
+// CORS - Allow all origins (NO SECURITY)
+app.use(cors({
+  origin: '*',
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: '*',
+}));
 
-app.use(cors(corsOptions));
+app.use(activityLogger);
 
 // Pastikan directory uploads exists di apps/api
 const uploadsPath = getUploadPath();
@@ -90,6 +108,11 @@ const uploadsPath = getUploadPath();
 app.use('/uploads', express.static(uploadsPath));
 
 console.warn('⚠️  WhatsApp not connected - Server running without WhatsApp');
+
+// Root endpoint
+app.get('/', (_req, res) => {
+  res.json({ message: 'Hello World', status: 'OK' });
+});
 
 // Health check endpoint
 app.get('/health', async (_req, res) => {
@@ -156,7 +179,22 @@ app.use('/api/aturan-validasi', aturanValidasiRouter);
 app.use('/api/penjadwalan-sidang', penjadwalanSidangRouter);
 app.use('/api/data-master', dataMasterRouter);
 
+// Catch unhandled routes
+app.use((req, res) => {
+  console.warn(`[404] ${req.method} ${req.path}`);
+  res.status(404).json({ status: 'error', message: 'Route not found' });
+});
+
 // Error Handling Middleware
 app.use(errorHandler);
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('[UNCAUGHT EXCEPTION]', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[UNHANDLED REJECTION]', reason, promise);
+});
 
 export default app;

@@ -11,18 +11,21 @@ export const createDosenSchema = z.object({
   nip: z.string().min(1, 'NIP cannot be empty'),
   phone_number: z.string().optional(),
   prodi: z.enum([Prodi.D3, Prodi.D4]).optional(),
-  roles: z
-    .array(z.enum([Role.jurusan, Role.prodi_d3, Role.prodi_d4, Role.dosen]))
-    .optional()
-    .refine(
-      (roles) => {
-        if (roles) {
-          return roles.every((role) => validRoles.includes(role));
-        }
-        return true;
-      },
-      { message: `Invalid role(s). Valid roles are: ${validRoles.join(', ')}` },
-    ),
+  roles: z.preprocess(
+    (val) => (typeof val === 'string' ? [val] : val),
+    z
+      .array(z.enum([Role.jurusan, Role.prodi_d3, Role.prodi_d4, Role.dosen]))
+      .optional()
+      .refine(
+        (roles) => {
+          if (roles) {
+            return roles.every((role) => validRoles.includes(role));
+          }
+          return true;
+        },
+        { message: `Invalid role(s). Valid roles are: ${validRoles.join(', ')}` },
+      ),
+  ),
 });
 
 export type CreateDosenDto = z.infer<typeof createDosenSchema>;
@@ -32,18 +35,21 @@ export const updateDosenSchema = z.object({
   email: z.email().optional(),
   nip: z.string().optional(),
   prodi: z.enum([Prodi.D3, Prodi.D4]).optional(),
-  roles: z
-    .array(z.enum([Role.jurusan, Role.prodi_d3, Role.prodi_d4, Role.dosen]))
-    .optional()
-    .refine(
-      (roles) => {
-        if (roles) {
-          return roles.every((role) => validRoles.includes(role));
-        }
-        return true;
-      },
-      { message: `Invalid role(s). Valid roles are: ${validRoles.join(', ')}` },
-    ),
+  roles: z.preprocess(
+    (val) => (typeof val === 'string' ? [val] : val),
+    z
+      .array(z.enum([Role.jurusan, Role.prodi_d3, Role.prodi_d4, Role.dosen]))
+      .optional()
+      .refine(
+        (roles) => {
+          if (roles) {
+            return roles.every((role) => validRoles.includes(role));
+          }
+          return true;
+        },
+        { message: `Invalid role(s). Valid roles are: ${validRoles.join(', ')}` },
+      ),
+  ),
 });
 
 export type UpdateDosenDto = z.infer<typeof updateDosenSchema>;

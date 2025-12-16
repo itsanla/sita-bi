@@ -1,15 +1,11 @@
 import { PrismaClient } from '@repo/db';
 import type { CreateTawaranTopikDto } from '../dto/tawaran-topik.dto';
-import { calculateSimilarities } from '../utils/similarity';
-import { PengaturanService } from './pengaturan.service';
 
 export class TawaranTopikService {
   private prisma: PrismaClient;
-  private pengaturanService: PengaturanService;
 
   constructor() {
     this.prisma = new PrismaClient();
-    this.pengaturanService = new PengaturanService();
   }
 
   async create(
@@ -220,110 +216,5 @@ export class TawaranTopikService {
     };
   }
 
-  async checkSimilarity(
-    judul: string,
-    periodeId: number,
-  ): Promise<{ id: number; judul: string; similarity: number }[]> {
-    // Cek apakah pengecekan similaritas dinonaktifkan
-    const nonaktifkanCek = await this.pengaturanService.getPengaturanByKey(
-      'nonaktifkan_cek_similaritas',
-    );
-    if (nonaktifkanCek === 'true') {
-      return [];
-    }
 
-    // Cek pengaturan apakah menggunakan semua periode atau hanya periode tertentu
-    const cekSemuaPeriode = await this.pengaturanService.getPengaturanByKey(
-      'cek_similaritas_semua_periode',
-    );
-    const useAllPeriods = cekSemuaPeriode === 'true';
-
-    let allTitles: { id: number; judul: string }[] = [];
-
-    if (useAllPeriods) {
-      // Toggle ON: Cek semua judul TA dari periode lain (2014-2024, tanpa tawaran topik) + judul TA periode aktif + tawaran topik periode aktif
-
-      // 1. Ambil semua judul TA dari periode selain periode aktif (2014-2024)
-      const historicalTitles = await this.prisma.tugasAkhir.findMany({
-        where: {
-          NOT: { periode_ta_id: periodeId },
-        },
-        select: { id: true, judul: true },
-        distinct: ['judul'],
-      });
-
-      // 2. Ambil judul TA dari periode aktif (2025)
-      const currentPeriodTitles = await this.prisma.tugasAkhir.findMany({
-        where: { periode_ta_id: periodeId },
-        select: { id: true, judul: true },
-        distinct: ['judul'],
-      });
-
-      // 3. Ambil tawaran topik dari periode aktif (2025)
-      const currentPeriodTopics = await this.prisma.tawaranTopik.findMany({
-        where: {
-          periode_ta_id: periodeId,
-          deleted_at: null,
-        },
-        select: { id: true, judul_topik: true },
-      });
-
-      // Gabungkan semua judul
-      allTitles = [
-        ...historicalTitles,
-        ...currentPeriodTitles,
-        ...currentPeriodTopics.map((topic) => ({
-          id: topic.id,
-          judul: topic.judul_topik,
-        })),
-      ];
-    } else {
-      // Toggle OFF: Hanya cek judul TA periode aktif + tawaran topik periode aktif
-
-      // 1. Ambil judul TA dari periode aktif (2025)
-      const currentPeriodTitles = await this.prisma.tugasAkhir.findMany({
-        where: { periode_ta_id: periodeId },
-        select: { id: true, judul: true },
-        distinct: ['judul'],
-      });
-
-      // 2. Ambil tawaran topik dari periode aktif (2025)
-      const currentPeriodTopics = await this.prisma.tawaranTopik.findMany({
-        where: {
-          periode_ta_id: periodeId,
-          deleted_at: null,
-        },
-        select: { id: true, judul_topik: true },
-      });
-
-      // Gabungkan judul TA dan tawaran topik dari periode aktif
-      allTitles = [
-        ...currentPeriodTitles,
-        ...currentPeriodTopics.map((topic) => ({
-          id: topic.id,
-          judul: topic.judul_topik,
-        })),
-      ];
-    }
-
-    const similarities = await calculateSimilarities(judul, allTitles);
-
-    const uniqueResults = new Map<
-      string,
-      { id: number; judul: string; similarity: number }
-    >();
-
-    for (const item of similarities) {
-      if (item.similarity > 0) {
-        const existing = uniqueResults.get(item.judul);
-        if (!existing || item.similarity > existing.similarity) {
-          uniqueResults.set(item.judul, item);
-        }
-      }
-    }
-
-    return Array.from(uniqueResults.values())
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, 10);
-  }
 }

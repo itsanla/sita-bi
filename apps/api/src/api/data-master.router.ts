@@ -14,16 +14,7 @@ router.get(
     const limitNum = parseInt(limit as string);
     const skip = (pageNum - 1) * limitNum;
 
-    const where: {
-      periodeTa: { status: { in: string[] }; tahun?: number };
-      OR?: {
-        judul?: { contains: string };
-        mahasiswa?: {
-          user?: { name?: { contains: string } };
-          nim?: { contains: string };
-        };
-      }[];
-    } = {
+    const where: any = {
       periodeTa: { status: { in: ['AKTIF', 'SELESAI'] } },
     };
 
@@ -280,12 +271,13 @@ router.get(
         }
 
         const peranLabel =
-          {
+          ({
             pembimbing1: 'Sekretaris',
+            pembimbing2: 'Pembimbing 2',
             penguji1: 'Ketua',
             penguji2: 'Anggota I',
             penguji3: 'Anggota II',
-          }[peran.peran] || peran.peran;
+          } as any)[peran.peran] || peran.peran;
 
         allResult.push({
           nama_dosen: peran.dosen.user.name,
@@ -533,12 +525,13 @@ router.get(
         if (dosen_id && peran.dosen_id !== parseInt(dosen_id as string)) return;
 
         const peranLabel =
-          {
+          ({
             pembimbing1: 'Sekretaris',
+            pembimbing2: 'Pembimbing 2',
             penguji1: 'Ketua',
             penguji2: 'Anggota I',
             penguji3: 'Anggota II',
-          }[peran.peran] || peran.peran;
+          } as any)[peran.peran] || peran.peran;
 
         exportData.push({
           no: exportData.length + 1,

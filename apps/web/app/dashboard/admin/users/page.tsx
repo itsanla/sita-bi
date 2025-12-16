@@ -71,7 +71,15 @@ const UserModal = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const updates: any = { [name]: value };
+    
+    // Auto-set prodi based on role
+    if (name === 'role') {
+      if (value === 'prodi_d3') updates.prodi = 'D3';
+      else if (value === 'prodi_d4') updates.prodi = 'D4';
+    }
+    
+    setFormData((prev) => ({ ...prev, ...updates }));
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -121,7 +129,7 @@ const UserModal = ({
         rolesToSend.push('admin');
       }
       if (rolesToSend.length > 0) {
-        body.roles = JSON.stringify(rolesToSend);
+        (body as any).roles = rolesToSend;
       }
     } else {
       endpoint = isEditing
@@ -466,28 +474,6 @@ const UserModal = ({
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all"
                 />
               </div>
-              {(formData.role === 'prodi_d3' ||
-                formData.role === 'prodi_d4') && (
-                <div>
-                  <label
-                    htmlFor="prodi"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Prodi Scope
-                  </label>
-                  <select
-                    id="prodi"
-                    name="prodi"
-                    value={formData.prodi}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all"
-                  >
-                    <option value="D3">D3</option>
-                    <option value="D4">D4</option>
-                  </select>
-                </div>
-              )}
             </>
           )}
           <div className="flex justify-end pt-4 gap-3">

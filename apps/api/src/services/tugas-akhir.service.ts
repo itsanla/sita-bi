@@ -251,11 +251,11 @@ export class TugasAkhirService {
       include: { tugasAkhir: true },
     });
 
-    if (mahasiswa?.tugasAkhir === undefined) {
+    if (!mahasiswa?.tugasAkhir) {
       throw new Error('Tugas Akhir not found for this student.');
     }
 
-    const { tugasAkhir } = mahasiswa;
+    const tugasAkhir = mahasiswa.tugasAkhir;
 
     const deleted = await this.prisma.tugasAkhir.delete({
       where: { id: tugasAkhir.id },
@@ -272,8 +272,9 @@ export class TugasAkhirService {
   async findAllTitles(
     periodeId?: number,
   ): Promise<{ judul: string; mahasiswa: { user: { name: string } } }[]> {
+    const where = periodeId !== undefined ? { periode_ta_id: periodeId } : {};
     return this.prisma.tugasAkhir.findMany({
-      where: periodeId !== undefined ? { periode_ta_id: periodeId } : undefined,
+      where,
       select: {
         judul: true,
         mahasiswa: {
@@ -478,11 +479,11 @@ export class TugasAkhirService {
       include: { tugasAkhir: true },
     });
 
-    if (mahasiswa?.tugasAkhir === undefined) {
+    if (!mahasiswa?.tugasAkhir) {
       throw new Error(this.ERROR_TA_NOT_FOUND);
     }
 
-    const { tugasAkhir } = mahasiswa;
+    const tugasAkhir = mahasiswa.tugasAkhir;
 
     const existingTitle = await this.prisma.tugasAkhir.findFirst({
       where: {

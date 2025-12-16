@@ -7,7 +7,7 @@
     "dev": "next dev --port 3001",
     "build": "next build",
     "analyze": "ANALYZE=true next build && node parse-bundle.js",
-    "start": "next start",
+    "start": "next start --port 3001",
     "lint": "eslint .",
     "check-types": "tsc --noEmit --skipLibCheck || true",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json}\"",
