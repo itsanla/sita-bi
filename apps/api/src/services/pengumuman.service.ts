@@ -4,6 +4,7 @@ import type {
   CreatePengumumanDto,
   UpdatePengumumanDto,
 } from '../dto/pengumuman.dto';
+import { whatsappService } from './waha-whatsapp.service';
 
 export class PengumumanService {
   private prisma: PrismaClient;
@@ -24,7 +25,7 @@ export class PengumumanService {
         file_type: l.file_type ?? null, // Convert undefined to null
       })) ?? [];
 
-    return this.prisma.pengumuman.create({
+    const pengumuman = await this.prisma.pengumuman.create({
       data: {
         judul: dto.judul,
         isi: dto.isi,
@@ -42,8 +43,131 @@ export class PengumumanService {
       },
       include: {
         lampiran: true,
+        pembuat: {
+          select: { name: true },
+        },
       },
     });
+
+    console.log(`📢 Pengumuman created: ${pengumuman.judul}`);
+    console.log(`👥 Audiens: ${pengumuman.audiens}`);
+
+    // Kirim notifikasi WhatsApp ke semua user (kecuali mahasiswa lulus)
+    setImmediate(() => {
+      this.sendPengumumanNotification(pengumuman).catch((err) =>
+        console.error('❌ Failed to send pengumuman notification:', err),
+      );
+    });
+
+    return pengumuman;
+  }
+
+  private async sendPengumumanNotification(
+    pengumuman: Pengumuman & { pembuat?: { name: string } },
+  ): Promise<void> {
+    try {
+      // Ambil periode aktif
+      const periodeAktif = await this.prisma.periodeTa.findFirst({
+        where: { status: 'AKTIF' },
+      });
+
+      if (!periodeAktif) {
+        console.log('⚠️  No active period, skipping notification');
+        return;
+      }
+
+      console.log(`📅 Active period: ${periodeAktif.nama} (${periodeAktif.tahun})`);
+
+      // Build where clause berdasarkan audiens
+      const whereClause: any = {};
+
+      if (pengumuman.audiens === AudiensPengumuman.mahasiswa) {
+        whereClause.mahasiswa = { isNot: null };
+      } else if (pengumuman.audiens === AudiensPengumuman.dosen) {
+        whereClause.dosen = { isNot: null };
+      } else if (pengumuman.audiens === AudiensPengumuman.registered_users) {
+        whereClause.OR = [
+          { mahasiswa: { isNot: null } },
+          { dosen: { isNot: null } },
+        ];
+      } else if (pengumuman.audiens === AudiensPengumuman.all_users) {
+        whereClause.OR = [
+          { mahasiswa: { isNot: null } },
+          { dosen: { isNot: null } },
+        ];
+      }
+
+      const users = await this.prisma.user.findMany({
+        where: whereClause,
+        include: {
+          mahasiswa: {
+            include: {
+              tugasAkhir: true,
+            },
+          },
+          dosen: true,
+        },
+      });
+
+      console.log(`👥 Found ${users.length} users`);
+
+      // Filter: punya nomor telepon, mahasiswa belum lulus, dan aktif di periode
+      const recipients = users.filter((user) => {
+        if (!user.phone_number) return false;
+        
+        // Jika mahasiswa, cek status lulus dan periode aktif
+        if (user.mahasiswa) {
+          if (user.mahasiswa.status_kelulusan === 'LULUS') return false;
+          if (!user.mahasiswa.tugasAkhir) return false;
+          if (user.mahasiswa.tugasAkhir.periode_ta_id !== periodeAktif.id) return false;
+        }
+        
+        return true;
+      });
+
+      console.log(`📱 ${recipients.length} recipients (with phone, active period, not graduated)`);
+      console.log('📋 Recipients list:');
+      recipients.forEach((user) => {
+        const role = user.mahasiswa ? 'Mahasiswa' : user.dosen ? 'Dosen' : 'Admin';
+        console.log(`   ✉️  ${user.name} (${role}) - ${user.phone_number}`);
+      });
+
+      if (recipients.length === 0) {
+        console.log('⚠️  No recipients to send');
+        return;
+      }
+
+      // Kirim notifikasi dengan delay lebih lama untuk menghindari spam detection
+      const message = `📢 *Pengumuman Baru*\n\n*${pengumuman.judul}*\n\n${pengumuman.isi}\n\n_Diumumkan oleh: ${pengumuman.pembuat?.name ?? 'Admin'}_`;
+
+      let successCount = 0;
+      let failedCount = 0;
+
+      for (let i = 0; i < recipients.length; i++) {
+        const user = recipients[i];
+        try {
+          const sent = await whatsappService.sendMessage(user.phone_number, message);
+          if (sent) {
+            successCount++;
+            console.log(`✅ [${i + 1}/${recipients.length}] Sent to ${user.name}`);
+          } else {
+            failedCount++;
+            console.log(`⚠️ [${i + 1}/${recipients.length}] Skipped ${user.name} (WA not ready)`);
+          }
+          // Delay 5 detik antar pesan untuk menghindari spam detection
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        } catch (err) {
+          failedCount++;
+          console.error(`❌ [${i + 1}/${recipients.length}] Failed to send to ${user.name}:`, err);
+        }
+      }
+
+      console.log(`✅ Pengumuman notification completed: ${successCount} sent, ${failedCount} failed`);
+
+
+    } catch (error) {
+      console.error('❌ Error sending pengumuman notification:', error);
+    }
   }
 
   // Helper to build where clause for publishing logic (and now Expiration)

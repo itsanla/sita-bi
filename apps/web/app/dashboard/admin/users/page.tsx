@@ -4,7 +4,7 @@ import React, { useState, useEffect, FormEvent } from 'react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
-import DosenCapacityBadge from '@/components/shared/DosenCapacityBadge';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import {
   Plus,
   Search,
@@ -12,8 +12,6 @@ import {
   Trash2,
   Loader,
   X,
-  Lock,
-  Unlock,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -29,7 +27,14 @@ interface User {
     kuota_bimbingan?: number;
     assignedMahasiswa?: { id: number }[];
   };
-  mahasiswa?: { nim: string; prodi: string; kelas: string };
+  mahasiswa?: { 
+    nim: string; 
+    prodi: string; 
+    kelas: string;
+    tugasAkhir?: {
+      periode_ta_id: number;
+    } | null;
+  };
   failed_login_attempts?: number;
   lockout_until?: string | null;
 }
@@ -104,8 +109,19 @@ const UserModal = ({
       if (!isEditing) {
         body.password = formData.password;
       }
-      if (formData.roles.length > 0) {
-        body.roles = JSON.stringify(formData.roles);
+      // Kirim role yang dipilih
+      const rolesToSend = [];
+      if (formData.role === 'jurusan') {
+        rolesToSend.push('jurusan');
+      } else if (formData.role === 'prodi_d3') {
+        rolesToSend.push('prodi_d3');
+      } else if (formData.role === 'prodi_d4') {
+        rolesToSend.push('prodi_d4');
+      } else if (formData.role === 'admin') {
+        rolesToSend.push('admin');
+      }
+      if (rolesToSend.length > 0) {
+        body.roles = JSON.stringify(rolesToSend);
       }
     } else {
       endpoint = isEditing
@@ -181,9 +197,9 @@ const UserModal = ({
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent disabled:bg-gray-100 transition-all"
             >
               <option value="admin">Admin</option>
-              <option value="jurusan">Kajur</option>
-              <option value="prodi_d3">Kaprodi D3</option>
-              <option value="prodi_d4">Kaprodi D4</option>
+              <option value="jurusan">Jurusan</option>
+              <option value="prodi_d3">Prodi D3</option>
+              <option value="prodi_d4">Prodi D4</option>
               <option value="dosen">Dosen</option>
               <option value="mahasiswa">Mahasiswa</option>
             </select>
@@ -502,11 +518,19 @@ export default function KelolaPenggunaPage() {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [periodeFilter, setPeriodeFilter] = useState('all');
+  const [periodeList, setPeriodeList] = useState<{id: number; nama: string; tahun: number}[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    userId: number | null;
+    userName: string;
+    details: string;
+  }>({ open: false, userId: null, userName: '', details: '' });
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -522,8 +546,8 @@ export default function KelolaPenggunaPage() {
       setLoading(true);
       setError('');
       const [dosenRes, mahasiswaRes] = await Promise.all([
-        api.get('/users/dosen'),
-        api.get('/users/mahasiswa'),
+        api.get('/users/dosen?limit=1000'),
+        api.get('/users/mahasiswa?limit=1000'),
       ]);
 
       const mappedDosen = Array.isArray(dosenRes.data?.data?.data)
@@ -546,14 +570,40 @@ export default function KelolaPenggunaPage() {
 
   useEffect(() => {
     fetchData();
+    fetchPeriode();
   }, []);
 
-  const handleDelete = async (id: number) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus user ini?`)) return;
+  const fetchPeriode = async () => {
     try {
-      await api.delete(`/users/${id}`);
-      toast.success('User berhasil dihapus');
-      fetchData();
+      const response = await api.get('/periode');
+      setPeriodeList(response.data.data || []);
+    } catch (err) {
+      console.error('Failed to fetch periode:', err);
+    }
+  };
+
+  const handleDelete = async (id: number, userName: string) => {
+    try {
+      // Check relations first
+      const response = await api.get(`/users/${id}/check-relations`);
+      const { hasData, details } = response.data.data;
+
+      let detailsText = '';
+      if (hasData) {
+        const parts = [];
+        if (details.tugasAkhir) parts.push('tugas akhir');
+        if (details.bimbingan > 0) parts.push(`${details.bimbingan} bimbingan`);
+        if (details.jadwalSidang) parts.push('jadwal sidang');
+        
+        detailsText = `User ini terhubung dengan ${parts.join(', ')}${details.periode ? ` di periode ${details.periode}` : ''}. `;
+      }
+
+      setDeleteConfirm({
+        open: true,
+        userId: id,
+        userName,
+        details: detailsText,
+      });
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast.error(`Error: ${err.message}`);
@@ -561,12 +611,12 @@ export default function KelolaPenggunaPage() {
     }
   };
 
-  const handleUnlock = async (id: number) => {
-    if (!confirm(`Apakah Anda yakin ingin membuka kunci akun pengguna ini?`))
-      return;
+  const confirmDelete = async () => {
+    if (!deleteConfirm.userId) return;
+    
     try {
-      await api.post(`/users/${id}/unlock`);
-      toast.success('Akun berhasil dibuka');
+      await api.delete(`/users/${deleteConfirm.userId}`);
+      toast.success('User berhasil dihapus');
       fetchData();
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -632,7 +682,12 @@ export default function KelolaPenggunaPage() {
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (user.mahasiswa?.nim && user.mahasiswa.nim.includes(searchQuery)) ||
       (user.dosen?.nip && user.dosen.nip.includes(searchQuery));
-    return roleMatch && searchMatch;
+    
+    // Filter berdasarkan periode (hanya untuk mahasiswa yang punya tugas akhir)
+    const periodeMatch = periodeFilter === 'all' || 
+      (user.mahasiswa?.tugasAkhir?.periode_ta_id === parseInt(periodeFilter));
+    
+    return roleMatch && searchMatch && periodeMatch;
   });
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
@@ -644,7 +699,7 @@ export default function KelolaPenggunaPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, roleFilter]);
+  }, [searchQuery, roleFilter, periodeFilter]);
 
   const RoleBadge = ({ roles }: { roles: { name: string }[] }) => {
     // Prioritas role: admin > jurusan > prodi > dosen > mahasiswa
@@ -768,11 +823,23 @@ export default function KelolaPenggunaPage() {
           >
             <option value="all">Semua Role</option>
             <option value="admin">Admin</option>
-            <option value="jurusan">Kajur</option>
-            <option value="prodi_d3">Kaprodi D3</option>
-            <option value="prodi_d4">Kaprodi D4</option>
+            <option value="jurusan">Jurusan</option>
+            <option value="prodi_d3">Prodi D3</option>
+            <option value="prodi_d4">Prodi D4</option>
             <option value="dosen">Dosen</option>
             <option value="mahasiswa">Mahasiswa</option>
+          </select>
+          <select
+            value={periodeFilter}
+            onChange={(e) => setPeriodeFilter(e.target.value)}
+            className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-maroon-700 focus:border-transparent transition-all bg-white"
+          >
+            <option value="all">Semua Periode</option>
+            {periodeList.map((periode) => (
+              <option key={periode.id} value={periode.id}>
+                {periode.nama} ({periode.tahun})
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -803,12 +870,6 @@ export default function KelolaPenggunaPage() {
                   Prodi
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Kapasitas
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Role
                 </th>
                 <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -818,9 +879,6 @@ export default function KelolaPenggunaPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedUsers.map((user) => {
-                const isLocked =
-                  user.lockout_until &&
-                  new Date(user.lockout_until) > new Date();
                 const isCurrentUser = currentUserId === user.id;
                 return (
                   <tr
@@ -847,41 +905,11 @@ export default function KelolaPenggunaPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {user.mahasiswa?.prodi || user.dosen?.prodi || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {user.dosen ? (
-                        <DosenCapacityBadge
-                          current={user.dosen.assignedMahasiswa?.length || 0}
-                          max={4}
-                        />
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {isLocked ? (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
-                          <Lock className="w-3 h-3 mr-1" /> Terkunci
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                          <Unlock className="w-3 h-3 mr-1" /> Aktif
-                        </span>
-                      )}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <RoleBadge roles={user.roles} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
-                        {!!isLocked && (
-                          <button
-                            onClick={() => handleUnlock(user.id)}
-                            className="p-2 text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-lg transition-all duration-200"
-                            title="Buka Kunci Akun"
-                          >
-                            <Unlock className="w-5 h-5" />
-                          </button>
-                        )}
                         <button
                           onClick={() => handleOpenModal(user)}
                           className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200"
@@ -890,7 +918,7 @@ export default function KelolaPenggunaPage() {
                           <Edit className="w-5 h-5" />
                         </button>
                         <button
-                          onClick={() => handleDelete(user.id)}
+                          onClick={() => handleDelete(user.id, user.name)}
                           disabled={isCurrentUser}
                           className={`p-2 rounded-lg transition-all duration-200 ${
                             isCurrentUser
@@ -938,21 +966,71 @@ export default function KelolaPenggunaPage() {
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                        currentPage === page
-                          ? 'bg-maroon-700 text-white shadow-md'
-                          : 'border border-gray-300 hover:bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ),
-                )}
+                {(() => {
+                  const pages = [];
+                  const showPages = 5; // Jumlah halaman yang ditampilkan
+                  let startPage = Math.max(1, currentPage - 2);
+                  let endPage = Math.min(totalPages, startPage + showPages - 1);
+                  
+                  if (endPage - startPage < showPages - 1) {
+                    startPage = Math.max(1, endPage - showPages + 1);
+                  }
+
+                  // First page
+                  if (startPage > 1) {
+                    pages.push(
+                      <button
+                        key={1}
+                        onClick={() => setCurrentPage(1)}
+                        className="px-4 py-2 rounded-lg font-medium transition-all duration-200 border border-gray-300 hover:bg-gray-100 text-gray-700"
+                      >
+                        1
+                      </button>
+                    );
+                    if (startPage > 2) {
+                      pages.push(
+                        <span key="dots1" className="px-2 text-gray-400">...</span>
+                      );
+                    }
+                  }
+
+                  // Middle pages
+                  for (let i = startPage; i <= endPage; i++) {
+                    pages.push(
+                      <button
+                        key={i}
+                        onClick={() => setCurrentPage(i)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                          currentPage === i
+                            ? 'bg-maroon-700 text-white shadow-md'
+                            : 'border border-gray-300 hover:bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {i}
+                      </button>
+                    );
+                  }
+
+                  // Last page
+                  if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                      pages.push(
+                        <span key="dots2" className="px-2 text-gray-400">...</span>
+                      );
+                    }
+                    pages.push(
+                      <button
+                        key={totalPages}
+                        onClick={() => setCurrentPage(totalPages)}
+                        className="px-4 py-2 rounded-lg font-medium transition-all duration-200 border border-gray-300 hover:bg-gray-100 text-gray-700"
+                      >
+                        {totalPages}
+                      </button>
+                    );
+                  }
+
+                  return pages;
+                })()}
                 <button
                   onClick={() =>
                     setCurrentPage((prev) => Math.min(totalPages, prev + 1))
@@ -975,6 +1053,17 @@ export default function KelolaPenggunaPage() {
           onSave={handleSave}
         />
       )}
+
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm({ ...deleteConfirm, open })}
+        title="Konfirmasi Hapus User"
+        description={`${deleteConfirm.details}Menghapus user "${deleteConfirm.userName}" akan membuat semua data user ini terhapus dari sistem. Apakah Anda yakin?`}
+        confirmText="Ya, Hapus"
+        cancelText="Batal"
+        onConfirm={confirmDelete}
+        variant="danger"
+      />
     </div>
   );
 }

@@ -22,6 +22,7 @@ export default function KelolaPengumuman() {
   const [pengumuman, setPengumuman] = useState<PengumumanData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedPengumuman, setSelectedPengumuman] = useState<PengumumanData | null>(null);
   const [formData, setFormData] = useState({
     judul: '',
     isi: '',
@@ -143,13 +144,10 @@ export default function KelolaPengumuman() {
                   Judul Pengumuman
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Status
+                  Dibuat Oleh
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Tanggal Dibuat
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Pembaca
+                  Tanggal
                 </th>
                 <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
                   Aksi
@@ -161,56 +159,34 @@ export default function KelolaPengumuman() {
                 pengumuman.map((item) => (
                   <tr
                     key={item.id}
-                    className="hover:bg-red-50/50 transition-colors"
+                    onClick={() => setSelectedPengumuman(item)}
+                    className="hover:bg-red-50/50 transition-colors cursor-pointer"
                   >
                     <td className="px-6 py-4">
                       <div className="text-sm font-semibold text-gray-900">
                         {item.judul}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        oleh {item.pembuat.name}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-700">
+                        {item.pembuat.name}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-3 py-1.5 inline-flex text-xs font-bold rounded-full shadow-sm ${
-                          item.is_published
-                            ? 'bg-green-100 text-green-700 border border-green-200'
-                            : 'bg-gray-100 text-gray-700 border border-gray-200'
-                        }`}
-                      >
-                        {item.is_published ? '✓ Dipublikasi' : '○ Draft'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {item.scheduled_at ? (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Calendar className="h-4 w-4 text-red-600" />
-                          <span className="font-medium">
-                            {new Date(item.scheduled_at).toLocaleDateString(
-                              'id-ID',
-                            )}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-400 italic">
-                          Tidak ada jadwal
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <div className="bg-blue-100 p-1.5 rounded-lg">
-                          <Eye className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <span className="text-sm font-semibold text-gray-900">
-                          {item._count?.pembaca || 0}
-                        </span>
+                      <div className="text-sm text-gray-600">
+                        {new Date(item.tanggal_dibuat).toLocaleDateString('id-ID', {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <button
-                        onClick={() => handleDelete(item.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(item.id);
+                        }}
                         className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-600 hover:text-white transition-all duration-200 font-medium text-sm shadow-sm hover:shadow-md"
                         title="Hapus"
                       >
@@ -222,7 +198,7 @@ export default function KelolaPengumuman() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-16 text-center">
+                  <td colSpan={4} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center">
                         <Calendar className="h-8 w-8 text-gray-400" />
@@ -319,6 +295,62 @@ export default function KelolaPengumuman() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {!!selectedPengumuman && (
+        <div 
+          className="fixed top-0 left-0 right-0 bottom-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          style={{ margin: 0 }}
+          onClick={() => setSelectedPengumuman(null)}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-gradient-to-r from-red-800 to-red-900 px-6 py-4 flex justify-between items-center rounded-t-xl">
+              <h2 className="text-xl font-bold text-white">
+                Detail Pengumuman
+              </h2>
+              <button
+                onClick={() => setSelectedPengumuman(null)}
+                className="text-white hover:text-red-200 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  {selectedPengumuman.judul}
+                </h3>
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <span>Oleh: {selectedPengumuman.pembuat.name}</span>
+                  <span>•</span>
+                  <span>
+                    {new Date(selectedPengumuman.tanggal_dibuat).toLocaleDateString('id-ID', {
+                      day: '2-digit',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+              </div>
+              <div className="border-t pt-4">
+                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {selectedPengumuman.isi}
+                </p>
+              </div>
+            </div>
+            <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t flex justify-end">
+              <button
+                onClick={() => setSelectedPengumuman(null)}
+                className="px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900 transition-colors font-medium"
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}

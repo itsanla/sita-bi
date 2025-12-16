@@ -50,6 +50,12 @@ interface Sidang {
   nilaiSidang?: NilaiSidang[];
 }
 
+interface InfoGagal {
+  periode?: string;
+  alasan?: string;
+  status?: string;
+}
+
 interface PengaturanPenilaian {
   rumus?: string;
   nilai_minimal_lolos?: number;
@@ -62,6 +68,8 @@ export default function PascaSidangPage() {
   const [sidang, setSidang] = useState<Sidang | null>(null);
   const [pengaturanPenilaian, setPengaturanPenilaian] =
     useState<PengaturanPenilaian | null>(null);
+  const [gagalSidang, setGagalSidang] = useState(false);
+  const [infoGagal, setInfoGagal] = useState<InfoGagal | null>(null);
 
   useEffect(() => {
     if (isMahasiswa) {
@@ -76,6 +84,8 @@ export default function PascaSidangPage() {
       const response = await api.get('/penilaian-sidang/hasil-mahasiswa');
       setSidang(response.data.data || null);
       setPengaturanPenilaian(response.data.pengaturan_penilaian || null);
+      setGagalSidang(response.data.gagal_sidang || false);
+      setInfoGagal(response.data.info_gagal || null);
     } catch {
       // Error handled by interceptor
     } finally {
@@ -112,6 +122,47 @@ export default function PascaSidangPage() {
           <p className="text-sm font-medium text-gray-600">
             Memuat data hasil sidang...
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (gagalSidang && infoGagal) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h1 className="text-2xl font-bold text-gray-900">Hasil Sidang</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Informasi hasil nilai sidang dan status kelulusan Anda
+          </p>
+        </div>
+
+        <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-400 rounded-xl p-8 text-center shadow-lg">
+          <div className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
+            <XCircle className="w-12 h-12 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-red-900 mb-3">
+            Anda Telah Gagal Sidang Periode Tahun Ini
+          </h2>
+          <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-4 max-w-2xl mx-auto">
+            <p className="text-base text-gray-800 mb-4">
+              Mohon maaf, Anda dinyatakan gagal sidang pada periode tahun <span className="font-bold">{infoGagal.periode}</span>.
+            </p>
+            {infoGagal.alasan && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <p className="text-sm font-semibold text-red-900 mb-1">Alasan:</p>
+                <p className="text-sm text-red-800">{infoGagal.alasan}</p>
+              </div>
+            )}
+            <p className="text-base text-gray-800 font-semibold">
+              Silakan mengulang saat periode tahun depan telah dibuka.
+            </p>
+          </div>
+          <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 max-w-2xl mx-auto">
+            <p className="text-sm text-blue-900">
+              💡 <span className="font-semibold">Saran:</span> Gunakan waktu ini untuk mempersiapkan diri dengan lebih baik. Konsultasikan dengan dosen pembimbing untuk perbaikan yang diperlukan.
+            </p>
+          </div>
         </div>
       </div>
     );

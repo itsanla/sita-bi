@@ -117,4 +117,27 @@ router.get(
   }),
 );
 
+router.get(
+  '/mahasiswa-prodi',
+  authorizeRoles([Role.prodi_d3, Role.prodi_d4, Role.jurusan]),
+  asyncHandler(async (req, res) => {
+    const userRoles = req.user?.roles?.map(r => r.name) || [];
+    let prodiFilter: string | undefined;
+    
+    if (userRoles.includes('prodi_d3')) {
+      prodiFilter = 'D3';
+    } else if (userRoles.includes('prodi_d4')) {
+      prodiFilter = 'D4';
+    }
+    
+    const buffer = await exportService.generateMahasiswaProdiPdf(prodiFilter);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename=laporan-mahasiswa-${prodiFilter || 'semua'}.pdf`,
+    );
+    res.send(buffer);
+  }),
+);
+
 export default router;

@@ -33,13 +33,6 @@ const navLinks = {
       isSitaBot: true,
     },
     { href: '/dashboard/admin/users', label: 'Manajemen User', icon: Users },
-    {
-      href: '/admin/penjadwalan-sidang',
-      label: 'Jadwal Sidang',
-      icon: Calendar,
-    },
-    { href: '/admin/import', label: 'Import Data', icon: Book },
-    { href: '/admin/reports', label: 'Laporan', icon: FileText },
   ],
   jurusan: [
     { href: '/dashboard/admin', label: 'Dashboard', icon: Home },

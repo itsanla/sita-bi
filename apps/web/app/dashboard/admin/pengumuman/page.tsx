@@ -1,15 +1,7 @@
 'use client';
 
-import Pengumuman from '@/components/shared/Pengumuman';
 import KelolaPengumuman from '@/components/shared/KelolaPengumuman';
 
 export default function AdminPengumumanPage() {
-  return (
-    <div className="space-y-8">
-      <Pengumuman />
-      <div className="border-t-2 border-gray-200 pt-8">
-        <KelolaPengumuman />
-      </div>
-    </div>
-  );
+  return <KelolaPengumuman />;
 }

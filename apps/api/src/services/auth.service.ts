@@ -152,6 +152,7 @@ export class AuthService {
         userId: user.id,
         email: user.email,
         role: user.roles[0]?.name,
+        roles: user.roles.map(r => ({ name: r.name })),
         dosen: user.dosen
           ? {
               id: user.dosen.id,

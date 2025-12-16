@@ -20,6 +20,7 @@ import {
   ClipboardList,
   Calendar,
   Megaphone,
+  Users,
 } from 'lucide-react';
 
 const baseNavItems = [
@@ -59,6 +60,16 @@ const baseNavItems = [
 
 const jurusanMenuItems = [
   {
+    href: '/dashboard/dosen/monitor-jurusan',
+    icon: Users,
+    label: 'Monitor Jurusan',
+  },
+  {
+    href: '/dashboard/dosen/sidang-approvals',
+    icon: ClipboardCheck,
+    label: 'Persetujuan Sidang',
+  },
+  {
     href: '/dashboard/dosen/aturan-umum',
     icon: Settings,
     label: 'Aturan Umum',
@@ -82,9 +93,9 @@ const prodiMenuItems = [
     label: 'Monitor Prodi',
   },
   {
-    href: '/dashboard/dosen/fitur-prodi-2',
-    icon: ClipboardList,
-    label: 'Fitur Prodi 2',
+    href: '/dashboard/dosen/sidang-approvals',
+    icon: ClipboardCheck,
+    label: 'Persetujuan Sidang',
   },
 ];
 
@@ -97,6 +108,10 @@ export default function DosenLayout({ children }: { children: ReactNode }) {
     title: string;
     items: typeof baseNavItems;
   }> = [];
+
+  const dosenMenuItems = (isJurusan || isProdi) 
+    ? baseNavItems.filter(item => item.href !== '/dashboard/dosen/sidang-approvals')
+    : baseNavItems;
 
   if (isJurusan) {
     menuSections.push({
@@ -112,7 +127,7 @@ export default function DosenLayout({ children }: { children: ReactNode }) {
 
   menuSections.push({
     title: 'Menu Dosen',
-    items: baseNavItems,
+    items: dosenMenuItems,
   });
 
   useEffect(() => {

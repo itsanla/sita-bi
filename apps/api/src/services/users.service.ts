@@ -211,8 +211,12 @@ export class UsersService {
             select: {
               nim: true,
               prodi: true,
-              // angkatan field sudah tidak dipakai
               kelas: true,
+              tugasAkhir: {
+                select: {
+                  periode_ta_id: true,
+                },
+              },
             },
           },
           roles: {
@@ -378,20 +382,90 @@ export class UsersService {
       }
     }
 
-    try {
-      return await this.prisma.user.delete({ where: { id } });
-    } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        // Foreign key constraint violation
-        if (e.code === 'P2003') {
-          throw new Error(
-            'Cannot delete this user. They are linked to other records (e.g., announcements, thesis topics). Please reassign or delete those records first.',
-          );
+    // Hapus dalam transaction untuk memastikan konsistensi
+    return await this.prisma.$transaction(async (tx) => {
+      // Jika mahasiswa, hapus semua data terkait
+      if (user.mahasiswa) {
+        const mahasiswaId = user.mahasiswa.id;
+        
+        // Cari tugas akhir
+        const tugasAkhir = await tx.tugasAkhir.findUnique({
+          where: { mahasiswa_id: mahasiswaId },
+        });
+
+        if (tugasAkhir) {
+          // Cari sidang untuk hapus relasi
+          const sidangList = await tx.sidang.findMany({
+            where: { tugas_akhir_id: tugasAkhir.id },
+          });
+
+          for (const sidang of sidangList) {
+            // Hapus jadwal sidang
+            await tx.jadwalSidang.deleteMany({
+              where: { sidang_id: sidang.id },
+            });
+
+            // Hapus nilai sidang
+            await tx.nilaiSidang.deleteMany({
+              where: { sidang_id: sidang.id },
+            });
+          }
+
+          // Hapus sidang
+          await tx.sidang.deleteMany({
+            where: { tugas_akhir_id: tugasAkhir.id },
+          });
+
+          // Hapus bimbingan
+          await tx.bimbinganTA.deleteMany({
+            where: { tugas_akhir_id: tugasAkhir.id },
+          });
+
+          // Hapus dokumen TA
+          await tx.dokumenTa.deleteMany({
+            where: { tugas_akhir_id: tugasAkhir.id },
+          });
+
+          // Hapus peran dosen
+          await tx.peranDosenTa.deleteMany({
+            where: { tugas_akhir_id: tugasAkhir.id },
+          });
+
+          // Hapus tugas akhir
+          await tx.tugasAkhir.delete({
+            where: { id: tugasAkhir.id },
+          });
         }
+
+        // Hapus pengajuan bimbingan
+        await tx.pengajuanBimbingan.deleteMany({
+          where: { mahasiswa_id: mahasiswaId },
+        });
+
+        // Hapus history topik
+        await tx.historyTopikMahasiswa.deleteMany({
+          where: { mahasiswa_id: mahasiswaId },
+        });
       }
-      // Re-throw other errors
-      throw e;
-    }
+
+      // Jika dosen, update/hapus referensi
+      if (user.dosen) {
+        const dosenId = user.dosen.id;
+        
+        // Hapus peran dosen di tugas akhir
+        await tx.peranDosenTa.deleteMany({
+          where: { dosen_id: dosenId },
+        });
+        
+        // Hapus tawaran topik
+        await tx.tawaranTopik.deleteMany({
+          where: { dosen_id: dosenId },
+        });
+      }
+
+      // Hapus user (cascade akan handle mahasiswa/dosen profile)
+      return await tx.user.delete({ where: { id } });
+    });
   }
 
   async updateUser(id: number, data: Prisma.UserUpdateInput): Promise<User> {
@@ -418,6 +492,56 @@ export class UsersService {
     return results;
   }
 
+  async checkUserRelations(id: number): Promise<{
+    hasData: boolean;
+    details: {
+      tugasAkhir: boolean;
+      bimbingan: number;
+      jadwalSidang: boolean;
+      periode?: string;
+    };
+  }> {
+    const user = await this.findUserById(id);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const details = {
+      tugasAkhir: false,
+      bimbingan: 0,
+      jadwalSidang: false,
+      periode: undefined as string | undefined,
+    };
+
+    if (user.mahasiswa) {
+      const tugasAkhir = await this.prisma.tugasAkhir.findUnique({
+        where: { mahasiswa_id: user.mahasiswa.id },
+        include: {
+          bimbinganTa: true,
+          sidang: {
+            include: {
+              jadwalSidang: true,
+            },
+          },
+          periodeTa: true,
+        },
+      });
+
+      if (tugasAkhir) {
+        details.tugasAkhir = true;
+        details.bimbingan = tugasAkhir.bimbinganTa.length;
+        details.jadwalSidang = tugasAkhir.sidang.some(
+          (s) => s.jadwalSidang.length > 0,
+        );
+        details.periode = tugasAkhir.periodeTa?.nama;
+      }
+    }
+
+    const hasData = details.tugasAkhir || details.bimbingan > 0 || details.jadwalSidang;
+
+    return { hasData, details };
+  }
+
   async findAllMahasiswaWithTA(): Promise<unknown[]> {
     const mahasiswa = await this.prisma.mahasiswa.findMany({
       where: {
@@ -427,7 +551,12 @@ export class UsersService {
           },
         },
       },
-      include: {
+      select: {
+        id: true,
+        nim: true,
+        prodi: true,
+        kelas: true,
+        siap_sidang: true,
         user: {
           select: {
             name: true,

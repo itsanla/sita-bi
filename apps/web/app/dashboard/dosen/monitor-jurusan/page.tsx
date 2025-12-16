@@ -52,9 +52,9 @@ interface Mahasiswa {
   };
 }
 
-export default function MonitorProdiPage() {
+export default function MonitorJurusanPage() {
   const { user } = useAuth();
-  const { canAccessProdi, isProdi } = useRBAC();
+  const { isJurusan } = useRBAC();
   const [allMahasiswa, setAllMahasiswa] = useState<Mahasiswa[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMahasiswa, setSelectedMahasiswa] = useState<number | null>(null);
@@ -68,10 +68,7 @@ export default function MonitorProdiPage() {
       mhs.user.name.toLowerCase().includes(search.toLowerCase()) ||
       mhs.nim.toLowerCase().includes(search.toLowerCase());
     
-    const matchesProdi = canAccessProdi === 'D3' ? mhs.prodi === 'D3' : 
-                       canAccessProdi === 'D4' ? mhs.prodi === 'D4' : true;
-    
-    return matchesSearch && matchesProdi;
+    return matchesSearch;
   });
 
   const totalPages = Math.ceil(filteredMahasiswa.length / limit);
@@ -91,21 +88,21 @@ export default function MonitorProdiPage() {
       }
     };
 
-    if (user && isProdi) {
+    if (user && isJurusan) {
       fetchMahasiswa();
     }
-  }, [user, isProdi]);
+  }, [user, isJurusan]);
 
   useEffect(() => {
     setPage(1);
   }, [search]);
 
-  if (!isProdi) {
+  if (!isJurusan) {
     return (
       <div className="text-center p-8">
         <AlertCircle className="mx-auto mb-4 text-red-500" size={48} />
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Akses Ditolak</h2>
-        <p className="text-gray-600">Anda tidak memiliki akses ke fitur monitor prodi.</p>
+        <p className="text-gray-600">Anda tidak memiliki akses ke fitur monitor jurusan.</p>
       </div>
     );
   }
@@ -148,7 +145,7 @@ export default function MonitorProdiPage() {
           // Download for mobile
           const a = document.createElement('a');
           a.href = url;
-          a.download = `laporan-mahasiswa-${canAccessProdi || 'semua'}.pdf`;
+          a.download = `laporan-mahasiswa-jurusan.pdf`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -175,8 +172,8 @@ export default function MonitorProdiPage() {
                   <Users className="text-white" size={24} />
                 </div>
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Monitor Prodi {canAccessProdi}</h1>
-                  <p className="text-gray-600">Pantau progress semua mahasiswa di prodi Anda</p>
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Monitor Jurusan</h1>
+                  <p className="text-gray-600">Pantau progress semua mahasiswa di periode aktif</p>
                 </div>
               </div>
               <button

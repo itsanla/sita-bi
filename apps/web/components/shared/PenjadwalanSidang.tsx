@@ -22,7 +22,7 @@ interface JadwalSidang {
   status: 'BELUM_DIJADWALKAN' | 'DIJADWALKAN' | 'SELESAI';
 }
 
-export default function PenjadwalanSidang() {
+export default function PenjadwalanSidang({ isAdminOnly = false }: { isAdminOnly?: boolean }) {
   const [loading, setLoading] = useState(true);
   const [jadwal, setJadwal] = useState<JadwalSidang | null>(null);
   const [tanggalGenerate, setTanggalGenerate] = useState('');
@@ -347,6 +347,8 @@ export default function PenjadwalanSidang() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {!isAdminOnly && (
+      <>
       <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-md border border-gray-200 p-6">
         <div className="flex items-center space-x-3">
           <div className="w-12 h-12 bg-gradient-to-br from-red-900 to-red-800 rounded-lg flex items-center justify-center shadow-md">
@@ -966,6 +968,8 @@ export default function PenjadwalanSidang() {
           </div>
         </div>
       )}
+      </>
+      )}
 
       {jadwalTersimpan.length > 0 && (
         <div
@@ -974,7 +978,7 @@ export default function PenjadwalanSidang() {
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">
-              Jadwal Sidang Tersimpan ({filteredJadwal.length} dari{' '}
+              📋 Jadwal Sidang Tersimpan ({filteredJadwal.length} dari{' '}
               {jadwalTersimpan.length})
             </h2>
             <div className="flex space-x-2">
@@ -1214,6 +1218,7 @@ export default function PenjadwalanSidang() {
         </div>
       )}
 
+      {!isAdminOnly && (
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
         <p className="text-sm text-amber-800">
           <span className="font-semibold">Catatan:</span> Sistem akan otomatis
@@ -1222,6 +1227,7 @@ export default function PenjadwalanSidang() {
           generate langsung.
         </p>
       </div>
+      )}
 
       {!!detailMahasiswa && (
         <div

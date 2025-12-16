@@ -36,6 +36,7 @@ export const authMiddleware = async (
       userId: number;
       email: string;
       role: string;
+      roles?: { name: string }[];
       dosen?: { id: number; nip: string; prodi: string } | null;
       mahasiswa?: { id: number; nim: string } | null;
     };
@@ -45,6 +46,7 @@ export const authMiddleware = async (
       id: decoded.userId,
       email: decoded.email,
       role: decoded.role as Role,
+      roles: decoded.roles || [{ name: decoded.role }],
       dosen: decoded.dosen ?? null,
       mahasiswa: decoded.mahasiswa ?? null,
     };

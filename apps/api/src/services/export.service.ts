@@ -600,4 +600,193 @@ export class ExportService {
       doc.end();
     });
   }
+
+  async generateMahasiswaProdiPdf(prodiFilter?: string): Promise<Buffer> {
+    const { UsersService } = await import('./users.service');
+    const usersService = new UsersService();
+    const allMahasiswaData = await usersService.findAllMahasiswaWithTA();
+    
+    const filteredData = prodiFilter 
+      ? (allMahasiswaData as any[]).filter((m: any) => m.prodi === prodiFilter)
+      : allMahasiswaData;
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 50, size: 'A4' });
+      const chunks: Buffer[] = [];
+
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      this.headerService.addAcademicHeader(
+        doc,
+        `Laporan Mahasiswa Prodi ${prodiFilter || 'Semua'}`,
+      );
+
+      const tableTop = doc.y;
+      const colWidths = [25, 70, 120, 45, 60, 60, 60];
+      const headers = ['No', 'NIM', 'Nama', 'Kelas', 'Bimbingan', 'Draf', 'Status'];
+      const tableWidth = colWidths.reduce((a, b) => a + b, 0);
+      const tableLeft = (doc.page.width - tableWidth) / 2;
+
+      // Draw header background
+      doc
+        .lineWidth(0.5)
+        .rect(tableLeft, tableTop - 3, tableWidth, 18)
+        .fillAndStroke('#f0f0f0', '#000000');
+
+      // Header text (non-bold)
+      doc.fontSize(9).font('Helvetica').fillColor('#000000');
+      let x = tableLeft;
+      headers.forEach((header, i) => {
+        doc.text(header, x + 2, tableTop, {
+          width: colWidths[i] - 4,
+          align: 'center',
+        });
+        x += colWidths[i];
+      });
+
+      // Data
+      doc.font('Helvetica').fontSize(8);
+      let y = tableTop + 15;
+
+      filteredData.forEach((mhs: any, idx: number) => {
+        const validBimbingan = mhs.tugasAkhir?.bimbinganTa?.filter((b: any) => b.status_bimbingan === 'selesai').length || 0;
+        const isDrafValid = mhs.tugasAkhir?.dokumenTa?.[0]?.divalidasi_oleh_p1 && mhs.tugasAkhir?.dokumenTa?.[0]?.divalidasi_oleh_p2;
+        
+        const rowData = [
+          (idx + 1).toString(),
+          mhs.nim,
+          mhs.user.name,
+          mhs.kelas,
+          `${validBimbingan}/8`,
+          isDrafValid ? 'Valid' : 'Belum',
+          mhs.siap_sidang ? 'Layak' : 'Belum',
+        ];
+
+        const rowHeight = 20;
+        if (y + rowHeight > doc.page.height - 80) {
+          doc.addPage({ margin: 50, size: 'A4' });
+          y = 50;
+          
+          // Redraw header on new page
+          doc
+            .lineWidth(0.5)
+            .rect(tableLeft, y - 3, tableWidth, 18)
+            .fillAndStroke('#f0f0f0', '#000000');
+          doc.fontSize(9).font('Helvetica').fillColor('#000000');
+          x = tableLeft;
+          headers.forEach((header, i) => {
+            doc.text(header, x + 2, y, {
+              width: colWidths[i] - 4,
+              align: 'center',
+            });
+            x += colWidths[i];
+          });
+          y += 15;
+          doc.font('Helvetica').fontSize(8);
+        }
+
+        doc.rect(tableLeft, y, tableWidth, rowHeight).stroke('#000000');
+        x = tableLeft;
+        colWidths.forEach((width) => {
+          doc.moveTo(x, y).lineTo(x, y + rowHeight).stroke();
+          x += width;
+        });
+        doc.moveTo(x, y).lineTo(x, y + rowHeight).stroke();
+
+        x = tableLeft;
+        rowData.forEach((text, i) => {
+          doc.text(text, x + 2, y + 6, {
+            width: colWidths[i] - 4,
+            align: i === 0 ? 'center' : 'left',
+          });
+          x += colWidths[i];
+        });
+        y += rowHeight;
+      });
+
+      doc.end();
+    });
+  }
+
+  async generateJadwalSidangPdf(): Promise<Buffer> {
+    const { SidangService } = await import('./sidang.service');
+    const sidangService = new SidangService();
+    const jadwalData = await sidangService.getAllJadwalSidang();
+    return this.generatePDF(jadwalData);
+  }
+
+  async generateJadwalSidangExcel(): Promise<Buffer> {
+    const { SidangService } = await import('./sidang.service');
+    const sidangService = new SidangService();
+    const jadwalData = await sidangService.getAllJadwalSidang();
+    return this.generateExcel(jadwalData);
+  }
+
+  async generateRekapNilaiExcel(): Promise<Buffer> {
+    const { SidangService } = await import('./sidang.service');
+    const sidangService = new SidangService();
+    const nilaiData = await sidangService.getRekapNilai();
+    
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Rekap Nilai');
+    
+    worksheet.mergeCells('A1:F1');
+    worksheet.getCell('A1').value = 'REKAP NILAI SIDANG TUGAS AKHIR';
+    worksheet.getCell('A1').font = { bold: true, size: 14 };
+    worksheet.getCell('A1').alignment = { horizontal: 'center' };
+    
+    const headerRow = worksheet.addRow(['No', 'NIM', 'Nama', 'Nilai', 'Grade', 'Status']);
+    headerRow.font = { bold: true };
+    
+    nilaiData.forEach((row: any, idx: number) => {
+      worksheet.addRow([idx + 1, row.nim, row.nama, row.nilai, row.grade, row.status]);
+    });
+    
+    return (await workbook.xlsx.writeBuffer()) as Buffer;
+  }
+
+  async generateUsersExcel(): Promise<Buffer> {
+    const { UsersService } = await import('./users.service');
+    const usersService = new UsersService();
+    const usersData = await usersService.getAllUsers();
+    
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Users');
+    
+    const headerRow = worksheet.addRow(['No', 'Name', 'Email', 'Role', 'Status']);
+    headerRow.font = { bold: true };
+    
+    usersData.forEach((user: any, idx: number) => {
+      worksheet.addRow([idx + 1, user.name, user.email, user.roles?.map((r: any) => r.name).join(', '), user.is_active ? 'Active' : 'Inactive']);
+    });
+    
+    return (await workbook.xlsx.writeBuffer()) as Buffer;
+  }
+
+  async generateBeritaAcaraPdf(sidangId: number): Promise<Buffer> {
+    const { SidangService } = await import('./sidang.service');
+    const sidangService = new SidangService();
+    const sidangData = await sidangService.getSidangById(sidangId);
+    
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 50, size: 'A4' });
+      const chunks: Buffer[] = [];
+
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      this.headerService.addAcademicHeader(doc, 'BERITA ACARA SIDANG TUGAS AKHIR');
+      
+      doc.fontSize(12).text(`Mahasiswa: ${sidangData.mahasiswa}`, 50, doc.y + 20);
+      doc.text(`NIM: ${sidangData.nim}`);
+      doc.text(`Tanggal: ${sidangData.tanggal}`);
+      doc.text(`Waktu: ${sidangData.waktu}`);
+      doc.text(`Ruangan: ${sidangData.ruangan}`);
+      
+      doc.end();
+    });
+  }
 }

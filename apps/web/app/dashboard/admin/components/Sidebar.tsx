@@ -8,14 +8,11 @@ import Image from 'next/image';
 import {
   Home,
   Users,
-  FileText,
   Calendar,
   Megaphone,
-  BookUser,
   LogOut,
   Menu,
   LayoutDashboard,
-  Upload,
   ScrollText,
   UserCircle,
 } from 'lucide-react';
@@ -29,20 +26,12 @@ const navItems = [
   { href: '/dashboard/admin', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/dashboard/admin/data-diri', icon: UserCircle, label: 'Data Diri' },
   { href: '/dashboard/admin/users', icon: Users, label: 'Manajemen User' },
-  { href: '/dashboard/admin/penugasan', icon: BookUser, label: 'Penugasan' },
-  {
-    href: '/dashboard/admin/kelola-sidang',
-    icon: Calendar,
-    label: 'Kelola Sidang',
-  },
   {
     href: '/dashboard/admin/penjadwalan',
     icon: Calendar,
     label: 'Penjadwalan Sidang',
   },
   { href: '/dashboard/admin/pengumuman', icon: Megaphone, label: 'Pengumuman' },
-  { href: '/dashboard/admin/import', icon: Upload, label: 'Import Data' },
-  { href: '/dashboard/admin/reports', icon: FileText, label: 'Laporan' },
   { href: '/dashboard/admin/logs', icon: ScrollText, label: 'Log Aktivitas' },
 ];
 

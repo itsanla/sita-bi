@@ -410,6 +410,32 @@ router.get(
       return;
     }
 
+    // Cek status gagal sidang mahasiswa
+    const mahasiswa = await prisma.mahasiswa.findUnique({
+      where: { id: mahasiswaId },
+    });
+
+    // Jika mahasiswa gagal sidang di periode aktif, return info gagal
+    if (mahasiswa?.gagal_sidang && mahasiswa.periode_gagal_id) {
+      const periodeAktif = await prisma.periodeTa.findFirst({
+        where: { status: 'AKTIF' },
+      });
+
+      if (periodeAktif && mahasiswa.periode_gagal_id === periodeAktif.id) {
+        res.json({
+          status: 'sukses',
+          data: null,
+          gagal_sidang: true,
+          info_gagal: {
+            periode: periodeAktif.tahun.toString(),
+            alasan: mahasiswa.alasan_gagal,
+            status: mahasiswa.status_gagal,
+          },
+        });
+        return;
+      }
+    }
+
     // Cari sidang mahasiswa yang sudah selesai
     const sidang = await prisma.sidang.findFirst({
       where: {
@@ -460,9 +486,10 @@ router.get(
     });
 
     if (!sidang) {
-      res.status(404).json({
-        status: 'gagal',
-        message: 'Hasil sidang belum tersedia',
+      res.json({
+        status: 'sukses',
+        data: null,
+        gagal_sidang: false,
       });
       return;
     }
