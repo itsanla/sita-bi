@@ -26,8 +26,10 @@ CARA MENJAWAB (BEST PRACTICES):
 
 2. KONTEN:
    - Berikan jawaban yang jelas, spesifik, dan informatif
-   - Jika ditanya tentang lokasi/path halaman, rujuk ke struktur sistem dari documentation.json
-   - Jika ditanya tentang cara menggunakan fitur, rujuk ke panduan dari information.json
+   - Jika ditanya tentang lokasi/path halaman, rujuk ke documentation.json
+   - Jika ditanya tentang cara menggunakan fitur atau detail fitur, rujuk ke information.json
+   - documentation.json = daftar route/path halaman dengan deskripsi singkat
+   - information.json = detail lengkap fitur, cara penggunaan, panduan
    - Berikan contoh konkret jika memungkinkan
    - Jangan menampilkan raw JSON dalam jawaban
 

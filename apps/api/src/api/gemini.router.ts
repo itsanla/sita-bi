@@ -120,16 +120,20 @@ router.post(
 
       logger.info('Starting public stream', { historyLength: history.length });
 
-      // Set timeout for the entire stream
-      const streamTimeout = setTimeout(() => {
-        logger.warn('Stream timeout - forcing close');
-        res.write(
-          `data: ${JSON.stringify({ type: 'error', error: 'Request timeout' })}\n\n`,
-        );
-        res.end();
-      }, 60000); // 60 seconds total timeout
-
+      let streamTimeout: NodeJS.Timeout | null = null;
+      
       try {
+        // Set timeout for the entire stream
+        streamTimeout = setTimeout(() => {
+          logger.warn('Stream timeout - forcing close');
+          if (!res.writableEnded) {
+            res.write(
+              `data: ${JSON.stringify({ type: 'error', error: 'Request timeout' })}\n\n`,
+            );
+            res.end();
+          }
+        }, 60000); // 60 seconds total timeout
+
         // Stream the response with history context word-by-word
         for await (const chunk of geminiService.streamGenerateContentWithHistory(
           message,
@@ -168,7 +172,7 @@ router.post(
           );
         }
       } finally {
-        clearTimeout(streamTimeout);
+        if (streamTimeout) clearTimeout(streamTimeout);
         if (!res.writableEnded) {
           res.end();
         }

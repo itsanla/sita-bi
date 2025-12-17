@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import asyncHandler from '../utils/asyncHandler';
 import prisma from '../config/database';
+import { ExportService } from '../services/export.service';
 
 const router: Router = Router();
+const exportService = new ExportService();
 
 const TIDAK_TERCATAT = 'Tidak Tercatat';
 
@@ -351,8 +353,6 @@ router.get(
   '/export/judul-pdf',
   asyncHandler(async (req, res): Promise<void> => {
     const { tahun } = req.query;
-    const { ExportService } = await import('../services/export.service');
-    const exportService = new ExportService();
 
     const where: any = {
       periodeTa: { status: { in: ['AKTIF', 'SELESAI'] } },
@@ -376,7 +376,12 @@ router.get(
       judul: ta.judul,
     }));
 
-    const buffer = await exportService.generatePDFJudulTA(exportData);
+    const buffer = await Promise.race([
+      exportService.generatePDFJudulTA(exportData),
+      new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('PDF generation timeout')), 25000)
+      )
+    ]);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
@@ -391,8 +396,6 @@ router.get(
   '/export/jadwal-pdf',
   asyncHandler(async (req, res): Promise<void> => {
     const { tahun } = req.query;
-    const { ExportService } = await import('../services/export.service');
-    const exportService = new ExportService();
 
     const where: any = {};
     if (typeof tahun === 'string' && tahun !== '') {
@@ -459,7 +462,12 @@ router.get(
       };
     });
 
-    const buffer = await exportService.generatePDF(exportData);
+    const buffer = await Promise.race([
+      exportService.generatePDF(exportData),
+      new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('PDF generation timeout')), 25000)
+      )
+    ]);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
@@ -474,8 +482,6 @@ router.get(
   '/export/jadwal-dosen-pdf',
   asyncHandler(async (req, res): Promise<void> => {
     const { tahun, dosen_id } = req.query;
-    const { ExportService } = await import('../services/export.service');
-    const exportService = new ExportService();
 
     const where: any = {};
     if (typeof tahun === 'string' && tahun !== '') {
@@ -546,7 +552,12 @@ router.get(
       });
     });
 
-    const buffer = await exportService.generatePDFJadwalDosen(exportData);
+    const buffer = await Promise.race([
+      exportService.generatePDFJadwalDosen(exportData),
+      new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('PDF generation timeout')), 25000)
+      )
+    ]);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(

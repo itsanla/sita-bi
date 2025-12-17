@@ -26,6 +26,7 @@ export class WahaWhatsAppService {
   private qrCode: string | null = null;
   private isInitializing = false;
   private healthCheckInterval: NodeJS.Timeout | null = null;
+  private readonly fetchTimeout = 10000;
 
   private getHeaders(): HeadersInit {
     const headers: HeadersInit = { 'Content-Type': 'application/json' };
@@ -35,22 +36,27 @@ export class WahaWhatsAppService {
     return headers;
   }
 
+  private async fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.fetchTimeout);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   async initialize(): Promise<void> {
-    // Retry up to 3 times to ensure session is ready
     for (let i = 0; i < 3; i++) {
       try {
-        const response = await fetch(
+        const response = await this.fetchWithTimeout(
           `${this.wahaUrl}/api/sessions/${this.sessionName}`,
-          {
-            headers: this.getHeaders(),
-          },
+          { headers: this.getHeaders() },
         );
         if (response.ok) {
           const data = await response.json();
           this.isReady = data.status === 'WORKING';
-          console.warn(
-            `[DEBUG] initialize - status: ${data.status}, isReady: ${this.isReady}`,
-          );
+          console.warn(`[DEBUG] initialize - status: ${data.status}, isReady: ${this.isReady}`);
           if (data.status === 'SCAN_QR_CODE') {
             await this.fetchQR();
           }
@@ -59,37 +65,25 @@ export class WahaWhatsAppService {
             this.startHealthCheck();
             return;
           } else {
-            console.warn(
-              '🔄 WAHA session exists but not ready (status: ' +
-                data.status +
-                ')',
-            );
-            if (i < 2) {
-              await this.delay(2000);
-            }
+            console.warn('🔄 WAHA session exists but not ready (status: ' + data.status + ')');
+            if (i < 2) await this.delay(2000);
           }
         } else {
-          console.warn(
-            '💬 No WAHA session found. Visit /api/whatsapp/qr to connect',
-          );
+          console.warn('💬 No WAHA session found. Visit /api/whatsapp/qr to connect');
           return;
         }
       } catch (error) {
         console.error('Failed to check WAHA session:', error);
-        if (i < 2) {
-          await this.delay(2000);
-        }
+        if (i < 2) await this.delay(2000);
       }
     }
   }
 
   private async fetchQR(): Promise<void> {
     try {
-      const response = await fetch(
+      const response = await this.fetchWithTimeout(
         `${this.wahaUrl}/api/${this.sessionName}/auth/qr`,
-        {
-          headers: this.getHeaders(),
-        },
+        { headers: this.getHeaders() },
       );
       if (response.ok) {
         const data = await response.json();
@@ -110,7 +104,7 @@ export class WahaWhatsAppService {
     console.warn('🚀 Initializing WAHA session...');
 
     try {
-      const response = await fetch(`${this.wahaUrl}/api/sessions`, {
+      const response = await this.fetchWithTimeout(`${this.wahaUrl}/api/sessions`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({ name: this.sessionName }),
@@ -134,19 +128,15 @@ export class WahaWhatsAppService {
     for (let i = 0; i < 10; i++) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       try {
-        const response = await fetch(
+        const response = await this.fetchWithTimeout(
           `${this.wahaUrl}/api/sessions/${this.sessionName}`,
-          {
-            headers: this.getHeaders(),
-          },
+          { headers: this.getHeaders() },
         );
         if (response.ok) {
           const data = await response.json();
           if (data.status === 'SCAN_QR_CODE') {
             await this.fetchQR();
-            if (this.qrCode) {
-              return;
-            }
+            if (this.qrCode) return;
           }
           if (data.status === 'WORKING') {
             this.isReady = true;
@@ -163,22 +153,17 @@ export class WahaWhatsAppService {
   async sendMessage(to: string, message: string): Promise<boolean> {
     console.warn(`[DEBUG] sendMessage called - isReady: ${this.isReady}`);
 
-    // Auto-check session if not ready
     if (!this.isReady) {
       console.warn('[DEBUG] isReady false, checking WAHA session status...');
       try {
-        const response = await fetch(
+        const response = await this.fetchWithTimeout(
           `${this.wahaUrl}/api/sessions/${this.sessionName}`,
-          {
-            headers: this.getHeaders(),
-          },
+          { headers: this.getHeaders() },
         );
         if (response.ok) {
           const data = await response.json();
           this.isReady = data.status === 'WORKING';
-          console.warn(
-            `[DEBUG] Session status: ${data.status}, isReady now: ${this.isReady}`,
-          );
+          console.warn(`[DEBUG] Session status: ${data.status}, isReady now: ${this.isReady}`);
         }
       } catch (error) {
         console.error('[DEBUG] Failed to check session:', error);
@@ -192,7 +177,7 @@ export class WahaWhatsAppService {
 
     try {
       const chatId = this.formatPhoneNumber(to);
-      const response = await fetch(`${this.wahaUrl}/api/sendText`, {
+      const response = await this.fetchWithTimeout(`${this.wahaUrl}/api/sendText`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({
@@ -216,19 +201,17 @@ export class WahaWhatsAppService {
     caption?: string,
   ): Promise<boolean> {
     if (!this.isReady) {
-      throw new Error(
-        'WhatsApp client is not ready. Please scan QR code first.',
-      );
+      throw new Error('WhatsApp client is not ready. Please scan QR code first.');
     }
 
     try {
       const chatId = this.formatPhoneNumber(to);
-      const fs = await import('fs');
-      const fileBuffer = fs.readFileSync(mediaPath);
+      const fs = await import('fs/promises');
+      const fileBuffer = await fs.readFile(mediaPath);
       const base64 = fileBuffer.toString('base64');
       const mimeType = this.getMimeType(mediaPath);
 
-      const response = await fetch(`${this.wahaUrl}/api/sendFile`, {
+      const response = await this.fetchWithTimeout(`${this.wahaUrl}/api/sendFile`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({
@@ -250,10 +233,7 @@ export class WahaWhatsAppService {
     }
   }
 
-  async sendNotification(
-    type: string,
-    data: NotificationData,
-  ): Promise<boolean> {
+  async sendNotification(type: string, data: NotificationData): Promise<boolean> {
     if (!this.isReady) {
       console.warn('⚠️  WhatsApp client not ready. Notification skipped.');
       return false;
@@ -372,9 +352,7 @@ export class WahaWhatsAppService {
       }
     }
 
-    console.warn(
-      `📊 Broadcast results: ${results.success} sent, ${results.failed} failed`,
-    );
+    console.warn(`📊 Broadcast results: ${results.success} sent, ${results.failed} failed`);
   }
 
   getStatus(): {
@@ -396,11 +374,9 @@ export class WahaWhatsAppService {
 
     this.healthCheckInterval = setInterval(async () => {
       try {
-        const response = await fetch(
+        const response = await this.fetchWithTimeout(
           `${this.wahaUrl}/api/sessions/${this.sessionName}`,
-          {
-            headers: this.getHeaders(),
-          },
+          { headers: this.getHeaders() },
         );
 
         if (response.ok) {
@@ -411,11 +387,7 @@ export class WahaWhatsAppService {
           if (!wasReady && this.isReady) {
             console.warn('✅ WAHA reconnected - WhatsApp is now ready');
           } else if (wasReady && !this.isReady) {
-            console.warn(
-              '⚠️  WAHA disconnected - WhatsApp not ready (status: ' +
-                data.status +
-                ')',
-            );
+            console.warn('⚠️  WAHA disconnected - WhatsApp not ready (status: ' + data.status + ')');
           }
         } else {
           if (this.isReady) {
@@ -444,7 +416,7 @@ export class WahaWhatsAppService {
   async logout(): Promise<void> {
     this.stopHealthCheck();
     try {
-      await fetch(`${this.wahaUrl}/api/sessions/${this.sessionName}`, {
+      await this.fetchWithTimeout(`${this.wahaUrl}/api/sessions/${this.sessionName}`, {
         method: 'DELETE',
         headers: this.getHeaders(),
       });
@@ -487,7 +459,7 @@ export class WahaWhatsAppService {
 
     try {
       const chatId = this.formatPhoneNumber(phone);
-      const response = await fetch(
+      const response = await this.fetchWithTimeout(
         `${this.wahaUrl}/api/${this.sessionName}/contacts/check-exists`,
         {
           method: 'POST',

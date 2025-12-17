@@ -108,8 +108,7 @@ class GeminiService {
     logger.info(`Fallback model: ${this.fallbackModel}`);
   }
 
-  private getSystemPrompt(): string {
-    // Return cached prompt if still valid
+  private async getSystemPromptAsync(): Promise<string> {
     const now = Date.now();
     if (
       this.systemPromptCache !== null &&
@@ -119,13 +118,17 @@ class GeminiService {
     }
 
     try {
-      const documentationData = fs.existsSync(this.documentationPath)
-        ? JSON.parse(fs.readFileSync(this.documentationPath, 'utf-8'))
-        : null;
+      const fsPromises = await import('fs/promises');
+      
+      const documentationData = await fsPromises.access(this.documentationPath).then(
+        async () => JSON.parse(await fsPromises.readFile(this.documentationPath, 'utf-8')),
+        () => null
+      );
 
-      const informationData = fs.existsSync(this.informationPath)
-        ? JSON.parse(fs.readFileSync(this.informationPath, 'utf-8'))
-        : null;
+      const informationData = await fsPromises.access(this.informationPath).then(
+        async () => JSON.parse(await fsPromises.readFile(this.informationPath, 'utf-8')),
+        () => null
+      );
 
       let systemPrompt = ENHANCED_SYSTEM_PROMPT;
 
@@ -137,7 +140,6 @@ class GeminiService {
         systemPrompt += `\n\nINFORMASI TUGAS AKHIR & PANDUAN PENGGUNA:\n${JSON.stringify(informationData, null, 2)}`;
       }
 
-      // Cache the prompt
       this.systemPromptCache = systemPrompt;
       this.systemPromptCacheTime = now;
 
@@ -150,16 +152,21 @@ class GeminiService {
     }
   }
 
+  private getSystemPrompt(): string {
+    return this.systemPromptCache ?? ENHANCED_SYSTEM_PROMPT;
+  }
+
   private async callGeminiApi(
     prompt: string,
     apiKey: string,
     model: string,
   ): Promise<string> {
+    const systemPrompt = await this.getSystemPromptAsync();
     const requestBody: GeminiRequest = {
       systemInstruction: {
         parts: [
           {
-            text: this.getSystemPrompt(),
+            text: systemPrompt,
           },
         ],
       },
@@ -334,8 +341,9 @@ class GeminiService {
     }
     contents.push({ parts: [{ text: prompt }], role: 'user' });
 
+    const systemPrompt = await this.getSystemPromptAsync();
     const systemInstruction: GeminiSystemInstruction = {
-      parts: [{ text: this.getSystemPrompt() }],
+      parts: [{ text: systemPrompt }],
     };
 
     for (const model of this.primaryModels) {

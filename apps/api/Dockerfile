@@ -19,44 +19,33 @@ COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY packages/db ./packages/db
 COPY apps/api ./apps/api
 
-# Generate Prisma Client
 RUN cd packages/db && pnpm db:generate
-
-# Build packages/db
 RUN pnpm --filter @repo/db build
-
-# Build API
 RUN pnpm --filter api build
 
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 apiuser
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 apiuser
 
-# Copy built API
 COPY --from=builder --chown=apiuser:nodejs /app/apps/api/dist ./dist
 COPY --from=builder --chown=apiuser:nodejs /app/apps/api/package.json ./package.json
-
-# Copy node_modules with Prisma Client
 COPY --from=builder --chown=apiuser:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=apiuser:nodejs /app/packages/db/prisma ./packages/db/prisma
 
-# Copy Prisma schema for migrations (optional)
-COPY --from=builder --chown=apiuser:nodejs /app/packages/db/prisma ./prisma
+RUN mkdir -p uploads documentation/model data && \
+    chown -R apiuser:nodejs uploads documentation data
 
-# Create uploads directory
-RUN mkdir -p uploads && chown apiuser:nodejs uploads
-
-# Copy entrypoint script
 COPY --from=builder --chown=apiuser:nodejs /app/apps/api/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x docker-entrypoint.sh
 
 USER apiuser
 
-EXPOSE 3000
+EXPOSE 3002
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD node -e "require('http').get('http://localhost:3002/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
