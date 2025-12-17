@@ -7,6 +7,7 @@ FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/db/package.json ./packages/db/
+COPY packages/typescript-config/package.json ./packages/typescript-config/
 COPY apps/api/package.json ./apps/api/
 RUN pnpm config set network-timeout 600000
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
@@ -16,6 +17,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
+COPY packages/typescript-config ./packages/typescript-config
 COPY packages/db ./packages/db
 COPY apps/api ./apps/api
 

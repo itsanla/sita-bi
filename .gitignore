@@ -69,6 +69,7 @@ pnpm-debug.log*
 # Uploads (keep structure but ignore files)
 apps/api/uploads/*
 !apps/api/uploads/.gitkeep
+!apps/api/uploads/arsip/
 !apps/api/uploads/bimbingan/
 apps/api/uploads/bimbingan/*
 !apps/api/uploads/bimbingan/.gitkeep
