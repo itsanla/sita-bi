@@ -1,0 +1,402 @@
+{
+  "fitur": "Tawaran Topik Tugas Akhir",
+  "deskripsi": "Sistem penawaran dan pengambilan topik tugas akhir dari dosen ke mahasiswa",
+  "versi": "1.0.0",
+  "terakhir_diperbarui": "2024-12-05",
+  "route_dosen": "/dashboard/dosen/tawaran-topik",
+  "route_mahasiswa": "/dashboard/mahasiswa/topik",
+
+  "konsep_dasar": {
+    "deskripsi": "Dosen menawarkan topik tugas akhir, mahasiswa dapat melihat dan mengambil topik yang tersedia",
+    "kuota": "Setiap topik memiliki kuota (default: 1 mahasiswa)",
+    "periode": "Topik terikat dengan periode TA aktif",
+    "status": "Topik dapat diambil jika kuota > 0 dan belum dihapus"
+  },
+
+  "alur_sistem": {
+    "tahap_1": {
+      "nama": "Dosen Membuat Tawaran Topik",
+      "actor": "Dosen",
+      "deskripsi": "Dosen membuat dan mempublikasikan topik tugas akhir",
+      "proses": [
+        "Dosen mengisi form tawaran topik",
+        "Sistem otomatis set kuota = 1",
+        "Sistem otomatis set periode TA aktif",
+        "Topik langsung tersedia untuk mahasiswa"
+      ],
+      "data_yang_diisi": [
+        "Judul topik",
+        "Deskripsi topik",
+        "Kategori/bidang (opsional)",
+        "Persyaratan mahasiswa (opsional)",
+        "Teknologi yang digunakan (opsional)"
+      ]
+    },
+
+    "tahap_2": {
+      "nama": "Mahasiswa Melihat Topik Tersedia",
+      "actor": "Mahasiswa",
+      "deskripsi": "Mahasiswa browse topik yang masih tersedia",
+      "filter": [
+        "Hanya topik dengan kuota > 0",
+        "Hanya topik yang belum dihapus",
+        "Hanya topik dari periode aktif"
+      ],
+      "informasi_ditampilkan": [
+        "Judul topik",
+        "Deskripsi",
+        "Nama dosen pencetus",
+        "Kuota tersisa",
+        "Mahasiswa yang sudah mengambil (jika ada)",
+        "Tanggal dibuat"
+      ]
+    },
+
+    "tahap_3": {
+      "nama": "Mahasiswa Mengambil Topik",
+      "actor": "Mahasiswa",
+      "deskripsi": "Mahasiswa mengambil topik yang diminati",
+      "validasi": [
+        "Topik masih tersedia (kuota > 0)",
+        "Mahasiswa belum memiliki tugas akhir aktif",
+        "Topik dari periode yang sama"
+      ],
+      "proses": [
+        "Kuota topik dikurangi 1",
+        "Tugas akhir dibuat dengan status DISETUJUI",
+        "Judul TA = judul topik",
+        "History topik mahasiswa dicatat dengan status 'disetujui'",
+        "Mahasiswa tidak dapat mengambil topik lain"
+      ],
+      "efek": "Mahasiswa langsung memiliki tugas akhir aktif tanpa perlu approval"
+    }
+  },
+
+  "fitur_dosen": {
+    "buat_tawaran_topik": {
+      "deskripsi": "Membuat topik tugas akhir baru",
+      "form_input": [
+        "Judul topik (wajib)",
+        "Deskripsi topik (wajib)",
+        "Kategori/bidang (opsional)",
+        "Persyaratan mahasiswa (opsional)",
+        "Teknologi yang digunakan (opsional)"
+      ],
+      "otomatis_diset": [
+        "Kuota = 1",
+        "Periode TA = periode aktif",
+        "User ID = dosen yang membuat",
+        "Tanggal dibuat = sekarang"
+      ],
+      "validasi": "Judul dan deskripsi tidak boleh kosong"
+    },
+
+    "lihat_tawaran_sendiri": {
+      "deskripsi": "Melihat daftar topik yang sudah dibuat",
+      "informasi": [
+        "Judul topik",
+        "Deskripsi",
+        "Kuota tersisa",
+        "Mahasiswa yang mengambil (jika ada)",
+        "Tanggal dibuat",
+        "Status (tersedia/habis)"
+      ],
+      "pagination": "50 item per halaman",
+      "sorting": "Terbaru di atas"
+    },
+
+    "edit_tawaran_topik": {
+      "deskripsi": "Mengubah informasi topik",
+      "dapat_diubah": [
+        "Judul topik",
+        "Deskripsi",
+        "Kategori",
+        "Persyaratan",
+        "Teknologi"
+      ],
+      "tidak_dapat_diubah": [
+        "Kuota (otomatis berkurang saat diambil)",
+        "Periode TA",
+        "Dosen pencetus"
+      ],
+      "catatan": "Perubahan akan terlihat oleh mahasiswa yang belum mengambil"
+    },
+
+    "hapus_tawaran_topik": {
+      "deskripsi": "Menghapus topik (soft delete)",
+      "kondisi": "Dapat dihapus kapan saja",
+      "efek": [
+        "Topik tidak muncul di list mahasiswa",
+        "Mahasiswa yang sudah mengambil tidak terpengaruh",
+        "Data tetap tersimpan di database (soft delete)"
+      ],
+      "use_case": "Jika topik tidak relevan lagi atau ada kesalahan"
+    },
+
+    "lihat_mahasiswa_pengambil": {
+      "deskripsi": "Melihat mahasiswa yang mengambil topik",
+      "informasi": [
+        "Nama mahasiswa",
+        "NIM",
+        "Email",
+        "Tanggal mengambil",
+        "Status tugas akhir"
+      ]
+    }
+  },
+
+  "fitur_mahasiswa": {
+    "browse_topik_tersedia": {
+      "deskripsi": "Melihat semua topik yang masih tersedia",
+      "filter_otomatis": [
+        "Kuota > 0",
+        "Belum dihapus",
+        "Periode aktif"
+      ],
+      "informasi": [
+        "Judul topik",
+        "Deskripsi lengkap",
+        "Nama dosen pencetus",
+        "Email dosen",
+        "Kuota tersisa",
+        "Mahasiswa yang sudah mengambil",
+        "Tanggal dibuat"
+      ],
+      "pagination": "50 item per halaman",
+      "sorting": "Terbaru di atas"
+    },
+
+    "search_dan_filter": {
+      "deskripsi": "Mencari topik berdasarkan kriteria",
+      "fitur": [
+        "Search berdasarkan judul atau deskripsi",
+        "Filter berdasarkan dosen",
+        "Filter berdasarkan kategori",
+        "Filter berdasarkan ketersediaan kuota"
+      ]
+    },
+
+    "lihat_detail_topik": {
+      "deskripsi": "Melihat detail lengkap topik",
+      "informasi": [
+        "Judul dan deskripsi lengkap",
+        "Dosen pencetus (nama, email)",
+        "Kategori/bidang",
+        "Persyaratan mahasiswa",
+        "Teknologi yang digunakan",
+        "Kuota tersisa",
+        "List mahasiswa yang sudah mengambil",
+        "Tanggal dibuat"
+      ],
+      "action": "Tombol 'Ambil Topik' jika memenuhi syarat"
+    },
+
+    "ambil_topik": {
+      "deskripsi": "Mengambil topik yang diminati",
+      "validasi": [
+        "Mahasiswa belum memiliki tugas akhir aktif",
+        "Topik masih tersedia (kuota > 0)",
+        "Topik dari periode yang sama"
+      ],
+      "konfirmasi": "Dialog konfirmasi sebelum mengambil",
+      "proses": [
+        "Kuota topik berkurang 1",
+        "Tugas akhir dibuat otomatis",
+        "Status TA = DISETUJUI",
+        "Judul TA = judul topik",
+        "History dicatat"
+      ],
+      "efek": [
+        "Mahasiswa langsung memiliki TA aktif",
+        "Tidak dapat mengambil topik lain",
+        "Dapat langsung mulai bimbingan"
+      ],
+      "error_handling": {
+        "sudah_punya_ta": "Anda sudah memiliki tugas akhir aktif",
+        "kuota_habis": "Topik sudah diambil mahasiswa lain",
+        "periode_berbeda": "Topik bukan dari periode aktif"
+      }
+    },
+
+    "lihat_topik_yang_diambil": {
+      "deskripsi": "Melihat topik yang sudah diambil",
+      "informasi": [
+        "Judul topik",
+        "Dosen pencetus",
+        "Tanggal mengambil",
+        "Status tugas akhir"
+      ],
+      "action": "Link ke halaman tugas akhir"
+    }
+  },
+
+  "business_rules": {
+    "kuota_default": {
+      "deskripsi": "Setiap topik memiliki kuota default 1 mahasiswa",
+      "alasan": "Satu topik untuk satu mahasiswa agar fokus dan tidak duplikasi",
+      "implementasi": "Otomatis set saat dosen membuat topik"
+    },
+
+    "auto_approve": {
+      "deskripsi": "Mahasiswa yang mengambil topik langsung disetujui",
+      "alasan": "Topik sudah ditawarkan dosen, tidak perlu approval lagi",
+      "status_ta": "DISETUJUI",
+      "dampak": "Mahasiswa dapat langsung mulai bimbingan"
+    },
+
+    "one_active_ta": {
+      "deskripsi": "Mahasiswa hanya boleh memiliki 1 tugas akhir aktif",
+      "validasi": "Cek apakah mahasiswa sudah punya TA dengan status selain DIBATALKAN, LULUS, SELESAI, DITOLAK",
+      "error": "Anda sudah memiliki tugas akhir aktif"
+    },
+
+    "periode_binding": {
+      "deskripsi": "Topik terikat dengan periode TA",
+      "implementasi": "Otomatis set periode aktif saat dosen membuat topik",
+      "validasi": "Mahasiswa hanya dapat mengambil topik dari periode yang sama"
+    },
+
+    "soft_delete": {
+      "deskripsi": "Topik yang dihapus tidak benar-benar dihapus",
+      "implementasi": "Set deleted_at = timestamp",
+      "efek": [
+        "Topik tidak muncul di list",
+        "Data tetap tersimpan untuk history",
+        "Mahasiswa yang sudah mengambil tidak terpengaruh"
+      ]
+    },
+
+    "kuota_decrement": {
+      "deskripsi": "Kuota otomatis berkurang saat mahasiswa mengambil",
+      "implementasi": "Decrement kuota dalam transaksi database",
+      "race_condition": "Transaksi database mencegah 2 mahasiswa mengambil topik yang sama secara bersamaan"
+    }
+  },
+
+  "history_tracking": {
+    "deskripsi": "Sistem mencatat history pengambilan topik",
+    "data_tercatat": [
+      "Mahasiswa yang mengambil",
+      "Topik yang diambil",
+      "Status (disetujui)",
+      "Tanggal mengambil"
+    ],
+    "kegunaan": [
+      "Audit trail",
+      "Tracking mahasiswa per topik",
+      "Statistik topik populer"
+    ]
+  },
+
+  "status_tugas_akhir": {
+    "DISETUJUI": {
+      "deskripsi": "Status awal saat mahasiswa mengambil topik",
+      "dapat_bimbingan": true,
+      "dapat_sidang": false
+    },
+    "DIBATALKAN": {
+      "deskripsi": "Tugas akhir dibatalkan",
+      "dapat_ambil_topik_lagi": true
+    },
+    "LULUS_DENGAN_REVISI": {
+      "deskripsi": "Lulus sidang dengan revisi",
+      "dapat_ambil_topik_lagi": false
+    },
+    "LULUS_TANPA_REVISI": {
+      "deskripsi": "Lulus sidang tanpa revisi",
+      "dapat_ambil_topik_lagi": false
+    },
+    "SELESAI": {
+      "deskripsi": "Tugas akhir selesai",
+      "dapat_ambil_topik_lagi": false
+    },
+    "DITOLAK": {
+      "deskripsi": "Tugas akhir ditolak",
+      "dapat_ambil_topik_lagi": true
+    }
+  },
+
+  "notifikasi": {
+    "dosen": [
+      "Mahasiswa mengambil topik Anda",
+      "Topik Anda sudah habis kuotanya"
+    ],
+    "mahasiswa": [
+      "Berhasil mengambil topik",
+      "Topik baru tersedia dari dosen favorit"
+    ]
+  },
+
+  "best_practices": {
+    "dosen": [
+      "Buat judul topik yang jelas dan spesifik",
+      "Tulis deskripsi lengkap agar mahasiswa paham",
+      "Cantumkan persyaratan jika ada (misal: IPK minimal, skill tertentu)",
+      "Update topik jika ada perubahan informasi",
+      "Hapus topik jika tidak relevan lagi"
+    ],
+    "mahasiswa": [
+      "Baca deskripsi topik dengan teliti",
+      "Pertimbangkan minat dan kemampuan Anda",
+      "Konsultasi dengan dosen pencetus sebelum mengambil",
+      "Pastikan Anda siap mengerjakan topik tersebut",
+      "Jangan ambil topik hanya karena terlihat mudah"
+    ]
+  },
+
+  "contoh_kasus": {
+    "kasus_1_normal": {
+      "deskripsi": "Mahasiswa mengambil topik yang tersedia",
+      "langkah": [
+        "Dosen A membuat topik 'Sistem Informasi Perpustakaan'",
+        "Mahasiswa B browse topik dan tertarik",
+        "Mahasiswa B klik 'Ambil Topik'",
+        "Sistem validasi: B belum punya TA aktif, kuota masih 1",
+        "Kuota berkurang jadi 0",
+        "TA dibuat dengan status DISETUJUI",
+        "B dapat mulai bimbingan dengan Dosen A"
+      ]
+    },
+    "kasus_2_kuota_habis": {
+      "deskripsi": "Mahasiswa mencoba mengambil topik yang sudah diambil",
+      "langkah": [
+        "Mahasiswa C ingin mengambil topik yang sama",
+        "Sistem cek: kuota = 0",
+        "Error: 'Topik sudah diambil mahasiswa lain'",
+        "C harus cari topik lain"
+      ]
+    },
+    "kasus_3_sudah_punya_ta": {
+      "deskripsi": "Mahasiswa yang sudah punya TA mencoba ambil topik lain",
+      "langkah": [
+        "Mahasiswa D sudah punya TA aktif",
+        "D mencoba ambil topik baru",
+        "Sistem validasi: D sudah punya TA aktif",
+        "Error: 'Anda sudah memiliki tugas akhir aktif'",
+        "D tidak dapat mengambil topik lain"
+      ]
+    },
+    "kasus_4_dosen_hapus_topik": {
+      "deskripsi": "Dosen menghapus topik yang belum diambil",
+      "langkah": [
+        "Dosen E membuat topik tapi ada kesalahan",
+        "Dosen E hapus topik",
+        "Topik tidak muncul di list mahasiswa",
+        "Mahasiswa tidak dapat mengambil topik tersebut"
+      ]
+    }
+  },
+
+  "future_improvements": [
+    "Kuota dinamis (dosen dapat set berapa mahasiswa)",
+    "Approval dosen sebelum mahasiswa dapat mengambil",
+    "Rating dan review topik dari mahasiswa",
+    "Rekomendasi topik berdasarkan minat mahasiswa",
+    "Notifikasi real-time saat topik baru tersedia",
+    "Filter berdasarkan kategori dan teknologi",
+    "Bookmark topik favorit",
+    "Diskusi/tanya jawab di topik sebelum mengambil",
+    "Export list topik ke PDF",
+    "Dashboard analytics untuk dosen (topik populer, dll)"
+  ]
+}

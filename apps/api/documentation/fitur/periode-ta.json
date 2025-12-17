@@ -1,0 +1,441 @@
+{
+  "fitur": "Manajemen Periode Tugas Akhir",
+  "deskripsi": "Sistem pemisahan data tugas akhir berdasarkan periode/tahun akademik dengan snapshot pengaturan",
+  "versi": "1.0.0",
+  "terakhir_diperbarui": "2024-12-05",
+  "route_admin": "/dashboard/admin/periode",
+
+  "konsep_dasar": {
+    "deskripsi": "Sistem memisahkan data tugas akhir berdasarkan periode untuk menghindari campur aduk data antar tahun",
+    "tujuan": [
+      "Isolasi data per tahun akademik",
+      "Snapshot pengaturan sistem per periode",
+      "Riwayat lengkap tugas akhir per periode",
+      "Mencegah konflik data antar periode"
+    ],
+    "periode_unik": "Hanya boleh ada 1 periode aktif dalam satu waktu",
+    "snapshot_pengaturan": "Setiap periode menyimpan snapshot pengaturan sistem saat periode dibuka"
+  },
+
+  "status_periode": {
+    "PERSIAPAN": {
+      "deskripsi": "Periode sudah dibuat dan dijadwalkan, menunggu tanggal pembukaan",
+      "warna": "Kuning",
+      "akses": "Belum dapat digunakan untuk aktivitas TA",
+      "action": "Dapat dibuka manual atau otomatis saat tanggal tercapai"
+    },
+    "AKTIF": {
+      "deskripsi": "Periode sedang berjalan, dapat digunakan untuk aktivitas TA",
+      "warna": "Hijau",
+      "akses": "Semua fitur TA tersedia",
+      "action": "Dapat ditutup jika tidak ada TA aktif"
+    },
+    "SELESAI": {
+      "deskripsi": "Periode sudah ditutup, hanya untuk arsip dan laporan",
+      "warna": "Abu-abu",
+      "akses": "Read-only, tidak dapat diubah",
+      "action": "Tidak dapat dibuka kembali"
+    }
+  },
+
+  "alur_sistem": {
+    "tahap_1": {
+      "nama": "Buka Periode Baru",
+      "actor": "Admin/Jurusan",
+      "deskripsi": "Membuka periode TA untuk tahun akademik baru",
+      "cara": {
+        "langsung": {
+          "deskripsi": "Buka periode langsung sekarang",
+          "proses": [
+            "Input tahun periode (contoh: 2025)",
+            "Sistem validasi: belum ada periode aktif",
+            "Sistem validasi: tahun belum pernah digunakan",
+            "Sistem snapshot pengaturan saat ini",
+            "Status = AKTIF",
+            "Tanggal buka = sekarang"
+          ]
+        },
+        "terjadwal": {
+          "deskripsi": "Jadwalkan pembukaan periode di masa depan",
+          "proses": [
+            "Input tahun periode",
+            "Input tanggal dan jam pembukaan",
+            "Sistem validasi: tanggal tidak di masa lalu",
+            "Sistem validasi: tidak bentrok dengan periode lain",
+            "Sistem snapshot pengaturan saat ini",
+            "Status = PERSIAPAN",
+            "Cron job otomatis buka saat tanggal tercapai"
+          ]
+        }
+      },
+      "snapshot_pengaturan": {
+        "deskripsi": "Sistem menyimpan snapshot semua pengaturan saat periode dibuka",
+        "tujuan": "Agar perubahan pengaturan di masa depan tidak mempengaruhi periode lama",
+        "contoh": "Jika min_bimbingan_valid diubah dari 9 ke 10, periode lama tetap pakai 9"
+      }
+    },
+
+    "tahap_2": {
+      "nama": "Periode Berjalan",
+      "actor": "Semua user",
+      "deskripsi": "Periode aktif digunakan untuk semua aktivitas TA",
+      "aktivitas": [
+        "Dosen membuat tawaran topik",
+        "Mahasiswa mengambil topik",
+        "Bimbingan berlangsung",
+        "Pendaftaran sidang",
+        "Penjadwalan sidang",
+        "Pelaksanaan sidang"
+      ],
+      "isolasi_data": "Semua data TA terikat dengan periode aktif"
+    },
+
+    "tahap_3": {
+      "nama": "Tutup Periode",
+      "actor": "Admin/Jurusan",
+      "deskripsi": "Menutup periode setelah semua TA selesai",
+      "validasi": [
+        "Periode harus berstatus AKTIF",
+        "Tidak ada TA dengan status selain SELESAI atau DITOLAK"
+      ],
+      "proses": [
+        "Klik tombol 'Tutup Periode'",
+        "Input catatan penutupan (opsional)",
+        "Sistem validasi tidak ada TA aktif",
+        "Status berubah SELESAI",
+        "Tanggal tutup = sekarang",
+        "Periode menjadi read-only"
+      ],
+      "efek": [
+        "Periode tidak dapat digunakan lagi",
+        "Data tersimpan untuk arsip",
+        "Dapat dibuka periode baru"
+      ]
+    }
+  },
+
+  "fitur_admin": {
+    "lihat_semua_periode": {
+      "deskripsi": "Melihat daftar semua periode yang pernah dibuat",
+      "informasi": [
+        "Tahun periode",
+        "Nama periode",
+        "Status (PERSIAPAN/AKTIF/SELESAI)",
+        "Tanggal buka",
+        "Tanggal tutup",
+        "Dibuka oleh",
+        "Ditutup oleh"
+      ],
+      "sorting": "Terbaru di atas",
+      "highlight": "Periode aktif ditandai dengan badge hijau"
+    },
+
+    "buka_periode_langsung": {
+      "deskripsi": "Membuka periode baru langsung sekarang",
+      "form": [
+        "Tahun periode (wajib)"
+      ],
+      "validasi": [
+        "Tahun belum pernah digunakan",
+        "Belum ada periode aktif"
+      ],
+      "efek": [
+        "Status = AKTIF",
+        "Tanggal buka = sekarang",
+        "Snapshot pengaturan disimpan",
+        "Periode langsung dapat digunakan"
+      ]
+    },
+
+    "jadwalkan_periode": {
+      "deskripsi": "Menjadwalkan pembukaan periode di masa depan",
+      "form": [
+        "Tahun periode (wajib)",
+        "Tanggal pembukaan (wajib)",
+        "Jam pembukaan (wajib)"
+      ],
+      "validasi": [
+        "Tahun belum pernah digunakan",
+        "Tanggal tidak di masa lalu",
+        "Tidak bentrok dengan periode lain"
+      ],
+      "efek": [
+        "Status = PERSIAPAN",
+        "Tanggal buka = tanggal yang dijadwalkan",
+        "Snapshot pengaturan disimpan",
+        "Cron job akan buka otomatis saat tanggal tercapai"
+      ]
+    },
+
+    "buka_sekarang": {
+      "deskripsi": "Membuka periode PERSIAPAN secara manual sebelum jadwal",
+      "kondisi": "Periode berstatus PERSIAPAN",
+      "validasi": "Belum ada periode aktif",
+      "efek": [
+        "Status berubah AKTIF",
+        "Tanggal buka = sekarang",
+        "Periode langsung dapat digunakan"
+      ],
+      "use_case": "Jika ingin buka periode lebih awal dari jadwal"
+    },
+
+    "edit_jadwal": {
+      "deskripsi": "Mengubah tanggal pembukaan periode PERSIAPAN",
+      "kondisi": "Periode berstatus PERSIAPAN",
+      "form": [
+        "Tanggal pembukaan baru",
+        "Jam pembukaan baru"
+      ],
+      "validasi": [
+        "Tanggal tidak di masa lalu",
+        "Tidak bentrok dengan periode lain"
+      ],
+      "efek": "Tanggal buka diupdate, cron job akan buka di tanggal baru"
+    },
+
+    "batalkan_jadwal": {
+      "deskripsi": "Membatalkan periode PERSIAPAN",
+      "kondisi": "Periode berstatus PERSIAPAN",
+      "efek": "Periode dihapus dari database",
+      "use_case": "Jika salah jadwal atau tidak jadi buka periode"
+    },
+
+    "tutup_periode": {
+      "deskripsi": "Menutup periode aktif",
+      "kondisi": "Periode berstatus AKTIF",
+      "validasi": "Tidak ada TA dengan status selain SELESAI atau DITOLAK",
+      "form": [
+        "Catatan penutupan (opsional)"
+      ],
+      "efek": [
+        "Status berubah SELESAI",
+        "Tanggal tutup = sekarang",
+        "Periode menjadi read-only",
+        "Dapat buka periode baru"
+      ],
+      "error": "Jika masih ada TA aktif, tampilkan error dengan jumlah TA yang belum selesai"
+    },
+
+    "hapus_periode": {
+      "deskripsi": "Menghapus periode yang tidak terpakai",
+      "kondisi": [
+        "Periode berstatus PERSIAPAN atau SELESAI",
+        "Tidak ada data terkait (TA, sidang, dll)"
+      ],
+      "efek": "Periode dihapus permanen dari database",
+      "use_case": "Jika periode dibuat salah dan belum ada data"
+    },
+
+    "lihat_riwayat": {
+      "deskripsi": "Melihat log aktivitas periode",
+      "informasi": [
+        "Action (buka/tutup/edit/hapus)",
+        "User yang melakukan",
+        "Tanggal dan waktu",
+        "Detail perubahan"
+      ],
+      "pagination": "50 item terbaru"
+    }
+  },
+
+  "fitur_mahasiswa_dosen": {
+    "auto_enroll": {
+      "deskripsi": "User otomatis terdaftar ke periode aktif saat login",
+      "kondisi": [
+        "Ada periode aktif",
+        "User adalah mahasiswa atau dosen",
+        "Mahasiswa belum lulus"
+      ],
+      "proses": "Sistem otomatis enroll user ke periode aktif di background",
+      "tujuan": "User dapat langsung menggunakan sistem tanpa perlu registrasi manual"
+    },
+
+    "lihat_periode_tersedia": {
+      "deskripsi": "Melihat daftar periode yang dapat diakses",
+      "mahasiswa": "Periode dimana mahasiswa pernah terdaftar",
+      "dosen": "Periode dimana dosen pernah terlibat",
+      "sorting": "Terbaru di atas",
+      "highlight": "Periode aktif ditandai dengan badge"
+    },
+
+    "switch_periode": {
+      "deskripsi": "Berpindah antar periode untuk melihat data historis",
+      "fitur": [
+        "Dropdown pemilih periode",
+        "Tampilkan data sesuai periode yang dipilih",
+        "Periode aktif sebagai default"
+      ],
+      "use_case": "Dosen ingin melihat mahasiswa bimbingan periode lalu"
+    }
+  },
+
+  "snapshot_pengaturan": {
+    "deskripsi": "Setiap periode menyimpan snapshot pengaturan sistem saat periode dibuka",
+    "tujuan": "Perubahan pengaturan tidak mempengaruhi periode lama",
+    "pengaturan_yang_disnapshot": [
+      "min_bimbingan_valid",
+      "max_similaritas_persen",
+      "durasi_sidang_menit",
+      "jeda_sidang_menit",
+      "ruangan_sidang",
+      "validasi_pembimbing_1",
+      "validasi_pembimbing_2",
+      "validasi_prodi",
+      "validasi_jurusan",
+      "syarat_pendaftaran_sidang",
+      "Dan semua pengaturan lainnya"
+    ],
+    "cara_kerja": [
+      "Saat periode dibuka, sistem copy semua pengaturan ke snapshot",
+      "Snapshot disimpan sebagai JSON di field pengaturan_snapshot",
+      "Saat akses data periode lama, sistem baca dari snapshot",
+      "Jika snapshot tidak ada, fallback ke pengaturan global"
+    ],
+    "contoh": {
+      "skenario": "Min bimbingan valid diubah dari 9 ke 10",
+      "periode_2024": "Tetap pakai 9 (dari snapshot)",
+      "periode_2025": "Pakai 10 (dari snapshot baru)"
+    }
+  },
+
+  "cron_job": {
+    "deskripsi": "Sistem otomatis membuka periode PERSIAPAN saat tanggal tercapai",
+    "interval": "Setiap 1 menit",
+    "proses": [
+      "Cek periode dengan status PERSIAPAN",
+      "Cek apakah tanggal_buka <= sekarang",
+      "Jika ya, panggil bukaSekarang()",
+      "Log hasil ke console"
+    ],
+    "error_handling": "Silent jika sudah ada periode aktif",
+    "log": "Log setiap pembukaan otomatis untuk monitoring"
+  },
+
+  "validasi_bisnis": {
+    "satu_periode_aktif": {
+      "deskripsi": "Hanya boleh ada 1 periode aktif dalam satu waktu",
+      "validasi": "Cek count periode dengan status AKTIF",
+      "error": "Sudah ada periode yang aktif"
+    },
+    "tahun_unik": {
+      "deskripsi": "Setiap tahun hanya boleh ada 1 periode",
+      "validasi": "Cek apakah tahun sudah pernah digunakan",
+      "error": "Periode untuk tahun ini sudah ada"
+    },
+    "tanggal_tidak_masa_lalu": {
+      "deskripsi": "Tanggal pembukaan tidak boleh di masa lalu",
+      "validasi": "Cek tanggal_buka > sekarang",
+      "error": "Tanggal pembukaan tidak boleh di masa lalu"
+    },
+    "tidak_bentrok": {
+      "deskripsi": "Jadwal periode tidak boleh bentrok",
+      "validasi": "Cek apakah ada periode AKTIF atau PERSIAPAN dengan tanggal_buka <= tanggal_buka_baru",
+      "error": "Jadwal periode bertabrakan dengan periode lain"
+    },
+    "tidak_ada_ta_aktif": {
+      "deskripsi": "Periode hanya dapat ditutup jika tidak ada TA aktif",
+      "validasi": "Cek count TA dengan status selain SELESAI atau DITOLAK",
+      "error": "Tidak dapat menutup periode karena masih ada Tugas Akhir yang belum selesai"
+    }
+  },
+
+  "cache_dan_performance": {
+    "cache_periode_aktif": {
+      "deskripsi": "Periode aktif di-cache untuk performa",
+      "ttl": "60 detik",
+      "invalidasi": "Saat ada perubahan periode (buka/tutup/edit)",
+      "tujuan": "Mengurangi query database untuk periode aktif"
+    },
+    "real_time_update": {
+      "deskripsi": "Perubahan periode di-broadcast via WebSocket",
+      "event": "periode:updated",
+      "tujuan": "Frontend otomatis update tanpa perlu refresh",
+      "use_case": "Saat admin buka periode, semua user langsung tahu"
+    }
+  },
+
+  "notifikasi": {
+    "admin": [
+      "Periode berhasil dibuka (manual atau otomatis)",
+      "Periode berhasil ditutup",
+      "Gagal membuka periode (error)"
+    ],
+    "semua_user": [
+      "Periode baru dibuka (broadcast)",
+      "Periode ditutup (broadcast)"
+    ]
+  },
+
+  "best_practices": {
+    "admin": [
+      "Jadwalkan periode jauh-jauh hari sebelum tahun akademik dimulai",
+      "Pastikan semua TA periode lama sudah selesai sebelum tutup periode",
+      "Beri catatan penutupan untuk dokumentasi",
+      "Backup data sebelum tutup periode",
+      "Monitor cron job untuk memastikan periode terbuka otomatis"
+    ],
+    "mahasiswa_dosen": [
+      "Pastikan berada di periode yang benar saat mengakses data",
+      "Gunakan fitur switch periode untuk melihat data historis",
+      "Jangan panik jika data tidak muncul, cek periode yang aktif"
+    ]
+  },
+
+  "contoh_kasus": {
+    "kasus_1_buka_langsung": {
+      "deskripsi": "Admin membuka periode baru langsung",
+      "langkah": [
+        "Admin klik 'Buka Periode Baru'",
+        "Input tahun: 2025",
+        "Pilih 'Buka Sekarang'",
+        "Sistem snapshot pengaturan",
+        "Status = AKTIF, tanggal_buka = sekarang",
+        "Periode 2025 langsung dapat digunakan"
+      ]
+    },
+    "kasus_2_jadwalkan": {
+      "deskripsi": "Admin menjadwalkan periode untuk dibuka otomatis",
+      "langkah": [
+        "Admin klik 'Buka Periode Baru'",
+        "Input tahun: 2025",
+        "Pilih 'Jadwalkan'",
+        "Input tanggal: 2025-08-01, jam: 00:00",
+        "Sistem snapshot pengaturan",
+        "Status = PERSIAPAN",
+        "Cron job akan buka otomatis pada 2025-08-01 00:00"
+      ]
+    },
+    "kasus_3_tutup_periode": {
+      "deskripsi": "Admin menutup periode setelah semua TA selesai",
+      "langkah": [
+        "Admin cek: semua TA periode 2024 sudah SELESAI",
+        "Admin klik 'Tutup Periode' pada periode 2024",
+        "Input catatan: 'Periode 2024 selesai, 150 mahasiswa lulus'",
+        "Status berubah SELESAI",
+        "Periode 2024 menjadi read-only",
+        "Admin dapat buka periode 2025"
+      ]
+    },
+    "kasus_4_error_tutup": {
+      "deskripsi": "Admin mencoba tutup periode tapi masih ada TA aktif",
+      "langkah": [
+        "Admin klik 'Tutup Periode'",
+        "Sistem validasi: masih ada 5 TA dengan status DISETUJUI",
+        "Error: 'Tidak dapat menutup periode karena masih ada 5 Tugas Akhir yang belum selesai'",
+        "Admin harus tunggu semua TA selesai dulu"
+      ]
+    }
+  },
+
+  "future_improvements": [
+    "Dashboard statistik per periode",
+    "Export data periode ke Excel/PDF",
+    "Komparasi antar periode (jumlah mahasiswa, tingkat kelulusan, dll)",
+    "Notifikasi reminder untuk tutup periode",
+    "Bulk action untuk periode (tutup multiple periode sekaligus)",
+    "Rollback periode (buka kembali periode yang sudah ditutup)",
+    "Clone pengaturan dari periode lama ke periode baru",
+    "Audit trail lengkap per periode",
+    "Grafik timeline periode"
+  ]
+}

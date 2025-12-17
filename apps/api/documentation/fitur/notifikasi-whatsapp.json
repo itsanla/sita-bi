@@ -1,0 +1,461 @@
+{
+  "fitur": "Notifikasi WhatsApp Otomatis",
+  "deskripsi": "Sistem notifikasi otomatis melalui WhatsApp untuk berbagai aktivitas tugas akhir",
+  "versi": "1.0.0",
+  "terakhir_diperbarui": "2024-12-05",
+
+  "konsep_dasar": {
+    "deskripsi": "Sistem mengirim notifikasi WhatsApp otomatis kepada pengguna saat terjadi aktivitas penting dalam proses tugas akhir",
+    "tujuan": [
+      "Informasi real-time kepada pengguna",
+      "Mengurangi keterlambatan respons",
+      "Meningkatkan komunikasi antar pihak",
+      "Transparansi proses tugas akhir"
+    ],
+    "multi_channel": "Notifikasi dikirim melalui 3 channel: Real-time (Socket.IO), Email, dan WhatsApp",
+    "logging": "Semua notifikasi dicatat dalam riwayat untuk tracking"
+  },
+
+  "channel_notifikasi": {
+    "real_time": {
+      "nama": "Socket.IO",
+      "deskripsi": "Notifikasi langsung di aplikasi saat user sedang online",
+      "keunggulan": [
+        "Instant tanpa delay",
+        "Tidak perlu refresh halaman",
+        "Muncul sebagai popup/toast"
+      ],
+      "kondisi": "User harus sedang login dan membuka aplikasi"
+    },
+    "email": {
+      "nama": "Email",
+      "deskripsi": "Notifikasi dikirim ke email terdaftar",
+      "keunggulan": [
+        "Formal dan resmi",
+        "Dapat disimpan sebagai arsip",
+        "Mendukung format HTML"
+      ],
+      "kondisi": "User harus memiliki email terdaftar"
+    },
+    "whatsapp": {
+      "nama": "WhatsApp",
+      "deskripsi": "Notifikasi dikirim ke nomor WhatsApp terdaftar",
+      "keunggulan": [
+        "Paling sering dibaca",
+        "Notifikasi langsung ke HP",
+        "Dapat dibalas langsung"
+      ],
+      "kondisi": "User harus memiliki nomor WhatsApp terdaftar dan aktif"
+    }
+  },
+
+  "jenis_notifikasi": {
+    "pengajuan_pembimbing": {
+      "trigger": "Mahasiswa mengajukan dosen sebagai pembimbing",
+      "penerima": "Dosen yang diajukan",
+      "isi_pesan": [
+        "Emoji: 🔔",
+        "Judul: Pengajuan Pembimbing",
+        "Nama mahasiswa yang mengajukan",
+        "Peran yang diajukan (Pembimbing 1/2)",
+        "Link ke halaman pengajuan dosen"
+      ],
+      "contoh": "🔔 *Pengajuan Pembimbing*\n\nMahasiswa Ahmad Fauzi mengajukan permohonan kepada Anda untuk menjadi Pembimbing 1.\n\nSilahkan lihat detailnya pada link berikut:\nhttp://localhost:3001/dashboard/dosen/pengajuan"
+    },
+    "tawaran_pembimbing": {
+      "trigger": "Dosen menawarkan diri sebagai pembimbing",
+      "penerima": "Mahasiswa yang ditawari",
+      "isi_pesan": [
+        "Emoji: 🔔",
+        "Judul: Tawaran Pembimbing",
+        "Nama dosen yang menawarkan",
+        "Peran yang ditawarkan (Pembimbing 1/2)",
+        "Link ke halaman pengajuan mahasiswa"
+      ],
+      "contoh": "🔔 *Tawaran Pembimbing*\n\nDr. Budi Santoso menawarkan diri untuk menjadi Pembimbing 1 Anda.\n\nSilahkan lihat detailnya pada link berikut:\nhttp://localhost:3001/dashboard/mahasiswa/pengajuan"
+    },
+    "pengajuan_disetujui": {
+      "trigger": "Pengajuan/tawaran pembimbing disetujui",
+      "penerima": "Pihak yang mengajukan/menawarkan",
+      "isi_pesan": [
+        "Emoji: ✅",
+        "Judul: Pengajuan Disetujui",
+        "Nama pihak yang menyetujui",
+        "Peran yang disetujui",
+        "Informasi untuk cek dashboard"
+      ],
+      "contoh": "✅ *Pengajuan Disetujui*\n\nDr. Budi Santoso telah menyetujui pengajuan untuk menjadi Pembimbing 1.\n\nSilahkan lihat detailnya pada dashboard Anda."
+    },
+    "pengajuan_ditolak": {
+      "trigger": "Pengajuan/tawaran pembimbing ditolak",
+      "penerima": "Pihak yang mengajukan/menawarkan",
+      "isi_pesan": [
+        "Emoji: ❌",
+        "Judul: Pengajuan Ditolak",
+        "Nama pihak yang menolak",
+        "Peran yang ditolak",
+        "Informasi untuk cek dashboard"
+      ],
+      "contoh": "❌ *Pengajuan Ditolak*\n\nDr. Budi Santoso telah menolak pengajuan untuk menjadi Pembimbing 1.\n\nSilahkan lihat detailnya pada dashboard Anda."
+    },
+    "pengajuan_dibatalkan": {
+      "trigger": "Pengajuan/tawaran pembimbing dibatalkan",
+      "penerima": "Pihak yang menerima pengajuan/tawaran",
+      "isi_pesan": [
+        "Emoji: 🚫",
+        "Judul: Pengajuan Dibatalkan",
+        "Nama pihak yang membatalkan",
+        "Peran yang dibatalkan",
+        "Informasi untuk cek dashboard"
+      ],
+      "contoh": "🚫 *Pengajuan Dibatalkan*\n\nAhmad Fauzi telah membatalkan pengajuan untuk menjadi Pembimbing 1.\n\nSilahkan lihat detailnya pada dashboard Anda."
+    },
+    "pelepasan_bimbingan": {
+      "trigger": "Pengajuan pelepasan hubungan bimbingan",
+      "penerima": "Pihak yang diminta persetujuan",
+      "isi_pesan": [
+        "Emoji: ⚠️",
+        "Judul: Pengajuan Pelepasan Bimbingan",
+        "Tipe pengaju (Dosen/Mahasiswa)",
+        "Nama pengaju",
+        "Peran yang akan dilepas",
+        "Link untuk konfirmasi"
+      ],
+      "contoh": "⚠️ *Pengajuan Pelepasan Bimbingan*\n\nMahasiswa Ahmad Fauzi mengajukan pelepasan hubungan Pembimbing 1.\n\nSilahkan konfirmasi pada link berikut:\nhttp://localhost:3001/dashboard/dosen/pengajuan"
+    },
+    "pelepasan_dikonfirmasi": {
+      "trigger": "Pelepasan bimbingan disetujui",
+      "penerima": "Pihak yang mengajukan pelepasan",
+      "isi_pesan": [
+        "Emoji: ✅",
+        "Judul: Pelepasan Bimbingan Disetujui",
+        "Nama pihak yang menyetujui",
+        "Peran yang dilepas",
+        "Informasi bahwa hubungan berakhir"
+      ],
+      "contoh": "✅ *Pelepasan Bimbingan Disetujui*\n\nDr. Budi Santoso menyetujui pelepasan hubungan Pembimbing 1.\n\nHubungan bimbingan telah berakhir."
+    },
+    "pelepasan_ditolak": {
+      "trigger": "Pelepasan bimbingan ditolak",
+      "penerima": "Pihak yang mengajukan pelepasan",
+      "isi_pesan": [
+        "Emoji: ❌",
+        "Judul: Pelepasan Bimbingan Ditolak",
+        "Nama pihak yang menolak",
+        "Peran yang diminta dilepas",
+        "Informasi bahwa hubungan tetap berlanjut"
+      ],
+      "contoh": "❌ *Pelepasan Bimbingan Ditolak*\n\nDr. Budi Santoso menolak pengajuan pelepasan hubungan Pembimbing 1.\n\nHubungan bimbingan tetap berlanjut."
+    },
+    "bimbingan_created": {
+      "trigger": "Bimbingan baru dibuat",
+      "penerima": "Dosen pembimbing",
+      "isi_pesan": [
+        "Emoji: 🔔",
+        "Judul: Notifikasi Bimbingan",
+        "Informasi bimbingan baru",
+        "Tanggal bimbingan",
+        "Nama mahasiswa",
+        "Catatan bimbingan"
+      ],
+      "contoh": "🔔 *Notifikasi Bimbingan*\n\nBimbingan baru telah dibuat:\n📅 Tanggal: 2024-12-05\n👤 Mahasiswa: Ahmad Fauzi\n📝 Catatan: Konsultasi BAB 1"
+    },
+    "bimbingan_approved": {
+      "trigger": "Bimbingan disetujui dosen",
+      "penerima": "Mahasiswa",
+      "isi_pesan": [
+        "Emoji: ✅",
+        "Judul: Bimbingan Disetujui",
+        "Informasi persetujuan",
+        "Tanggal bimbingan",
+        "Feedback dari dosen"
+      ],
+      "contoh": "✅ *Bimbingan Disetujui*\n\nBimbingan Anda telah disetujui oleh dosen.\n📅 Tanggal: 2024-12-05\n💬 Feedback: BAB 1 sudah bagus, lanjutkan ke BAB 2"
+    },
+    "sidang_scheduled": {
+      "trigger": "Sidang dijadwalkan",
+      "penerima": "Mahasiswa",
+      "isi_pesan": [
+        "Emoji: 📋",
+        "Judul: Jadwal Sidang",
+        "Informasi jadwal",
+        "Tanggal sidang",
+        "Waktu sidang",
+        "Ruangan sidang"
+      ],
+      "contoh": "📋 *Jadwal Sidang*\n\nSidang Anda telah dijadwalkan:\n📅 Tanggal: 2024-12-20\n🕐 Waktu: 09:00 WIB\n📍 Ruangan: Lab 301"
+    },
+    "tugas_akhir_approved": {
+      "trigger": "Tugas akhir disetujui",
+      "penerima": "Mahasiswa",
+      "isi_pesan": [
+        "Emoji: 🎉",
+        "Judul: Tugas Akhir Disetujui",
+        "Ucapan selamat",
+        "Judul TA",
+        "Nama pembimbing"
+      ],
+      "contoh": "🎉 *Tugas Akhir Disetujui*\n\nSelamat! Tugas Akhir Anda telah disetujui.\n📚 Judul: Sistem Informasi Tugas Akhir\n👨🏫 Pembimbing: Dr. Budi Santoso"
+    },
+    "pengumuman_new": {
+      "trigger": "Pengumuman baru dipublikasi",
+      "penerima": "Semua user terkait",
+      "isi_pesan": [
+        "Emoji: 📢",
+        "Judul: Pengumuman Baru",
+        "Judul pengumuman",
+        "Isi pengumuman",
+        "Nama pembuat pengumuman"
+      ],
+      "contoh": "📢 *Pengumuman Baru*\n\nPendaftaran Sidang Periode Januari 2025\n\nPendaftaran sidang untuk periode Januari 2025 dibuka mulai 1 Desember 2024.\n\n_Diumumkan oleh: Admin Jurusan_"
+    }
+  },
+
+  "format_nomor_whatsapp": {
+    "deskripsi": "Sistem otomatis memformat nomor telepon ke format WhatsApp",
+    "aturan": [
+      "Hapus semua karakter non-digit",
+      "Jika dimulai dengan 0, ganti dengan 62",
+      "Jika dimulai dengan +, hapus tanda +",
+      "Jika tidak dimulai dengan 62, tambahkan 62 di depan",
+      "Tambahkan @c.us di akhir"
+    ],
+    "contoh": [
+      {
+        "input": "081234567890",
+        "output": "6281234567890@c.us"
+      },
+      {
+        "input": "+6281234567890",
+        "output": "6281234567890@c.us"
+      },
+      {
+        "input": "6281234567890",
+        "output": "6281234567890@c.us"
+      }
+    ]
+  },
+
+  "mekanisme_pengiriman": {
+    "tahap_1": {
+      "nama": "Trigger Event",
+      "deskripsi": "Sistem mendeteksi aktivitas yang memerlukan notifikasi",
+      "contoh": "Mahasiswa mengajukan dosen sebagai pembimbing"
+    },
+    "tahap_2": {
+      "nama": "Persiapan Data",
+      "deskripsi": "Sistem mengumpulkan data yang diperlukan untuk notifikasi",
+      "data": [
+        "Nomor WhatsApp penerima",
+        "Email penerima",
+        "Konten pesan",
+        "Subject (untuk email)",
+        "Channel yang akan digunakan"
+      ]
+    },
+    "tahap_3": {
+      "nama": "Pengiriman Multi-Channel",
+      "deskripsi": "Sistem mengirim notifikasi melalui semua channel yang tersedia",
+      "urutan": [
+        "1. Real-time (Socket.IO) - jika user online",
+        "2. Email - jika email tersedia",
+        "3. WhatsApp - jika nomor tersedia dan terverifikasi"
+      ]
+    },
+    "tahap_4": {
+      "nama": "Logging",
+      "deskripsi": "Sistem mencatat hasil pengiriman ke database",
+      "informasi": [
+        "User ID penerima",
+        "Channel yang digunakan",
+        "Nomor/email penerima",
+        "Subject dan pesan",
+        "Status (SENT/FAILED)",
+        "Error message (jika gagal)",
+        "Timestamp"
+      ]
+    }
+  },
+
+  "status_pengiriman": {
+    "SENT": {
+      "deskripsi": "Notifikasi berhasil dikirim",
+      "warna": "Hijau",
+      "log": "Dicatat sebagai sukses"
+    },
+    "FAILED": {
+      "deskripsi": "Notifikasi gagal dikirim",
+      "warna": "Merah",
+      "log": "Dicatat dengan error message",
+      "penyebab_umum": [
+        "WhatsApp client tidak ready",
+        "Nomor tidak terdaftar di WhatsApp",
+        "Koneksi internet bermasalah",
+        "Service WhatsApp down"
+      ]
+    }
+  },
+
+  "koneksi_whatsapp": {
+    "inisialisasi": {
+      "deskripsi": "Sistem otomatis cek koneksi WhatsApp saat startup",
+      "proses": [
+        "Cek status session WhatsApp",
+        "Jika status WORKING, tandai sebagai ready",
+        "Jika status SCAN_QR_CODE, fetch QR code",
+        "Retry hingga 3 kali jika gagal",
+        "Start health check setiap 30 detik"
+      ]
+    },
+    "qr_code": {
+      "deskripsi": "QR code untuk menghubungkan WhatsApp",
+      "akses": "Admin dapat mengakses QR code melalui dashboard",
+      "proses": [
+        "Scan QR code dengan WhatsApp di HP",
+        "Tunggu hingga status berubah WORKING",
+        "Sistem otomatis detect dan update status"
+      ]
+    },
+    "health_check": {
+      "deskripsi": "Sistem otomatis cek status koneksi setiap 30 detik",
+      "tujuan": [
+        "Detect jika WhatsApp disconnect",
+        "Auto-reconnect jika memungkinkan",
+        "Update status ready/not ready"
+      ],
+      "interval": "30 detik"
+    },
+    "auto_check": {
+      "deskripsi": "Sistem otomatis cek status sebelum mengirim pesan",
+      "proses": [
+        "Jika status not ready, cek ulang ke server",
+        "Update status berdasarkan response",
+        "Jika tetap not ready, skip pengiriman"
+      ],
+      "tujuan": "Memastikan koneksi tersedia sebelum kirim"
+    }
+  },
+
+  "fitur_tambahan": {
+    "broadcast_message": {
+      "deskripsi": "Mengirim pesan ke banyak penerima sekaligus",
+      "use_case": "Pengumuman massal ke semua mahasiswa/dosen",
+      "fitur": [
+        "Kirim ke multiple nomor",
+        "Delay 2 detik antar pengiriman (anti-spam)",
+        "Tracking success/failed per penerima",
+        "Summary hasil broadcast"
+      ]
+    },
+    "send_with_media": {
+      "deskripsi": "Mengirim pesan dengan attachment (gambar, PDF, dll)",
+      "support": [
+        "Image (JPG, PNG, GIF)",
+        "PDF",
+        "Video (MP4)",
+        "Audio (MP3)"
+      ],
+      "proses": [
+        "Baca file dari path",
+        "Convert ke base64",
+        "Detect MIME type",
+        "Kirim dengan caption"
+      ]
+    },
+    "check_registration": {
+      "deskripsi": "Cek apakah nomor terdaftar di WhatsApp",
+      "use_case": "Validasi nomor sebelum kirim notifikasi",
+      "return": "Boolean (true/false)"
+    },
+    "notification_history": {
+      "deskripsi": "Riwayat semua notifikasi yang dikirim ke user",
+      "akses": "User dapat melihat riwayat notifikasi mereka",
+      "informasi": [
+        "Channel yang digunakan",
+        "Penerima",
+        "Subject dan pesan",
+        "Status pengiriman",
+        "Waktu pengiriman",
+        "Error (jika ada)"
+      ],
+      "sorting": "Terbaru di atas"
+    }
+  },
+
+  "error_handling": {
+    "whatsapp_not_ready": {
+      "kondisi": "WhatsApp client belum terkoneksi",
+      "action": "Skip pengiriman WhatsApp, log sebagai FAILED",
+      "pesan": "WhatsApp client is not ready. Returning false."
+    },
+    "invalid_phone": {
+      "kondisi": "Nomor telepon tidak valid atau kosong",
+      "action": "Skip pengiriman, log warning",
+      "pesan": "No recipient phone number provided"
+    },
+    "send_failed": {
+      "kondisi": "Gagal mengirim pesan (network error, dll)",
+      "action": "Log error, simpan ke history sebagai FAILED",
+      "pesan": "Failed to send message: [error detail]"
+    },
+    "unknown_notification_type": {
+      "kondisi": "Tipe notifikasi tidak dikenali",
+      "action": "Skip pengiriman, log warning",
+      "pesan": "Unknown notification type: [type]"
+    }
+  },
+
+  "keamanan_dan_privasi": {
+    "validasi_nomor": {
+      "deskripsi": "Sistem hanya mengirim ke nomor yang terdaftar di database",
+      "tujuan": "Mencegah spam ke nomor random"
+    },
+    "rate_limiting": {
+      "deskripsi": "Delay 2 detik antar pengiriman untuk broadcast",
+      "tujuan": "Mencegah spam dan banned oleh WhatsApp"
+    },
+    "logging": {
+      "deskripsi": "Semua pengiriman dicatat untuk audit trail",
+      "tujuan": "Tracking dan debugging"
+    },
+    "no_spam": {
+      "deskripsi": "Notifikasi hanya dikirim untuk event penting",
+      "tujuan": "Tidak mengganggu user dengan notifikasi berlebihan"
+    }
+  },
+
+  "best_practices": {
+    "untuk_admin": [
+      "Pastikan WhatsApp selalu terkoneksi",
+      "Monitor health check secara berkala",
+      "Cek riwayat notifikasi untuk detect masalah",
+      "Jangan logout WhatsApp tanpa alasan jelas"
+    ],
+    "untuk_user": [
+      "Pastikan nomor WhatsApp terdaftar dan aktif",
+      "Jangan block nomor sistem",
+      "Baca notifikasi secara berkala",
+      "Update nomor jika berganti"
+    ]
+  },
+
+  "catatan_implementasi": {
+    "whatsapp_service": "Menggunakan WAHA (WhatsApp HTTP API) sebagai gateway",
+    "multi_channel": "Notifikasi dikirim ke semua channel secara parallel",
+    "non_blocking": "Error di satu channel tidak menghentikan channel lain",
+    "auto_format": "Nomor telepon otomatis diformat ke format WhatsApp",
+    "health_monitoring": "Auto health check setiap 30 detik",
+    "retry_mechanism": "Retry hingga 3 kali saat inisialisasi"
+  },
+
+  "saran_pengembangan": [
+    "Template notifikasi yang dapat dikustomisasi admin",
+    "Preferensi notifikasi per user (pilih channel)",
+    "Notifikasi reminder otomatis (deadline, jadwal)",
+    "Rich media notification (gambar, file)",
+    "Two-way communication (user bisa reply)",
+    "Notifikasi grup WhatsApp",
+    "Analytics notifikasi (open rate, response time)",
+    "Scheduled notification (kirim di waktu tertentu)"
+  ]
+}

@@ -1,359 +1,354 @@
 {
   "fitur": "Sistem Bimbingan Tugas Akhir",
-  "deskripsi": "Sistem manajemen bimbingan tugas akhir antara mahasiswa dan dosen pembimbing dengan validasi bertingkat",
-  "versi": "2.0.0",
+  "deskripsi": "Sistem manajemen bimbingan tugas akhir antara mahasiswa dan dosen pembimbing dengan validasi dinamis",
+  "versi": "3.0.0",
   "terakhir_diperbarui": "2024-12-05",
-  
+  "route_mahasiswa": "/dashboard/mahasiswa/bimbingan",
+  "route_dosen": "/dashboard/dosen/bimbingan",
+
   "alur_bimbingan": {
     "tahap_1": {
       "nama": "Validasi Judul",
-      "deskripsi": "Judul tugas akhir harus divalidasi oleh salah satu pembimbing",
-      "syarat": "Minimal 1 pembimbing (P1 atau P2) memvalidasi judul",
-      "blocking": "Mahasiswa tidak dapat upload draf TA dan membuat sesi bimbingan sebelum judul divalidasi"
+      "deskripsi": "Judul tugas akhir harus divalidasi sesuai aturan yang ditetapkan dosen jurusan",
+      "aturan_dinamis": "Mode validasi dapat diatur: SALAH_SATU (P1 atau P2), KEDUA_PEMBIMBING (P1 dan P2), atau PEMBIMBING_1_SAJA",
+      "blocking": "Mahasiswa tidak dapat membuat sesi bimbingan sebelum judul divalidasi sesuai aturan",
+      "grandfathering": "Mahasiswa yang sudah mendapat validasi sebelum perubahan aturan tetap dianggap valid"
     },
     "tahap_2": {
-      "nama": "Upload Draf TA",
-      "deskripsi": "Mahasiswa mengupload draf tugas akhir dalam format PDF",
-      "syarat": "Judul sudah divalidasi oleh salah satu pembimbing",
-      "validasi": "Draf harus divalidasi oleh kedua pembimbing (P1 dan P2)"
+      "nama": "Sesi Bimbingan",
+      "deskripsi": "Mahasiswa melakukan sesi bimbingan dengan dosen pembimbing",
+      "syarat": "Judul sudah divalidasi sesuai aturan",
+      "jumlah_minimal": "Ditentukan oleh pengaturan sistem (default: 9 sesi)",
+      "validasi": "Setiap sesi harus dikonfirmasi oleh dosen pembimbing yang sesuai (P1 untuk sesi P1, P2 untuk sesi P2)"
     },
     "tahap_3": {
-      "nama": "Sesi Bimbingan",
-      "deskripsi": "Mahasiswa melakukan minimal 9 sesi bimbingan yang valid",
+      "nama": "Upload Draf TA",
+      "deskripsi": "Mahasiswa mengupload draf tugas akhir dalam format PDF",
       "syarat": "Judul sudah divalidasi",
-      "jumlah_minimal": 9,
-      "validasi": "Setiap sesi harus dikonfirmasi/divalidasi oleh dosen pembimbing"
+      "validasi_draf": "Draf harus divalidasi sesuai aturan yang ditetapkan (SALAH_SATU, KEDUA_PEMBIMBING, atau PEMBIMBING_1_SAJA)",
+      "format": "PDF",
+      "ukuran_maksimal": "10MB"
     },
     "tahap_4": {
-      "nama": "Pendaftaran Sidang",
+      "nama": "Kelayakan Sidang",
       "deskripsi": "Mahasiswa dapat mendaftar sidang setelah memenuhi semua syarat",
       "syarat": [
-        "Minimal 9 sesi bimbingan valid",
-        "Draf TA divalidasi oleh kedua pembimbing (P1 dan P2)"
+        "Minimal X sesi bimbingan valid (sesuai pengaturan sistem)",
+        "Draf TA divalidasi sesuai aturan yang ditetapkan"
       ]
     }
   },
 
   "fitur_mahasiswa": {
-    "validasi_judul": {
-      "deskripsi": "Melihat status validasi judul dari pembimbing",
-      "endpoint": "GET /api/bimbingan/sebagai-mahasiswa",
-      "tampilan": [
-        "Status validasi P1 dan P2",
-        "Informasi pembimbing yang sudah validasi",
-        "Peringatan jika belum divalidasi"
-      ],
-      "blocking": "Upload draf dan sesi bimbingan dinonaktifkan jika judul belum divalidasi"
+    "lihat_status_bimbingan": {
+      "deskripsi": "Melihat status lengkap bimbingan tugas akhir",
+      "informasi": [
+        "Judul tugas akhir",
+        "Nama pembimbing 1 dan pembimbing 2",
+        "Status validasi judul (sesuai aturan yang berlaku)",
+        "Progress sesi bimbingan (X/Y sesi valid)",
+        "Status validasi draf (sesuai aturan yang berlaku)",
+        "Kelayakan untuk mendaftar sidang"
+      ]
     },
-    "upload_draf": {
-      "deskripsi": "Upload draf tugas akhir dalam format PDF",
-      "endpoint": "POST /api/dokumen-ta/:tugasAkhirId/upload",
-      "format": "PDF",
-      "ukuran_maksimal": "10MB",
-      "syarat": "Judul sudah divalidasi oleh salah satu pembimbing"
-    },
-    "sesi_bimbingan": {
-      "deskripsi": "Manajemen sesi bimbingan dengan dosen",
+    
+    "kelola_sesi_bimbingan": {
+      "deskripsi": "Mengelola sesi bimbingan dengan dosen",
       "fitur": [
-        "Tambah sesi bimbingan baru",
+        "Membuat sesi bimbingan baru (kosong)",
+        "Memilih pembimbing (P1 atau P2)",
         "Set jadwal bimbingan (tanggal, jam mulai, jam selesai)",
-        "Upload lampiran (PDF, DOC, DOCX, gambar)",
-        "Tambah catatan bimbingan",
+        "Upload lampiran dokumen (PDF, DOC, DOCX, gambar)",
+        "Menambah catatan bimbingan",
         "Hapus sesi yang belum selesai"
       ],
-      "tampilan_default": "9 slot sesi kosong",
-      "endpoints": {
-        "tambah_sesi": "POST /api/bimbingan/sesi",
-        "set_jadwal": "PUT /api/bimbingan/sesi/:id/jadwal",
-        "upload_lampiran": "POST /api/bimbingan/sesi/:id/upload",
-        "tambah_catatan": "POST /api/bimbingan/catatan",
-        "hapus_sesi": "DELETE /api/bimbingan/sesi/:id"
-      }
+      "tampilan": "Slot sesi sesuai minimal bimbingan yang diatur sistem",
+      "validasi_jadwal": "Sistem otomatis cek konflik jadwal dengan bimbingan dan sidang dosen",
+      "saran_jadwal": "Sistem memberikan saran slot waktu yang tersedia untuk dosen"
     },
+
+    "upload_draf": {
+      "deskripsi": "Upload draf tugas akhir untuk divalidasi pembimbing",
+      "syarat": "Judul sudah divalidasi",
+      "format": "PDF",
+      "ukuran_maksimal": "10MB",
+      "versioning": "Sistem menyimpan versi dokumen yang diupload",
+      "status_validasi": "Menampilkan status validasi dari P1 dan P2 sesuai aturan yang berlaku"
+    },
+
+    "reschedule_bimbingan": {
+      "deskripsi": "Mengajukan perubahan jadwal bimbingan",
+      "fitur": [
+        "Pilih sesi yang ingin diubah",
+        "Tentukan tanggal dan jam baru",
+        "Berikan alasan perubahan",
+        "Submit pengajuan"
+      ],
+      "history": "Semua perubahan jadwal tercatat dalam history dengan status dan alasan"
+    },
+
     "cek_kelayakan_sidang": {
-      "deskripsi": "Cek kelayakan mahasiswa untuk mendaftar sidang",
-      "endpoint": "GET /api/bimbingan/eligibility/:tugasAkhirId",
+      "deskripsi": "Mengecek apakah sudah memenuhi syarat untuk mendaftar sidang",
       "kriteria": [
-        "Minimal 9 sesi bimbingan valid",
-        "Draf TA divalidasi P1 dan P2"
-      ]
+        "Minimal X sesi bimbingan valid (sesuai pengaturan)",
+        "Draf TA divalidasi sesuai aturan yang berlaku"
+      ],
+      "tampilan": "Progress bar dan checklist syarat yang sudah terpenuhi"
     }
   },
 
   "fitur_dosen": {
-    "daftar_mahasiswa_bimbingan": {
+    "lihat_mahasiswa_bimbingan": {
       "deskripsi": "Melihat daftar mahasiswa yang dibimbing",
-      "endpoint": "GET /api/bimbingan/sebagai-dosen",
-      "pagination": {
-        "page": "default: 1",
-        "limit": "default: 20, max: 100"
-      },
-      "tampilan": "Tab untuk setiap mahasiswa bimbingan (1-4)"
-    },
-    "validasi_judul": {
-      "deskripsi": "Validasi judul tugas akhir mahasiswa",
-      "endpoint": "POST /api/tugas-akhir/:id/validasi-judul",
-      "authorization": "Hanya pembimbing (P1 atau P2)",
-      "efek": "Update field judul_divalidasi_p1 atau judul_divalidasi_p2",
-      "syarat_mahasiswa": "Salah satu pembimbing sudah validasi"
-    },
-    "validasi_draf": {
-      "deskripsi": "Validasi draf tugas akhir mahasiswa",
-      "endpoint": "POST /api/dokumen-ta/:dokumenId/validasi",
-      "authorization": "Hanya pembimbing (P1 atau P2)",
-      "efek": "Update field divalidasi_oleh_p1 atau divalidasi_oleh_p2",
-      "syarat_sidang": "Kedua pembimbing harus validasi"
-    },
-    "validasi_sesi_bimbingan": {
-      "deskripsi": "Konfirmasi sesi bimbingan telah selesai",
-      "endpoint": "POST /api/bimbingan/sesi/:id/konfirmasi",
-      "authorization": "Hanya dosen pembimbing",
-      "syarat": "Sesi sudah dijadwalkan (ada tanggal dan jam)",
-      "efek": "Status sesi berubah menjadi 'selesai'"
-    },
-    "batalkan_validasi_sesi": {
-      "deskripsi": "Batalkan validasi sesi bimbingan",
-      "endpoint": "POST /api/bimbingan/sesi/:id/batalkan-validasi",
-      "authorization": "Hanya dosen yang memvalidasi sesi tersebut",
-      "syarat": "Sesi berstatus 'selesai'",
-      "efek": "Status sesi kembali menjadi 'dijadwalkan'"
-    },
-    "tambah_catatan": {
-      "deskripsi": "Menambahkan catatan pada sesi bimbingan",
-      "endpoint": "POST /api/bimbingan/catatan",
-      "authorization": "Dosen pembimbing dan mahasiswa",
-      "payload": {
-        "bimbingan_ta_id": "number",
-        "catatan": "string"
-      }
-    },
-    "lihat_detail_mahasiswa": {
-      "deskripsi": "Melihat detail lengkap mahasiswa bimbingan",
-      "informasi": [
+      "tampilan": "Tab untuk setiap mahasiswa bimbingan",
+      "pagination": "Mendukung pagination untuk mahasiswa banyak",
+      "informasi_per_mahasiswa": [
         "Data mahasiswa (nama, NIM, email)",
         "Judul tugas akhir",
-        "Daftar pembimbing lainnya",
-        "Progress syarat sidang",
         "Status validasi judul",
+        "Progress bimbingan (X/Y sesi valid)",
         "Status validasi draf",
-        "Riwayat sesi bimbingan"
+        "Kelayakan sidang"
       ]
-    }
-  },
+    },
 
-  "database_schema": {
-    "tugas_akhir": {
-      "judul_divalidasi_p1": "Boolean - Status validasi judul oleh pembimbing 1",
-      "judul_divalidasi_p2": "Boolean - Status validasi judul oleh pembimbing 2"
+    "validasi_judul": {
+      "deskripsi": "Memvalidasi judul tugas akhir mahasiswa",
+      "authorization": "Hanya pembimbing yang ditugaskan (P1 atau P2)",
+      "efek": "Update status validasi judul sesuai peran pembimbing",
+      "aturan_dinamis": "Validasi mengikuti mode yang diatur sistem (SALAH_SATU/KEDUA_PEMBIMBING/PEMBIMBING_1_SAJA)",
+      "notifikasi": "Mahasiswa mendapat notifikasi saat judul divalidasi"
     },
-    "bimbingan_ta": {
-      "sesi_ke": "Integer - Nomor urut sesi bimbingan",
-      "tanggal_bimbingan": "DateTime - Tanggal pelaksanaan bimbingan",
-      "jam_bimbingan": "String - Jam mulai bimbingan",
-      "jam_selesai": "String - Jam selesai bimbingan",
-      "status_bimbingan": "Enum - dijadwalkan, selesai, dibatalkan",
-      "peran": "String - pembimbing1 atau pembimbing2"
+
+    "kelola_jadwal_bimbingan": {
+      "deskripsi": "Menjadwalkan bimbingan dengan mahasiswa",
+      "fitur": [
+        "Set tanggal dan jam bimbingan",
+        "Sistem otomatis cek konflik dengan jadwal lain",
+        "Lihat saran slot waktu yang tersedia",
+        "Konfirmasi atau reschedule jadwal"
+      ],
+      "validasi_konflik": "Sistem cek konflik dengan bimbingan lain dan jadwal sidang",
+      "jam_operasional": "Bimbingan hanya bisa dijadwalkan pada jam kerja (08:00-16:00)"
     },
-    "dokumen_ta": {
-      "divalidasi_oleh_p1": "Integer - ID dosen pembimbing 1 yang validasi",
-      "divalidasi_oleh_p2": "Integer - ID dosen pembimbing 2 yang validasi",
-      "status_validasi": "String - menunggu, disetujui"
+
+    "konfirmasi_sesi_selesai": {
+      "deskripsi": "Mengkonfirmasi bahwa sesi bimbingan telah selesai dilaksanakan",
+      "authorization": "Hanya dosen pembimbing yang sesuai dengan peran sesi (P1 untuk sesi P1, P2 untuk sesi P2)",
+      "syarat": "Sesi sudah dijadwalkan (ada tanggal dan jam)",
+      "efek": [
+        "Status sesi berubah menjadi 'selesai'",
+        "Sesi dihitung sebagai bimbingan valid",
+        "Otomatis validasi draf jika ada (sesuai peran pembimbing)"
+      ],
+      "validasi_peran": "Sistem memastikan hanya pembimbing yang sesuai yang dapat mengkonfirmasi"
     },
-    "catatan_bimbingan": {
-      "bimbingan_ta_id": "Integer - ID sesi bimbingan",
-      "author_id": "Integer - ID user yang membuat catatan",
-      "catatan": "String - Isi catatan",
-      "author_type": "String - Mahasiswa atau Dosen"
+
+    "batalkan_validasi_sesi": {
+      "deskripsi": "Membatalkan validasi sesi bimbingan yang sudah selesai",
+      "authorization": "Hanya dosen pembimbing yang sesuai dengan peran sesi",
+      "syarat": "Sesi berstatus 'selesai'",
+      "efek": "Status sesi kembali menjadi 'dijadwalkan'",
+      "use_case": "Jika dosen salah konfirmasi atau sesi perlu diulang"
     },
-    "bimbingan_lampiran": {
-      "bimbingan_ta_id": "Integer - ID sesi bimbingan",
-      "file_path": "String - Path file di server",
-      "file_name": "String - Nama file asli",
-      "file_type": "String - MIME type file"
+
+    "validasi_draf": {
+      "deskripsi": "Memvalidasi draf tugas akhir mahasiswa",
+      "authorization": "Hanya pembimbing yang ditugaskan (P1 atau P2)",
+      "efek": "Update status validasi draf sesuai peran pembimbing",
+      "aturan_dinamis": "Validasi mengikuti mode yang diatur sistem",
+      "syarat_sidang": "Draf harus divalidasi sesuai aturan sebelum mahasiswa dapat mendaftar sidang"
+    },
+
+    "tambah_catatan": {
+      "deskripsi": "Menambahkan catatan pada sesi bimbingan",
+      "authorization": "Dosen pembimbing dan mahasiswa",
+      "fitur": [
+        "Tulis catatan hasil bimbingan",
+        "Berikan feedback dan saran",
+        "Tentukan target untuk bimbingan selanjutnya"
+      ],
+      "tampilan": "Timeline catatan dengan author dan timestamp"
+    },
+
+    "upload_lampiran": {
+      "deskripsi": "Upload lampiran dokumen pada sesi bimbingan",
+      "format": "PDF, DOC, DOCX, JPG, JPEG, PNG",
+      "ukuran_maksimal": "10MB per file",
+      "maksimal_file": "5 file per sesi",
+      "use_case": "Upload materi presentasi, revisi dokumen, atau referensi"
+    },
+
+    "cancel_bimbingan": {
+      "deskripsi": "Membatalkan sesi bimbingan yang sudah dijadwalkan",
+      "authorization": "Hanya dosen pembimbing",
+      "efek": "Status sesi berubah menjadi 'dibatalkan'",
+      "notifikasi": "Mahasiswa mendapat notifikasi pembatalan"
     }
   },
 
   "business_rules": {
-    "validasi_judul": {
-      "rule": "Judul hanya perlu divalidasi oleh salah satu pembimbing (P1 ATAU P2)",
-      "implementasi": "OR logic pada frontend dan backend"
-    },
-    "validasi_draf": {
-      "rule": "Draf harus divalidasi oleh KEDUA pembimbing (P1 DAN P2)",
-      "implementasi": "AND logic untuk syarat pendaftaran sidang"
-    },
-    "sesi_bimbingan": {
-      "minimal": 9,
-      "rule": "Minimal 9 sesi dengan status 'selesai'",
-      "validasi": "Hanya dosen pembimbing yang bisa mengubah status menjadi 'selesai'"
-    },
-    "blocking_mechanism": {
-      "rule": "Fitur upload draf dan sesi bimbingan diblokir jika judul belum divalidasi",
-      "implementasi": "Disabled state dan pointer-events-none pada UI"
-    }
-  },
-
-  "security": {
-    "authentication": "JWT Bearer Token",
-    "authorization": {
-      "mahasiswa": [
-        "Melihat bimbingan sendiri",
-        "Upload draf TA sendiri",
-        "Membuat sesi bimbingan",
-        "Set jadwal sesi",
-        "Upload lampiran",
-        "Tambah catatan"
+    "validasi_judul_dinamis": {
+      "deskripsi": "Mode validasi judul dapat diatur oleh dosen jurusan",
+      "opsi": [
+        "SALAH_SATU: Judul valid jika divalidasi P1 ATAU P2",
+        "KEDUA_PEMBIMBING: Judul valid jika divalidasi P1 DAN P2",
+        "PEMBIMBING_1_SAJA: Judul valid jika divalidasi P1 saja"
       ],
-      "dosen": [
-        "Melihat mahasiswa bimbingan",
-        "Validasi judul TA",
-        "Validasi draf TA",
-        "Konfirmasi sesi bimbingan",
-        "Batalkan validasi sesi",
-        "Tambah catatan"
+      "grandfathering": "Mahasiswa yang sudah mendapat validasi sebelum perubahan aturan tetap valid"
+    },
+
+    "validasi_draf_dinamis": {
+      "deskripsi": "Mode validasi draf dapat diatur oleh dosen jurusan",
+      "opsi": [
+        "SALAH_SATU: Draf valid jika divalidasi P1 ATAU P2",
+        "KEDUA_PEMBIMBING: Draf valid jika divalidasi P1 DAN P2",
+        "PEMBIMBING_1_SAJA: Draf valid jika divalidasi P1 saja"
+      ],
+      "grandfathering": "Mahasiswa yang sudah mendapat validasi sebelum perubahan aturan tetap valid"
+    },
+
+    "minimal_bimbingan_dinamis": {
+      "deskripsi": "Jumlah minimal sesi bimbingan dapat diatur oleh dosen jurusan",
+      "default": 9,
+      "range": "1-20 sesi",
+      "dampak": "Mempengaruhi syarat kelayakan sidang"
+    },
+
+    "validasi_peran_pembimbing": {
+      "deskripsi": "Setiap sesi bimbingan terikat dengan pembimbing tertentu (P1 atau P2)",
+      "rule": "Hanya pembimbing yang sesuai dengan peran sesi yang dapat mengkonfirmasi atau membatalkan validasi",
+      "contoh": "Sesi dengan pembimbing1 hanya bisa dikonfirmasi oleh P1, tidak bisa oleh P2"
+    },
+
+    "blocking_mechanism": {
+      "deskripsi": "Fitur tertentu diblokir jika syarat belum terpenuhi",
+      "rules": [
+        "Sesi bimbingan tidak dapat dibuat jika judul belum divalidasi",
+        "Draf tidak dapat diupload jika judul belum divalidasi",
+        "Sidang tidak dapat didaftar jika bimbingan dan draf belum memenuhi syarat"
       ]
     },
-    "validation": {
-      "file_upload": {
-        "allowed_types": ["PDF", "DOC", "DOCX", "JPG", "JPEG", "PNG"],
-        "max_size": "10MB",
-        "max_files": 5
-      },
-      "input_sanitization": "Semua input di-sanitize dan di-validate"
+
+    "conflict_detection": {
+      "deskripsi": "Sistem otomatis mendeteksi konflik jadwal",
+      "cek_konflik": [
+        "Konflik dengan bimbingan lain dosen yang sama",
+        "Konflik dengan jadwal sidang dosen",
+        "Overlap waktu dengan toleransi 0 menit (abutting allowed)"
+      ],
+      "saran_jadwal": "Sistem memberikan saran slot waktu yang tersedia"
+    },
+
+    "auto_validation_draf": {
+      "deskripsi": "Saat dosen menyelesaikan sesi bimbingan, sistem otomatis memvalidasi draf terbaru",
+      "rule": "Jika ada draf TA terbaru, sistem otomatis set validasi sesuai peran pembimbing (P1 atau P2)",
+      "efek": "Mempercepat proses validasi tanpa perlu action terpisah"
     }
   },
 
-  "frontend_routes": {
-    "mahasiswa": "/dashboard/mahasiswa/bimbingan",
-    "dosen": "/dashboard/dosen/bimbingan"
+  "status_sesi": {
+    "dijadwalkan": {
+      "deskripsi": "Sesi sudah dijadwalkan dengan tanggal dan jam",
+      "action_mahasiswa": "Dapat reschedule atau hapus",
+      "action_dosen": "Dapat konfirmasi selesai atau cancel"
+    },
+    "selesai": {
+      "deskripsi": "Sesi sudah dikonfirmasi selesai oleh dosen",
+      "action_mahasiswa": "Tidak dapat diubah",
+      "action_dosen": "Dapat batalkan validasi jika perlu"
+    },
+    "dibatalkan": {
+      "deskripsi": "Sesi dibatalkan oleh dosen",
+      "action_mahasiswa": "Dapat reschedule",
+      "action_dosen": "Tidak dapat diubah"
+    },
+    "kosong": {
+      "deskripsi": "Sesi baru dibuat, belum dijadwalkan",
+      "action_mahasiswa": "Dapat set jadwal atau hapus",
+      "action_dosen": "Dapat set jadwal"
+    }
   },
 
-  "api_endpoints": {
-    "bimbingan": {
-      "sebagai_mahasiswa": {
-        "method": "GET",
-        "path": "/api/bimbingan/sebagai-mahasiswa",
-        "auth": "mahasiswa",
-        "response": "Data tugas akhir dengan bimbingan, dokumen, dan validasi"
-      },
-      "sebagai_dosen": {
-        "method": "GET",
-        "path": "/api/bimbingan/sebagai-dosen",
-        "auth": "dosen",
-        "query": "page, limit",
-        "response": "List mahasiswa bimbingan dengan pagination"
-      },
-      "tambah_sesi": {
-        "method": "POST",
-        "path": "/api/bimbingan/sesi",
-        "auth": "mahasiswa, dosen",
-        "body": "{ tugas_akhir_id: number }",
-        "response": "Sesi bimbingan baru"
-      },
-      "set_jadwal": {
-        "method": "PUT",
-        "path": "/api/bimbingan/sesi/:id/jadwal",
-        "auth": "mahasiswa, dosen",
-        "body": "{ tanggal_bimbingan, jam_bimbingan, jam_selesai }",
-        "response": "Sesi bimbingan yang diupdate"
-      },
-      "konfirmasi_sesi": {
-        "method": "POST",
-        "path": "/api/bimbingan/sesi/:id/konfirmasi",
-        "auth": "dosen",
-        "response": "Sesi bimbingan dengan status 'selesai'"
-      },
-      "batalkan_validasi": {
-        "method": "POST",
-        "path": "/api/bimbingan/sesi/:id/batalkan-validasi",
-        "auth": "dosen",
-        "response": "Sesi bimbingan dengan status 'dijadwalkan'"
-      },
-      "upload_lampiran": {
-        "method": "POST",
-        "path": "/api/bimbingan/sesi/:id/upload",
-        "auth": "mahasiswa, dosen",
-        "content_type": "multipart/form-data",
-        "body": "files[]",
-        "response": "Array lampiran yang diupload"
-      },
-      "tambah_catatan": {
-        "method": "POST",
-        "path": "/api/bimbingan/catatan",
-        "auth": "mahasiswa, dosen",
-        "body": "{ bimbingan_ta_id, catatan }",
-        "response": "Catatan baru"
-      },
-      "hapus_sesi": {
-        "method": "DELETE",
-        "path": "/api/bimbingan/sesi/:id",
-        "auth": "mahasiswa, dosen",
-        "response": "Success message"
-      },
-      "cek_kelayakan": {
-        "method": "GET",
-        "path": "/api/bimbingan/eligibility/:tugasAkhirId",
-        "auth": "mahasiswa",
-        "response": "{ eligible, validBimbinganCount, isDrafValidated, message }"
-      }
+  "file_management": {
+    "lampiran_bimbingan": {
+      "format_allowed": ["PDF", "DOC", "DOCX", "JPG", "JPEG", "PNG"],
+      "max_size": "10MB per file",
+      "max_files": "5 file per sesi",
+      "storage": "File disimpan di server dengan path terenkripsi"
     },
-    "tugas_akhir": {
-      "validasi_judul": {
-        "method": "POST",
-        "path": "/api/tugas-akhir/:id/validasi-judul",
-        "auth": "dosen (pembimbing)",
-        "response": "Tugas akhir dengan field validasi diupdate"
-      }
-    },
-    "dokumen_ta": {
-      "upload": {
-        "method": "POST",
-        "path": "/api/dokumen-ta/:tugasAkhirId/upload",
-        "auth": "mahasiswa",
-        "content_type": "multipart/form-data",
-        "body": "file (PDF)",
-        "response": "Dokumen TA baru"
-      },
-      "validasi": {
-        "method": "POST",
-        "path": "/api/dokumen-ta/:dokumenId/validasi",
-        "auth": "dosen (pembimbing)",
-        "response": "Dokumen TA dengan field validasi diupdate"
-      }
+    "draf_tugas_akhir": {
+      "format": "PDF only",
+      "max_size": "10MB",
+      "versioning": "Sistem menyimpan versi dokumen",
+      "latest_version": "Hanya versi terbaru yang divalidasi untuk syarat sidang"
     }
+  },
+
+  "notifikasi": {
+    "mahasiswa": [
+      "Judul divalidasi oleh pembimbing",
+      "Draf divalidasi oleh pembimbing",
+      "Jadwal bimbingan dikonfirmasi dosen",
+      "Sesi bimbingan selesai dikonfirmasi",
+      "Bimbingan dibatalkan oleh dosen",
+      "Reminder H-1 jadwal bimbingan"
+    ],
+    "dosen": [
+      "Mahasiswa membuat sesi bimbingan baru",
+      "Mahasiswa set jadwal bimbingan",
+      "Mahasiswa upload draf baru",
+      "Mahasiswa reschedule bimbingan",
+      "Reminder H-1 jadwal bimbingan"
+    ]
   },
 
   "ui_components": {
     "mahasiswa": {
-      "rangkuman_bimbingan": "Info judul, pembimbing, dan progress syarat sidang",
-      "validasi_judul": "Status validasi judul dengan peringatan blocking",
-      "draf_tugas_akhir": "Upload dan lihat draf dengan status validasi P1 dan P2",
-      "daftar_sesi": "9 slot sesi dengan expand/collapse detail",
-      "detail_sesi": "Jadwal, lampiran, dan catatan bimbingan"
+      "rangkuman_bimbingan": "Card info judul, pembimbing, dan progress syarat sidang",
+      "status_validasi_judul": "Badge status validasi dengan indikator sesuai aturan yang berlaku",
+      "draf_tugas_akhir": "Section upload dan lihat draf dengan status validasi P1 dan P2",
+      "daftar_sesi": "List sesi dengan expand/collapse detail, status badge, dan action buttons",
+      "detail_sesi": "Jadwal, lampiran, catatan dengan timeline view",
+      "kelayakan_sidang": "Progress bar dan checklist syarat dengan status real-time"
     },
     "dosen": {
-      "tab_mahasiswa": "Tab untuk switch antar mahasiswa bimbingan",
-      "info_mahasiswa": "Data lengkap mahasiswa dan progress",
-      "validasi_judul": "Tombol validasi judul dengan status",
-      "validasi_draf": "Lihat PDF dan tombol validasi draf",
-      "daftar_sesi": "List sesi dengan tombol validasi/batalkan",
-      "detail_sesi": "Jadwal, lampiran, catatan dengan form tambah catatan"
+      "tab_mahasiswa": "Tab untuk switch antar mahasiswa bimbingan dengan badge count",
+      "info_mahasiswa": "Card data lengkap mahasiswa dan progress",
+      "validasi_judul": "Tombol validasi dengan status dan aturan yang berlaku",
+      "validasi_draf": "PDF viewer dan tombol validasi",
+      "daftar_sesi": "List sesi dengan status, tombol konfirmasi/batalkan validasi",
+      "detail_sesi": "Jadwal, lampiran, catatan dengan form tambah catatan",
+      "saran_jadwal": "Calendar view dengan slot waktu tersedia"
     }
   },
 
-  "optimizations": {
-    "jwt_payload": "Data user lengkap disimpan di JWT untuk menghindari query database",
-    "file_proxy": "File diakses via frontend URL dengan proxy ke backend",
-    "pagination": "List mahasiswa bimbingan menggunakan pagination",
-    "lazy_loading": "Detail sesi hanya dimuat saat di-expand"
+  "best_practices": {
+    "mahasiswa": [
+      "Buat sesi bimbingan jauh-jauh hari sebelum deadline",
+      "Upload lampiran materi yang akan didiskusikan sebelum bimbingan",
+      "Catat hasil bimbingan dan target selanjutnya",
+      "Reschedule segera jika berhalangan hadir",
+      "Cek kelayakan sidang secara berkala"
+    ],
+    "dosen": [
+      "Konfirmasi jadwal bimbingan sesegera mungkin",
+      "Berikan feedback konstruktif di catatan bimbingan",
+      "Validasi draf setelah review menyeluruh",
+      "Gunakan fitur cancel jika berhalangan, jangan no-show",
+      "Monitor progress mahasiswa secara berkala"
+    ]
   },
 
   "future_improvements": [
-    "Notifikasi real-time untuk validasi dan jadwal bimbingan",
+    "Notifikasi real-time dengan WebSocket",
     "Export laporan bimbingan ke PDF",
-    "Kalender bimbingan terintegrasi",
-    "Reminder otomatis untuk jadwal bimbingan",
-    "Dashboard analytics untuk dosen",
-    "Sistem rating dan feedback bimbingan"
+    "Kalender bimbingan terintegrasi dengan Google Calendar",
+    "Reminder otomatis via email dan WhatsApp",
+    "Video conference terintegrasi untuk bimbingan online",
+    "Dashboard analytics untuk dosen (statistik bimbingan)",
+    "Sistem rating dan feedback bimbingan",
+    "AI assistant untuk saran topik bimbingan",
+    "Mobile app untuk akses lebih mudah"
   ]
 }

@@ -1,0 +1,369 @@
+{
+  "fitur": "SitaBot AI - Asisten Virtual Tugas Akhir",
+  "deskripsi": "Asisten virtual berbasis AI yang membantu mahasiswa dan dosen dalam proses tugas akhir",
+  "versi": "1.0.0",
+  "terakhir_diperbarui": "2024-12-05",
+  "route": "/chatbot",
+
+  "konsep_dasar": {
+    "deskripsi": "SitaBot AI adalah asisten virtual yang dapat menjawab pertanyaan seputar sistem tugas akhir, memberikan panduan, dan membantu pengguna memahami proses TA",
+    "tujuan": [
+      "Membantu pengguna memahami sistem TA",
+      "Menjawab pertanyaan umum dengan cepat",
+      "Memberikan panduan langkah demi langkah",
+      "Mengurangi beban admin dalam menjawab pertanyaan berulang"
+    ],
+    "akses": "Tersedia untuk semua pengguna (mahasiswa, dosen, admin)",
+    "ketersediaan": "24/7 tanpa batas waktu"
+  },
+
+  "mode_percakapan": {
+    "cepat": {
+      "icon": "⚡",
+      "nama": "Mode Cepat",
+      "deskripsi": "Jawaban singkat dan langsung ke inti",
+      "cocok_untuk": [
+        "Pertanyaan sederhana",
+        "Butuh jawaban cepat",
+        "Informasi dasar",
+        "Panduan singkat"
+      ],
+      "karakteristik": [
+        "Respons lebih cepat",
+        "Jawaban ringkas",
+        "Fokus pada poin utama"
+      ]
+    },
+    "ahli": {
+      "icon": "🎓",
+      "nama": "Mode Ahli",
+      "deskripsi": "Jawaban mendalam dengan penjelasan detail",
+      "cocok_untuk": [
+        "Pertanyaan kompleks",
+        "Butuh penjelasan lengkap",
+        "Analisis mendalam",
+        "Panduan detail"
+      ],
+      "karakteristik": [
+        "Respons lebih lengkap",
+        "Penjelasan mendetail",
+        "Contoh dan ilustrasi",
+        "Referensi tambahan"
+      ]
+    }
+  },
+
+  "kemampuan_chatbot": {
+    "panduan_sistem": {
+      "deskripsi": "Menjelaskan cara menggunakan fitur-fitur sistem TA",
+      "contoh_pertanyaan": [
+        "Bagaimana cara mengajukan topik?",
+        "Cara mendaftar sidang?",
+        "Bagaimana proses bimbingan?",
+        "Cara melihat jadwal sidang?"
+      ],
+      "output": "Panduan langkah demi langkah dengan penjelasan jelas"
+    },
+    "informasi_prosedur": {
+      "deskripsi": "Memberikan informasi tentang prosedur dan aturan TA",
+      "contoh_pertanyaan": [
+        "Berapa kali minimal bimbingan?",
+        "Syarat mendaftar sidang?",
+        "Apa saja status tugas akhir?",
+        "Bagaimana sistem penilaian?"
+      ],
+      "output": "Penjelasan prosedur dan persyaratan yang berlaku"
+    },
+    "tips_dan_saran": {
+      "deskripsi": "Memberikan tips dan saran untuk mahasiswa",
+      "contoh_pertanyaan": [
+        "Tips memilih topik penelitian",
+        "Cara membuat proposal yang baik",
+        "Tips presentasi sidang",
+        "Cara berkomunikasi dengan dosen"
+      ],
+      "output": "Saran praktis dan tips berguna"
+    },
+    "troubleshooting": {
+      "deskripsi": "Membantu menyelesaikan masalah umum",
+      "contoh_pertanyaan": [
+        "Kenapa tidak bisa mengajukan topik?",
+        "Topik saya ditolak, apa yang harus dilakukan?",
+        "Tidak bisa mendaftar sidang",
+        "Lupa password"
+      ],
+      "output": "Solusi dan langkah-langkah penyelesaian masalah"
+    },
+    "informasi_umum": {
+      "deskripsi": "Menjawab pertanyaan umum tentang TA",
+      "contoh_pertanyaan": [
+        "Apa itu tugas akhir?",
+        "Berapa lama proses TA?",
+        "Siapa yang bisa jadi pembimbing?",
+        "Apa perbedaan sidang proposal dan sidang akhir?"
+      ],
+      "output": "Penjelasan umum dan definisi"
+    }
+  },
+
+  "fitur_antarmuka": {
+    "tampilan_modal": {
+      "deskripsi": "Chatbot dapat dibuka sebagai modal overlay di atas halaman",
+      "keunggulan": [
+        "Tidak mengganggu halaman utama",
+        "Dapat dibuka dari mana saja",
+        "Mudah ditutup dengan tombol X atau ESC"
+      ]
+    },
+    "tampilan_fullpage": {
+      "deskripsi": "Chatbot dapat dibuka sebagai halaman penuh",
+      "keunggulan": [
+        "Fokus penuh pada percakapan",
+        "Lebih banyak ruang untuk membaca",
+        "Cocok untuk diskusi panjang"
+      ]
+    },
+    "intro_animation": {
+      "deskripsi": "Animasi pembuka yang menarik saat chatbot pertama kali dibuka",
+      "elemen": [
+        "Logo SitaBot dengan efek glow",
+        "Animasi sparkle",
+        "Transisi smooth ke chat interface"
+      ],
+      "durasi": "2.5 detik"
+    },
+    "suggested_prompts": {
+      "deskripsi": "Saran pertanyaan untuk memulai percakapan",
+      "contoh": [
+        "📚 Bagaimana cara mengajukan topik?",
+        "📝 Panduan bimbingan tugas akhir",
+        "📅 Jadwal sidang proposal",
+        "💡 Tips memilih topik penelitian"
+      ],
+      "tujuan": "Memudahkan pengguna yang bingung mau bertanya apa"
+    }
+  },
+
+  "interaksi_pengguna": {
+    "input_pertanyaan": {
+      "metode": [
+        "Ketik di textarea",
+        "Klik suggested prompt",
+        "Paste dari clipboard"
+      ],
+      "fitur": [
+        "Auto-resize textarea sesuai panjang teks",
+        "Enter untuk kirim (Shift+Enter untuk baris baru)",
+        "Tombol kirim dengan icon"
+      ]
+    },
+    "pilih_mode": {
+      "deskripsi": "Pengguna dapat memilih mode percakapan sebelum mengirim",
+      "cara": "Dropdown selector di sebelah textarea",
+      "default": "Mode Cepat",
+      "dapat_diubah": "Kapan saja selama percakapan"
+    },
+    "stop_generation": {
+      "deskripsi": "Pengguna dapat menghentikan respons yang sedang dihasilkan",
+      "cara": "Klik tombol stop (kotak kecil)",
+      "use_case": "Jika jawaban terlalu panjang atau tidak relevan"
+    }
+  },
+
+  "tampilan_respons": {
+    "format_markdown": {
+      "deskripsi": "Respons ditampilkan dengan format markdown untuk keterbacaan",
+      "dukungan": [
+        "Heading (H1, H2, H3)",
+        "Bold dan italic",
+        "List (bullet dan numbered)",
+        "Code inline dan block",
+        "Link",
+        "Blockquote"
+      ]
+    },
+    "bubble_chat": {
+      "user": {
+        "posisi": "Kanan",
+        "warna": "Gradasi merah (red-900 to red-700)",
+        "avatar": "Label 'You' dengan background abu-abu"
+      },
+      "assistant": {
+        "posisi": "Kiri",
+        "warna": "Putih dengan border merah",
+        "avatar": "Icon MessageCircle dengan background merah"
+      }
+    },
+    "loading_indicator": {
+      "deskripsi": "Animasi loading saat chatbot sedang berpikir",
+      "visual": "Tiga titik bouncing dengan warna merah",
+      "status_text": [
+        "Berpikir... (mode cepat)",
+        "Berpikir Keras... (mode ahli)",
+        "Riset... (saat mencari informasi)",
+        "Riset Mendalam... (mode ahli)"
+      ]
+    }
+  },
+
+  "pengalaman_pengguna": {
+    "auto_scroll": {
+      "deskripsi": "Chat otomatis scroll ke bawah saat ada pesan baru",
+      "tujuan": "Pengguna selalu melihat pesan terbaru"
+    },
+    "keyboard_shortcuts": {
+      "ESC": "Tutup chatbot modal",
+      "Enter": "Kirim pesan",
+      "Shift+Enter": "Baris baru tanpa kirim"
+    },
+    "responsive_design": {
+      "desktop": "Modal besar dengan layout 2 kolom untuk suggested prompts",
+      "mobile": "Fullscreen dengan layout 1 kolom",
+      "tablet": "Adaptif sesuai ukuran layar"
+    },
+    "smooth_animations": {
+      "fade_in": "Pesan baru muncul dengan fade in",
+      "scale_in": "Modal muncul dengan scale in",
+      "bounce": "Loading indicator dengan bounce",
+      "float": "Sparkle dengan efek float"
+    }
+  },
+
+  "batasan_dan_disclaimer": {
+    "disclaimer": "SitaBot AI dapat membuat kesalahan. Mohon verifikasi informasi penting.",
+    "posisi": "Di bawah input area",
+    "tujuan": "Mengingatkan pengguna untuk tidak 100% bergantung pada AI",
+    "batasan": [
+      "Tidak dapat mengakses data pribadi pengguna",
+      "Tidak dapat melakukan aksi di sistem (hanya informasi)",
+      "Jawaban berdasarkan pengetahuan umum sistem TA",
+      "Mungkin tidak selalu akurat untuk kasus spesifik"
+    ]
+  },
+
+  "use_case_mahasiswa": {
+    "pertanyaan_umum": {
+      "contoh": [
+        "Bagaimana cara memulai TA?",
+        "Apa saja tahapan TA?",
+        "Berapa lama proses TA?"
+      ],
+      "manfaat": "Mendapat informasi dasar tanpa perlu bertanya ke admin"
+    },
+    "panduan_penggunaan": {
+      "contoh": [
+        "Cara mengajukan topik",
+        "Cara melakukan bimbingan",
+        "Cara mendaftar sidang"
+      ],
+      "manfaat": "Memahami cara menggunakan sistem dengan cepat"
+    },
+    "troubleshooting": {
+      "contoh": [
+        "Kenapa topik saya ditolak?",
+        "Tidak bisa mendaftar sidang",
+        "Bimbingan saya belum divalidasi"
+      ],
+      "manfaat": "Mendapat solusi cepat untuk masalah umum"
+    },
+    "tips_sukses": {
+      "contoh": [
+        "Tips memilih topik yang baik",
+        "Cara membuat proposal menarik",
+        "Tips presentasi sidang"
+      ],
+      "manfaat": "Mendapat saran untuk meningkatkan kualitas TA"
+    }
+  },
+
+  "use_case_dosen": {
+    "informasi_sistem": {
+      "contoh": [
+        "Bagaimana cara membuat tawaran topik?",
+        "Cara validasi bimbingan",
+        "Cara memberikan penilaian sidang"
+      ],
+      "manfaat": "Memahami fitur-fitur untuk dosen"
+    },
+    "prosedur_pembimbingan": {
+      "contoh": [
+        "Berapa minimal bimbingan yang harus divalidasi?",
+        "Apa saja peran dosen di TA?",
+        "Bagaimana proses penilaian?"
+      ],
+      "manfaat": "Memahami tanggung jawab sebagai pembimbing/penguji"
+    }
+  },
+
+  "use_case_admin": {
+    "manajemen_sistem": {
+      "contoh": [
+        "Cara membuka periode baru",
+        "Cara mengatur pengaturan sistem",
+        "Cara menjadwalkan sidang"
+      ],
+      "manfaat": "Panduan mengelola sistem TA"
+    },
+    "monitoring": {
+      "contoh": [
+        "Bagaimana melihat statistik TA?",
+        "Cara export data",
+        "Cara melihat riwayat aktivitas"
+      ],
+      "manfaat": "Memahami fitur monitoring dan reporting"
+    }
+  },
+
+  "keunggulan": [
+    "Tersedia 24/7 tanpa batas waktu",
+    "Respons instan tanpa perlu menunggu",
+    "Dapat menjawab banyak pertanyaan sekaligus",
+    "Tidak perlu login untuk bertanya (jika diizinkan)",
+    "Interface yang user-friendly dan menarik",
+    "Mendukung format markdown untuk jawaban terstruktur",
+    "Dua mode percakapan sesuai kebutuhan",
+    "Suggested prompts untuk memudahkan pengguna"
+  ],
+
+  "tips_penggunaan": {
+    "untuk_hasil_terbaik": [
+      "Gunakan pertanyaan yang spesifik dan jelas",
+      "Pilih mode Ahli untuk pertanyaan kompleks",
+      "Baca seluruh jawaban sebelum bertanya lagi",
+      "Gunakan suggested prompts jika bingung mau bertanya apa",
+      "Verifikasi informasi penting dengan admin/dosen"
+    ],
+    "contoh_pertanyaan_baik": [
+      "Bagaimana cara mengajukan topik tugas akhir?",
+      "Apa saja syarat untuk mendaftar sidang proposal?",
+      "Berapa minimal bimbingan yang harus saya lakukan?"
+    ],
+    "contoh_pertanyaan_kurang_baik": [
+      "Tolong bantu saya",
+      "Gimana ya?",
+      "Saya bingung"
+    ]
+  },
+
+  "catatan_implementasi": {
+    "state_management": "Menggunakan custom hook untuk mengelola state chat",
+    "markdown_rendering": "Menggunakan react-markdown dengan remark-gfm",
+    "auto_scroll": "Menggunakan ref dan useEffect untuk scroll otomatis",
+    "responsive_textarea": "Auto-resize berdasarkan konten dengan max height",
+    "animation": "Custom CSS animations untuk smooth transitions",
+    "accessibility": "Keyboard shortcuts dan ARIA labels"
+  },
+
+  "saran_pengembangan": [
+    "Riwayat percakapan tersimpan per user",
+    "Export percakapan ke PDF/text",
+    "Voice input untuk pertanyaan",
+    "Multilingual support (Inggris, Indonesia)",
+    "Integrasi dengan knowledge base sistem",
+    "Feedback system (thumbs up/down)",
+    "Suggested follow-up questions",
+    "Quick actions (langsung ke halaman terkait)",
+    "Personalisasi berdasarkan role user",
+    "Analytics untuk pertanyaan populer"
+  ]
+}

@@ -1,0 +1,376 @@
+{
+  "fitur": "Dashboard Multi-Role",
+  "deskripsi": "Dashboard dinamis yang menyesuaikan tampilan dan fitur berdasarkan role pengguna (Mahasiswa, Dosen, Admin)",
+  "versi": "1.0.0",
+  "terakhir_diperbarui": "2024-12-05",
+
+  "dashboard_mahasiswa": {
+    "route": "/dashboard/mahasiswa",
+    "tujuan": "Memberikan overview lengkap progress tugas akhir dan aktivitas mahasiswa",
+    
+    "fitur_utama": {
+      "statistik_progress": {
+        "deskripsi": "Menampilkan progress tugas akhir secara visual",
+        "informasi": [
+          "Jumlah sesi bimbingan yang sudah valid (dari 9 minimal)",
+          "Status validasi judul oleh pembimbing 1 dan 2",
+          "Status validasi draf oleh pembimbing 1 dan 2",
+          "Kelayakan untuk mendaftar sidang"
+        ],
+        "visual": "Progress bar dan status badges berwarna",
+        "action": "Klik untuk melihat detail di halaman bimbingan"
+      },
+      
+      "status_tugas_akhir": {
+        "deskripsi": "Informasi detail tugas akhir yang sedang dikerjakan",
+        "informasi": [
+          "Judul tugas akhir",
+          "Nama pembimbing 1 dan pembimbing 2",
+          "Tanggal mulai pengerjaan",
+          "Status saat ini (Proposal/Pengerjaan/Siap Sidang)"
+        ],
+        "action": "Klik untuk edit atau lihat detail lengkap"
+      },
+      
+      "jadwal_bimbingan_terdekat": {
+        "deskripsi": "Menampilkan 3 jadwal bimbingan yang akan datang",
+        "informasi": [
+          "Tanggal dan jam bimbingan",
+          "Nama dosen pembimbing",
+          "Status bimbingan (Dijadwalkan/Selesai)",
+          "Countdown waktu tersisa"
+        ],
+        "action": "Klik untuk lihat semua jadwal bimbingan"
+      },
+      
+      "pengumuman_terbaru": {
+        "deskripsi": "Menampilkan 5 pengumuman terbaru untuk mahasiswa",
+        "informasi": [
+          "Judul pengumuman",
+          "Tanggal publikasi",
+          "Priority level (Normal/Important/Urgent)",
+          "Badge untuk pengumuman yang belum dibaca"
+        ],
+        "action": "Klik untuk baca detail atau lihat semua pengumuman"
+      },
+      
+      "quick_actions": {
+        "deskripsi": "Tombol akses cepat ke fitur yang sering digunakan",
+        "actions": [
+          {
+            "nama": "Jadwalkan Bimbingan",
+            "tujuan": "Langsung ke halaman buat jadwal bimbingan baru",
+            "route": "/dashboard/mahasiswa/bimbingan"
+          },
+          {
+            "nama": "Upload Dokumen",
+            "tujuan": "Upload draf atau dokumen tugas akhir",
+            "route": "/dashboard/mahasiswa/bimbingan"
+          },
+          {
+            "nama": "Lihat Jadwal Sidang",
+            "tujuan": "Cek jadwal sidang jika sudah terjadwal",
+            "route": "/dashboard/mahasiswa/sidang"
+          },
+          {
+            "nama": "Hubungi Dosen",
+            "tujuan": "Lihat kontak dosen pembimbing",
+            "route": "/dashboard/mahasiswa/bimbingan"
+          }
+        ]
+      }
+    },
+    
+    "alur_penggunaan": [
+      "Mahasiswa login dan otomatis diarahkan ke dashboard",
+      "Melihat progress tugas akhir di card statistik",
+      "Cek jadwal bimbingan terdekat dan persiapkan materi",
+      "Baca pengumuman penting dari dosen atau admin",
+      "Gunakan quick actions untuk akses cepat fitur utama"
+    ]
+  },
+
+  "dashboard_dosen": {
+    "route": "/dashboard/dosen",
+    "tujuan": "Memberikan overview mahasiswa bimbingan dan request yang perlu ditindaklanjuti",
+    
+    "fitur_utama": {
+      "statistik_bimbingan": {
+        "deskripsi": "Menampilkan statistik mahasiswa bimbingan secara keseluruhan",
+        "informasi": [
+          "Total mahasiswa bimbingan aktif",
+          "Jumlah mahasiswa yang sudah siap sidang",
+          "Request bimbingan yang pending",
+          "Total sesi bimbingan bulan ini"
+        ],
+        "visual": "Number cards dengan icon dan warna berbeda",
+        "action": "Klik untuk detail di halaman terkait"
+      },
+      
+      "request_pending": {
+        "deskripsi": "List request yang memerlukan action dari dosen",
+        "informasi": [
+          "Request validasi judul dari mahasiswa",
+          "Request validasi draf tugas akhir",
+          "Request konfirmasi jadwal bimbingan",
+          "Nama mahasiswa dan waktu request"
+        ],
+        "action": "Quick approve/reject langsung dari dashboard",
+        "prioritas": "Ditampilkan berdasarkan urgency dan waktu request"
+      },
+      
+      "jadwal_sidang": {
+        "deskripsi": "Jadwal sidang dimana dosen berperan sebagai pembimbing atau penguji",
+        "informasi": [
+          "Tanggal dan jam sidang",
+          "Nama mahasiswa yang sidang",
+          "Judul tugas akhir",
+          "Role dosen (Pembimbing/Penguji 1/Penguji 2)",
+          "Lokasi atau link meeting online"
+        ],
+        "action": "Klik untuk lihat detail sidang dan persiapan",
+        "reminder": "Notifikasi otomatis H-1 dan 1 jam sebelum sidang"
+      },
+      
+      "mahasiswa_bimbingan": {
+        "deskripsi": "List mahasiswa yang sedang dibimbing dengan progress masing-masing",
+        "informasi": [
+          "Nama dan NIM mahasiswa",
+          "Judul tugas akhir",
+          "Progress bimbingan (contoh: 5/9 sesi valid)",
+          "Status validasi judul dan draf",
+          "Aktivitas terakhir mahasiswa"
+        ],
+        "action": "Klik untuk masuk ke halaman bimbingan mahasiswa tersebut",
+        "sorting": "Diurutkan berdasarkan aktivitas terakhir"
+      },
+      
+      "quick_actions": {
+        "deskripsi": "Tombol akses cepat untuk dosen",
+        "actions": [
+          {
+            "nama": "Lihat Request Bimbingan",
+            "tujuan": "Lihat semua request yang perlu ditindaklanjuti",
+            "route": "/dashboard/dosen/bimbingan"
+          },
+          {
+            "nama": "Validasi Dokumen",
+            "tujuan": "Lihat dokumen yang perlu divalidasi",
+            "route": "/dashboard/dosen/bimbingan"
+          },
+          {
+            "nama": "Lihat Jadwal Lengkap",
+            "tujuan": "Lihat kalender jadwal bimbingan dan sidang",
+            "route": "/dashboard/dosen/jadwal"
+          }
+        ]
+      }
+    },
+    
+    "alur_penggunaan": [
+      "Dosen login dan otomatis diarahkan ke dashboard",
+      "Cek statistik mahasiswa bimbingan dan request pending",
+      "Approve/reject request langsung dari dashboard",
+      "Lihat jadwal sidang yang akan datang",
+      "Klik mahasiswa bimbingan untuk lihat detail progress",
+      "Gunakan quick actions untuk akses cepat"
+    ]
+  },
+
+  "dashboard_admin": {
+    "route": "/dashboard/admin",
+    "tujuan": "Memberikan overview sistem secara keseluruhan dan monitoring aktivitas",
+    
+    "fitur_utama": {
+      "statistik_sistem": {
+        "deskripsi": "Overview statistik sistem SITA-BI secara keseluruhan",
+        "informasi": [
+          "Total mahasiswa yang sedang mengerjakan TA",
+          "Total dosen pembimbing aktif",
+          "Jumlah sidang bulan ini",
+          "Pending approvals yang perlu ditindaklanjuti",
+          "System uptime dan performa"
+        ],
+        "visual": "Grid cards dengan trend indicators (naik/turun)",
+        "action": "Klik untuk detail di halaman management terkait"
+      },
+      
+      "user_management_overview": {
+        "deskripsi": "Overview manajemen user dalam sistem",
+        "informasi": [
+          "Total users berdasarkan role (Mahasiswa/Dosen/Admin)",
+          "Registrasi baru dalam 7 hari terakhir",
+          "Active users hari ini",
+          "Akun yang tidak aktif"
+        ],
+        "action": "Klik untuk masuk ke halaman user management lengkap",
+        "route": "/dashboard/admin/users"
+      },
+      
+      "jadwal_sidang_pending": {
+        "deskripsi": "Sidang yang perlu dijadwalkan atau diatur",
+        "informasi": [
+          "Mahasiswa yang sudah eligible untuk sidang",
+          "Sidang yang belum di-assign penguji",
+          "Konflik jadwal yang perlu diselesaikan"
+        ],
+        "action": "Quick schedule atau assign penguji langsung dari dashboard",
+        "prioritas": "Diurutkan berdasarkan tanggal pengajuan"
+      },
+      
+      "aktivitas_terbaru": {
+        "deskripsi": "Log aktivitas sistem dalam 24 jam terakhir",
+        "informasi": [
+          "User activity (login, upload, validasi)",
+          "Timestamp aktivitas",
+          "User yang melakukan aktivitas",
+          "Jenis aktivitas"
+        ],
+        "visual": "Timeline view dengan icon per jenis aktivitas",
+        "action": "Klik untuk lihat detail aktivitas atau full log"
+      },
+      
+      "system_health": {
+        "deskripsi": "Status kesehatan dan performa sistem",
+        "informasi": [
+          "Status database (Healthy/Warning/Error)",
+          "Response time API rata-rata",
+          "Penggunaan storage (percentage)",
+          "Error rate sistem"
+        ],
+        "visual": "Status indicators dengan color coding (hijau/kuning/merah)",
+        "alert": "Notifikasi otomatis jika ada masalah sistem"
+      },
+      
+      "quick_actions": {
+        "deskripsi": "Tombol akses cepat untuk admin",
+        "actions": [
+          {
+            "nama": "Tambah User",
+            "tujuan": "Registrasi user baru (mahasiswa/dosen/admin)",
+            "route": "/dashboard/admin/users/create"
+          },
+          {
+            "nama": "Jadwalkan Sidang",
+            "tujuan": "Buat jadwal sidang baru",
+            "route": "/dashboard/admin/sidang/schedule"
+          },
+          {
+            "nama": "Buat Pengumuman",
+            "tujuan": "Publish pengumuman untuk mahasiswa/dosen",
+            "route": "/dashboard/admin/pengumuman/create"
+          },
+          {
+            "nama": "Export Laporan",
+            "tujuan": "Download laporan sistem (Excel/PDF)",
+            "route": "/dashboard/admin/laporan"
+          },
+          {
+            "nama": "System Settings",
+            "tujuan": "Konfigurasi sistem",
+            "route": "/dashboard/admin/settings"
+          }
+        ]
+      }
+    },
+    
+    "alur_penggunaan": [
+      "Admin login dan otomatis diarahkan ke dashboard",
+      "Monitor statistik sistem dan kesehatan aplikasi",
+      "Cek user management overview dan registrasi baru",
+      "Handle sidang pending dan assign penguji",
+      "Review aktivitas terbaru untuk monitoring",
+      "Gunakan quick actions untuk task management cepat"
+    ]
+  },
+
+  "desain_ui": {
+    "layout": {
+      "sidebar": "Fixed sidebar di kiri dengan menu navigasi sesuai role",
+      "header": "Top bar dengan user info, notification bell, dan logout button",
+      "main_content": "Grid layout responsive untuk cards dan widgets"
+    },
+    
+    "komponen_visual": {
+      "stat_card": "Card dengan icon, label, angka besar, dan trend indicator",
+      "list_card": "Card dengan list items scrollable dan action buttons",
+      "progress_bar": "Visual progress dengan percentage dan color coding",
+      "badge": "Status badge dengan warna (hijau=success, kuning=warning, merah=urgent)",
+      "countdown": "Timer countdown untuk jadwal terdekat",
+      "timeline": "Timeline view untuk aktivitas dengan icon dan timestamp"
+    },
+    
+    "responsive": {
+      "mobile": "Stack layout vertikal, sidebar collapsible dengan hamburger menu",
+      "tablet": "2 kolom grid, sidebar tetap visible",
+      "desktop": "3-4 kolom grid, full sidebar dengan label"
+    },
+    
+    "color_scheme": {
+      "primary": "Red-900 (sesuai branding SITA-BI)",
+      "success": "Green-600",
+      "warning": "Yellow-500",
+      "danger": "Red-600",
+      "info": "Blue-600"
+    }
+  },
+
+  "notifikasi_dan_alert": {
+    "mahasiswa": [
+      "Judul TA divalidasi oleh pembimbing",
+      "Draf TA divalidasi oleh pembimbing",
+      "Jadwal bimbingan dikonfirmasi dosen",
+      "Pengumuman baru dari admin/dosen",
+      "Reminder H-1 jadwal bimbingan",
+      "Status kelayakan sidang berubah"
+    ],
+    "dosen": [
+      "Request validasi judul baru",
+      "Request validasi draf baru",
+      "Request jadwal bimbingan baru",
+      "Reminder H-1 jadwal sidang",
+      "Mahasiswa upload dokumen baru"
+    ],
+    "admin": [
+      "Registrasi user baru",
+      "Mahasiswa eligible untuk sidang",
+      "System error atau warning",
+      "Storage usage mencapai threshold",
+      "Konflik jadwal sidang"
+    ]
+  },
+
+  "best_practices": {
+    "mahasiswa": [
+      "Cek dashboard setiap hari untuk update terbaru",
+      "Perhatikan countdown jadwal bimbingan",
+      "Baca semua pengumuman yang ditandai urgent",
+      "Monitor progress untuk memastikan memenuhi syarat sidang"
+    ],
+    "dosen": [
+      "Cek request pending secara berkala",
+      "Approve/reject request sesegera mungkin",
+      "Monitor progress mahasiswa bimbingan",
+      "Persiapkan materi sebelum jadwal sidang"
+    ],
+    "admin": [
+      "Monitor system health setiap hari",
+      "Handle sidang pending tepat waktu",
+      "Review aktivitas mencurigakan",
+      "Backup data secara berkala"
+    ]
+  },
+
+  "future_improvements": [
+    "Real-time updates dengan WebSocket untuk notifikasi instant",
+    "Customizable dashboard layout (drag & drop widgets)",
+    "Dark mode support untuk kenyamanan mata",
+    "Dashboard analytics dengan charts interaktif",
+    "Export dashboard data ke PDF/Excel",
+    "Notification center terintegrasi dengan filter",
+    "Quick search global untuk cari mahasiswa/dosen/dokumen",
+    "Keyboard shortcuts untuk power users",
+    "Mobile app untuk akses dashboard di smartphone",
+    "Voice commands untuk accessibility"
+  ]
+}

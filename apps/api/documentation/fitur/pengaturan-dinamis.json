@@ -1,0 +1,418 @@
+{
+  "fitur": "Pengaturan Dinamis Sistem",
+  "deskripsi": "Fitur yang memungkinkan dosen jurusan/admin mengatur berbagai parameter sistem secara dinamis tanpa perlu mengubah kode",
+  "versi": "1.0.0",
+  "terakhir_diperbarui": "2024-12-05",
+  "role_akses": "Admin/Dosen Jurusan",
+
+  "kategori_pengaturan": {
+    "validasi_tugas_akhir": {
+      "deskripsi": "Pengaturan mode validasi judul dan draf tugas akhir",
+      "pengaturan": {
+        "mode_validasi_judul": {
+          "nama": "Mode Validasi Judul",
+          "deskripsi": "Menentukan siapa yang harus memvalidasi judul tugas akhir",
+          "tipe": "pilihan",
+          "opsi": [
+            {
+              "value": "SALAH_SATU",
+              "label": "Salah Satu Pembimbing",
+              "penjelasan": "Judul dianggap valid jika divalidasi oleh P1 ATAU P2"
+            },
+            {
+              "value": "KEDUA_PEMBIMBING",
+              "label": "Kedua Pembimbing",
+              "penjelasan": "Judul harus divalidasi oleh P1 DAN P2"
+            },
+            {
+              "value": "PEMBIMBING_1_SAJA",
+              "label": "Pembimbing 1 Saja",
+              "penjelasan": "Judul hanya perlu divalidasi oleh P1"
+            }
+          ],
+          "default": "KEDUA_PEMBIMBING",
+          "dampak": "Mempengaruhi syarat mahasiswa untuk upload draf dan membuat sesi bimbingan",
+          "grandfathering": "Mahasiswa yang sudah mendapat validasi sebelum perubahan aturan tetap dianggap valid"
+        },
+        "mode_validasi_draf": {
+          "nama": "Mode Validasi Draf",
+          "deskripsi": "Menentukan siapa yang harus memvalidasi draf tugas akhir",
+          "tipe": "pilihan",
+          "opsi": [
+            {
+              "value": "SALAH_SATU",
+              "label": "Salah Satu Pembimbing",
+              "penjelasan": "Draf dianggap valid jika divalidasi oleh P1 ATAU P2"
+            },
+            {
+              "value": "KEDUA_PEMBIMBING",
+              "label": "Kedua Pembimbing",
+              "penjelasan": "Draf harus divalidasi oleh P1 DAN P2"
+            },
+            {
+              "value": "PEMBIMBING_1_SAJA",
+              "label": "Pembimbing 1 Saja",
+              "penjelasan": "Draf hanya perlu divalidasi oleh P1"
+            }
+          ],
+          "default": "KEDUA_PEMBIMBING",
+          "dampak": "Mempengaruhi syarat mahasiswa untuk mendaftar sidang",
+          "grandfathering": "Mahasiswa yang sudah mendapat validasi sebelum perubahan aturan tetap dianggap valid"
+        }
+      }
+    },
+
+    "syarat_bimbingan": {
+      "deskripsi": "Pengaturan syarat minimal bimbingan",
+      "pengaturan": {
+        "min_bimbingan_valid": {
+          "nama": "Minimal Bimbingan Valid",
+          "deskripsi": "Jumlah minimal sesi bimbingan yang harus diselesaikan sebelum mahasiswa dapat mendaftar sidang",
+          "tipe": "angka",
+          "default": 9,
+          "min": 1,
+          "max": 20,
+          "satuan": "sesi",
+          "dampak": "Mahasiswa harus menyelesaikan minimal X sesi bimbingan yang dikonfirmasi dosen"
+        }
+      }
+    },
+
+    "kuota_pembimbing": {
+      "deskripsi": "Pengaturan kuota mahasiswa per dosen",
+      "pengaturan": {
+        "max_pembimbing_aktif": {
+          "nama": "Maksimal Mahasiswa Bimbingan",
+          "deskripsi": "Jumlah maksimal mahasiswa yang dapat dibimbing oleh satu dosen secara bersamaan",
+          "tipe": "angka",
+          "default": 10,
+          "min": 1,
+          "max": 50,
+          "satuan": "mahasiswa",
+          "dampak": "Dosen tidak dapat menerima mahasiswa bimbingan baru jika sudah mencapai kuota"
+        },
+        "max_mahasiswa_uji_per_dosen": {
+          "nama": "Maksimal Mahasiswa Uji per Dosen",
+          "deskripsi": "Jumlah maksimal mahasiswa yang dapat diuji oleh satu dosen dalam satu periode sidang",
+          "tipe": "angka",
+          "default": 20,
+          "min": 1,
+          "max": 100,
+          "satuan": "mahasiswa",
+          "dampak": "Dosen tidak dapat ditugaskan sebagai penguji jika sudah mencapai kuota"
+        }
+      }
+    },
+
+    "jadwal_sidang": {
+      "deskripsi": "Pengaturan waktu dan durasi sidang",
+      "pengaturan": {
+        "durasi_sidang_menit": {
+          "nama": "Durasi Sidang",
+          "deskripsi": "Durasi standar sidang tugas akhir",
+          "tipe": "angka",
+          "default": 90,
+          "min": 30,
+          "max": 240,
+          "satuan": "menit",
+          "dampak": "Menentukan slot waktu yang dialokasikan untuk setiap sidang"
+        },
+        "jeda_sidang_menit": {
+          "nama": "Jeda Antar Sidang",
+          "deskripsi": "Waktu jeda antar sidang untuk persiapan",
+          "tipe": "angka",
+          "default": 15,
+          "min": 0,
+          "max": 60,
+          "satuan": "menit",
+          "dampak": "Memberikan waktu istirahat dan persiapan antar sidang"
+        },
+        "jam_mulai_sidang": {
+          "nama": "Jam Mulai Sidang",
+          "deskripsi": "Jam mulai operasional sidang",
+          "tipe": "waktu",
+          "default": "08:00",
+          "format": "HH:mm",
+          "dampak": "Sidang tidak akan dijadwalkan sebelum jam ini"
+        },
+        "jam_selesai_sidang": {
+          "nama": "Jam Selesai Sidang",
+          "deskripsi": "Jam selesai operasional sidang",
+          "tipe": "waktu",
+          "default": "16:00",
+          "format": "HH:mm",
+          "dampak": "Sidang tidak akan dijadwalkan setelah jam ini"
+        },
+        "waktu_istirahat": {
+          "nama": "Waktu Istirahat Tambahan",
+          "deskripsi": "Waktu istirahat tambahan di tengah jadwal sidang (contoh: istirahat sholat, makan siang)",
+          "tipe": "array_waktu",
+          "default": [
+            {
+              "mulai": "12:00",
+              "selesai": "13:00",
+              "keterangan": "Istirahat Sholat & Makan Siang"
+            }
+          ],
+          "dampak": "Tidak ada sidang yang dijadwalkan pada waktu istirahat ini"
+        },
+        "jadwal_hari_khusus": {
+          "nama": "Jadwal Hari Khusus",
+          "deskripsi": "Jam operasional khusus untuk hari tertentu (contoh: Jumat jam sidang lebih pendek)",
+          "tipe": "array_jadwal",
+          "default": [
+            {
+              "hari": "Jumat",
+              "jam_mulai": "08:00",
+              "jam_selesai": "11:00",
+              "keterangan": "Hari Jumat sidang hanya sampai jam 11:00"
+            }
+          ],
+          "dampak": "Override jam operasional default untuk hari tertentu"
+        }
+      }
+    },
+
+    "ruangan_sidang": {
+      "deskripsi": "Pengaturan ruangan yang tersedia untuk sidang",
+      "pengaturan": {
+        "ruangan_sidang": {
+          "nama": "Daftar Ruangan Sidang",
+          "deskripsi": "Ruangan yang tersedia untuk sidang tugas akhir",
+          "tipe": "array_string",
+          "default": [
+            "Ruang Sidang 1",
+            "Ruang Sidang 2",
+            "Ruang Sidang 3",
+            "Lab Komputer 1",
+            "Online (Zoom/Meet)"
+          ],
+          "dampak": "Ruangan yang dapat dipilih saat penjadwalan sidang",
+          "catatan": "Admin dapat menambah/mengurangi ruangan sesuai ketersediaan"
+        }
+      }
+    },
+
+    "hari_libur": {
+      "deskripsi": "Pengaturan hari libur dan tanggal khusus",
+      "pengaturan": {
+        "hari_libur_tetap": {
+          "nama": "Hari Libur Tetap",
+          "deskripsi": "Hari dalam seminggu yang tidak ada sidang",
+          "tipe": "array_string",
+          "default": ["Sabtu", "Minggu"],
+          "opsi": ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"],
+          "dampak": "Tidak ada sidang yang dijadwalkan pada hari-hari ini"
+        },
+        "tanggal_libur_khusus": {
+          "nama": "Tanggal Libur Khusus",
+          "deskripsi": "Tanggal libur nasional atau cuti bersama",
+          "tipe": "array_tanggal",
+          "default": [
+            {
+              "tanggal": "2025-01-01",
+              "keterangan": "Tahun Baru 2025"
+            },
+            {
+              "tanggal": "2025-03-31",
+              "keterangan": "Hari Raya Idul Fitri"
+            },
+            {
+              "tanggal": "2025-08-17",
+              "keterangan": "Hari Kemerdekaan RI"
+            }
+          ],
+          "dampak": "Tidak ada sidang yang dijadwalkan pada tanggal-tanggal ini",
+          "catatan": "Admin dapat menambah tanggal libur khusus sesuai kebutuhan"
+        }
+      }
+    },
+
+    "validasi_pendaftaran_sidang": {
+      "deskripsi": "Pengaturan alur validasi pendaftaran sidang",
+      "pengaturan": {
+        "validasi_pendaftaran_sidang_aktif": {
+          "nama": "Aktifkan Validasi Pendaftaran",
+          "deskripsi": "Apakah pendaftaran sidang memerlukan validasi bertingkat",
+          "tipe": "boolean",
+          "default": true,
+          "dampak": "Jika aktif, pendaftaran sidang harus divalidasi oleh pembimbing/prodi/jurusan sebelum dijadwalkan"
+        },
+        "validasi_pembimbing_1": {
+          "nama": "Validasi Pembimbing 1",
+          "deskripsi": "Pendaftaran sidang harus divalidasi oleh pembimbing 1",
+          "tipe": "boolean",
+          "default": true,
+          "dampak": "Pembimbing 1 harus approve pendaftaran sidang"
+        },
+        "validasi_pembimbing_2": {
+          "nama": "Validasi Pembimbing 2",
+          "deskripsi": "Pendaftaran sidang harus divalidasi oleh pembimbing 2",
+          "tipe": "boolean",
+          "default": true,
+          "dampak": "Pembimbing 2 harus approve pendaftaran sidang"
+        },
+        "validasi_prodi": {
+          "nama": "Validasi Program Studi",
+          "deskripsi": "Pendaftaran sidang harus divalidasi oleh koordinator prodi",
+          "tipe": "boolean",
+          "default": false,
+          "dampak": "Koordinator prodi harus approve pendaftaran sidang"
+        },
+        "validasi_jurusan": {
+          "nama": "Validasi Jurusan",
+          "deskripsi": "Pendaftaran sidang harus divalidasi oleh ketua jurusan",
+          "tipe": "boolean",
+          "default": false,
+          "dampak": "Ketua jurusan harus approve pendaftaran sidang"
+        }
+      }
+    },
+
+    "syarat_dokumen_sidang": {
+      "deskripsi": "Pengaturan dokumen yang harus diupload untuk pendaftaran sidang",
+      "pengaturan": {
+        "syarat_pendaftaran_sidang": {
+          "nama": "Dokumen Syarat Sidang",
+          "deskripsi": "Daftar dokumen yang harus diupload mahasiswa saat mendaftar sidang",
+          "tipe": "array_dokumen",
+          "default": [
+            {
+              "nama": "Laporan Tugas Akhir (PDF)",
+              "wajib": true,
+              "format": ["pdf"],
+              "max_size_mb": 10
+            },
+            {
+              "nama": "Lembar Persetujuan Pembimbing",
+              "wajib": true,
+              "format": ["pdf", "jpg", "png"],
+              "max_size_mb": 5
+            },
+            {
+              "nama": "Kartu Bimbingan",
+              "wajib": true,
+              "format": ["pdf", "jpg", "png"],
+              "max_size_mb": 5
+            },
+            {
+              "nama": "Transkrip Nilai",
+              "wajib": false,
+              "format": ["pdf"],
+              "max_size_mb": 2
+            }
+          ],
+          "dampak": "Mahasiswa harus upload semua dokumen wajib sebelum dapat mendaftar sidang",
+          "catatan": "Admin dapat menambah/mengurangi dokumen sesuai kebijakan jurusan"
+        }
+      }
+    },
+
+    "penilaian_sidang": {
+      "deskripsi": "Pengaturan rumus dan nilai minimal sidang",
+      "pengaturan": {
+        "rumus_penilaian": {
+          "nama": "Rumus Perhitungan Nilai",
+          "deskripsi": "Rumus untuk menghitung nilai akhir sidang dari nilai pembimbing dan penguji",
+          "tipe": "formula",
+          "default": "(p1 + p2 + p3) / 3",
+          "variabel": {
+            "p1": "Nilai dari Pembimbing 1",
+            "p2": "Nilai dari Pembimbing 2 / Penguji 1",
+            "p3": "Nilai dari Penguji 2"
+          },
+          "contoh_rumus": [
+            "(p1 + p2 + p3) / 3",
+            "(p1 * 0.4) + (p2 * 0.3) + (p3 * 0.3)",
+            "(p1 + p2) / 2"
+          ],
+          "dampak": "Menentukan cara perhitungan nilai akhir mahasiswa"
+        },
+        "nilai_minimal_lolos": {
+          "nama": "Nilai Minimal Kelulusan",
+          "deskripsi": "Nilai minimal untuk dinyatakan lulus sidang",
+          "tipe": "angka_desimal",
+          "default": 60.0,
+          "min": 0,
+          "max": 100,
+          "satuan": "poin",
+          "dampak": "Mahasiswa dengan nilai di bawah ini dinyatakan tidak lulus sidang"
+        },
+        "tampilkan_rincian_nilai_ke_sekretaris": {
+          "nama": "Tampilkan Rincian Nilai",
+          "deskripsi": "Tampilkan rumus penilaian dan nilai minimal ke sekretaris saat input nilai",
+          "tipe": "boolean",
+          "default": true,
+          "dampak": "Sekretaris dapat melihat rumus dan nilai minimal saat input nilai sidang"
+        }
+      }
+    },
+
+    "cek_similaritas": {
+      "deskripsi": "Pengaturan pengecekan kemiripan judul tugas akhir",
+      "pengaturan": {
+        "max_similaritas_persen": {
+          "nama": "Maksimal Similaritas",
+          "deskripsi": "Persentase maksimal kemiripan judul yang diperbolehkan",
+          "tipe": "angka",
+          "default": 70,
+          "min": 0,
+          "max": 100,
+          "satuan": "persen",
+          "dampak": "Judul dengan similaritas di atas nilai ini akan ditolak sistem"
+        },
+        "cek_similaritas_semua_periode": {
+          "nama": "Cek Semua Periode",
+          "deskripsi": "Cek kemiripan judul dengan semua periode termasuk periode lama (2014)",
+          "tipe": "boolean",
+          "default": false,
+          "dampak": "Jika aktif, pengecekan akan lebih ketat dengan membandingkan ke semua periode"
+        },
+        "nonaktifkan_cek_similaritas": {
+          "nama": "Nonaktifkan Cek Similaritas",
+          "deskripsi": "Menonaktifkan pengecekan kemiripan judul sepenuhnya",
+          "tipe": "boolean",
+          "default": false,
+          "dampak": "Jika aktif, sistem tidak akan mengecek kemiripan judul sama sekali",
+          "peringatan": "Tidak disarankan untuk diaktifkan karena dapat menyebabkan duplikasi judul"
+        }
+      }
+    }
+  },
+
+  "cara_mengakses": {
+    "route": "/dashboard/admin/pengaturan",
+    "role_required": "Admin atau Dosen Jurusan",
+    "langkah": [
+      "Login sebagai Admin/Dosen Jurusan",
+      "Masuk ke menu Pengaturan Sistem",
+      "Pilih kategori pengaturan yang ingin diubah",
+      "Edit nilai pengaturan sesuai kebutuhan",
+      "Klik Simpan untuk menerapkan perubahan",
+      "Perubahan akan langsung berlaku untuk semua user"
+    ]
+  },
+
+  "fitur_grandfathering": {
+    "deskripsi": "Sistem melindungi mahasiswa yang sudah mendapat validasi sebelum perubahan aturan",
+    "contoh": "Jika mode validasi judul diubah dari 'SALAH_SATU' ke 'KEDUA_PEMBIMBING', mahasiswa yang sudah mendapat validasi dari P1 saja tetap dianggap valid",
+    "tujuan": "Mencegah mahasiswa dirugikan akibat perubahan aturan di tengah proses"
+  },
+
+  "best_practices": [
+    "Diskusikan perubahan pengaturan dengan tim dosen sebelum diterapkan",
+    "Informasikan perubahan pengaturan kepada mahasiswa melalui pengumuman",
+    "Jangan mengubah pengaturan terlalu sering untuk menghindari kebingungan",
+    "Backup pengaturan lama sebelum melakukan perubahan besar",
+    "Monitor dampak perubahan pengaturan terhadap proses bimbingan dan sidang",
+    "Gunakan fitur grandfathering untuk melindungi mahasiswa yang sudah dalam proses"
+  ],
+
+  "catatan_penting": [
+    "Semua perubahan pengaturan akan langsung berlaku untuk seluruh sistem",
+    "Perubahan pengaturan akan tercatat dalam log sistem dengan timestamp dan user yang mengubah",
+    "Pengaturan yang sudah diubah dapat dikembalikan ke nilai default kapan saja",
+    "Beberapa pengaturan memiliki nilai minimal dan maksimal untuk mencegah konfigurasi yang tidak masuk akal",
+    "Sistem akan memberikan peringatan jika perubahan pengaturan dapat berdampak signifikan"
+  ]
+}

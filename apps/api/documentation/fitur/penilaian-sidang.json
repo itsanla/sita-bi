@@ -1,0 +1,377 @@
+{
+  "fitur": "Penilaian Sidang Tugas Akhir",
+  "deskripsi": "Sistem penilaian sidang oleh dosen pembimbing dan penguji dengan perhitungan otomatis hasil akhir",
+  "versi": "1.0.0",
+  "terakhir_diperbarui": "2024-12-05",
+  "route_dosen": "/dashboard/dosen/penilaian",
+
+  "konsep_dasar": {
+    "deskripsi": "Setiap dosen yang terlibat (pembimbing/penguji) memberikan penilaian per aspek, sistem menghitung rata-rata dan menentukan hasil sidang otomatis",
+    "tujuan": [
+      "Penilaian terstruktur per aspek",
+      "Transparansi nilai dari setiap penilai",
+      "Perhitungan otomatis hasil sidang",
+      "Update status TA otomatis berdasarkan nilai"
+    ],
+    "penilai": "Dosen pembimbing dan penguji yang terdaftar di TA",
+    "finalisasi_otomatis": "Sistem otomatis finalisasi hasil setelah semua penilai submit nilai"
+  },
+
+  "komponen_penilaian": {
+    "aspek": {
+      "deskripsi": "Aspek yang dinilai (contoh: Penguasaan Materi, Presentasi, Dokumentasi)",
+      "tipe": "String",
+      "wajib": true,
+      "contoh": ["Penguasaan Materi", "Kualitas Presentasi", "Kelengkapan Dokumentasi", "Kemampuan Menjawab"]
+    },
+    "skor": {
+      "deskripsi": "Nilai numerik untuk aspek tersebut",
+      "tipe": "Number",
+      "rentang": "0-100",
+      "wajib": true
+    },
+    "komentar": {
+      "deskripsi": "Catatan atau feedback dari penilai",
+      "tipe": "String",
+      "wajib": true,
+      "tujuan": "Memberikan feedback konstruktif untuk mahasiswa"
+    }
+  },
+
+  "alur_penilaian": {
+    "tahap_1": {
+      "nama": "Sidang Berlangsung",
+      "actor": "Mahasiswa & Tim Penilai",
+      "deskripsi": "Mahasiswa melakukan presentasi dan ujian sidang",
+      "kondisi": [
+        "Sidang sudah dijadwalkan",
+        "Waktu sidang sudah tiba",
+        "Tim penilai hadir"
+      ]
+    },
+
+    "tahap_2": {
+      "nama": "Input Penilaian",
+      "actor": "Dosen Pembimbing/Penguji",
+      "deskripsi": "Setiap dosen memberikan penilaian per aspek",
+      "proses": [
+        "Dosen login ke sistem",
+        "Akses halaman penilaian sidang",
+        "Pilih sidang yang akan dinilai",
+        "Input aspek penilaian",
+        "Input skor (0-100)",
+        "Input komentar/feedback",
+        "Submit penilaian"
+      ],
+      "validasi": [
+        "Dosen harus terdaftar sebagai pembimbing/penguji di TA tersebut",
+        "Skor harus dalam rentang 0-100",
+        "Aspek dan komentar tidak boleh kosong",
+        "Sidang harus ada dan valid"
+      ],
+      "catatan": "Setiap dosen bisa input multiple aspek penilaian"
+    },
+
+    "tahap_3": {
+      "nama": "Perhitungan Otomatis",
+      "actor": "Sistem",
+      "deskripsi": "Sistem menghitung rata-rata nilai dan menentukan hasil sidang",
+      "trigger": "Setelah semua penilai submit nilai",
+      "proses": [
+        "Hitung jumlah penilai yang seharusnya (pembimbing + penguji)",
+        "Hitung jumlah nilai yang sudah masuk",
+        "Jika jumlah nilai >= jumlah penilai:",
+        "  - Hitung total skor dari semua nilai",
+        "  - Hitung rata-rata: total_skor / jumlah_nilai",
+        "  - Tentukan hasil sidang berdasarkan rata-rata",
+        "  - Update status sidang",
+        "  - Update status tugas akhir"
+      ],
+      "logika_hasil": {
+        "lulus_tanpa_revisi": {
+          "kondisi": "Rata-rata >= 80",
+          "hasil_sidang": "LULUS",
+          "status_ta": "LULUS_TANPA_REVISI"
+        },
+        "lulus_dengan_revisi": {
+          "kondisi": "Rata-rata >= 60 dan < 80",
+          "hasil_sidang": "LULUS_REVISI",
+          "status_ta": "LULUS_DENGAN_REVISI"
+        },
+        "tidak_lulus": {
+          "kondisi": "Rata-rata < 60",
+          "hasil_sidang": "TIDAK_LULUS",
+          "status_ta": "GAGAL"
+        }
+      }
+    },
+
+    "tahap_4": {
+      "nama": "Hasil Tersedia",
+      "actor": "Mahasiswa & Dosen",
+      "deskripsi": "Hasil penilaian dapat dilihat oleh pihak terkait",
+      "akses": [
+        "Mahasiswa dapat melihat hasil akhir dan feedback",
+        "Dosen dapat melihat semua nilai dari tim penilai",
+        "Admin dapat melihat semua data penilaian"
+      ]
+    }
+  },
+
+  "fitur_dosen": {
+    "input_penilaian": {
+      "deskripsi": "Memberikan penilaian untuk sidang mahasiswa bimbingan/ujian",
+      "form": [
+        {
+          "field": "sidang_id",
+          "tipe": "number",
+          "wajib": true,
+          "deskripsi": "ID sidang yang akan dinilai"
+        },
+        {
+          "field": "aspek",
+          "tipe": "string",
+          "wajib": true,
+          "deskripsi": "Aspek yang dinilai"
+        },
+        {
+          "field": "skor",
+          "tipe": "number",
+          "wajib": true,
+          "rentang": "0-100",
+          "deskripsi": "Nilai untuk aspek tersebut"
+        },
+        {
+          "field": "komentar",
+          "tipe": "string",
+          "wajib": true,
+          "deskripsi": "Feedback untuk mahasiswa"
+        }
+      ],
+      "validasi": [
+        "Dosen harus terdaftar sebagai pembimbing/penguji",
+        "Sidang harus valid dan ada",
+        "Skor dalam rentang 0-100",
+        "Aspek dan komentar tidak boleh kosong"
+      ],
+      "response_sukses": {
+        "status": "sukses",
+        "data": "Data nilai yang baru dibuat"
+      },
+      "response_error": [
+        {
+          "kondisi": "Sidang tidak ditemukan",
+          "message": "Sidang not found."
+        },
+        {
+          "kondisi": "Dosen tidak berwenang",
+          "message": "You are not authorized to submit a score for this defense."
+        }
+      ]
+    },
+
+    "lihat_nilai_sidang": {
+      "deskripsi": "Melihat semua nilai yang sudah diberikan untuk suatu sidang",
+      "parameter": "sidangId (dari URL)",
+      "response": {
+        "status": "sukses",
+        "data": [
+          {
+            "id": "ID nilai",
+            "sidang_id": "ID sidang",
+            "dosen_id": "ID dosen penilai",
+            "aspek": "Aspek yang dinilai",
+            "skor": "Nilai",
+            "komentar": "Feedback",
+            "dosen": {
+              "user": {
+                "nama": "Nama dosen penilai"
+              }
+            }
+          }
+        ]
+      },
+      "akses": "Semua user yang terautentikasi (dosen, mahasiswa, admin)",
+      "use_case": [
+        "Dosen melihat nilai dari tim penilai lain",
+        "Mahasiswa melihat feedback dari semua penilai",
+        "Admin monitoring penilaian"
+      ]
+    }
+  },
+
+  "fitur_mahasiswa": {
+    "lihat_hasil_sidang": {
+      "deskripsi": "Melihat hasil penilaian sidang dan feedback dari penilai",
+      "akses": "Setelah semua penilai submit nilai",
+      "informasi": [
+        "Rata-rata nilai akhir",
+        "Hasil sidang (Lulus/Lulus Revisi/Tidak Lulus)",
+        "Status TA terbaru",
+        "Detail nilai per aspek dari setiap penilai",
+        "Komentar/feedback dari setiap penilai"
+      ],
+      "catatan": "Mahasiswa dapat melihat siapa penilai dan feedback yang diberikan"
+    }
+  },
+
+  "logika_bisnis": {
+    "penentuan_penilai": {
+      "deskripsi": "Sistem menghitung jumlah penilai dari peran dosen di TA",
+      "kriteria": "Dosen dengan peran pembimbing* atau penguji*",
+      "contoh": [
+        "pembimbing_1, pembimbing_2, penguji_1 = 3 penilai",
+        "pembimbing_1, penguji_1, penguji_2 = 3 penilai"
+      ]
+    },
+
+    "trigger_finalisasi": {
+      "deskripsi": "Finalisasi otomatis saat semua penilai sudah submit",
+      "kondisi": "jumlah_nilai_masuk >= jumlah_penilai",
+      "proses": "Panggil fungsi _calculateAndFinalizeHasilSidang",
+      "catatan": "Finalisasi berjalan dalam transaction untuk konsistensi data"
+    },
+
+    "perhitungan_rata_rata": {
+      "deskripsi": "Menghitung rata-rata dari semua skor yang masuk",
+      "formula": "total_skor / jumlah_nilai",
+      "contoh": {
+        "nilai_masuk": [85, 90, 80],
+        "total_skor": 255,
+        "jumlah_nilai": 3,
+        "rata_rata": 85
+      }
+    },
+
+    "mapping_hasil": {
+      "deskripsi": "Mapping rata-rata nilai ke hasil sidang dan status TA",
+      "tabel": [
+        {
+          "rata_rata": ">= 80",
+          "hasil_sidang": "LULUS",
+          "status_ta": "LULUS_TANPA_REVISI",
+          "keterangan": "Mahasiswa lulus tanpa perlu revisi"
+        },
+        {
+          "rata_rata": "60-79",
+          "hasil_sidang": "LULUS_REVISI",
+          "status_ta": "LULUS_DENGAN_REVISI",
+          "keterangan": "Mahasiswa lulus dengan kewajiban revisi"
+        },
+        {
+          "rata_rata": "< 60",
+          "hasil_sidang": "TIDAK_LULUS",
+          "status_ta": "GAGAL",
+          "keterangan": "Mahasiswa tidak lulus, perlu sidang ulang"
+        }
+      ]
+    },
+
+    "update_otomatis": {
+      "deskripsi": "Sistem otomatis update status sidang dan status TA",
+      "proses": [
+        "Update status_hasil di tabel sidang",
+        "Update status di tabel tugasAkhir",
+        "Semua dalam satu transaction"
+      ],
+      "tujuan": "Sinkronisasi data dan konsistensi status"
+    }
+  },
+
+  "keamanan": {
+    "autentikasi": "JWT token wajib untuk semua endpoint",
+    "otorisasi": {
+      "input_penilaian": [
+        "Hanya dosen yang bisa input nilai",
+        "Dosen harus terdaftar sebagai pembimbing/penguji di TA tersebut"
+      ],
+      "lihat_nilai": "Semua user terautentikasi (dosen, mahasiswa, admin)"
+    },
+    "validasi_peran": {
+      "deskripsi": "Sistem validasi peran dosen di TA sebelum izinkan input nilai",
+      "kriteria": "Peran harus dimulai dengan 'pembimbing' atau 'penguji'",
+      "contoh_valid": ["pembimbing_1", "pembimbing_2", "penguji_1", "penguji_2"],
+      "contoh_invalid": ["koordinator", "admin"]
+    }
+  },
+
+  "integrasi_periode": {
+    "deskripsi": "Penilaian terikat dengan periode aktif",
+    "middleware": "periodeGuard()",
+    "validasi": [
+      "Harus ada periode aktif",
+      "User harus terdaftar di periode aktif"
+    ],
+    "tujuan": "Isolasi data penilaian per periode akademik"
+  },
+
+  "error_handling": {
+    "sidang_not_found": {
+      "kondisi": "ID sidang tidak valid atau tidak ditemukan",
+      "response": {
+        "status": "error",
+        "message": "Sidang not found."
+      }
+    },
+    "unauthorized_dosen": {
+      "kondisi": "Dosen tidak terdaftar sebagai pembimbing/penguji",
+      "response": {
+        "status": "error",
+        "message": "You are not authorized to submit a score for this defense."
+      }
+    },
+    "no_dosen_profile": {
+      "kondisi": "User tidak memiliki profil dosen",
+      "response": {
+        "status": "gagal",
+        "message": "Akses ditolak: Pengguna tidak memiliki profil dosen."
+      }
+    },
+    "invalid_skor": {
+      "kondisi": "Skor di luar rentang 0-100",
+      "response": {
+        "status": "error",
+        "message": "Skor must be at least 0 / Skor must be at most 100"
+      }
+    },
+    "empty_field": {
+      "kondisi": "Aspek atau komentar kosong",
+      "response": {
+        "status": "error",
+        "message": "Aspek cannot be empty / Komentar cannot be empty"
+      }
+    }
+  },
+
+  "database_transaction": {
+    "deskripsi": "Semua operasi penilaian menggunakan transaction untuk konsistensi",
+    "proses": [
+      "Validasi sidang dan peran dosen",
+      "Insert nilai baru",
+      "Hitung jumlah nilai yang masuk",
+      "Jika sudah lengkap, finalisasi hasil",
+      "Commit transaction jika sukses",
+      "Rollback jika ada error"
+    ],
+    "tujuan": "Mencegah data inconsistency dan partial updates"
+  },
+
+  "catatan_implementasi": {
+    "fleksibilitas_aspek": "Aspek penilaian tidak dibatasi, dosen bebas menentukan aspek yang dinilai",
+    "multiple_nilai": "Satu dosen bisa input multiple nilai untuk berbagai aspek",
+    "perhitungan_sederhana": "Rata-rata dihitung dari semua skor tanpa pembobotan",
+    "finalisasi_otomatis": "Tidak perlu approval manual, sistem langsung finalisasi",
+    "transparansi": "Semua nilai dan feedback visible untuk mahasiswa dan dosen lain",
+    "immutable": "Nilai yang sudah disubmit tidak bisa diubah (belum ada fitur edit)"
+  },
+
+  "saran_pengembangan": {
+    "pembobotan_aspek": "Tambahkan bobot untuk setiap aspek penilaian",
+    "edit_nilai": "Fitur edit nilai sebelum finalisasi",
+    "approval_workflow": "Tambahkan approval dari koordinator sebelum finalisasi",
+    "template_aspek": "Template aspek penilaian yang bisa dikonfigurasi admin",
+    "notifikasi": "Notifikasi ke mahasiswa saat hasil sudah tersedia",
+    "export_nilai": "Export hasil penilaian ke PDF/Excel",
+    "statistik": "Dashboard statistik penilaian per periode"
+  }
+}
