@@ -32,10 +32,10 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 apiuser
 
-COPY --from=builder --chown=apiuser:nodejs /app/apps/api/dist ./dist
+COPY --from=builder --chown=apiuser:nodejs /app/apps/api/src ./src
 COPY --from=builder --chown=apiuser:nodejs /app/apps/api/package.json ./package.json
 COPY --from=builder --chown=apiuser:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=apiuser:nodejs /app/packages/db/prisma ./packages/db/prisma
+COPY --from=builder --chown=apiuser:nodejs /app/packages/db ./packages/db
 
 RUN mkdir -p uploads documentation/model data && \
     chown -R apiuser:nodejs uploads documentation data
@@ -50,4 +50,4 @@ EXPOSE 3002
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3002/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-ENTRYPOINT ["./docker-entrypoint.sh"]
+CMD ["node", "--import", "tsx/esm", "src/server.ts"]
