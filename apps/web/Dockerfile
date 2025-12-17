@@ -6,6 +6,7 @@ RUN corepack enable
 FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/typescript-config/package.json ./packages/typescript-config/
 COPY apps/web/package.json ./apps/web/
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
@@ -13,6 +14,7 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+COPY packages/typescript-config ./packages/typescript-config
 COPY apps/web ./apps/web
 COPY package.json pnpm-workspace.yaml ./
 
