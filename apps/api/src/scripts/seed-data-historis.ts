@@ -39,10 +39,21 @@ async function seedDataHistoris() {
   console.log('🚀 Mulai seeding data historis...\n');
 
   const arsipDir = path.join(__dirname, '../../uploads/arsip/judul-ta');
+  
+  if (!fs.existsSync(arsipDir)) {
+    console.log('⏭️  Folder arsip tidak ditemukan, skip seeding historis');
+    return;
+  }
+  
   const files = fs
     .readdirSync(arsipDir)
     .filter((f) => f.endsWith('.csv'))
     .sort();
+  
+  if (files.length === 0) {
+    console.log('⏭️  Tidak ada file CSV di folder arsip');
+    return;
+  }
 
   let totalImported = 0;
   const hashedPassword = await bcrypt.hash('TIDAK_ADA_AKSES', 10);
