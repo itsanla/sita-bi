@@ -29,8 +29,11 @@ FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN apt-get update && apt-get install -y --no-install-recommends sqlite3 && \
-    rm -rf /var/lib/apt/lists/* && \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sqlite3 \
+    openssl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* && \
     groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid nodejs apiuser
 
@@ -47,7 +50,8 @@ COPY --from=builder --chown=apiuser:nodejs /app/pnpm-workspace.yaml ./pnpm-works
 RUN mkdir -p uploads documentation/model data && \
     chown -R apiuser:nodejs uploads documentation data && \
     mkdir -p node_modules/@repo && \
-    ln -sf /app/packages/db node_modules/@repo/db
+    ln -sf /app/packages/db node_modules/@repo/db && \
+    cd /app && pnpm rebuild sharp --platform=linux --arch=x64
 
 RUN cd /app/packages/db && npx prisma generate
 
