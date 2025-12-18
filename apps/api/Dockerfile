@@ -24,7 +24,7 @@ COPY apps/api ./apps/api
 
 RUN cd packages/db && pnpm db:generate
 RUN pnpm --filter @repo/db build
-RUN pnpm --filter api build
+RUN cd apps/api && pnpm build
 
 FROM base AS runner
 WORKDIR /app
@@ -36,10 +36,9 @@ RUN apk add --no-cache sqlite && \
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
-COPY --from=builder --chown=apiuser:nodejs /app/apps/api/src ./src
+COPY --from=builder --chown=apiuser:nodejs /app/apps/api/dist ./dist
 COPY --from=builder --chown=apiuser:nodejs /app/apps/api/package.json ./package.json
 COPY --from=builder --chown=apiuser:nodejs /app/packages/db ./packages/db
-COPY --from=builder --chown=apiuser:nodejs /app/packages/typescript-config ./packages/typescript-config
 COPY --from=builder --chown=apiuser:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=apiuser:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 

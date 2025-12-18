@@ -2,12 +2,12 @@
   "name": "api",
   "version": "1.0.0",
   "private": true,
-  "main": "dist/index.js",
+  "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon",
     "dev:tsx": "tsx watch --clear-screen=false --ignore 'node_modules/**' --ignore 'dist/**' --ignore 'uploads/**' --ignore '.wwebjs_auth/**' src/server.ts",
-    "build": "echo 'Using tsx runtime, no build needed'",
-    "start": "tsx src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
     "lint": "pnpm exec eslint \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "format": "prettier --write \"src/**/*.ts\"",
@@ -38,7 +38,6 @@
     "pdfkit": "^0.17.2",
     "puppeteer": "^24.30.0",
     "socket.io": "^4.8.1",
-    "tsx": "^4.16.2",
     "zod": "^4.1.11"
   },
   "devDependencies": {
@@ -64,6 +63,7 @@
     "nodemon": "^3.1.11",
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
+    "tsx": "^4.16.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.45.0"
   }
