@@ -37,6 +37,7 @@ import { errorHandler } from './middlewares/error.middleware';
 import { activityLogger } from './middlewares/logger.middleware';
 import { getUploadPath, getApiRoot } from './utils/upload.config';
 import { whatsappService } from './services/waha-whatsapp.service'; // WhatsApp service
+import prisma from './config/prisma';
 
 const app: express.Express = express();
 
@@ -201,8 +202,7 @@ app.get('/health', async (_req, res) => {
     const whatsappStatus = whatsappService.getStatus();
 
     // Check database connectivity
-    const { PrismaService } = require('./src/config/prisma');
-    await PrismaService.getClient().$queryRaw`SELECT 1`;
+    await prisma.$queryRaw`SELECT 1`;
 
     res.json({
       status: 'OK',
