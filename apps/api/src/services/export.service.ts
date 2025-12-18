@@ -144,6 +144,10 @@ export class ExportService {
           y += rowHeight;
         });
 
+        if (y > doc.page.height - 150) {
+          doc.addPage({ margin: 50, size: 'A4', layout: 'landscape' });
+        }
+        this.headerService.addSignatureSection(doc);
         doc.end();
       });
     });
@@ -339,6 +343,10 @@ export class ExportService {
           y += rowHeight;
         });
 
+        if (y > doc.page.height - 150) {
+          doc.addPage({ margin: 50, size: 'A4', layout: 'landscape' });
+        }
+        this.headerService.addSignatureSection(doc);
         doc.end();
       });
     });
@@ -473,6 +481,10 @@ export class ExportService {
           y += rowHeight;
         });
 
+        if (y > doc.page.height - 150) {
+          doc.addPage({ margin: 50, size: 'A4', layout: 'landscape' });
+        }
+        this.headerService.addSignatureSection(doc);
         doc.end();
       });
     });
@@ -589,6 +601,10 @@ export class ExportService {
           y += rowHeight;
         });
 
+        if (y > doc.page.height - 150) {
+          doc.addPage({ margin: 50, size: 'A4' });
+        }
+        this.headerService.addSignatureSection(doc);
         doc.end();
       });
     });
@@ -696,6 +712,10 @@ export class ExportService {
           y += rowHeight;
         });
 
+        if (y > doc.page.height - 150) {
+          doc.addPage({ margin: 50, size: 'A4' });
+        }
+        this.headerService.addSignatureSection(doc);
         doc.end();
       });
     });
@@ -778,6 +798,7 @@ export class ExportService {
         doc.text(`Waktu: ${sidangData.waktu}`);
         doc.text(`Ruangan: ${sidangData.ruangan}`);
         
+        this.headerService.addSignatureSection(doc);
         doc.end();
       });
     });

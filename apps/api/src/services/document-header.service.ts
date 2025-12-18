@@ -121,4 +121,41 @@ export class DocumentHeaderService {
     // Reset y position for content
     doc.y = lineY + 40;
   }
+
+  addSignatureSection(doc: PDFKit.PDFDocument): void {
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    const rightMargin = 50;
+    const bottomMargin = 50;
+    const sectionWidth = 200;
+    
+    const currentDate = new Date();
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const day = currentDate.getDate();
+    const month = months[currentDate.getMonth()];
+    
+    const startX = pageWidth - rightMargin - sectionWidth;
+    let startY = pageHeight - bottomMargin - 120;
+    
+    doc.fontSize(10).font('Helvetica');
+    doc.text(`Padang, ${day} ${month} 2025`, startX, startY, {
+      width: sectionWidth,
+      align: 'left',
+    });
+    
+    startY += 60;
+    
+    doc.fontSize(10).font('Helvetica-Bold');
+    doc.text('Dr. Yohannes Telaumbanua, S.Hum.,M.Pd', startX, startY, {
+      width: sectionWidth,
+      align: 'left',
+    });
+    
+    startY += 15;
+    doc.fontSize(9).font('Helvetica');
+    doc.text('NIP. 197808062009121001', startX, startY, {
+      width: sectionWidth,
+      align: 'left',
+    });
+  }
 }

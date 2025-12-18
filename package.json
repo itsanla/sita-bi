@@ -21,6 +21,9 @@
     "check:frontend": "pnpm --filter web lint && pnpm --filter web format",
     "check": "pnpm check:backend && pnpm check:frontend"
   },
+  "dependencies": {
+    "tsx": "^4.16.2"
+  },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "@repo/eslint-config": "workspace:*",
