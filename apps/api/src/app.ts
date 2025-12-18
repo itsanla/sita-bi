@@ -201,7 +201,7 @@ app.get('/health', async (_req, res) => {
     const whatsappStatus = whatsappService.getStatus();
 
     // Check database connectivity
-    const { PrismaService } = await import('./src/config/prisma');
+    const { PrismaService } = require('./config/prisma');
     await PrismaService.getClient().$queryRaw`SELECT 1`;
 
     res.json({
