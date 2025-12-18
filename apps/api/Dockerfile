@@ -44,7 +44,9 @@ COPY --from=builder --chown=apiuser:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=apiuser:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 
 RUN mkdir -p uploads documentation/model data && \
-    chown -R apiuser:nodejs uploads documentation data
+    chown -R apiuser:nodejs uploads documentation data && \
+    mkdir -p node_modules/@repo && \
+    ln -sf /app/packages/db node_modules/@repo/db
 
 RUN cd /app/packages/db && npx prisma generate
 
