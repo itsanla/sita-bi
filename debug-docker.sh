@@ -33,12 +33,18 @@ echo "5. Checking environment variables..."
 docker exec sita-bi-api env | grep -E "DATABASE_URL|NODE_ENV|JWT_SECRET" 2>/dev/null || echo "Container not running"
 echo ""
 
-echo "6. Testing database connection..."
-docker exec sita-bi-api sh -c 'cd /app/packages/db && npx prisma db execute --stdin <<< "SELECT 1;"' 2>&1 | head -20
+echo "6. Testing direct SQLite connection..."
+docker exec sita-bi-api sqlite3 /app/data/sita_bi.db "SELECT 1 as test;" 2>/dev/null || echo "Failed"
 echo ""
 
-echo "7. Checking Prisma Client..."
-docker exec sita-bi-api sh -c "ls -la /app/node_modules/.prisma/client/" 2>/dev/null | head -10
+echo "7. Checking Prisma Client location and schema..."
+docker exec sita-bi-api ls -la /app/node_modules/.prisma/client/ 2>/dev/null | head -10
+echo ""
+echo "Prisma Client schema URL:"
+docker exec sita-bi-api cat /app/node_modules/.prisma/client/schema.prisma 2>/dev/null | grep "url" | head -3
+echo ""
+echo "Testing Prisma Client query:"
+docker exec sita-bi-api sh -c "cd /app && node -e \"const { PrismaClient } = require('@repo/db'); const p = new PrismaClient(); p.\\\$queryRaw\\\`SELECT 1\\\`.then(r => {console.log('SUCCESS:', r); process.exit(0)}).catch(e => {console.error('ERROR:', e.message, e.code); process.exit(1)})\"" 2>&1
 echo ""
 
 echo "8. Testing health endpoint..."
