@@ -33,19 +33,17 @@ RUN apk add --no-cache wget && \
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
-RUN cp server.js apps/web/server.js && \
-    rm -rf apps/web/node_modules && \
-    mkdir -p apps/web/node_modules && \
-    ls -la node_modules/.pnpm/ | grep next && \
-    NEXT_PATH=$(find node_modules/.pnpm -name "next" -type d | head -1) && \
-    REACT_PATH=$(find node_modules/.pnpm -name "react" -type d | head -1) && \
-    echo "Found next at: $NEXT_PATH" && \
-    echo "Found react at: $REACT_PATH" && \
-    cp -rL "$NEXT_PATH" apps/web/node_modules/ && \
-    cp -rL "$REACT_PATH" apps/web/node_modules/
+
+RUN echo "=== Debug: Struktur standalone ===" && \
+    ls -la && \
+    echo "=== Debug: Cek server.js ===" && \
+    ls -la server.js && \
+    echo "=== Debug: Cek apps/web ===" && \
+    ls -la apps/web/ && \
+    echo "=== Debug: Cek node_modules ===" && \
+    ls -la node_modules/ || echo "node_modules tidak ada"
 
 USER nextjs
-WORKDIR /app/apps/web
 
 EXPOSE 3001
 
