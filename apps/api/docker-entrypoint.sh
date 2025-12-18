@@ -3,8 +3,8 @@ set -e
 
 echo "🔄 Running database migrations..."
 
-cd /app
-npx prisma migrate deploy --schema=./packages/db/prisma/schema.prisma || echo "⚠️  Migration failed or no migrations to run"
+cd /app/packages/db
+npx prisma migrate deploy || echo "⚠️  Migration failed or no migrations to run"
 
 echo "✅ Migrations complete"
 
