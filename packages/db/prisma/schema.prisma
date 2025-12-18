@@ -6,7 +6,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./sita_bi.db"
+  url      = env("DATABASE_URL")
 }
 
 //================================================================================
