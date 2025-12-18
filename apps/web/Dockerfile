@@ -33,8 +33,10 @@ RUN apk add --no-cache wget && \
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
+RUN cp server.js apps/web/server.js
 
 USER nextjs
+WORKDIR /app/apps/web
 
 EXPOSE 3001
 
