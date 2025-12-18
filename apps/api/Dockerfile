@@ -54,7 +54,7 @@ RUN mkdir -p uploads/bimbingan uploads/sidang uploads/tugas-akhir uploads/profil
     mkdir -p node_modules/@repo && \
     ln -sf /app/packages/db node_modules/@repo/db
 
-RUN cd /app/packages/db && npx prisma generate
+RUN cd /app/packages/db && DATABASE_URL="file:/app/data/sita_bi.db" npx prisma generate
 
 COPY --from=builder --chown=apiuser:nodejs /app/apps/api/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x docker-entrypoint.sh
