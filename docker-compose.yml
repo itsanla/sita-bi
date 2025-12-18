@@ -6,9 +6,6 @@ services:
     container_name: sita-bi-api
     ports:
       - "3002:3002"
-    depends_on:
-      waha:
-        condition: service_healthy
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/app/data/sita_bi.db
