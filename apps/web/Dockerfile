@@ -36,8 +36,13 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 RUN cp server.js apps/web/server.js && \
     rm -rf apps/web/node_modules && \
     mkdir -p apps/web/node_modules && \
-    cp -rL node_modules/.pnpm/next@*/node_modules/next apps/web/node_modules/ && \
-    cp -rL node_modules/.pnpm/react@*/node_modules/react apps/web/node_modules/
+    ls -la node_modules/.pnpm/ | grep next && \
+    NEXT_PATH=$(find node_modules/.pnpm -name "next" -type d | head -1) && \
+    REACT_PATH=$(find node_modules/.pnpm -name "react" -type d | head -1) && \
+    echo "Found next at: $NEXT_PATH" && \
+    echo "Found react at: $REACT_PATH" && \
+    cp -rL "$NEXT_PATH" apps/web/node_modules/ && \
+    cp -rL "$REACT_PATH" apps/web/node_modules/
 
 USER nextjs
 WORKDIR /app/apps/web
