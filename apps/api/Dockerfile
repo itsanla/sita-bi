@@ -33,6 +33,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sqlite3 \
     openssl \
     ca-certificates \
+    python3 \
+    make \
+    g++ \
     && rm -rf /var/lib/apt/lists/* && \
     groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid nodejs apiuser
@@ -51,7 +54,7 @@ RUN mkdir -p uploads documentation/model data && \
     chown -R apiuser:nodejs uploads documentation data && \
     mkdir -p node_modules/@repo && \
     ln -sf /app/packages/db node_modules/@repo/db && \
-    cd /app && pnpm rebuild sharp --platform=linux --arch=x64
+    npm rebuild sharp
 
 RUN cd /app/packages/db && npx prisma generate
 
