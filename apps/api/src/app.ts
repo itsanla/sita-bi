@@ -43,17 +43,84 @@ const app: express.Express = express();
 // Disable x-powered-by header for security
 app.disable('x-powered-by');
 
+// Track concurrent requests
+let concurrentRequests = 0;
+const MAX_CONCURRENT_REQUESTS = 100;
+const activeRequestsMap = new Map<string, { url: string; start: number }>();
+
+// Monitor and reset if counter goes negative (memory leak detection)
+setInterval(() => {
+  if (concurrentRequests < 0) {
+    console.error(`[MEMORY LEAK] Concurrent counter negative: ${concurrentRequests}, resetting to 0`);
+    concurrentRequests = 0;
+  }
+  if (concurrentRequests > MAX_CONCURRENT_REQUESTS * 2) {
+    console.error(`[MEMORY LEAK] Concurrent counter too high: ${concurrentRequests}, resetting to 0`);
+    concurrentRequests = 0;
+  }
+  
+  // Check for hanging requests - very aggressive
+  const now = Date.now();
+  let foundHang = false;
+  activeRequestsMap.forEach((req, id) => {
+    const duration = now - req.start;
+    if (duration > 12000) {
+      process.stderr.write(`\n[HANGING REQUEST] ${req.url} - ${Math.floor(duration/1000)}s\n`);
+      process.stderr.write('[FORCE KILL] Request hanging, killing process...\n');
+      foundHang = true;
+    }
+  });
+  
+  if (foundHang) {
+    process.kill(process.pid, 'SIGKILL');
+  }
+}, 2000); // Check every 2 seconds
+
 // Global Middlewares
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request timeout middleware - prevent hanging requests
 app.use((req, res, next) => {
-  const startTime = Date.now();
+  // Check concurrent request limit
+  if (concurrentRequests >= MAX_CONCURRENT_REQUESTS) {
+    console.error(`[OVERLOAD] Rejecting request - ${concurrentRequests} concurrent requests`);
+    res.status(503).json({
+      status: 'error',
+      message: 'Server overloaded, please try again later',
+    });
+    return;
+  }
   
-  // Set timeout for all requests (30 seconds)
-  req.setTimeout(30000);
-  res.setTimeout(30000);
+  concurrentRequests++;
+  const startTime = Date.now();
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  let cleanedUp = false;
+  
+  // Track this request
+  (req as any).requestId = requestId;
+  activeRequestsMap.set(requestId, { url: `${req.method} ${req.path}`, start: startTime });
+  
+  // Set timeout for all requests (10 seconds)
+  req.setTimeout(10000, () => {
+    console.error(`[REQ TIMEOUT] ${req.method} ${req.path} - Request socket timeout`);
+    if (!res.headersSent) {
+      res.status(408).json({
+        status: 'error',
+        message: 'Request timeout - socket timeout',
+      });
+    }
+  });
+  
+  res.setTimeout(10000, () => {
+    console.error(`[RES TIMEOUT] ${req.method} ${req.path} - Response socket timeout`);
+    if (!res.headersSent) {
+      res.status(408).json({
+        status: 'error',
+        message: 'Request timeout - response timeout',
+      });
+    }
+  });
 
   const timeout = setTimeout(() => {
     if (!res.headersSent) {
@@ -63,19 +130,33 @@ app.use((req, res, next) => {
         message: 'Request timeout - server took too long to respond',
       });
     }
-  }, 30000);
+  }, 10000);
 
-  res.on('finish', () => {
+  // Cleanup on finish - prevent double cleanup
+  const cleanup = () => {
+    if (cleanedUp) return;
+    cleanedUp = true;
+    
     clearTimeout(timeout);
+    concurrentRequests = Math.max(0, concurrentRequests - 1);
+    activeRequestsMap.delete(requestId);
+    
     const duration = Date.now() - startTime;
     if (duration > 5000) {
       console.warn(`[SLOW] ${req.method} ${req.path} - ${duration}ms`);
     }
-  });
+  };
+
+  res.once('finish', cleanup);
+  res.once('close', cleanup);
   
-  res.on('close', () => {
-    clearTimeout(timeout);
-  });
+  // Force cleanup after 12 seconds
+  setTimeout(() => {
+    if (!cleanedUp) {
+      console.error(`[FORCE CLEANUP] ${req.method} ${req.path} - 12s timeout`);
+      cleanup();
+    }
+  }, 12000);
 
   next();
 });
@@ -83,7 +164,7 @@ app.use((req, res, next) => {
 // Log all incoming requests (skip OPTIONS to reduce noise)
 app.use((req, res, next) => {
   if (req.method !== 'OPTIONS') {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} (concurrent: ${concurrentRequests})`);
   }
   next();
 });
@@ -179,22 +260,39 @@ app.use('/api/aturan-validasi', aturanValidasiRouter);
 app.use('/api/penjadwalan-sidang', penjadwalanSidangRouter);
 app.use('/api/data-master', dataMasterRouter);
 
-// Catch unhandled routes
+// Catch unhandled routes with timeout protection
 app.use((req, res) => {
   console.warn(`[404] ${req.method} ${req.path}`);
-  res.status(404).json({ status: 'error', message: 'Route not found' });
+  if (!res.headersSent) {
+    res.status(404).json({ status: 'error', message: 'Route not found' });
+  }
 });
 
-// Error Handling Middleware
-app.use(errorHandler);
+// Error Handling Middleware with timeout protection
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error('[ERROR MIDDLEWARE]', err);
+  if (!res.headersSent) {
+    errorHandler(err, req, res, next);
+  } else {
+    console.error('[ERROR] Headers already sent, cannot send error response');
+  }
+});
 
-// Handle uncaught exceptions
+// Handle uncaught exceptions - log but don't crash in development
 process.on('uncaughtException', (error) => {
   console.error('[UNCAUGHT EXCEPTION]', error);
+  if (process.env['NODE_ENV'] === 'production') {
+    console.error('🔄 Restarting server due to uncaught exception...');
+    process.exit(1);
+  }
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('[UNHANDLED REJECTION]', reason, promise);
+  if (process.env['NODE_ENV'] === 'production') {
+    console.error('🔄 Restarting server due to unhandled rejection...');
+    process.exit(1);
+  }
 });
 
 export default app;

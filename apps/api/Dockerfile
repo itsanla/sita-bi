@@ -56,7 +56,7 @@ USER apiuser
 
 EXPOSE 3002
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+HEALTHCHECK --interval=5s --timeout=7s --start-period=40s --retries=2 \
   CMD node -e "require('http').get('http://localhost:3002/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 ENV NODE_PATH=/app/node_modules

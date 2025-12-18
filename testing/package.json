@@ -1,0 +1,28 @@
+{
+  "name": "testing",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test:bimbingan": "tsx bimbinganTest.ts",
+    "test:bimbingan:admin": "TEST_ROLE=admin tsx bimbinganTest.ts",
+    "test:bimbingan:dosen": "TEST_ROLE=dosen tsx bimbinganTest.ts",
+    "test:bimbingan:jurusan": "TEST_ROLE=jurusan tsx bimbinganTest.ts",
+    "test:bimbingan:prodi-d3": "TEST_ROLE=prodi_d3 tsx bimbinganTest.ts",
+    "test:bimbingan:prodi-d4": "TEST_ROLE=prodi_d4 tsx bimbinganTest.ts",
+    "test:bimbingan:mahasiswa": "TEST_ROLE=mahasiswa tsx bimbinganTest.ts",
+    "test:success": "tsx bimbingan-success.test.ts",
+    "test:error": "tsx bimbingan-error.test.ts",
+    "test:aturan-validasi": "tsx run-aturan-validasi.ts",
+    "test:auth": "tsx run-auth.ts",
+    "test:all-roles": "tsx run-all-tests.ts",
+    "test:infinity": "tsx run-infinity-loop.ts",
+    "trigger:hang": "tsx trigger-hang.ts",
+    "detail:skip": "tsx skipped-endpoints.ts"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "dotenv": "^16.6.1",
+    "form-data": "^4.0.0",
+    "tsx": "^4.16.2"
+  }
+}

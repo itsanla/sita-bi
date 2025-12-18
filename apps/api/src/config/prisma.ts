@@ -17,6 +17,20 @@ function getInstance(): PrismaClient {
       },
     });
 
+    // Add query timeout middleware
+    instance.$use(async (params, next) => {
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`Query timeout: ${params.model}.${params.action}`)), 10000)
+      );
+      
+      try {
+        return await Promise.race([next(params), timeout]);
+      } catch (error) {
+        console.error('[PRISMA TIMEOUT]', params.model, params.action);
+        throw error;
+      }
+    });
+
     // Handle connection errors
     instance.$connect().catch((err: unknown) => {
       console.error('Failed to connect to database:', err);

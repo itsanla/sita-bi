@@ -14,7 +14,7 @@ import { createRateLimiter } from '../middlewares/rate-limit.middleware';
 
 const loginLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
-  maxRequests: 50,
+  maxRequests: 1000, // Increased for stress testing
   message: 'Terlalu banyak percobaan login. Coba lagi dalam 15 menit.',
 });
 

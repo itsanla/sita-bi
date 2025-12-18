@@ -14,4 +14,8 @@ export const prisma =
 
 if (process.env['NODE_ENV'] !== 'production') globalForPrisma.prisma = prisma;
 
+// Optimasi SQLite untuk concurrent access
+prisma.$queryRawUnsafe('PRAGMA journal_mode = WAL;').catch(() => {});
+prisma.$queryRawUnsafe('PRAGMA busy_timeout = 5000;').catch(() => {});
+
 export default prisma;

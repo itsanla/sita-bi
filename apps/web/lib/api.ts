@@ -10,7 +10,7 @@ import { ApiResponse } from '../types';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api`,
-  timeout: 10000,
+  timeout: 3000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -46,7 +46,7 @@ apiClient.interceptors.request.use(
       config.url?.includes('/similarity') ||
       config.url?.includes('/check-similarity')
     ) {
-      config.timeout = 60000;
+      config.timeout = 30000;
     }
 
     return config;

@@ -433,6 +433,11 @@ export class BimbinganService {
           }
         }
 
+        // Get next sesi_ke number
+        const existingCount = await tx.bimbinganTA.count({
+          where: { tugas_akhir_id: tugasAkhirId },
+        });
+        
         const bimbingan = await tx.bimbinganTA.create({
           data: {
             tugas_akhir_id: tugasAkhirId,
@@ -441,6 +446,7 @@ export class BimbinganService {
             tanggal_bimbingan: tanggalDate,
             jam_bimbingan: jam,
             status_bimbingan: 'dijadwalkan',
+            sesi_ke: existingCount + 1,
           },
         });
 
