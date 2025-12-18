@@ -33,7 +33,6 @@ RUN apk add --no-cache wget && \
 COPY --from=builder /app/apps/web/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 USER nextjs
 
@@ -45,4 +44,4 @@ ENV HOSTNAME="0.0.0.0"
 HEALTHCHECK --interval=3s --timeout=5s --start-period=40s --retries=1 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3001 || exit 1
 
-CMD ["node", "server.js"]
+CMD ["node", "apps/web/server.js"]
