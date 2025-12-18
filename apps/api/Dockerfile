@@ -29,7 +29,7 @@ FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN apk add --no-cache sqlite && \
+RUN apk add --no-cache sqlite gcompat && \
     addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 apiuser
 
