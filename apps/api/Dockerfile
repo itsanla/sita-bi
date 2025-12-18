@@ -36,6 +36,7 @@ RUN apk add --no-cache sqlite && \
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
 COPY --from=builder --chown=apiuser:nodejs /app/apps/api/src ./src
+COPY --from=builder --chown=apiuser:nodejs /app/apps/api/tsconfig.json ./tsconfig.json
 COPY --from=builder --chown=apiuser:nodejs /app/apps/api/package.json ./package.json
 COPY --from=builder --chown=apiuser:nodejs /app/packages/db ./packages/db
 COPY --from=builder --chown=apiuser:nodejs /app/packages/typescript-config ./packages/typescript-config

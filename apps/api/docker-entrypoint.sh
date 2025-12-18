@@ -20,4 +20,4 @@ fi
 echo "🚀 Starting API server..."
 
 cd /app
-exec node -r tsconfig-paths/register -r tsx/cjs src/server.ts
+exec npx tsx --tsconfig tsconfig.json src/server.ts
