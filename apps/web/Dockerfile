@@ -33,7 +33,11 @@ RUN apk add --no-cache wget && \
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
-RUN cp server.js apps/web/server.js
+RUN cp server.js apps/web/server.js && \
+    rm -rf apps/web/node_modules && \
+    mkdir -p apps/web/node_modules && \
+    cp -rL node_modules/.pnpm/next@15.5.6_@playwright+test@1.56.1_react-dom@19.2.0_react@19.2.0/node_modules/next apps/web/node_modules/ && \
+    cp -rL node_modules/.pnpm/react@19.2.0/node_modules/react apps/web/node_modules/
 
 USER nextjs
 WORKDIR /app/apps/web
