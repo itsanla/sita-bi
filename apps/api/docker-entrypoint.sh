@@ -19,4 +19,5 @@ fi
 
 echo "🚀 Starting API server..."
 
-exec node --import tsx/esm src/server.ts
+cd /app
+exec npx tsx src/server.ts
