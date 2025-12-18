@@ -47,40 +47,62 @@ echo "Testing Prisma Client query:"
 docker exec sita-bi-api sh -c "cd /app && node -e \"const { PrismaClient } = require('@repo/db'); const p = new PrismaClient(); p.\\\$queryRaw\\\`SELECT 1\\\`.then(r => {console.log('SUCCESS:', r); process.exit(0)}).catch(e => {console.error('ERROR:', e.message, e.code); process.exit(1)})\"" 2>&1
 echo ""
 
-echo "8. Checking Prisma config file..."
+echo "8. Checking Prisma config file paths..."
+echo "Does /app/config/prisma.ts exist?"
+docker exec sita-bi-api ls -la /app/config/prisma.ts 2>/dev/null || echo "File not found"
+echo ""
 echo "Does /app/src/config/prisma.ts exist?"
 docker exec sita-bi-api ls -la /app/src/config/prisma.ts 2>/dev/null || echo "File not found"
 echo ""
-echo "Content of prisma config:"
-docker exec sita-bi-api cat /app/src/config/prisma.ts 2>/dev/null | head -30
+echo "Does /app/config/prisma.js exist?"
+docker exec sita-bi-api ls -la /app/config/prisma.js 2>/dev/null || echo "File not found"
+echo ""
+echo "Does /app/src/config/prisma.js exist?"
+docker exec sita-bi-api ls -la /app/src/config/prisma.js 2>/dev/null || echo "File not found"
+echo ""
+echo "List /app/config/ directory:"
+docker exec sita-bi-api ls -la /app/config/ 2>/dev/null || echo "Directory not found"
+echo ""
+echo "List /app/src/config/ directory:"
+docker exec sita-bi-api ls -la /app/src/config/ 2>/dev/null || echo "Directory not found"
 echo ""
 
-echo "9. Testing health check code manually..."
+echo "9. Testing require.resolve..."
+docker exec sita-bi-api sh -c "cd /app && node -e \"console.log(require.resolve('./config/prisma'))\"" 2>&1
+echo ""
+docker exec sita-bi-api sh -c "cd /app && node -e \"console.log(require.resolve('./src/config/prisma'))\"" 2>&1
+echo ""
+
+echo "10. Checking app.ts health check code..."
+docker exec sita-bi-api grep -A 3 "Check database connectivity" /app/src/app.ts 2>/dev/null
+echo ""
+
+echo "11. Testing health check code manually with require..."
 docker exec sita-bi-api sh -c "cd /app && node -e \"
-(async () => {
-  try {
-    const { PrismaService } = await import('./config/prisma');
-    const client = PrismaService.getClient();
-    const result = await client.\\\$queryRaw\\\`SELECT 1\\\`;
-    console.log('Health check SUCCESS:', result);
-  } catch (e) {
-    console.error('Health check ERROR:', e.message);
-    console.error('Error code:', e.code);
-    console.error('Stack:', e.stack);
-  }
-})();
+try {
+  const { PrismaService } = require('./config/prisma');
+  console.log('SUCCESS: Loaded PrismaService');
+  PrismaService.getClient().\\\$queryRaw\\\`SELECT 1\\\`.then(r => {
+    console.log('Query SUCCESS:', r);
+  }).catch(e => {
+    console.error('Query ERROR:', e.message);
+  });
+} catch (e) {
+  console.error('Require ERROR:', e.message);
+  console.error('Stack:', e.stack);
+}
 \"" 2>&1
 echo ""
 
-echo "10. Testing health endpoint..."
+echo "12. Testing health endpoint..."
 curl -s http://localhost:3002/health | jq . 2>/dev/null || curl -s http://localhost:3002/health
 echo ""
 
-echo "11. Checking volume mounts..."
+echo "13. Checking volume mounts..."
 docker inspect sita-bi-api 2>/dev/null | grep -A 20 "Mounts" | head -25
 echo ""
 
-echo "12. Checking Prisma schema DATABASE_URL..."
+echo "14. Checking Prisma schema DATABASE_URL..."
 docker exec sita-bi-api grep "url" /app/packages/db/prisma/schema.prisma 2>/dev/null
 echo ""
 
