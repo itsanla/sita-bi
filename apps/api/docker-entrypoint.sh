@@ -20,4 +20,5 @@ fi
 echo "🚀 Starting API server..."
 
 cd /app
-exec npx tsx --tsconfig tsconfig.json src/server.ts
+export NODE_PATH=/app/node_modules:/app/packages
+exec npx tsx src/server.ts
