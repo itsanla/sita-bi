@@ -37,7 +37,7 @@ import { errorHandler } from './middlewares/error.middleware';
 import { activityLogger } from './middlewares/logger.middleware';
 import { getUploadPath, getApiRoot } from './utils/upload.config';
 import { whatsappService } from './services/waha-whatsapp.service'; // WhatsApp service
-import prisma from './config/prisma';
+import prisma from './config/database';
 
 const app: express.Express = express();
 
