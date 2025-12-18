@@ -26,7 +26,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN apk add --no-cache curl && \
+RUN apk add --no-cache wget && \
     addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
@@ -42,6 +42,6 @@ ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:3001 || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3001 || exit 1
 
 CMD ["node", "apps/web/server.js"]
