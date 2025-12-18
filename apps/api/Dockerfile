@@ -38,6 +38,9 @@ COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
 COPY --from=builder --chown=apiuser:nodejs /app/apps/api/src ./src
 COPY --from=builder --chown=apiuser:nodejs /app/apps/api/package.json ./package.json
 COPY --from=builder --chown=apiuser:nodejs /app/packages/db ./packages/db
+COPY --from=builder --chown=apiuser:nodejs /app/packages/typescript-config ./packages/typescript-config
+COPY --from=builder --chown=apiuser:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=apiuser:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 
 RUN mkdir -p uploads documentation/model data && \
     chown -R apiuser:nodejs uploads documentation data
