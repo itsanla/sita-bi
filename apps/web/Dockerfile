@@ -36,8 +36,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 
 USER nextjs
 
-WORKDIR /app/apps/web
-
 EXPOSE 3001
 
 ENV PORT=3001
