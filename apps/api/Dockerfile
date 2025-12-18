@@ -46,6 +46,9 @@ COPY --from=builder --chown=apiuser:nodejs /app/pnpm-workspace.yaml ./pnpm-works
 RUN mkdir -p uploads documentation/model data && \
     chown -R apiuser:nodejs uploads documentation data
 
+# Generate Prisma client in runner stage
+RUN cd /app/packages/db && npx prisma generate
+
 COPY --from=builder --chown=apiuser:nodejs /app/apps/api/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x docker-entrypoint.sh
 
