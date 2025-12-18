@@ -20,4 +20,4 @@ fi
 echo "🚀 Starting API server..."
 
 cd /app
-exec node dist/server.js
+exec npx tsx src/server.ts
