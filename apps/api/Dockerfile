@@ -5,12 +5,15 @@ RUN corepack enable
 
 FROM base AS deps
 WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 make g++ && rm -rf /var/lib/apt/lists/*
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/db/package.json ./packages/db/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 COPY apps/api/package.json ./apps/api/
 RUN pnpm config set network-timeout 600000
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+RUN npm rebuild sharp
 
 FROM base AS builder
 WORKDIR /app
@@ -30,12 +33,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    sqlite3 \
-    openssl \
-    ca-certificates \
-    python3 \
-    make \
-    g++ \
+    sqlite3 openssl ca-certificates \
     && rm -rf /var/lib/apt/lists/* && \
     groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid nodejs apiuser
@@ -53,8 +51,7 @@ COPY --from=builder --chown=apiuser:nodejs /app/pnpm-workspace.yaml ./pnpm-works
 RUN mkdir -p uploads documentation/model data && \
     chown -R apiuser:nodejs uploads documentation data && \
     mkdir -p node_modules/@repo && \
-    ln -sf /app/packages/db node_modules/@repo/db && \
-    npm rebuild sharp
+    ln -sf /app/packages/db node_modules/@repo/db
 
 RUN cd /app/packages/db && npx prisma generate
 
