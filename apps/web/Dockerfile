@@ -34,6 +34,10 @@ COPY --from=builder /app/apps/web/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 
+RUN mkdir -p apps/web/node_modules && \
+    ln -s /app/node_modules/.pnpm apps/web/node_modules/.pnpm && \
+    chown -R nextjs:nodejs apps/web/node_modules
+
 USER nextjs
 
 EXPOSE 3001
