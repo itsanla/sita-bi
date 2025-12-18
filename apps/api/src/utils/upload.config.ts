@@ -37,7 +37,10 @@ export const ensureDirectoryExists = (dirPath: string): void => {
 // Utility function untuk mendapatkan path upload lengkap di apps/api
 export const getUploadPath = (subDir?: string): string => {
   const apiRoot = getApiRoot();
-  const basePath = path.join(apiRoot, uploadConfig.uploadsDir);
+  // If uploadsDir is absolute path, use it directly, otherwise join with apiRoot
+  const basePath = path.isAbsolute(uploadConfig.uploadsDir) 
+    ? uploadConfig.uploadsDir 
+    : path.join(apiRoot, uploadConfig.uploadsDir);
 
   if (subDir !== undefined && subDir.length > 0) {
     const fullPath = path.join(basePath, subDir);
