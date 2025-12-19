@@ -1,6 +1,4 @@
-node_modules
-!node_modules/.prisma
-!node_modules/@prisma
+# Allow node_modules (pre-installed by pnpm)
 src
 *.ts
 tsconfig.json

@@ -8,12 +8,9 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends dumb-init && \
     rm -rf /var/lib/apt/lists/*
 
-# Install production dependencies only
-COPY package.json ./
-RUN npm install --omit=dev --ignore-scripts
-
-# Copy pre-built artifacts from local
+# Copy pre-built artifacts and dependencies from local
 COPY dist ./
+COPY node_modules ./node_modules
 
 # Create user and set ownership
 RUN groupadd --system --gid 1001 nodejs && \
