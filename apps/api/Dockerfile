@@ -53,11 +53,14 @@ RUN apt-get update && \
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid nodejs apiuser
 
-# Copy pruned dependencies from pnpm deploy (includes Prisma client)
+# Copy pruned dependencies from pnpm deploy
 COPY --from=pruner --chown=apiuser:nodejs /prod/api ./
 
 # Copy built code
 COPY --from=builder --chown=apiuser:nodejs /app/apps/api/dist ./
+
+# Copy Prisma generated client
+COPY --from=builder --chown=apiuser:nodejs /app/node_modules/.pnpm/@prisma+client@6.19.0_prisma@6.19.0_typescript@5.9.3/node_modules/.prisma ./node_modules/.pnpm/@prisma+client@6.19.0_prisma@6.19.0_typescript@5.9.3/node_modules/.prisma
 
 USER apiuser
 
