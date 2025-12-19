@@ -1,0 +1,12 @@
+.turbo
+dist
+build
+.git
+.github
+.vscode
+.env.local
+*.log
+coverage
+.DS_Store
+README.md
+.gitignore
