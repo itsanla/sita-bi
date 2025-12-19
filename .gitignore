@@ -39,6 +39,12 @@ prisma.json
 migrations/
 dev.db
 
+# Database files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
 # IDEs and editors
 /.idea
 .project
