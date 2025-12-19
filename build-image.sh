@@ -4,7 +4,7 @@ set -e
 VERSION_FILE=".version"
 
 if [ ! -f "$VERSION_FILE" ]; then
-  echo "2.0.0" > "$VERSION_FILE"
+  echo "1.0.0" > "$VERSION_FILE"
 fi
 
 VERSION=$(cat "$VERSION_FILE")
@@ -15,14 +15,14 @@ echo ""
 # Build with BuildKit for better caching and performance
 export DOCKER_BUILDKIT=1
 
-# echo "📦 Building API image..."
-# docker build \
-#   --platform linux/amd64 \
-#   --build-arg BUILDKIT_INLINE_CACHE=1 \
-#   -t itsanla/sita-api:$VERSION \
-#   -t itsanla/sita-api:latest \
-#   -f apps/api/Dockerfile \
-#   .
+echo "📦 Building API image..."
+docker build \
+  --platform linux/amd64 \
+  --build-arg BUILDKIT_INLINE_CACHE=1 \
+  -t itsanla/sita-api:$VERSION \
+  -t itsanla/sita-api:latest \
+  -f apps/api/Dockerfile \
+  .
 
 echo ""
 echo "🌐 Building Web image..."
