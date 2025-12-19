@@ -43,6 +43,8 @@ RUN apt-get update && \
     npm install -g pnpm@8.15.5
 COPY --from=builder /app/packages/db/package.json ./packages/db/package.json
 COPY --from=builder /app/apps/api/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 RUN pnpm install --prod --frozen-lockfile
 
 # Copy Prisma client and built JS (clean structure)
