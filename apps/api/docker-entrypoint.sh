@@ -1,11 +1,11 @@
 #!/bin/sh
 set -e
 
-echo "🔄 Running database migrations..."
+echo "🔄 Syncing database schema..."
 
 export DATABASE_URL="file:/app/data/sita_bi.db"
 cd /app/packages/db
-npx prisma migrate deploy || echo "⚠️  Migration failed or no migrations to run"
+npx prisma db push || echo "⚠️  Schema sync failed"
 
 echo "✅ Migrations complete"
 
