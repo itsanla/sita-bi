@@ -10,7 +10,7 @@ RUN apt-get update && \
 
 # Copy pre-built artifacts and dependencies from local
 COPY dist ./
-COPY node_modules ./node_modules
+COPY node_modules_prod ./node_modules
 
 # Create user and set ownership
 RUN groupadd --system --gid 1001 nodejs && \
