@@ -45,9 +45,7 @@ RUN apt-get update && \
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid nodejs apiuser
 
-# Copy only production node_modules from builder
-COPY --from=builder --chown=apiuser:nodejs /app/node_modules/.pnpm/@prisma+client*/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder --chown=apiuser:nodejs /app/node_modules/.pnpm/@prisma+client*/node_modules/@prisma ./node_modules/@prisma
+# Copy dependencies and built code
 COPY --from=builder --chown=apiuser:nodejs /app/node_modules/.pnpm/node_modules ./node_modules
 COPY --from=builder --chown=apiuser:nodejs /app/apps/api/dist ./
 
