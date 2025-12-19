@@ -37,7 +37,6 @@ export class LaporanService {
                 PeranDosen.penguji1,
                 PeranDosen.penguji2,
                 PeranDosen.penguji3,
-                PeranDosen.penguji4,
               ],
             },
           },

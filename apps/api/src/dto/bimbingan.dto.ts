@@ -22,9 +22,7 @@ export type SetJadwalDto = z.infer<typeof setJadwalSchema>;
 
 export const createSesiSchema = z.object({
   tugas_akhir_id: z.number().int('tugas_akhir_id must be an integer'),
-  pembimbing_peran: z.enum(['pembimbing1', 'pembimbing2'], {
-    required_error: 'Pilih pembimbing yang akan melakukan bimbingan',
-  }),
+  pembimbing_peran: z.enum(['pembimbing1', 'pembimbing2']),
 });
 
 export type CreateSesiDto = z.infer<typeof createSesiSchema>;

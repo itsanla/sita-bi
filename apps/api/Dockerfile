@@ -21,6 +21,10 @@ COPY apps/api ./apps/api
 # Generate Prisma client
 RUN cd packages/db && pnpm db:generate
 
+# Build TypeScript to JavaScript
+WORKDIR /app/apps/api
+RUN pnpm build
+
 # Create user
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid nodejs apiuser && \
@@ -34,4 +38,4 @@ EXPOSE 3002
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3002/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-CMD ["tsx", "src/server.ts"]
+CMD ["node", "dist/server.js"]

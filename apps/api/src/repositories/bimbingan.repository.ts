@@ -189,10 +189,13 @@ export class BimbinganRepository {
     peran: string;
     tanggal_bimbingan: Date;
     jam_bimbingan: string;
+    sesi_ke?: number;
   }): Promise<unknown> {
+    const sesiKe = data.sesi_ke ?? (await this.countBimbinganByTugasAkhir(data.tugas_akhir_id)) + 1;
     return this.prisma.bimbinganTA.create({
       data: {
         ...data,
+        sesi_ke: sesiKe,
         status_bimbingan: 'dijadwalkan',
       },
     });

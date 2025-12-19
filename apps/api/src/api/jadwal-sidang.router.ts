@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type IRouter } from 'express';
 import { JadwalSidangService } from '../services/jadwal-sidang.service';
 import { RuanganSyncService } from '../services/ruangan-sync.service';
 import { ExportService } from '../services/export.service';
@@ -8,7 +8,7 @@ import { authorizeRoles } from '../middlewares/roles.middleware';
 import { Role } from '../middlewares/auth.middleware';
 import { auditLog } from '../middlewares/audit.middleware';
 
-const router = Router();
+const router: IRouter = Router();
 const service = new JadwalSidangService();
 const ruanganSync = new RuanganSyncService();
 const exportService = new ExportService();
@@ -20,7 +20,7 @@ router.post(
   auditLog('GENERATE_JADWAL_SIDANG', 'jadwal_sidang'),
   asyncHandler(async (req, res) => {
     console.log('[BACKEND API] 🚀 POST /generate called');
-    console.log('[BACKEND API] 👤 User:', req.user?.name, req.user?.email);
+    console.log('[BACKEND API] 👤 User:', (req.user as any)?.name, req.user?.email);
 
     console.log('[BACKEND API] 🔄 Syncing ruangan...');
     const syncResult = await ruanganSync.syncRuanganFromPengaturan();
@@ -188,13 +188,13 @@ router.get(
   asyncHandler(authMiddleware),
   asyncHandler(async (req, res) => {
     const jadwal = await service.getJadwalSidang();
-    const exportData = jadwal.map((item) => {
+    const exportData = jadwal.map((item: any) => {
       const mhs = item.sidang.tugasAkhir.mahasiswa;
       const peran = item.sidang.tugasAkhir.peranDosenTa;
-      const ketua = peran.find((p) => p.peran === 'penguji1');
-      const sekretaris = peran.find((p) => p.peran === 'pembimbing1');
-      const anggota1 = peran.find((p) => p.peran === 'penguji2');
-      const anggota2 = peran.find((p) => p.peran === 'penguji3');
+      const ketua = peran.find((p: any) => p.peran === 'penguji1');
+      const sekretaris = peran.find((p: any) => p.peran === 'pembimbing1');
+      const anggota1 = peran.find((p: any) => p.peran === 'penguji2');
+      const anggota2 = peran.find((p: any) => p.peran === 'penguji3');
 
       const tanggal = new Date(item.tanggal);
       const hariMap = [
@@ -259,13 +259,13 @@ router.get(
   asyncHandler(authMiddleware),
   asyncHandler(async (req, res) => {
     const jadwal = await service.getJadwalSidang();
-    const exportData = jadwal.map((item) => {
+    const exportData = jadwal.map((item: any) => {
       const mhs = item.sidang.tugasAkhir.mahasiswa;
       const peran = item.sidang.tugasAkhir.peranDosenTa;
-      const ketua = peran.find((p) => p.peran === 'penguji1');
-      const sekretaris = peran.find((p) => p.peran === 'pembimbing1');
-      const anggota1 = peran.find((p) => p.peran === 'penguji2');
-      const anggota2 = peran.find((p) => p.peran === 'penguji3');
+      const ketua = peran.find((p: any) => p.peran === 'penguji1');
+      const sekretaris = peran.find((p: any) => p.peran === 'pembimbing1');
+      const anggota1 = peran.find((p: any) => p.peran === 'penguji2');
+      const anggota2 = peran.find((p: any) => p.peran === 'penguji3');
 
       const tanggal = new Date(item.tanggal);
       const hariMap = [

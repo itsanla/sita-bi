@@ -379,10 +379,10 @@ export class PendaftaranSidangService {
     }
 
     const pengaturan = await this.pengaturanService.getPengaturan();
-    const validasiPembimbing1 = pengaturan.validasi_pembimbing_1 === true;
-    const validasiPembimbing2 = pengaturan.validasi_pembimbing_2 === true;
-    const validasiProdi = pengaturan.validasi_prodi === true;
-    const validasiJurusan = pengaturan.validasi_jurusan === true;
+    const validasiPembimbing1 = (pengaturan.validasi_pembimbing_1 as any) === true;
+    const validasiPembimbing2 = (pengaturan.validasi_pembimbing_2 as any) === true;
+    const validasiProdi = (pengaturan.validasi_prodi as any) === true;
+    const validasiJurusan = (pengaturan.validasi_jurusan as any) === true;
 
     console.log('=== VALIDATION DEBUG ===');
     console.log('Pengaturan:', {

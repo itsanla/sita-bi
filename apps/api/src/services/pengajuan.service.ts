@@ -8,7 +8,8 @@ const ERROR_PENGAJUAN_TIDAK_DITEMUKAN = 'Pengajuan tidak ditemukan';
 const ERROR_PELEPASAN_TIDAK_DITEMUKAN = 'Pengajuan pelepasan tidak ditemukan';
 const STATUS_MENUNGGU_PERSETUJUAN_DOSEN = 'MENUNGGU_PERSETUJUAN_DOSEN';
 const STATUS_MENUNGGU_PERSETUJUAN_MAHASISWA = 'MENUNGGU_PERSETUJUAN_MAHASISWA';
-const PERAN_PEMBIMBING: readonly string[] = ['pembimbing1', 'pembimbing2'];
+const PERAN_PEMBIMBING = ['pembimbing1', 'pembimbing2'] as const;
+type PeranDosen = typeof PERAN_PEMBIMBING[number];
 const ERROR_PENGAJUAN_SUDAH_DIPROSES = 'Pengajuan sudah diproses';
 
 export class PengajuanService {
@@ -138,7 +139,7 @@ export class PengajuanService {
     const jumlahBimbingan = await this.prisma.peranDosenTa.count({
       where: {
         dosen_id: dosenId,
-        peran: { in: PERAN_PEMBIMBING },
+        peran: { in: [...PERAN_PEMBIMBING] },
       },
     });
 
@@ -260,7 +261,7 @@ export class PengajuanService {
       const jumlahBimbingan = await tx.peranDosenTa.count({
         where: {
           dosen_id: pengajuan.dosen_id,
-          peran: { in: PERAN_PEMBIMBING },
+          peran: { in: [...PERAN_PEMBIMBING] },
         },
       });
 
@@ -296,7 +297,7 @@ export class PengajuanService {
         data: {
           tugas_akhir_id: tugasAkhir.id,
           dosen_id: pengajuan.dosen_id,
-          peran: pengajuan.peran_yang_diajukan,
+          peran: pengajuan.peran_yang_diajukan as any,
         },
       });
 
@@ -304,7 +305,7 @@ export class PengajuanService {
       const totalPembimbing = await tx.peranDosenTa.count({
         where: {
           tugas_akhir_id: tugasAkhir.id,
-          peran: { in: PERAN_PEMBIMBING },
+          peran: { in: [...PERAN_PEMBIMBING] },
         },
       });
 
@@ -519,7 +520,7 @@ export class PengajuanService {
       include: {
         peranDosenTa: {
           where: {
-            peran: { in: PERAN_PEMBIMBING },
+            peran: { in: [...PERAN_PEMBIMBING] },
           },
           include: {
             dosen: { include: { user: true } },
@@ -556,7 +557,7 @@ export class PengajuanService {
     const mahasiswaBimbingan = await this.prisma.peranDosenTa.findMany({
       where: {
         dosen_id: dosenId,
-        peran: { in: PERAN_PEMBIMBING },
+        peran: { in: [...PERAN_PEMBIMBING] },
       },
       include: {
         tugasAkhir: {
@@ -590,7 +591,7 @@ export class PengajuanService {
         user: { select: { id: true, name: true, email: true } },
         peranDosenTa: {
           where: {
-            peran: { in: PERAN_PEMBIMBING },
+            peran: { in: [...PERAN_PEMBIMBING] },
           },
         },
       },
@@ -639,7 +640,7 @@ export class PengajuanService {
           include: {
             peranDosenTa: {
               where: {
-                peran: { in: PERAN_PEMBIMBING },
+                peran: { in: [...PERAN_PEMBIMBING] },
               },
             },
           },
@@ -862,7 +863,7 @@ export class PengajuanService {
       const remainingPembimbing = await tx.peranDosenTa.count({
         where: {
           tugas_akhir_id: pengajuan.peranDosenTa.tugas_akhir_id,
-          peran: { in: PERAN_PEMBIMBING },
+          peran: { in: [...PERAN_PEMBIMBING] },
         },
       });
 

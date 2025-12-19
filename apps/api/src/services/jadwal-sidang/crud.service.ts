@@ -30,7 +30,7 @@ export class CrudService {
     });
 
     return mahasiswa.map((m) => {
-      const pendaftaran = m.tugasAkhir?.pendaftaranSidang[0];
+      const pendaftaran = m.tugasAkhir?.pendaftaranSidang?.[0];
       let status = 'Belum Daftar';
       let alasan = 'Mahasiswa belum mendaftar sidang';
 
@@ -43,7 +43,7 @@ export class CrudService {
         alasan = pendaftaran.rejection_reason ?? 'Tidak ada alasan';
       } else if (
         Boolean(pendaftaran?.is_submitted) &&
-        pendaftaran.status_validasi === 'pending'
+        pendaftaran?.status_validasi === 'pending'
       ) {
         status = 'Menunggu Validasi';
         alasan = 'Pendaftaran masih menunggu validasi';

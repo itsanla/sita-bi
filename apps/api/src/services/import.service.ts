@@ -37,10 +37,10 @@ export class ImportService {
       const rowNum = index + 1;
       const errorList = [];
 
-      const nim = record.nim ?? '';
-      const nama = record.nama ?? '';
-      const email = record.email ?? '';
-      const prodi = record.prodi ?? '';
+      const nim = (record as any).nim ?? '';
+      const nama = (record as any).nama ?? '';
+      const email = (record as any).email ?? '';
+      const prodi = (record as any).prodi ?? '';
 
       if (nim.length === 0) errorList.push('NIM is required');
       if (nama.length === 0) errorList.push('Nama is required');
@@ -90,9 +90,9 @@ export class ImportService {
       const rowNum = index + 1;
       const errorList = [];
 
-      const nip = record.nip ?? '';
-      const nama = record.nama ?? '';
-      const email = record.email ?? '';
+      const nip = (record as any).nip ?? '';
+      const nama = (record as any).nama ?? '';
+      const email = (record as any).email ?? '';
 
       if (nip.length === 0) errorList.push('NIP is required');
       if (nama.length === 0) errorList.push('Nama is required');
@@ -146,11 +146,11 @@ export class ImportService {
           const password = crypto.randomBytes(8).toString('hex');
           const hashedPassword = await bcrypt.hash(password, 10);
 
-          const nama = record.nama ?? '';
-          const email = record.email ?? '';
-          const nim = record.nim ?? '';
-          const prodi = record.prodi ?? '';
-          const kelas = record.kelas ?? '';
+          const nama = (record as any).nama ?? '';
+          const email = (record as any).email ?? '';
+          const nim = (record as any).nim ?? '';
+          const prodi = (record as any).prodi ?? '';
+          const kelas = (record as any).kelas ?? '';
 
           const user = await tx.user.create({
             data: {
@@ -215,10 +215,10 @@ export class ImportService {
           const password = crypto.randomBytes(8).toString('hex');
           const hashedPassword = await bcrypt.hash(password, 10);
 
-          const nama = record.nama ?? '';
-          const email = record.email ?? '';
-          const nip = record.nip ?? '';
-          const prodiStr = record.prodi ?? '';
+          const nama = (record as any).nama ?? '';
+          const email = (record as any).email ?? '';
+          const nip = (record as any).nip ?? '';
+          const prodiStr = (record as any).prodi ?? '';
 
           const user = await tx.user.create({
             data: {

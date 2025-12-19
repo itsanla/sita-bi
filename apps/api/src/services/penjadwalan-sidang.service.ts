@@ -4,7 +4,7 @@ import { StatusPenjadwalanSidang } from '@prisma/client';
 interface PengaturanPenjadwalan {
   status: StatusPenjadwalanSidang;
   tanggal_generate: Date | null;
-  periode_ta_id?: number;
+  periode_ta_id?: number | null;
 }
 
 export class PenjadwalanSidangService {

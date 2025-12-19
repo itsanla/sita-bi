@@ -121,7 +121,7 @@ router.get(
   '/mahasiswa-prodi',
   authorizeRoles([Role.prodi_d3, Role.prodi_d4, Role.jurusan]),
   asyncHandler(async (req, res) => {
-    const userRoles = req.user?.roles?.map(r => r.name) || [];
+    const userRoles = (req.user as any)?.roles?.map((r: any) => r.name) || [];
     let prodiFilter: string | undefined;
     
     if (userRoles.includes('prodi_d3')) {

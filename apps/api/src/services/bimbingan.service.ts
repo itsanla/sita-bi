@@ -107,7 +107,7 @@ export class BimbinganService {
     );
 
     return {
-      data,
+      data: data as any,
       total,
       page: validPage,
       limit: validLimit,
@@ -139,13 +139,13 @@ export class BimbinganService {
       throw new NotFoundError(ERROR_MSG_SESI_NOT_FOUND);
     }
 
-    const isMahasiswa = bimbingan.tugasAkhir.mahasiswa.user.id === authorId;
-    const peranDosenList = bimbingan.tugasAkhir.peranDosenTa as {
+    const isMahasiswa = (bimbingan as any).tugasAkhir.mahasiswa.user.id === authorId;
+    const peranDosenList = (bimbingan as any).tugasAkhir.peranDosenTa as {
       dosen_id: number | null;
     }[];
 
     const isPembimbing = peranDosenList.some(
-      (p) => p.dosen_id === bimbingan.dosen_id,
+      (p) => p.dosen_id === (bimbingan as any).dosen_id,
     );
 
     if (!isMahasiswa && !isPembimbing) {
@@ -183,7 +183,7 @@ export class BimbinganService {
       this.repository.findSidangConflicts(dosenId, tanggal),
     ]);
 
-    for (const bimbingan of bimbinganConflicts) {
+    for (const bimbingan of bimbinganConflicts as any[]) {
       if (bimbingan.jam_bimbingan !== null && bimbingan.jam_bimbingan !== '') {
         const bStart = this.timeStringToMinutes(bimbingan.jam_bimbingan);
         const bEnd = bStart + 60;
@@ -193,7 +193,7 @@ export class BimbinganService {
       }
     }
 
-    for (const jadwal of sidangConflicts) {
+    for (const jadwal of sidangConflicts as any[]) {
       const jStart = this.timeStringToMinutes(jadwal.waktu_mulai);
       const jEnd = this.timeStringToMinutes(jadwal.waktu_selesai);
       if (this.isOverlap(startTime, endTime, jStart, jEnd)) {
@@ -219,7 +219,7 @@ export class BimbinganService {
       this.repository.findSidangConflicts(dosenId, tanggal),
     ]);
 
-    for (const bimbingan of bimbinganConflicts) {
+    for (const bimbingan of bimbinganConflicts as any[]) {
       // Skip sesi yang sedang diubah
       if ('id' in bimbingan && bimbingan.id === excludeBimbinganId) {
         continue;
@@ -234,7 +234,7 @@ export class BimbinganService {
       }
     }
 
-    for (const jadwal of sidangConflicts) {
+    for (const jadwal of sidangConflicts as any[]) {
       const jStart = this.timeStringToMinutes(jadwal.waktu_mulai);
       const jEnd = this.timeStringToMinutes(jadwal.waktu_selesai);
       if (this.isOverlap(startTime, endTime, jStart, jEnd)) {
@@ -261,14 +261,14 @@ export class BimbinganService {
       this.repository.findSidangConflicts(dosenId, tanggal),
     ]);
 
-    for (const b of bimbingan) {
+    for (const b of bimbingan as any[]) {
       if (b.jam_bimbingan !== null && b.jam_bimbingan !== '') {
         const start = this.timeStringToMinutes(b.jam_bimbingan);
         busyIntervals.push({ start, end: start + 60 });
       }
     }
 
-    for (const s of sidangs) {
+    for (const s of sidangs as any[]) {
       const hasValidWaktu =
         typeof s.waktu_mulai === 'string' &&
         s.waktu_mulai !== '' &&
@@ -442,7 +442,7 @@ export class BimbinganService {
           data: {
             tugas_akhir_id: tugasAkhirId,
             dosen_id: dosenId,
-            peran: peranDosen.peran,
+            peran: (peranDosen as any).peran,
             tanggal_bimbingan: tanggalDate,
             jam_bimbingan: jam,
             status_bimbingan: 'dijadwalkan',
@@ -565,24 +565,24 @@ export class BimbinganService {
         // Validasi bahwa dosen yang menyelesaikan adalah dosen yang sesuai dengan peran sesi
         if ('peran' in bimbingan && 'tugas_akhir_id' in bimbingan) {
           const tugasAkhir = await tx.tugasAkhir.findUnique({
-            where: { id: bimbingan.tugas_akhir_id as number },
+            where: { id: (bimbingan as any).tugas_akhir_id },
             include: { peranDosenTa: true },
           });
           
           if (tugasAkhir) {
             const peranDosen = tugasAkhir.peranDosenTa.find(
-              (p) => p.dosen_id === dosenId && p.peran === bimbingan.peran
+              (p) => p.dosen_id === dosenId && p.peran === (bimbingan as any).peran
             );
             
             if (!peranDosen) {
               throw new UnauthorizedError(
-                `Hanya ${bimbingan.peran} yang dapat menyelesaikan sesi bimbingan ini`
+                `Hanya ${(bimbingan as any).peran} yang dapat menyelesaikan sesi bimbingan ini`
               );
             }
           }
         }
 
-        if (bimbingan.status_bimbingan !== 'dijadwalkan') {
+        if ((bimbingan as any).status_bimbingan !== 'dijadwalkan') {
           throw new ConflictError(
             'Hanya sesi dengan status "dijadwalkan" yang dapat diselesaikan',
           );
@@ -594,7 +594,7 @@ export class BimbinganService {
         });
 
         const dokumenTerkait = await tx.dokumenTa.findFirst({
-          where: { tugas_akhir_id: bimbingan.tugas_akhir_id },
+          where: { tugas_akhir_id: (bimbingan as any).tugas_akhir_id },
           orderBy: { version: 'desc' },
         });
 
@@ -604,7 +604,7 @@ export class BimbinganService {
 
         const peranDosen = await tx.peranDosenTa.findFirst({
           where: {
-            tugas_akhir_id: bimbingan.tugasAkhir.id,
+            tugas_akhir_id: (bimbingan as any).tugasAkhir.id,
             dosen_id: dosenId,
           },
         });
@@ -858,20 +858,20 @@ export class BimbinganService {
     }
 
     // Validasi bahwa dosen yang mengkonfirmasi adalah dosen yang sesuai dengan peran sesi
-    if ('peran' in bimbingan && 'dosen_id' in bimbingan) {
+    if ('peran' in bimbingan && 'tugas_akhir_id' in bimbingan) {
       const tugasAkhir = await this.prisma.tugasAkhir.findUnique({
-        where: { id: bimbingan.tugas_akhir_id as number },
+        where: { id: (bimbingan as any).tugas_akhir_id },
         include: { peranDosenTa: true },
       });
       
       if (tugasAkhir) {
         const peranDosen = tugasAkhir.peranDosenTa.find(
-          (p) => p.dosen_id === (dosen.id as number) && p.peran === bimbingan.peran
+          (p) => p.dosen_id === (dosen.id as number) && p.peran === (bimbingan as any).peran
         );
         
         if (!peranDosen) {
           throw new UnauthorizedError(
-            `Hanya ${bimbingan.peran} yang dapat memvalidasi sesi bimbingan ini`
+            `Hanya ${(bimbingan as any).peran} yang dapat memvalidasi sesi bimbingan ini`
           );
         }
       }
@@ -912,7 +912,7 @@ export class BimbinganService {
 
     const isSelesai =
       'status_bimbingan' in bimbingan &&
-      bimbingan.status_bimbingan === 'selesai';
+      (bimbingan as any).status_bimbingan === 'selesai';
 
     if (isSelesai) {
       throw new ConflictError('Tidak dapat menghapus sesi yang sudah selesai');
@@ -992,24 +992,24 @@ export class BimbinganService {
     // Validasi bahwa dosen yang membatalkan adalah dosen yang sesuai dengan peran sesi
     if ('peran' in bimbingan && 'tugas_akhir_id' in bimbingan) {
       const tugasAkhir = await this.prisma.tugasAkhir.findUnique({
-        where: { id: bimbingan.tugas_akhir_id as number },
+        where: { id: (bimbingan as any).tugas_akhir_id },
         include: { peranDosenTa: true },
       });
       
       if (tugasAkhir) {
         const peranDosen = tugasAkhir.peranDosenTa.find(
-          (p) => p.dosen_id === (dosen.id as number) && p.peran === bimbingan.peran
+          (p) => p.dosen_id === (dosen.id as number) && p.peran === (bimbingan as any).peran
         );
         
         if (!peranDosen) {
           throw new UnauthorizedError(
-            `Hanya ${bimbingan.peran} yang dapat membatalkan validasi sesi bimbingan ini`
+            `Hanya ${(bimbingan as any).peran} yang dapat membatalkan validasi sesi bimbingan ini`
           );
         }
       }
     }
 
-    if (bimbingan.status_bimbingan !== 'selesai') {
+    if ((bimbingan as any).status_bimbingan !== 'selesai') {
       throw new ConflictError(
         'Hanya sesi yang sudah selesai yang bisa dibatalkan validasinya',
       );

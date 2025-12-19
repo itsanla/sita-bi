@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type IRouter } from 'express';
 import { PengaturanService } from '../services/pengaturan.service';
 import { asyncHandler } from '../utils/asyncHandler';
 import { authMiddleware } from '../middlewares/auth.middleware';
@@ -7,7 +7,7 @@ import { validate } from '../middlewares/validation.middleware';
 import { updatePengaturanSchema } from '../dto/pengaturan.dto';
 import { auditLog } from '../middlewares/audit.middleware';
 
-const router = Router();
+const router: IRouter = Router();
 const pengaturanService = new PengaturanService();
 
 router.get(

@@ -38,8 +38,6 @@ router.get(
   asyncHandler(authMiddleware),
   authorizeRoles([Role.admin, Role.jurusan, Role.prodi_d3, Role.prodi_d4]),
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const userRole = req.user?.role;
-    const userProdi = req.user?.dosen?.prodi;
     const page =
       req.query['page'] != null
         ? parseInt(req.query['page'] as string)
@@ -49,12 +47,7 @@ router.get(
         ? parseInt(req.query['limit'] as string)
         : undefined;
     const unassignedTugasAkhir =
-      await penugasanService.findUnassignedTugasAkhir(
-        page,
-        limit,
-        userRole,
-        userProdi,
-      );
+      await penugasanService.findUnassignedTugasAkhir(page, limit);
     res.status(200).json({ status: MSG_SUKSES, data: unassignedTugasAkhir });
   }),
 );

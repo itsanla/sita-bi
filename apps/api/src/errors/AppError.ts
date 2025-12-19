@@ -1,10 +1,10 @@
 export class AppError extends Error {
-  public override statusCode: number;
+  public statusCode: number;
   public isOperational: boolean;
 
   constructor(
     statusCode: number,
-    override message: string,
+    message: string,
     isOperational = true,
   ) {
     super(message);

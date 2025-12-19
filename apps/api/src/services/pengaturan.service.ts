@@ -1,7 +1,7 @@
 import prisma from '../config/database';
 import type { UpdatePengaturanDto } from '../dto/pengaturan.dto';
 
-type PengaturanValue = string[] | number | string;
+type PengaturanValue = string[] | number | string | boolean;
 
 export class PengaturanService {
   async getPengaturan(): Promise<Record<string, PengaturanValue>> {

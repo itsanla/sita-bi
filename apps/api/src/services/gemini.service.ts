@@ -41,6 +41,7 @@ interface GeminiResponse {
 
 class GeminiService {
   private apiKeys: string[] = [];
+  private currentKeyIndex = 0;
   private primaryModels: string[] = [];
   private fallbackModel = '';
   private readonly baseUrl =
@@ -460,19 +461,26 @@ class GeminiService {
   async *streamGenerateContent(
     prompt: string,
   ): AsyncGenerator<string, void, unknown> {
-    return this.streamGenerateContentWithHistory(prompt, []);
+    yield* this.streamGenerateContentWithHistory(prompt, []);
   }
 
   getStatus(): {
     totalKeys: number;
+    currentKeyNumber: number;
     primaryModels: string[];
     fallbackModel: string;
   } {
     return {
       totalKeys: this.apiKeys.length,
+      currentKeyNumber: this.currentKeyIndex + 1,
       primaryModels: this.primaryModels,
       fallbackModel: this.fallbackModel,
     };
+  }
+
+  resetToFirstKey(): void {
+    this.currentKeyIndex = 0;
+    logger.info('API key rotation reset to first key');
   }
 }
 

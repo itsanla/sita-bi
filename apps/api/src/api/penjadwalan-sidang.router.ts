@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type IRouter } from 'express';
 import { PenjadwalanSidangService } from '../services/penjadwalan-sidang.service';
 import { asyncHandler } from '../utils/asyncHandler';
 import { authMiddleware } from '../middlewares/auth.middleware';
@@ -6,7 +6,7 @@ import { authorizeRoles } from '../middlewares/roles.middleware';
 import { Role } from '../middlewares/auth.middleware';
 import { auditLog } from '../middlewares/audit.middleware';
 
-const router = Router();
+const router: IRouter = Router();
 const service = new PenjadwalanSidangService();
 
 router.get(

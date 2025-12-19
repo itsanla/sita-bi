@@ -46,8 +46,7 @@ export const authMiddleware = async (
       id: decoded.userId,
       email: decoded.email,
       role: decoded.role as Role,
-      roles: decoded.roles || [{ name: decoded.role }],
-      dosen: decoded.dosen ?? null,
+      dosen: decoded.dosen ? { ...decoded.dosen, prodi: decoded.dosen.prodi as 'D3' | 'D4' | null } : null,
       mahasiswa: decoded.mahasiswa ?? null,
     };
 

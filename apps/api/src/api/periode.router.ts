@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type IRouter } from 'express';
 import { PeriodeService } from '../services/periode.service';
 import { asyncHandler } from '../utils/asyncHandler';
 import { authMiddleware } from '../middlewares/auth.middleware';
@@ -7,7 +7,7 @@ import { Role } from '../middlewares/auth.middleware';
 import { auditLog } from '../middlewares/audit.middleware';
 import { autoEnrollMiddleware } from '../middlewares/auto-enroll.middleware';
 
-const router = Router();
+const router: IRouter = Router();
 const periodeService = new PeriodeService();
 const INVALID_PERIODE_ID = 'ID periode tidak valid';
 
@@ -60,7 +60,7 @@ router.get(
 router.get(
   '/dosen',
   asyncHandler(authMiddleware),
-  authorizeRoles([Role.dosen, Role.kaprodi, Role.jurusan]),
+  authorizeRoles([Role.dosen, Role.jurusan]),
   autoEnrollMiddleware,
   asyncHandler(async (req, res) => {
     const userId = req.user?.id;

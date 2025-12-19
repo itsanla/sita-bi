@@ -281,7 +281,7 @@ router.post(
 router.get(
   '/status',
   authenticate,
-  asyncHandler((_req: Request, res: Response): void => {
+  asyncHandler(async (_req: Request, res: Response): Promise<void> => {
     const status = geminiService.getStatus();
 
     res.json({
@@ -302,7 +302,7 @@ router.get(
 router.post(
   '/reset',
   authenticate,
-  asyncHandler((_req: Request, res: Response): void => {
+  asyncHandler(async (_req: Request, res: Response): Promise<void> => {
     geminiService.resetToFirstKey();
 
     res.json({

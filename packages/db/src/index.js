@@ -14,7 +14,6 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-// packages/db/src/index.ts
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 __exportStar(require("@prisma/client"), exports);
