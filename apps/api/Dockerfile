@@ -1,4 +1,45 @@
-FROM node:20-slim
+FROM node:20-slim AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+# Stage 1: Install dependencies with pnpm
+FROM base AS deps
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/db/package.json ./packages/db/
+COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY apps/api/package.json ./apps/api/
+RUN pnpm install --frozen-lockfile
+
+# Stage 2: Build application
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
+COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
+COPY packages/typescript-config ./packages/typescript-config
+COPY packages/db ./packages/db
+COPY apps/api ./apps/api
+COPY package.json pnpm-workspace.yaml ./
+
+# Generate Prisma client
+RUN cd packages/db && pnpm db:generate
+
+# Build API
+WORKDIR /app/apps/api
+RUN pnpm build
+
+# Stage 3: Create production deployment with pnpm deploy
+FROM base AS pruner
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/db/package.json ./packages/db/
+COPY apps/api/package.json ./apps/api/
+RUN pnpm deploy --filter=api --prod /prod/api
+
+# Stage 4: Final runtime image
+FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=512"
@@ -8,14 +49,19 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends dumb-init && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy pre-built artifacts and dependencies from local
-COPY dist ./
-COPY node_modules_prod ./node_modules
-
-# Create user and set ownership
+# Create user first
 RUN groupadd --system --gid 1001 nodejs && \
-    useradd --system --uid 1001 --gid nodejs apiuser && \
-    chown -R apiuser:nodejs /app
+    useradd --system --uid 1001 --gid nodejs apiuser
+
+# Copy pruned dependencies from pnpm deploy
+COPY --from=pruner --chown=apiuser:nodejs /prod/api ./
+
+# Copy built code
+COPY --from=builder --chown=apiuser:nodejs /app/apps/api/dist ./
+
+# Copy Prisma client
+COPY --from=builder --chown=apiuser:nodejs /app/node_modules/.pnpm/@prisma+client*/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=apiuser:nodejs /app/node_modules/.pnpm/@prisma+client*/node_modules/@prisma ./node_modules/@prisma
 
 USER apiuser
 
