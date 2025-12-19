@@ -4,7 +4,7 @@ set -e
 VERSION_FILE=".version"
 
 if [ ! -f "$VERSION_FILE" ]; then
-  echo "1.0.0" > "$VERSION_FILE"
+  echo "2.0.0" > "$VERSION_FILE"
 fi
 
 VERSION=$(cat "$VERSION_FILE")
