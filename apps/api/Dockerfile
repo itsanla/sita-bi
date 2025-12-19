@@ -46,8 +46,8 @@ COPY --from=builder /app/apps/api/package.json ./package.json
 RUN pnpm install --prod --frozen-lockfile
 
 # Copy Prisma client and built JS (clean structure)
-COPY --from=builder /app/packages/db/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/packages/db/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/.pnpm/@prisma+client*/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/.pnpm/@prisma+client*/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/apps/api/dist ./
 
 # Create user
