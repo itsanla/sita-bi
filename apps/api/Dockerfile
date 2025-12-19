@@ -41,13 +41,21 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends dumb-init && \
     rm -rf /var/lib/apt/lists/* && \
     npm install -g pnpm@8.15.5
-# Create user first
-RUN groupadd --system --gid 1001 nodejs && \
-    useradd --system --uid 1001 --gid nodejs apiuser
+# Install production dependencies only
+COPY --from=builder /app/apps/api/package.json ./package.json
+RUN npm install --omit=dev --ignore-scripts
 
-# Copy dependencies and built code
-COPY --from=builder --chown=apiuser:nodejs /app/node_modules/.pnpm/node_modules ./node_modules
-COPY --from=builder --chown=apiuser:nodejs /app/apps/api/dist ./
+# Copy Prisma client from builder
+COPY --from=builder /app/node_modules/.pnpm/@prisma+client*/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/.pnpm/@prisma+client*/node_modules/@prisma ./node_modules/@prisma
+
+# Copy built code
+COPY --from=builder /app/apps/api/dist ./
+
+# Create user and set ownership
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid nodejs apiuser && \
+    chown -R apiuser:nodejs /app
 
 USER apiuser
 
