@@ -24,14 +24,14 @@ docker build \
   -f apps/api/Dockerfile \
   .
 
-echo ""
-echo "🌐 Building Web image..."
-docker build \
-  --platform linux/amd64 \
-  --build-arg BUILDKIT_INLINE_CACHE=1 \
-  -t itsanla/sita-web:$VERSION \
-  -t itsanla/sita-web:latest \
-  -f apps/web/Dockerfile \
+# echo ""
+# echo "🌐 Building Web image..."
+# docker build \
+#   --platform linux/amd64 \
+#   --build-arg BUILDKIT_INLINE_CACHE=1 \
+#   -t itsanla/sita-web:$VERSION \
+#   -t itsanla/sita-web:latest \
+#   -f apps/web/Dockerfile \
   .
 
 echo ""
