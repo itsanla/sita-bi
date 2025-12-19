@@ -58,7 +58,7 @@ COPY --from=pruner /prod/api ./
 
 # Copy Prisma schema and generate client
 COPY --from=builder /app/packages/db/prisma ./prisma
-RUN npx prisma generate --schema=./prisma/schema.prisma
+RUN node_modules/.bin/prisma generate --schema=./prisma/schema.prisma
 
 # Copy built code
 COPY --from=builder /app/apps/api/dist ./
