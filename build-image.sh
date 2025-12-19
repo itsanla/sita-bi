@@ -34,9 +34,11 @@ echo "🏗️  Building images..."
 echo "📦 Building API..."
 docker build -f apps/api/Dockerfile -t itsanla/sita-api:${API_VERSION} -t itsanla/sita-api:latest .
 
-# Build Web
+# Build Web (from apps/web context)
 echo "🌐 Building Web..."
-docker build -f apps/web/Dockerfile -t itsanla/sita-web:${WEB_VERSION} -t itsanla/sita-web:latest .
+cd apps/web
+docker build -t itsanla/sita-web:${WEB_VERSION} -t itsanla/sita-web:latest .
+cd ../..
 
 echo ""
 echo "✅ Build complete!"
