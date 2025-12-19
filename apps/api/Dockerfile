@@ -41,22 +41,15 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends dumb-init && \
     rm -rf /var/lib/apt/lists/* && \
     npm install -g pnpm@8.15.5
-COPY --from=deps /app/package.json ./package.json
-COPY --from=deps /app/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=deps /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY --from=builder /app/packages/db/package.json ./packages/db/package.json
-COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
-RUN pnpm install --prod --frozen-lockfile
-
-# Copy Prisma client and built JS (clean structure)
-COPY --from=builder /app/node_modules/.pnpm/@prisma+client*/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/.pnpm/@prisma+client*/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/apps/api/dist ./
-
-# Create user
+# Create user first
 RUN groupadd --system --gid 1001 nodejs && \
-    useradd --system --uid 1001 --gid nodejs apiuser && \
-    chown -R apiuser:nodejs /app
+    useradd --system --uid 1001 --gid nodejs apiuser
+
+# Copy only production node_modules from builder
+COPY --from=builder --chown=apiuser:nodejs /app/node_modules/.pnpm/@prisma+client*/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=apiuser:nodejs /app/node_modules/.pnpm/@prisma+client*/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=apiuser:nodejs /app/node_modules/.pnpm/node_modules ./node_modules
+COPY --from=builder --chown=apiuser:nodejs /app/apps/api/dist ./
 
 USER apiuser
 
