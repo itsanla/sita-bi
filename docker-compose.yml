@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   api:
-    image: itsanla/sita-api:2.0.3
+    image: itsanla/sita-api:latest
     container_name: sita-bi-api
     depends_on:
       - waha

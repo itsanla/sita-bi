@@ -54,13 +54,17 @@ RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid nodejs apiuser
 
 # Copy pruned dependencies from pnpm deploy
-COPY --from=pruner --chown=apiuser:nodejs /prod/api ./
+COPY --from=pruner /prod/api ./
+
+# Copy Prisma schema and generate client
+COPY --from=builder /app/packages/db/prisma ./prisma
+RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Copy built code
-COPY --from=builder --chown=apiuser:nodejs /app/apps/api/dist ./
+COPY --from=builder /app/apps/api/dist ./
 
-# Copy Prisma generated client
-COPY --from=builder --chown=apiuser:nodejs /app/node_modules/.pnpm/@prisma+client@6.19.0_prisma@6.19.0_typescript@5.9.3/node_modules/.prisma ./node_modules/.pnpm/@prisma+client@6.19.0_prisma@6.19.0_typescript@5.9.3/node_modules/.prisma
+# Set ownership
+RUN chown -R apiuser:nodejs /app
 
 USER apiuser
 
