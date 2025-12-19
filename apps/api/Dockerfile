@@ -15,10 +15,6 @@ RUN npm install --omit=dev --ignore-scripts
 # Copy pre-built artifacts from local
 COPY dist ./
 
-# Copy Prisma client (must be generated before Docker build)
-COPY node_modules/.prisma ./node_modules/.prisma 2>/dev/null || true
-COPY node_modules/@prisma ./node_modules/@prisma 2>/dev/null || true
-
 # Create user and set ownership
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid nodejs apiuser && \
