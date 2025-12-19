@@ -33,8 +33,10 @@ ENV HOSTNAME="0.0.0.0"
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy standalone output (includes node_modules at root)
+# Copy standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+# Copy node_modules with .pnpm store
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone/node_modules/.pnpm ./node_modules/.pnpm
 # Copy static assets
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
