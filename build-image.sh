@@ -15,23 +15,23 @@ echo ""
 # Build with BuildKit for better caching and performance
 export DOCKER_BUILDKIT=1
 
-echo "📦 Building API image..."
-docker build \
-  --platform linux/amd64 \
-  --build-arg BUILDKIT_INLINE_CACHE=1 \
-  -t itsanla/sita-api:$VERSION \
-  -t itsanla/sita-api:latest \
-  -f apps/api/Dockerfile \
-  .
-
-# echo ""
-# echo "🌐 Building Web image..."
+# echo "📦 Building API image..."
 # docker build \
 #   --platform linux/amd64 \
 #   --build-arg BUILDKIT_INLINE_CACHE=1 \
-#   -t itsanla/sita-web:$VERSION \
-#   -t itsanla/sita-web:latest \
-#   -f apps/web/Dockerfile \
+#   -t itsanla/sita-api:$VERSION \
+#   -t itsanla/sita-api:latest \
+#   -f apps/api/Dockerfile \
+#   .
+
+echo ""
+echo "🌐 Building Web image..."
+docker build \
+  --platform linux/amd64 \
+  --build-arg BUILDKIT_INLINE_CACHE=1 \
+  -t itsanla/sita-web:$VERSION \
+  -t itsanla/sita-web:latest \
+  -f apps/web/Dockerfile \
   .
 
 echo ""

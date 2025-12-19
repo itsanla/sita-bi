@@ -1,40 +1,48 @@
-FROM node:20-alpine
-
+FROM node:20-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
+FROM base AS deps
 WORKDIR /app
-
-# Install dependencies
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 COPY apps/web/package.json ./apps/web/
 RUN pnpm install --frozen-lockfile
 
-# Copy source code
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
 COPY packages/typescript-config ./packages/typescript-config
 COPY apps/web ./apps/web
+COPY package.json pnpm-workspace.yaml ./
 
-# Build
 WORKDIR /app/apps/web
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 RUN pnpm build
 
-# Add user
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3001
+ENV HOSTNAME="0.0.0.0"
+
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs && \
-    chown -R nextjs:nodejs /app
+    adduser --system --uid 1001 nextjs
+
+# Copy standalone output
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 
 USER nextjs
 
 EXPOSE 3001
 
-ENV PORT=3001
-ENV HOSTNAME="0.0.0.0"
-
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3001 || exit 1
+  CMD node -e "require('http').get('http://localhost:3001', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-CMD ["pnpm", "start"]
+CMD ["node", "apps/web/server.js"]
