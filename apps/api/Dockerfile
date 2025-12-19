@@ -34,7 +34,7 @@ RUN pnpm build
 FROM base AS pruner
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/db/package.json ./packages/db/
+COPY packages/ ./packages/
 COPY apps/api/package.json ./apps/api/
 RUN pnpm deploy --filter=api --prod /prod/api
 
