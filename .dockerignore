@@ -1,5 +1,8 @@
 node_modules
+!apps/web/.next/standalone/node_modules
 .next
+!apps/web/.next/standalone
+!apps/web/.next/static
 .turbo
 dist
 build
