@@ -1,48 +1,31 @@
 #!/bin/bash
 set -e
 
-VERSION_FILE=".version"
-
-if [ ! -f "$VERSION_FILE" ]; then
-  echo "2.0.0" > "$VERSION_FILE"
+# Load versions from build
+if [ ! -f .build-version ]; then
+    echo "❌ Error: .build-version not found!"
+    echo "💡 Run './build-image.sh' first"
+    exit 1
 fi
 
-VERSION=$(cat "$VERSION_FILE")
+source .build-version
 
-echo "🚀 Pushing Docker images v$VERSION to registry..."
+echo "🚀 Pushing images to registry..."
+echo "   API: $API_VERSION"
+echo "   Web: $WEB_VERSION"
 echo ""
 
-# Check if logged in to Docker Hub
-if ! docker info 2>/dev/null | grep -q "Username"; then
-  echo "⚠️  Warning: Not logged in to Docker Hub"
-  echo "💡 Run: docker login"
-  read -p "Continue anyway? (y/N) " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    exit 1
-  fi
-fi
-
-echo "📤 Pushing API image..."
-docker push itsanla/sita-api:$VERSION
+# Push API
+echo "📤 Pushing API..."
+docker push itsanla/sita-api:${API_VERSION}
 docker push itsanla/sita-api:latest
 
-echo ""
-echo "📤 Pushing Web image..."
-docker push itsanla/sita-web:$VERSION
+# Push Web
+echo "📤 Pushing Web..."
+docker push itsanla/sita-web:${WEB_VERSION}
 docker push itsanla/sita-web:latest
 
 echo ""
-echo "✅ Images pushed successfully!"
-echo "   - itsanla/sita-api:$VERSION (latest)"
-echo "   - itsanla/sita-web:$VERSION (latest)"
-echo ""
-
-# Auto-bump version
-IFS='.' read -r major minor patch <<< "$VERSION"
-patch=$((patch + 1))
-NEW_VERSION="$major.$minor.$patch"
-echo "$NEW_VERSION" > "$VERSION_FILE"
-
-echo "🔖 Version bumped: $VERSION → $NEW_VERSION"
-echo "💡 Next build will use version $NEW_VERSION"
+echo "✅ Push complete!"
+echo "   - itsanla/sita-api:${API_VERSION} (latest)"
+echo "   - itsanla/sita-web:${WEB_VERSION} (latest)"

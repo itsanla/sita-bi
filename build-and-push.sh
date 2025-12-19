@@ -19,15 +19,18 @@ WEB_LATEST=$(curl -s "https://hub.docker.com/v2/repositories/itsanla/sita-web/ta
 API_VERSION=$(echo $API_LATEST | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
 WEB_VERSION=$(echo $WEB_LATEST | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
 
-echo "📌 New versions:"
+echo "📌 Current versions:"
 echo "   API: $API_LATEST → $API_VERSION"
 echo "   Web: $WEB_LATEST → $WEB_VERSION"
 echo ""
 
-# Save versions to file
-echo "API_VERSION=$API_VERSION" > .build-version
-echo "WEB_VERSION=$WEB_VERSION" >> .build-version
+read -p "Continue with these versions? (y/n) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    exit 1
+fi
 
+echo ""
 echo "🏗️  Building images..."
 
 # Build API
@@ -39,8 +42,17 @@ echo "🌐 Building Web..."
 docker build -f apps/web/Dockerfile -t itsanla/sita-web:${WEB_VERSION} -t itsanla/sita-web:latest .
 
 echo ""
-echo "✅ Build complete!"
+echo "🚀 Pushing to registry..."
+
+# Push API
+docker push itsanla/sita-api:${API_VERSION}
+docker push itsanla/sita-api:latest
+
+# Push Web
+docker push itsanla/sita-web:${WEB_VERSION}
+docker push itsanla/sita-web:latest
+
+echo ""
+echo "✅ Build and push complete!"
 echo "   - itsanla/sita-api:${API_VERSION} (latest)"
 echo "   - itsanla/sita-web:${WEB_VERSION} (latest)"
-echo ""
-echo "💡 Next: Run './push-image.sh' to push to registry"
