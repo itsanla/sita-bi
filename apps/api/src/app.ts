@@ -60,22 +60,17 @@ setInterval(() => {
     concurrentRequests = 0;
   }
   
-  // Check for hanging requests - very aggressive
+  // Check for hanging requests - log only, don't kill
   const now = Date.now();
-  let foundHang = false;
   activeRequestsMap.forEach((req, id) => {
     const duration = now - req.start;
-    if (duration > 12000) {
-      process.stderr.write(`\n[HANGING REQUEST] ${req.url} - ${Math.floor(duration/1000)}s\n`);
-      process.stderr.write('[FORCE KILL] Request hanging, killing process...\n');
-      foundHang = true;
+    if (duration > 30000) { // 30s threshold
+      console.error(`[HANGING REQUEST] ${req.url} - ${Math.floor(duration/1000)}s`);
+      // Remove from map to prevent repeated logging
+      activeRequestsMap.delete(id);
     }
   });
-  
-  if (foundHang) {
-    process.kill(process.pid, 'SIGKILL');
-  }
-}, 2000); // Check every 2 seconds
+}, 5000); // Check every 5 seconds
 
 // Global Middlewares
 app.use(express.json({ limit: '10mb' }));

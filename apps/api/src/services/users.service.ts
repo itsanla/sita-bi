@@ -1,5 +1,5 @@
-import type { User } from '@repo/db';
-import { PrismaClient, Prisma } from '@repo/db';
+import type { User } from '../prisma-client';
+import { PrismaClient, Prisma } from '../prisma-client';
 import * as bcrypt from 'bcrypt';
 import type {
   CreateDosenDto,

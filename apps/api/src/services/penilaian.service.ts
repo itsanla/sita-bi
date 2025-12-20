@@ -1,5 +1,5 @@
-import type { Prisma } from '@repo/db';
-import { PrismaClient, StatusTugasAkhir, HasilSidang } from '@repo/db';
+import type { Prisma } from '../prisma-client';
+import { PrismaClient, StatusTugasAkhir, HasilSidang } from '../prisma-client';
 import type { CreatePenilaianDto } from '../dto/penilaian.dto';
 
 export class PenilaianService {

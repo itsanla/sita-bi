@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from '../utils/asyncHandler';
 import { insecureAuthMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles, Role } from '../middlewares/roles.middleware';
-import { PrismaClient, ModeValidasi } from '@repo/db';
+import { PrismaClient, ModeValidasi } from '../prisma-client';
 import { BadRequestError } from '../errors/AppError';
 
 const router: Router = Router();

@@ -3,7 +3,7 @@ import {
   AudiensPengumuman,
   PrioritasPengumuman,
   KategoriPengumuman,
-} from '@repo/db';
+} from '../prisma-client';
 
 export const createPengumumanSchema = z.object({
   judul: z.string().min(1, 'Judul tidak boleh kosong'),

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Prodi } from '@repo/db';
+import { Prodi } from '../prisma-client';
 import { Role } from '../middlewares/auth.middleware';
 
 const validRoles = [Role.jurusan, Role.prodi_d3, Role.prodi_d4, Role.dosen];

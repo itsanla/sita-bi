@@ -1,4 +1,4 @@
-import { PrismaClient, ModeValidasi } from '@repo/db';
+import { PrismaClient, ModeValidasi } from '../prisma-client';
 
 const prisma = new PrismaClient();
 

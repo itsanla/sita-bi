@@ -1,4 +1,4 @@
-import { PrismaClient } from '@repo/db';
+import { PrismaClient } from '../prisma-client';
 import type { CreateTawaranTopikDto } from '../dto/tawaran-topik.dto';
 
 export class TawaranTopikService {

@@ -262,21 +262,18 @@ async function main() {
   // Create Tugas Akhir untuk 80 mahasiswa
   console.log('📝 Creating tugas akhir...');
   
-  const judulTopik = [
-    'Sistem Informasi', 'Aplikasi Mobile', 'Platform Web', 'Dashboard Analitik', 'Sistem Monitoring',
-    'Aplikasi Desktop', 'Website E-Commerce', 'Portal Informasi', 'Sistem Prediksi', 'Aplikasi IoT'
-  ];
-  
-  const bidang = [
-    'Manajemen Data', 'Kesehatan', 'Pendidikan', 'Bisnis', 'Pemerintahan',
-    'Industri', 'Pariwisata', 'Pertanian', 'Transportasi', 'Keuangan'
-  ];
-
+  // Generate English titles using faker
   for (let i = 0; i < 80; i++) {
+    const techWords = ['System', 'Application', 'Platform', 'Framework', 'Tool', 'Service', 'Engine', 'Interface'];
+    const domains = ['Healthcare', 'Education', 'Finance', 'E-commerce', 'Transportation', 'Agriculture', 'Tourism', 'Manufacturing'];
+    const techs = ['Web-based', 'Mobile-based', 'Cloud-based', 'AI-powered', 'IoT-enabled', 'Blockchain-based'];
+    
+    const title = `${techWords[i % 8]} for ${domains[(i + 2) % 8]} ${techs[i % 6]}`;
+    
     const ta = await prisma.tugasAkhir.create({
       data: {
         mahasiswa_id: mahasiswaUsers[i].mahasiswa.id,
-        judul: `${judulTopik[i % 10]} ${bidang[(i + 3) % 10]} Berbasis ${i % 2 === 0 ? 'Web' : 'Mobile'}`,
+        judul: title,
         status: StatusTugasAkhir.BIMBINGAN,
         tanggal_pengajuan: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
         disetujui_oleh: admin.id,
@@ -343,16 +340,16 @@ async function main() {
   // Create Tawaran Topik
   console.log('💡 Creating tawaran topik...');
   const topikData = [
-    { judul: 'Sistem Informasi Manajemen Perpustakaan Berbasis Web', deskripsi: 'Pengembangan sistem untuk mengelola perpustakaan digital', kuota: 2 },
-    { judul: 'Aplikasi Mobile Monitoring Kesehatan Pasien', deskripsi: 'Aplikasi monitoring kesehatan real-time', kuota: 1 },
-    { judul: 'Platform E-Learning Interaktif dengan Gamifikasi', deskripsi: 'Platform pembelajaran dengan elemen game', kuota: 2 },
-    { judul: 'Sistem Prediksi Penjualan Menggunakan Machine Learning', deskripsi: 'Implementasi ML untuk prediksi penjualan', kuota: 1 },
-    { judul: 'Dashboard Analitik Data Mahasiswa', deskripsi: 'Dashboard visualisasi data akademik', kuota: 2 },
-    { judul: 'Aplikasi Manajemen Proyek Berbasis Agile', deskripsi: 'Tools manajemen proyek Agile/Scrum', kuota: 1 },
-    { judul: 'Sistem Deteksi Plagiarisme Dokumen', deskripsi: 'Deteksi kemiripan dokumen dengan NLP', kuota: 1 },
-    { judul: 'Platform Marketplace UMKM Lokal', deskripsi: 'E-commerce untuk produk UMKM', kuota: 2 },
-    { judul: 'Aplikasi Smart Home Automation', deskripsi: 'Kontrol perangkat rumah pintar IoT', kuota: 1 },
-    { judul: 'Sistem Rekomendasi Wisata Berbasis AI', deskripsi: 'Rekomendasi wisata dengan AI', kuota: 2 },
+    { judul: 'Web-based Library Management Information System', deskripsi: 'Development of digital library management system', kuota: 2 },
+    { judul: 'Mobile Application for Patient Health Monitoring', deskripsi: 'Real-time health monitoring application', kuota: 1 },
+    { judul: 'Interactive E-Learning Platform with Gamification', deskripsi: 'Learning platform with game elements', kuota: 2 },
+    { judul: 'Sales Prediction System Using Machine Learning', deskripsi: 'ML implementation for sales forecasting', kuota: 1 },
+    { judul: 'Student Data Analytics Dashboard', deskripsi: 'Academic data visualization dashboard', kuota: 2 },
+    { judul: 'Agile-based Project Management Application', deskripsi: 'Agile/Scrum project management tools', kuota: 1 },
+    { judul: 'Document Plagiarism Detection System', deskripsi: 'Document similarity detection with NLP', kuota: 1 },
+    { judul: 'Local MSME Marketplace Platform', deskripsi: 'E-commerce for local MSME products', kuota: 2 },
+    { judul: 'Smart Home Automation Application', deskripsi: 'IoT smart home device control', kuota: 1 },
+    { judul: 'AI-based Tourism Recommendation System', deskripsi: 'Tourism recommendation with AI', kuota: 2 },
   ];
 
   for (let i = 0; i < topikData.length; i++) {

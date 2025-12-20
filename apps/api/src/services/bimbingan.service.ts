@@ -1,5 +1,5 @@
-import type { Prisma } from '@repo/db';
-import { PrismaClient } from '@repo/db';
+import type { Prisma } from '../prisma-client';
+import { PrismaClient } from '../prisma-client';
 import { BimbinganRepository } from '../repositories/bimbingan.repository';
 import {
   NotFoundError,

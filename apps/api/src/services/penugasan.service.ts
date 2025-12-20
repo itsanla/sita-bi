@@ -1,4 +1,4 @@
-import { PrismaClient, PeranDosen, StatusTugasAkhir } from '@repo/db';
+import { PrismaClient, PeranDosen, StatusTugasAkhir } from '../prisma-client';
 import type { AssignPembimbingDto } from '../dto/penugasan.dto';
 import { z } from 'zod';
 import type { PrismaPromise } from '@prisma/client';

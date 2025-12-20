@@ -1,4 +1,4 @@
-import type { Dosen, Mahasiswa, Role, User } from '@repo/db';
+import type { Dosen, Mahasiswa, Role, User } from '../prisma-client';
 import type {
   LoginDto,
   RegisterDto,

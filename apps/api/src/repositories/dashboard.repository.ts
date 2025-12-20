@@ -1,5 +1,5 @@
-import type { PrismaClient } from '@repo/db';
-import { StatusBimbingan } from '@repo/db';
+import type { PrismaClient } from '../prisma-client';
+import { StatusBimbingan } from '../prisma-client';
 
 export class DashboardRepository {
   constructor(private prisma: PrismaClient) {}

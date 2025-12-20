@@ -1,5 +1,5 @@
 import type { StatistikDto } from '../dto/laporan.dto';
-import { PeranDosen } from '@repo/db';
+import { PeranDosen } from '../prisma-client';
 import prisma from '../config/database';
 
 export class LaporanService {

@@ -151,7 +151,11 @@ async function seedDataHistoris() {
   );
 }
 
-seedDataHistoris()
+void seedDataHistoris()
+  .then(() => {
+    console.log('✅ Seeding completed');
+    return;
+  })
   .catch((e) => {
     console.error('❌ Error:', e);
     process.exit(1);

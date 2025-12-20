@@ -1,4 +1,4 @@
-import { PrismaClient } from '@repo/db';
+import { PrismaClient } from '../prisma-client';
 import { NotFoundError, UnauthorizedError } from '../errors/AppError';
 
 export class DokumenTAService {

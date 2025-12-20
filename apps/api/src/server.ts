@@ -200,9 +200,9 @@ const initializeServices = async (): Promise<void> => {
     // Auto-initialize WhatsApp with timeout (async, non-blocking)
     Promise.race([
       whatsappService.initialize(),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('WhatsApp init timeout')), 15000)
-      )
+      new Promise((_resolve, reject) => {
+        setTimeout(() => reject(new Error('WhatsApp init timeout')), 15000);
+      })
     ]).catch((error) => {
       console.error('❌ WhatsApp initialization error:', error);
     });
@@ -240,13 +240,12 @@ httpServer.listen(PORT, async () => {
   let lastActivity = Date.now();
   const activityMonitor = setInterval(() => {
     const inactive = Date.now() - lastActivity;
-    if (inactive > 15000) {
-      process.stderr.write(`\n[DEAD MAN SWITCH] No activity for ${Math.floor(inactive/1000)}s!\n`);
-      process.stderr.write('[FORCE RESTART] Killing completely hung process...\n');
-      process.kill(process.pid, 'SIGKILL');
+    if (inactive > 30000) { // 30s threshold
+      console.error(`[DEAD MAN SWITCH] No activity for ${Math.floor(inactive/1000)}s - server may be hung`);
+      // Log only, don't kill - let process manager handle restart
     }
     lastActivity = Date.now();
-  }, 5000);
+  }, 10000); // Check every 10s
   
   // Update activity on any request
   httpServer.on('request', () => {
@@ -273,8 +272,8 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
   process.exit(signal === 'HANG_DETECTED' ? 1 : 0);
 };
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', async () => await gracefulShutdown('SIGTERM'));
+process.on('SIGINT', async () => await gracefulShutdown('SIGINT'));
 
 // Handle uncaught errors - always log, restart in production
 process.on('uncaughtException', (err) => {

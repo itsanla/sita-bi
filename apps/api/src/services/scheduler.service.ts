@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { PrismaClient, StatusTugasAkhir } from '@repo/db';
+import { PrismaClient, StatusTugasAkhir } from '../prisma-client';
 import { EmailService } from './email.service';
 import { whatsappService } from './waha-whatsapp.service';
 

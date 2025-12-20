@@ -1,0 +1,39 @@
+# Build output
+dist/
+*.js
+*.d.ts
+*.d.ts.map
+!jest.config.js
+!build.js
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+
+# Database
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Test
+coverage/
+
+# Temp
+.turbo/
+.wwebjs_cache/
+uploads/*
+!uploads/.gitkeep

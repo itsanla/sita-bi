@@ -1,5 +1,5 @@
-import type { TugasAkhir } from '@repo/db'; // Import type explicitly
-import { PrismaClient, StatusTugasAkhir } from '@repo/db';
+import type { TugasAkhir } from '../prisma-client'; // Import type explicitly
+import { PrismaClient, StatusTugasAkhir } from '../prisma-client';
 import type { CreateTugasAkhirDto } from '../dto/tugas-akhir.dto';
 import { calculateSimilarities } from '../utils/similarity';
 import { PengaturanService } from './pengaturan.service';

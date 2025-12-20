@@ -1,4 +1,4 @@
-import { PrismaClient, type Prodi } from '@repo/db';
+import { PrismaClient, type Prodi } from '../prisma-client';
 import { parse } from 'csv-parse/sync';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';

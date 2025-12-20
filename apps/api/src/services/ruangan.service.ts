@@ -1,5 +1,5 @@
-import type { Ruangan } from '@repo/db';
-import { PrismaClient } from '@repo/db';
+import type { Ruangan } from '../prisma-client';
+import { PrismaClient } from '../prisma-client';
 
 export class RuanganService {
   private prisma: PrismaClient;

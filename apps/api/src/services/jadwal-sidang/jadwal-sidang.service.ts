@@ -53,7 +53,7 @@ export class JadwalSidangService {
 
     const diagnostic = await this.diagnostic.runSmartDiagnostic(
       pengaturan,
-      (key: string) => this.pengaturanService.getPengaturanByKey(key),
+      async (key: string) => await this.pengaturanService.getPengaturanByKey(key),
     );
     if (!diagnostic.success) {
       throw new Error(JSON.stringify(diagnostic.error));

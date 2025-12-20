@@ -1,5 +1,5 @@
 import prisma from '../config/database';
-import { PeranDosen } from '@repo/db';
+import { PeranDosen } from '../prisma-client';
 import { PengaturanService } from '../services/pengaturan.service';
 
 const pengaturanService = new PengaturanService();

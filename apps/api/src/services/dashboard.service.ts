@@ -1,4 +1,4 @@
-import { PrismaClient, StatusTugasAkhir, StatusBimbingan } from '@repo/db';
+import { PrismaClient, StatusTugasAkhir, StatusBimbingan } from '../prisma-client';
 import { DashboardRepository } from '../repositories/dashboard.repository';
 
 interface DashboardStats {

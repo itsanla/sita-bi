@@ -1,5 +1,5 @@
-import { PrismaClient } from '@repo/db';
-import type { Log, LogLevel } from '@repo/db';
+import { PrismaClient } from '../prisma-client';
+import type { Log, LogLevel } from '../prisma-client';
 
 interface CreateLogDto {
   user_id?: number | null | undefined;

@@ -5,7 +5,7 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles } from '../middlewares/roles.middleware';
 import { validate } from '../middlewares/validation.middleware';
 import { Role } from '../middlewares/auth.middleware';
-import type { KategoriPengumuman } from '@repo/db';
+import type { KategoriPengumuman } from '../prisma-client';
 import {
   createPengumumanSchema,
   updatePengumumanSchema,

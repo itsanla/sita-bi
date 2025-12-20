@@ -1,5 +1,5 @@
 import prisma from '../config/database';
-import type { StatusPeriode } from '@repo/db';
+import type { StatusPeriode } from '../prisma-client';
 import { parseWIBToUTC, getCurrentWIB, isDateInPast } from '../utils/timezone';
 import { getSocketIO } from '../socket';
 

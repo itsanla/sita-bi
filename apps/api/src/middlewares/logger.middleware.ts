@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { LogService } from '../services/log.service';
-import type { LogLevel } from '@repo/db';
+import type { LogLevel } from '../prisma-client';
 
 const logService = new LogService();
 

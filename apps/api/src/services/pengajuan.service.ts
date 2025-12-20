@@ -1,4 +1,4 @@
-import { PrismaClient } from '@repo/db';
+import { PrismaClient } from '../prisma-client';
 import { PengaturanService } from './pengaturan.service';
 import { NotificationHelperService } from './notification-helper.service';
 

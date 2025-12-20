@@ -378,9 +378,9 @@ router.get(
 
     const buffer = await Promise.race([
       exportService.generatePDFJudulTA(exportData),
-      new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('PDF generation timeout')), 25000)
-      )
+      new Promise<never>((_resolve, reject) => {
+        setTimeout(() => reject(new Error('PDF generation timeout')), 25000);
+      })
     ]);
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -464,9 +464,9 @@ router.get(
 
     const buffer = await Promise.race([
       exportService.generatePDF(exportData),
-      new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('PDF generation timeout')), 25000)
-      )
+      new Promise<never>((_resolve, reject) => {
+        setTimeout(() => reject(new Error('PDF generation timeout')), 25000);
+      })
     ]);
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -554,9 +554,9 @@ router.get(
 
     const buffer = await Promise.race([
       exportService.generatePDFJadwalDosen(exportData),
-      new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('PDF generation timeout')), 25000)
-      )
+      new Promise<never>((_resolve, reject) => {
+        setTimeout(() => reject(new Error('PDF generation timeout')), 25000);
+      })
     ]);
 
     res.setHeader('Content-Type', 'application/pdf');

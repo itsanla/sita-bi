@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   keywords: 'SITA-BI, dokumentasi, tugas akhir, sistem informasi, panduan',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function DokumentasiPage() {
   return <DocumentationContent />;
 }

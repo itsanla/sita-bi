@@ -1,4 +1,4 @@
-import type { User, Prisma } from '@repo/db';
+import type { User, Prisma } from '../prisma-client';
 import type { UpdateProfileDto } from '../dto/profile.dto';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from './users.service';

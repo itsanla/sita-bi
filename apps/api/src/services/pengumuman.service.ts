@@ -1,5 +1,5 @@
-import type { Pengumuman, KategoriPengumuman } from '@repo/db';
-import { PrismaClient, AudiensPengumuman, PrioritasPengumuman } from '@repo/db';
+import type { Pengumuman, KategoriPengumuman } from '../prisma-client';
+import { PrismaClient, AudiensPengumuman, PrioritasPengumuman } from '../prisma-client';
 import type {
   CreatePengumumanDto,
   UpdatePengumumanDto,
@@ -137,25 +137,50 @@ export class PengumumanService {
         return;
       }
 
-      // Kirim notifikasi dengan delay lebih lama untuk menghindari spam detection
-      const message = `📢 *Pengumuman Baru*\n\n*${pengumuman.judul}*\n\n${pengumuman.isi}\n\n_Diumumkan oleh: ${pengumuman.pembuat?.name ?? 'Admin'}_`;
-
+      // Kirim notifikasi dengan delay random + personalisasi + timeout protection
       let successCount = 0;
       let failedCount = 0;
+
+      // Random delays: 1, 3, 4, 6 detik
+      const delays = [1000, 3000, 4000, 6000];
+      const MESSAGE_TIMEOUT = 15000; // 15s timeout per message
 
       for (let i = 0; i < recipients.length; i++) {
         const user = recipients[i];
         try {
-          const sent = await whatsappService.sendMessage(user.phone_number, message);
+          // PERSONALISASI - Setiap pesan berbeda!
+          const personalizedMessage = 
+            `Halo ${user.name},\n\n` +
+            `📢 *Pengumuman Baru*\n\n` +
+            `*${pengumuman.judul}*\n\n` +
+            `${pengumuman.isi}\n\n` +
+            `_Diumumkan oleh: ${pengumuman.pembuat?.name ?? 'Admin'}_\n` +
+            `_Dikirim: ${new Date().toLocaleString('id-ID')}_`;
+
+          // TIMEOUT PROTECTION - Jangan hang!
+          const sendPromise = whatsappService.sendMessage(user.phone_number, personalizedMessage);
+          const timeoutPromise = new Promise<boolean>((_resolve, reject) => {
+            setTimeout(() => reject(new Error('Message timeout')), MESSAGE_TIMEOUT);
+          });
+
+          const sent = await Promise.race([sendPromise, timeoutPromise])
+            .catch((error) => {
+              console.error(`⏱️ Timeout sending to ${user.name}:`, error.message);
+              return false;
+            });
+
           if (sent) {
             successCount++;
             console.log(`✅ [${i + 1}/${recipients.length}] Sent to ${user.name}`);
           } else {
             failedCount++;
-            console.log(`⚠️ [${i + 1}/${recipients.length}] Skipped ${user.name} (WA not ready)`);
+            console.log(`⚠️ [${i + 1}/${recipients.length}] Skipped ${user.name}`);
           }
-          // Delay 5 detik antar pesan untuk menghindari spam detection
-          await new Promise((resolve) => setTimeout(resolve, 5000));
+          
+          // DELAY RANDOM dari array [1, 3, 4, 6] detik
+          const randomDelay = delays[Math.floor(Math.random() * delays.length)];
+          console.log(`⏱️  Waiting ${randomDelay / 1000}s before next message...`);
+          await new Promise((resolve) => { setTimeout(resolve, randomDelay); });
         } catch (err) {
           failedCount++;
           console.error(`❌ [${i + 1}/${recipients.length}] Failed to send to ${user.name}:`, err);

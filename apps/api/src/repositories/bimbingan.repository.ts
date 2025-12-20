@@ -1,5 +1,5 @@
-import type { PrismaClient } from '@repo/db';
-import { type Prisma, StatusTugasAkhir } from '@repo/db';
+import type { PrismaClient } from '../prisma-client';
+import { type Prisma, StatusTugasAkhir } from '../prisma-client';
 
 export class BimbinganRepository {
   constructor(private prisma: PrismaClient) {}
