@@ -1,27 +1,14 @@
 import prisma from '../config/database';
 import { PeranDosen } from '../prisma-client';
+import { PengaturanService } from '../services/pengaturan.service';
 
-let pengaturanServiceInstance: any = null;
-let pengaturanServicePromise: Promise<any> | null = null;
+let pengaturanServiceInstance: PengaturanService | null = null;
 
-const getPengaturanService = async () => {
-  if (pengaturanServiceInstance) {
-    return pengaturanServiceInstance;
-  }
-  
-  if (pengaturanServicePromise) {
-    return await pengaturanServicePromise;
-  }
-  
-  pengaturanServicePromise = (async () => {
-    const { PengaturanService } = require('../services/pengaturan.service');
+const getPengaturanService = (): PengaturanService => {
+  if (!pengaturanServiceInstance) {
     pengaturanServiceInstance = new PengaturanService();
-    return pengaturanServiceInstance;
-  })();
-  
-  const instance = await pengaturanServicePromise;
-  pengaturanServicePromise = null;
-  return instance;
+  }
+  return pengaturanServiceInstance;
 };
 
 /**
@@ -107,7 +94,7 @@ export const validateTeamComposition = async (
 export const validateDosenWorkload = async (
   dosenId: number,
 ): Promise<boolean> => {
-  const ps = await getPengaturanService();
+  const ps = getPengaturanService();
   const maxPembimbingAktif = await ps.getPengaturanByKey(
     'max_pembimbing_aktif',
   );
@@ -148,7 +135,7 @@ export const validateDosenWorkload = async (
  * Mendapatkan nilai pengaturan minimal bimbingan valid dari database
  */
 export const getMinBimbinganValid = async (): Promise<number> => {
-  const ps = await getPengaturanService();
+  const ps = getPengaturanService();
   const value = await ps.getPengaturanByKey(
     'min_bimbingan_valid',
   );
@@ -160,7 +147,7 @@ export const getMinBimbinganValid = async (): Promise<number> => {
  * Mengembalikan 0 jika pengecekan similaritas dinonaktifkan
  */
 export const getMaxSimilaritasPersen = async (): Promise<number> => {
-  const ps = await getPengaturanService();
+  const ps = getPengaturanService();
   const nonaktifkanCek = await ps.getPengaturanByKey(
     'nonaktifkan_cek_similaritas',
   );
@@ -178,7 +165,7 @@ export const getMaxSimilaritasPersen = async (): Promise<number> => {
  * Mendapatkan daftar ruangan sidang dari database
  */
 export const getRuanganSidang = async (): Promise<string[]> => {
-  const ps = await getPengaturanService();
+  const ps = getPengaturanService();
   const value = await ps.getPengaturanByKey('ruangan_sidang');
   return value !== null ? value.split(',').map((r: any) => r.trim()) : [];
 };

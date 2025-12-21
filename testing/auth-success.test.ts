@@ -3,7 +3,6 @@ import http from 'http';
 import 'dotenv/config';
 
 const BASE_URL = `${process.env.BASE_URL || 'http://localhost:3002'}/api/auth`;
-const TIMEOUT = 120000;
 
 const httpAgent = new http.Agent({ keepAlive: false });
 
@@ -53,7 +52,7 @@ export async function testAuthSuccess(): Promise<{ passed: number; failed: numbe
           method: test.method as any,
           url: test.url,
           data: test.data,
-          timeout: TIMEOUT,
+          
           httpAgent
         });
         
@@ -102,7 +101,7 @@ export async function testAuthSuccess(): Promise<{ passed: number; failed: numbe
           url: test.url,
           data: test.data,
           headers,
-          timeout: TIMEOUT,
+          
           httpAgent
         });
         

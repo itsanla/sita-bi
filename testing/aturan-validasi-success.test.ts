@@ -3,7 +3,6 @@ import http from 'http';
 import 'dotenv/config';
 
 const BASE_URL = `${process.env.BASE_URL || 'http://localhost:3002'}/api/aturan-validasi`;
-const TIMEOUT = 120000;
 
 const httpAgent = new http.Agent({ keepAlive: false });
 
@@ -54,7 +53,7 @@ export async function testAturanValidasiSuccess(): Promise<{ passed: number; fai
           url: test.url,
           data: test.data,
           headers,
-          timeout: TIMEOUT,
+          
           httpAgent
         });
         

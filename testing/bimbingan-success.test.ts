@@ -6,7 +6,7 @@ import http from 'http';
 import 'dotenv/config';
 
 const BASE_URL = `${process.env.BASE_URL || 'http://localhost:3002'}/api/bimbingan`;
-const TIMEOUT = 120000;
+// No timeout here - will be handled by infinity loop // 2 seconds timeout
 
 const httpAgent = new http.Agent({ keepAlive: false });
 
@@ -153,7 +153,6 @@ export async function testBimbinganSuccess(): Promise<{ passed: number; failed: 
               'Authorization': `Bearer ${token}`,
               ...formData.getHeaders()
             },
-            timeout: TIMEOUT,
             httpAgent
           });
         } else {
@@ -164,7 +163,6 @@ export async function testBimbinganSuccess(): Promise<{ passed: number; failed: 
             url: test.url,
             data: test.data,
             headers,
-            timeout: TIMEOUT,
             httpAgent
           });
         }

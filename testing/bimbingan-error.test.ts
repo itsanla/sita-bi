@@ -3,7 +3,6 @@ import http from 'http';
 import 'dotenv/config';
 
 const BASE_URL = `${process.env.BASE_URL || 'http://localhost:3002'}/api/bimbingan`;
-const TIMEOUT = 120000;
 
 const httpAgent = new http.Agent({ keepAlive: false });
 
@@ -164,7 +163,7 @@ export async function testBimbinganError(): Promise<{ passed: number; failed: nu
           url: test.url,
           data: test.data,
           headers,
-          timeout: TIMEOUT,
+          
           httpAgent,
           validateStatus: () => true
         });

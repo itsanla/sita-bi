@@ -6,16 +6,40 @@ import { testAturanValidasiError } from './aturan-validasi-error.test';
 import { testAuthSuccess } from './auth-success.test';
 import { testAuthError } from './auth-error.test';
 
+const REQUEST_TIMEOUT = 2000; // 2 seconds
+let startTime = 0;
+let cycle = 0;
+let totalApisTested = 0;
+
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}m ${seconds}s`;
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => 
+      setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs)
+    )
+  ]);
+}
+
 async function runInfinityLoop() {
+  startTime = Date.now();
+  const startDate = new Date();
+  
   console.log('🔄 Starting INFINITY LOOP stress test...');
+  console.log(`⏰ Start Time: ${startDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`);
   console.log('⚠️  This will run until HANG detected or manually stopped (Ctrl+C)\n');
   
-  let cycle = 0;
+  cycle = 0;
   let totalPassed = 0;
   let totalFailed = 0;
   let totalHangs = 0;
-  
-  const startTime = Date.now();
+  totalApisTested = 0;
   
   while (true) {
     cycle++;
@@ -26,16 +50,16 @@ async function runInfinityLoop() {
     console.log('='.repeat(60));
     
     try {
-      // Test all modules
+      // Test all modules with timeout
       console.log('\n✅ Running SUCCESS tests...');
-      const bimbinganSuccess = await testBimbinganSuccess();
-      const aturanSuccess = await testAturanValidasiSuccess();
-      const authSuccess = await testAuthSuccess();
+      const bimbinganSuccess = await withTimeout(testBimbinganSuccess(), REQUEST_TIMEOUT);
+      const aturanSuccess = await withTimeout(testAturanValidasiSuccess(), REQUEST_TIMEOUT);
+      const authSuccess = await withTimeout(testAuthSuccess(), REQUEST_TIMEOUT);
       
       console.log('\n❌ Running ERROR tests...');
-      const bimbinganError = await testBimbinganError();
-      const aturanError = await testAturanValidasiError();
-      const authError = await testAuthError();
+      const bimbinganError = await withTimeout(testBimbinganError(), REQUEST_TIMEOUT);
+      const aturanError = await withTimeout(testAturanValidasiError(), REQUEST_TIMEOUT);
+      const authError = await withTimeout(testAuthError(), REQUEST_TIMEOUT);
       
       const successResult = {
         passed: bimbinganSuccess.passed + aturanSuccess.passed + authSuccess.passed,
@@ -50,6 +74,9 @@ async function runInfinityLoop() {
       };
       
       // Accumulate results
+      const cycleTotal = successResult.passed + successResult.failed + successResult.hangs + 
+                         errorResult.passed + errorResult.failed + errorResult.hangs;
+      totalApisTested += cycleTotal;
       totalPassed += successResult.passed + errorResult.passed;
       totalFailed += successResult.failed + errorResult.failed;
       totalHangs += successResult.hangs + errorResult.hangs;
@@ -66,6 +93,7 @@ async function runInfinityLoop() {
       console.log(`❌ Cycle Failed: ${successResult.failed + errorResult.failed}`);
       console.log(`🚨 Cycle Hangs: ${successResult.hangs + errorResult.hangs}`);
       console.log(`\n📈 CUMULATIVE STATS:`);
+      console.log(`   Total APIs Tested: ${totalApisTested}`);
       console.log(`   Total Passed: ${totalPassed}`);
       console.log(`   Total Failed: ${totalFailed}`);
       console.log(`   Total Hangs: ${totalHangs}`);
@@ -73,8 +101,18 @@ async function runInfinityLoop() {
       
       // Check for hang
       if (successResult.hangs > 0 || errorResult.hangs > 0) {
+        const endDate = new Date();
+        const duration = Date.now() - startTime;
         console.log('\n🚨 HANG DETECTED! Stopping infinity loop...');
-        console.log(`Hang occurred at cycle ${cycle} after ${totalDuration}s`);
+        console.log(`\n${'='.repeat(60)}`);
+        console.log('🚨 INFINITY LOOP STOPPED - HANG DETECTED');
+        console.log('='.repeat(60));
+        console.log(`⏰ Start Time: ${new Date(startTime).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`);
+        console.log(`⏰ End Time: ${endDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`);
+        console.log(`⏱️  Duration: ${formatDuration(duration)}`);
+        console.log(`🔄 Total Cycles: ${cycle}`);
+        console.log(`📊 Total APIs Tested: ${totalApisTested}`);
+        console.log('='.repeat(60));
         process.exit(1);
       }
       
@@ -82,6 +120,23 @@ async function runInfinityLoop() {
       await new Promise(resolve => setTimeout(resolve, 100));
       
     } catch (error) {
+      const endDate = new Date();
+      const duration = Date.now() - startTime;
+      
+      if (error instanceof Error && error.message === 'TIMEOUT') {
+        console.error(`\n🚨 HANG DETECTED! Request timeout after ${REQUEST_TIMEOUT}ms`);
+        console.log(`\n${'='.repeat(60)}`);
+        console.log('🚨 INFINITY LOOP STOPPED - HANG DETECTED');
+        console.log('='.repeat(60));
+        console.log(`⏰ Start Time: ${new Date(startTime).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`);
+        console.log(`⏰ End Time: ${endDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`);
+        console.log(`⏱️  Duration: ${formatDuration(duration)}`);
+        console.log(`🔄 Total Cycles: ${cycle}`);
+        console.log(`📊 Total APIs Tested: ${totalApisTested}`);
+        console.log('='.repeat(60));
+        process.exit(1);
+      }
+      
       console.error(`\n❌ Error in cycle ${cycle}:`, error);
       console.log('Continuing to next cycle...');
     }
@@ -90,7 +145,18 @@ async function runInfinityLoop() {
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
+  const endDate = new Date();
+  const duration = Date.now() - startTime;
   console.log('\n\n⚠️  Infinity loop stopped by user (Ctrl+C)');
+  console.log(`\n${'='.repeat(60)}`);
+  console.log('📊 INFINITY LOOP SUMMARY');
+  console.log('='.repeat(60));
+  console.log(`⏰ Start Time: ${new Date(startTime).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`);
+  console.log(`⏰ End Time: ${endDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`);
+  console.log(`⏱️  Duration: ${formatDuration(duration)}`);
+  console.log(`🔄 Total Cycles: ${cycle}`);
+  console.log(`📊 Total APIs Tested: ${totalApisTested}`);
+  console.log('='.repeat(60));
   console.log('Exiting...');
   process.exit(0);
 });
