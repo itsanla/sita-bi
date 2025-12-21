@@ -1,11 +1,12 @@
+import { getPrismaClient } from '../config/database';
 import type { Ruangan } from '../prisma-client';
-import { PrismaClient } from '../prisma-client';
+;
 
 export class RuanganService {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof getPrismaClient>;
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
   }
 
   async findAll(): Promise<Ruangan[]> {

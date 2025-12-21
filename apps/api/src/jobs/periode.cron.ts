@@ -2,7 +2,16 @@ import cron from 'node-cron';
 import { PeriodeService } from '../services/periode.service';
 import prisma from '../config/database';
 
-const periodeService = new PeriodeService();
+let periodeServiceInstance: PeriodeService | null = null;
+
+const getPeriodeService = (): PeriodeService => {
+  if (!periodeServiceInstance) {
+    periodeServiceInstance = new PeriodeService();
+  }
+  return periodeServiceInstance;
+};
+
+const periodeService = getPeriodeService();
 
 export function startPeriodeCronJob(): void {
   cron.schedule('* * * * *', async () => {

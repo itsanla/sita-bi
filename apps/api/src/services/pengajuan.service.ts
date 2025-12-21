@@ -1,4 +1,5 @@
-import { PrismaClient } from '../prisma-client';
+import { getPrismaClient } from '../config/database';
+;
 import { PengaturanService } from './pengaturan.service';
 import { NotificationHelperService } from './notification-helper.service';
 
@@ -13,10 +14,10 @@ type PeranDosen = typeof PERAN_PEMBIMBING[number];
 const ERROR_PENGAJUAN_SUDAH_DIPROSES = 'Pengajuan sudah diproses';
 
 export class PengajuanService {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof getPrismaClient>;
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
   }
 
   // Method untuk mahasiswa mengajukan ke dosen

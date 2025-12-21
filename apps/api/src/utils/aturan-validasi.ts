@@ -1,6 +1,7 @@
-import { PrismaClient, ModeValidasi } from '../prisma-client';
+import { getPrismaClient } from '../config/database';
+import { ModeValidasi } from '../prisma-client';
 
-const prisma = new PrismaClient();
+const prisma = getPrismaClient();
 
 export async function getAturanValidasi(): Promise<{
   id: number;

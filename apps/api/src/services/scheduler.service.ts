@@ -1,15 +1,16 @@
+import { getPrismaClient } from '../config/database';
 import cron from 'node-cron';
-import { PrismaClient, StatusTugasAkhir } from '../prisma-client';
+import { StatusTugasAkhir } from '../prisma-client';
 import { EmailService } from './email.service';
 import { whatsappService } from './waha-whatsapp.service';
 
 export class SchedulerService {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof getPrismaClient>;
   private emailService: EmailService;
   private waService: typeof whatsappService;
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
     this.emailService = new EmailService();
     this.waService = whatsappService;
   }

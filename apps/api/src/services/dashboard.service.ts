@@ -1,4 +1,5 @@
-import { PrismaClient, StatusTugasAkhir, StatusBimbingan } from '../prisma-client';
+import { getPrismaClient } from '../config/database';
+import { StatusTugasAkhir, StatusBimbingan } from '../prisma-client';
 import { DashboardRepository } from '../repositories/dashboard.repository';
 
 interface DashboardStats {
@@ -48,11 +49,11 @@ interface Schedule {
 }
 
 export class DashboardService {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof getPrismaClient>;
   private repository: DashboardRepository;
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
     this.repository = new DashboardRepository(this.prisma);
   }
 

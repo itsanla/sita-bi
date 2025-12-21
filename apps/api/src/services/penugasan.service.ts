@@ -1,4 +1,5 @@
-import { PrismaClient, PeranDosen, StatusTugasAkhir } from '../prisma-client';
+import { getPrismaClient } from '../config/database';
+import { PeranDosen, StatusTugasAkhir } from '../prisma-client';
 import type { AssignPembimbingDto } from '../dto/penugasan.dto';
 import { z } from 'zod';
 import type { PrismaPromise } from '@prisma/client';
@@ -23,10 +24,10 @@ interface DosenLoadResult {
 }
 
 export class PenugasanService {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof getPrismaClient>;
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
   }
 
   async getDosenLoad(): Promise<DosenLoadResult[]> {

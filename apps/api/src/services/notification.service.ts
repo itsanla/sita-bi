@@ -1,5 +1,5 @@
+import { getPrismaClient } from '../config/database';
 import {
-  PrismaClient,
   NotificationChannel,
   type NotificationHistory,
 } from '@prisma/client';
@@ -7,7 +7,7 @@ import { EmailService } from './email.service';
 import { whatsappService } from './waha-whatsapp.service';
 import { getSocketIO } from '../socket';
 
-const prisma = new PrismaClient();
+const prisma = getPrismaClient();
 
 interface SendNotificationParams {
   userId: number;

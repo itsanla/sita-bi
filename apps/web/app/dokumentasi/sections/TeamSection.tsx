@@ -3,6 +3,10 @@ import TeamMemberCard from '../../components/landing-page/TeamMemberCard';
 import { teamMembers, nextGenDeveloper } from '../data/teamData';
 
 export default function TeamSection() {
+  if (!teamMembers || !nextGenDeveloper) {
+    return null;
+  }
+
   return (
     <section id="team" className="mb-20 scroll-mt-24">
       <div className="mb-10">

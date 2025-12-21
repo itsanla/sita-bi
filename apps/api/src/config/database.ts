@@ -1,6 +1,5 @@
 import { PrismaClient } from '../prisma-client';
 
-// Singleton pattern untuk Prisma Client
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
@@ -8,14 +7,23 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log:
-      process.env['NODE_ENV'] === 'development' ? ['error', 'warn'] : ['error'],
+    log: process.env['NODE_ENV'] === 'development' ? ['error', 'warn', 'query'] : ['error'],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
   });
 
 if (process.env['NODE_ENV'] !== 'production') globalForPrisma.prisma = prisma;
 
-// Optimasi SQLite untuk concurrent access
-prisma.$queryRawUnsafe('PRAGMA journal_mode = WAL;').catch(() => {});
-prisma.$queryRawUnsafe('PRAGMA busy_timeout = 5000;').catch(() => {});
+// Set statement timeout to prevent hanging queries
+prisma.$executeRaw`SET statement_timeout = '10000'`.catch(() => {});
+
+console.log('[DATABASE] PostgreSQL ready with 10s timeout');
+
+export function getPrismaClient(): PrismaClient {
+  return prisma;
+}
 
 export default prisma;

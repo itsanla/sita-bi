@@ -1,5 +1,6 @@
+import { getPrismaClient } from '../config/database';
 import type { User } from '../prisma-client';
-import { PrismaClient, Prisma } from '../prisma-client';
+import { Prisma } from '../prisma-client';
 import * as bcrypt from 'bcrypt';
 import type {
   CreateDosenDto,
@@ -10,10 +11,10 @@ import type {
 import { Role } from '../middlewares/auth.middleware';
 
 export class UsersService {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof getPrismaClient>;
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
   }
 
   async findOneByEmail(

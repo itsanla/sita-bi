@@ -2,7 +2,14 @@ import type { Request, Response, NextFunction } from 'express';
 import { LogService } from '../services/log.service';
 import type { LogLevel } from '../prisma-client';
 
-const logService = new LogService();
+let logServiceInstance: LogService | null = null;
+
+const getLogService = (): LogService => {
+  if (!logServiceInstance) {
+    logServiceInstance = new LogService();
+  }
+  return logServiceInstance;
+};
 
 export const activityLogger = (
   req: Request,
@@ -16,12 +23,12 @@ export const activityLogger = (
 
     const userId = (req as any).user?.id as number | undefined;
 
-    // Don't log GET requests to avoid noise, unless it's critical
     if (req.method === 'GET' && !req.url.includes('/api/auth')) return;
-    if (req.url.includes('/logs')) return; // Avoid logging log retrieval
+    if (req.url.includes('/logs')) return;
 
     const logLevel: LogLevel = res.statusCode >= 400 ? 'WARN' : 'INFO';
 
+    const logService = getLogService();
     logService
       .create({
         user_id: userId ?? undefined, // Pass undefined if not present, handled in service

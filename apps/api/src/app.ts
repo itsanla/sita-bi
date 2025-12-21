@@ -145,6 +145,15 @@ app.use((req, res, next) => {
 
   res.once('finish', cleanup);
   res.once('close', cleanup);
+  res.once('error', (err) => {
+    console.error(`[RES ERROR] ${req.method} ${req.path}:`, err.message);
+    cleanup();
+  });
+  
+  req.once('error', (err) => {
+    console.error(`[REQ ERROR] ${req.method} ${req.path}:`, err.message);
+    cleanup();
+  });
   
   // Force cleanup after 12 seconds
   setTimeout(() => {

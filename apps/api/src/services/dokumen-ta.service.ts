@@ -1,11 +1,12 @@
-import { PrismaClient } from '../prisma-client';
+import { getPrismaClient } from '../config/database';
+;
 import { NotFoundError, UnauthorizedError } from '../errors/AppError';
 
 export class DokumenTAService {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof getPrismaClient>;
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
   }
 
   async uploadDokumen(

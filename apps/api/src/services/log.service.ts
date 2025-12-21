@@ -1,4 +1,5 @@
-import { PrismaClient } from '../prisma-client';
+import { getPrismaClient } from '../config/database';
+;
 import type { Log, LogLevel } from '../prisma-client';
 
 interface CreateLogDto {
@@ -23,10 +24,10 @@ interface LogFilters {
 }
 
 export class LogService {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof getPrismaClient>;
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
   }
 
   async create(data: CreateLogDto): Promise<Log | null> {

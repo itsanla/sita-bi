@@ -1,12 +1,13 @@
+import { getPrismaClient } from '../config/database';
 import type { Prisma } from '../prisma-client';
-import { PrismaClient, StatusTugasAkhir, HasilSidang } from '../prisma-client';
+import { StatusTugasAkhir, HasilSidang } from '../prisma-client';
 import type { CreatePenilaianDto } from '../dto/penilaian.dto';
 
 export class PenilaianService {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof getPrismaClient>;
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
   }
 
   async createNilai(

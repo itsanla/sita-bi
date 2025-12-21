@@ -1,4 +1,5 @@
-import { PrismaClient, type Prodi } from '../prisma-client';
+import { getPrismaClient } from '../config/database';
+import { type Prodi } from '../prisma-client';
 import { parse } from 'csv-parse/sync';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -12,11 +13,11 @@ interface ImportResult {
 }
 
 export class ImportService {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof getPrismaClient>;
   private emailService: EmailService;
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
     this.emailService = new EmailService();
   }
 

@@ -1,5 +1,6 @@
+import { getPrismaClient } from '../config/database';
 import type { Pengumuman, KategoriPengumuman } from '../prisma-client';
-import { PrismaClient, AudiensPengumuman, PrioritasPengumuman } from '../prisma-client';
+import { AudiensPengumuman, PrioritasPengumuman } from '../prisma-client';
 import type {
   CreatePengumumanDto,
   UpdatePengumumanDto,
@@ -7,10 +8,10 @@ import type {
 import { whatsappService } from './waha-whatsapp.service';
 
 export class PengumumanService {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof getPrismaClient>;
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
   }
 
   async create(
@@ -188,7 +189,6 @@ export class PengumumanService {
       }
 
       console.log(`✅ Pengumuman notification completed: ${successCount} sent, ${failedCount} failed`);
-
 
     } catch (error) {
       console.error('❌ Error sending pengumuman notification:', error);

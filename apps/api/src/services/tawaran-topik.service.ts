@@ -1,11 +1,12 @@
-import { PrismaClient } from '../prisma-client';
+import { getPrismaClient } from '../config/database';
+;
 import type { CreateTawaranTopikDto } from '../dto/tawaran-topik.dto';
 
 export class TawaranTopikService {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof getPrismaClient>;
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
   }
 
   async create(
@@ -215,6 +216,5 @@ export class TawaranTopikService {
       totalPages: Math.ceil(total / limit),
     };
   }
-
 
 }

@@ -2,7 +2,14 @@ import type { Request, Response, NextFunction } from 'express';
 import { PeriodeService } from '../services/periode.service';
 import { Role } from '../middlewares/auth.middleware';
 
-const periodeService = new PeriodeService();
+let periodeServiceInstance: PeriodeService | null = null;
+
+const getPeriodeService = (): PeriodeService => {
+  if (!periodeServiceInstance) {
+    periodeServiceInstance = new PeriodeService();
+  }
+  return periodeServiceInstance;
+};
 
 export const periodeGuard = () => {
   return async (
@@ -11,6 +18,7 @@ export const periodeGuard = () => {
     next: NextFunction,
   ): Promise<void> => {
     try {
+      const periodeService = getPeriodeService();
       const userRole = req.user?.role;
       const periodeIdHeader = req.headers['x-periode-id'];
       const periodeId =

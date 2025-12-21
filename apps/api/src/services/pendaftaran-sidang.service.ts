@@ -1,14 +1,15 @@
+import { getPrismaClient } from '../config/database';
 import type { PendaftaranSidang } from '../prisma-client';
-import { PrismaClient } from '../prisma-client';
+;
 import { getRelativePath } from '../utils/upload.config';
 import { PengaturanService } from './pengaturan.service';
 
 export class PendaftaranSidangService {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof getPrismaClient>;
   private pengaturanService: PengaturanService;
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
     this.pengaturanService = new PengaturanService();
   }
 

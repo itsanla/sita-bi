@@ -1,5 +1,6 @@
+import { getPrismaClient } from '../config/database';
 import type { Prisma } from '../prisma-client';
-import { PrismaClient } from '../prisma-client';
+;
 import { BimbinganRepository } from '../repositories/bimbingan.repository';
 import {
   NotFoundError,
@@ -61,10 +62,10 @@ const ERROR_MSG_NO_ACCESS =
 
 export class BimbinganService {
   private repository: BimbinganRepository;
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof getPrismaClient>;
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
     this.repository = new BimbinganRepository(this.prisma);
   }
 

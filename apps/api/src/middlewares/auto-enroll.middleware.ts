@@ -1,7 +1,14 @@
 import type { Request, Response, NextFunction } from 'express';
 import { PeriodeService } from '../services/periode.service';
 
-const periodeService = new PeriodeService();
+let periodeServiceInstance: PeriodeService | null = null;
+
+const getPeriodeService = (): PeriodeService => {
+  if (!periodeServiceInstance) {
+    periodeServiceInstance = new PeriodeService();
+  }
+  return periodeServiceInstance;
+};
 
 export const autoEnrollMiddleware = async (
   req: Request,
@@ -9,13 +16,13 @@ export const autoEnrollMiddleware = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
+    const periodeService = getPeriodeService();
     const userId = req.user?.id;
     if (userId != null) {
       await periodeService.autoEnrollUserToPeriode(userId);
     }
   } catch (error) {
     console.error('Auto-enroll error:', error);
-    // Don't block the request if auto-enroll fails
   }
   next();
 };

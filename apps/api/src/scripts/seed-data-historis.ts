@@ -1,10 +1,11 @@
-import { PrismaClient } from '@prisma/client';
+import { getPrismaClient } from '../config/database';
+;
 import * as fs from 'fs';
 import * as path from 'path';
 import csv from 'csv-parser';
 import * as bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
+const prisma = getPrismaClient();
 
 interface CSVRow {
   NO: string;

@@ -1,5 +1,6 @@
+import { getPrismaClient } from '../config/database';
 import type { TugasAkhir } from '../prisma-client'; // Import type explicitly
-import { PrismaClient, StatusTugasAkhir } from '../prisma-client';
+import { StatusTugasAkhir } from '../prisma-client';
 import type { CreateTugasAkhirDto } from '../dto/tugas-akhir.dto';
 import { calculateSimilarities } from '../utils/similarity';
 import { PengaturanService } from './pengaturan.service';
@@ -13,13 +14,13 @@ export class SimilarityError extends Error {
 }
 
 export class TugasAkhirService {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof getPrismaClient>;
   private pengaturanService: PengaturanService;
   private readonly ERROR_DOSEN_NOT_FOUND = 'Profil dosen tidak ditemukan.';
   private readonly ERROR_TA_NOT_FOUND = 'Tugas Akhir tidak ditemukan.';
 
   constructor() {
-    this.prisma = new PrismaClient();
+    this.prisma = getPrismaClient();
     this.pengaturanService = new PengaturanService();
   }
 
