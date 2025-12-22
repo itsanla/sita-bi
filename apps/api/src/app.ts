@@ -35,6 +35,7 @@ import penjadwalanSidangRouter from './api/penjadwalan-sidang.router';
 import dataMasterRouter from './api/data-master.router';
 import { errorHandler } from './middlewares/error.middleware';
 import { activityLogger } from './middlewares/logger.middleware';
+import { timeoutMiddleware } from './middlewares/timeout.middleware';
 import { getUploadPath, getApiRoot } from './utils/upload.config';
 import { whatsappService } from './services/waha-whatsapp.service'; // WhatsApp service
 import prisma from './config/database';
@@ -73,6 +74,7 @@ setInterval(() => {
 }, 5000); // Check every 5 seconds
 
 // Global Middlewares
+app.use(timeoutMiddleware(30000)); // 30 second timeout
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

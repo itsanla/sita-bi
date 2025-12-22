@@ -66,7 +66,8 @@ export const periodeGuard = () => {
 
       req.periode = activePeriode;
       next();
-    } catch {
+    } catch (error) {
+      console.error('[PERIODE GUARD ERROR]', error);
       res.status(500).json({
         status: 'gagal',
         message: 'Gagal memeriksa status periode',

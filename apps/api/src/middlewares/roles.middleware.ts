@@ -14,8 +14,12 @@ export const authorizeRoles = (allowedRoles: Role[]) => {
     const userRole = req.user.role;
     let hasPermission = false;
 
+    // Admin override - only if admin is explicitly in allowedRoles
+    if (userRole === Role.admin && allowedRoles.includes(Role.admin)) {
+      hasPermission = true;
+    }
     // Jurusan has access to everything Dosen and Prodi can do (if included in allowedRoles)
-    if (userRole === Role.jurusan) {
+    else if (userRole === Role.jurusan) {
       // Jurusan level access - can do anything prodi/dosen tasks if specified
       // Requirement: Inherit all Prodi + Dosen access
       if (
@@ -41,14 +45,9 @@ export const authorizeRoles = (allowedRoles: Role[]) => {
       hasPermission = true;
     }
 
-    // Admin override
-    if (userRole === Role.admin) {
-      hasPermission = true;
-    }
-
     if (!hasPermission) {
       res
-        .status(403)
+        .status(401)
         .json({ message: 'Forbidden: Insufficient role permissions' });
       return;
     }

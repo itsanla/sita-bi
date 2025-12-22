@@ -166,6 +166,12 @@ export class BimbinganRepository {
           },
         },
       },
+      select: {
+        id: true,
+        waktu_mulai: true,
+        waktu_selesai: true,
+        tanggal: true,
+      },
     });
   }
 
@@ -338,13 +344,13 @@ export class BimbinganRepository {
         ],
       },
       include: {
-        tugasAkhir: {
-          include: {
-            mahasiswa: { include: { user: true } },
-            peranDosenTa: { include: { dosen: true } },
+        dosen: {
+          select: {
+            id: true,
+            user_id: true,
+            nip: true,
           },
         },
-        dosen: { include: { user: true } },
       },
     });
   }

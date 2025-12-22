@@ -5,6 +5,7 @@ import 'dotenv/config';
 const BASE_URL = `${process.env.BASE_URL || 'http://localhost:3002'}/api/auth`;
 
 const httpAgent = new http.Agent({ keepAlive: false });
+const REQUEST_TIMEOUT = 10000; // 10 seconds
 
 export const successTests = [
   {
@@ -50,6 +51,7 @@ export async function testAuthSuccess(): Promise<{ passed: number; failed: numbe
       try {
         const response = await axios({
           method: test.method as any,
+            timeout: REQUEST_TIMEOUT,
           url: test.url,
           data: test.data,
           
@@ -98,6 +100,7 @@ export async function testAuthSuccess(): Promise<{ passed: number; failed: numbe
       try {
         const response = await axios({
           method: test.method as any,
+            timeout: REQUEST_TIMEOUT,
           url: test.url,
           data: test.data,
           headers,

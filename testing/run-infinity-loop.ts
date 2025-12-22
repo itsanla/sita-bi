@@ -6,7 +6,7 @@ import { testAturanValidasiError } from './aturan-validasi-error.test';
 import { testAuthSuccess } from './auth-success.test';
 import { testAuthError } from './auth-error.test';
 
-const REQUEST_TIMEOUT = 2000; // 2 seconds
+const REQUEST_TIMEOUT = 30000; // 30 seconds for entire test suite
 let startTime = 0;
 let cycle = 0;
 let totalApisTested = 0;

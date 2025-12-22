@@ -5,6 +5,7 @@ import 'dotenv/config';
 const BASE_URL = `${process.env.BASE_URL || 'http://localhost:3002'}/api/aturan-validasi`;
 
 const httpAgent = new http.Agent({ keepAlive: false });
+const REQUEST_TIMEOUT = 10000; // 10 seconds
 
 export const errorTests = [
   {
@@ -64,6 +65,7 @@ export async function testAturanValidasiError(): Promise<{ passed: number; faile
       try {
         const response = await axios({
           method: test.method as any,
+            timeout: REQUEST_TIMEOUT,
           url: test.url,
           data: test.data,
           headers,

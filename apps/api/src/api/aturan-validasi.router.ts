@@ -2,11 +2,11 @@ import { Router } from 'express';
 import asyncHandler from '../utils/asyncHandler';
 import { insecureAuthMiddleware } from '../middlewares/auth.middleware';
 import { authorizeRoles, Role } from '../middlewares/roles.middleware';
-import { PrismaClient, ModeValidasi } from '../prisma-client';
+import { ModeValidasi } from '../prisma-client';
 import { BadRequestError } from '../errors/AppError';
+import prisma from '../config/database';
 
 const router: Router = Router();
-const prisma = new PrismaClient();
 
 router.use(asyncHandler(insecureAuthMiddleware));
 

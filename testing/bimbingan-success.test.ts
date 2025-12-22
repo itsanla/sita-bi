@@ -6,7 +6,7 @@ import http from 'http';
 import 'dotenv/config';
 
 const BASE_URL = `${process.env.BASE_URL || 'http://localhost:3002'}/api/bimbingan`;
-// No timeout here - will be handled by infinity loop // 2 seconds timeout
+const REQUEST_TIMEOUT = 10000; // 10 seconds
 
 const httpAgent = new http.Agent({ keepAlive: false });
 
@@ -147,12 +147,14 @@ export async function testBimbinganSuccess(): Promise<{ passed: number; failed: 
           
           response = await axios({
             method: test.method as any,
+            timeout: REQUEST_TIMEOUT,
             url: test.url,
             data: formData,
             headers: {
               'Authorization': `Bearer ${token}`,
               ...formData.getHeaders()
             },
+            timeout: REQUEST_TIMEOUT,
             httpAgent
           });
         } else {
@@ -160,9 +162,11 @@ export async function testBimbinganSuccess(): Promise<{ passed: number; failed: 
           const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
           response = await axios({
             method: test.method as any,
+            timeout: REQUEST_TIMEOUT,
             url: test.url,
             data: test.data,
             headers,
+            timeout: REQUEST_TIMEOUT,
             httpAgent
           });
         }
