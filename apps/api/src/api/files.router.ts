@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import path from 'path';
-import fs from 'fs';
+import fs from 'fs/promises';
 import asyncHandler from '../utils/asyncHandler';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { NotFoundError } from '../errors/AppError';
@@ -8,6 +8,16 @@ import { NotFoundError } from '../errors/AppError';
 const router: Router = Router();
 
 router.use(asyncHandler(authMiddleware));
+
+// Helper async untuk cek file exists
+const fileExists = async (filePath: string): Promise<boolean> => {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 // Serve dokumen TA files
 router.get(
@@ -21,7 +31,7 @@ router.get(
       filename,
     );
 
-    if (!fs.existsSync(filePath)) {
+    if (!(await fileExists(filePath))) {
       throw new NotFoundError('File tidak ditemukan');
     }
 
@@ -36,7 +46,7 @@ router.get(
     const { filename } = req.params;
     const filePath = path.join(process.cwd(), 'uploads', 'lampiran', filename);
 
-    if (!fs.existsSync(filePath)) {
+    if (!(await fileExists(filePath))) {
       throw new NotFoundError('File tidak ditemukan');
     }
 

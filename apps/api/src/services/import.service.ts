@@ -2,7 +2,7 @@ import { getPrismaClient } from '../config/database';
 import { type Prodi } from '../prisma-client';
 import { parse } from 'csv-parse/sync';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
+import { randomHexAsync } from '../utils/crypto.utils';
 import { EmailService } from './email.service';
 
 interface ImportResult {
@@ -144,7 +144,7 @@ export class ImportService {
       const rowNum = index + 1;
       try {
         await this.prisma.$transaction(async (tx) => {
-          const password = crypto.randomBytes(8).toString('hex');
+          const password = await randomHexAsync(8);
           const hashedPassword = await bcrypt.hash(password, 10);
 
           const nama = (record as any).nama ?? '';
@@ -213,7 +213,7 @@ export class ImportService {
       const rowNum = index + 1;
       try {
         await this.prisma.$transaction(async (tx) => {
-          const password = crypto.randomBytes(8).toString('hex');
+          const password = await randomHexAsync(8);
           const hashedPassword = await bcrypt.hash(password, 10);
 
           const nama = (record as any).nama ?? '';

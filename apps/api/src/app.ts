@@ -37,6 +37,7 @@ import { errorHandler } from './middlewares/error.middleware';
 import { activityLogger } from './middlewares/logger.middleware';
 import { timeoutMiddleware } from './middlewares/timeout.middleware';
 import { getUploadPath, getApiRoot } from './utils/upload.config';
+import { generateApiDocs } from './utils/api-docs';
 import { whatsappService } from './services/waha-whatsapp.service'; // WhatsApp service
 import prisma from './config/database';
 
@@ -197,9 +198,17 @@ app.use('/uploads', express.static(uploadsPath));
 
 console.warn('⚠️  WhatsApp not connected - Server running without WhatsApp');
 
-// Root endpoint
+// Root endpoint - API Documentation
 app.get('/', (_req, res) => {
-  res.json({ message: 'Hello World', status: 'OK' });
+  const apiRoutes = generateApiDocs(app);
+  res.json({
+    name: 'SITA BI API',
+    version: '1.0.0',
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    totalEndpoints: apiRoutes.length,
+    endpoints: apiRoutes
+  });
 });
 
 // Health check endpoint

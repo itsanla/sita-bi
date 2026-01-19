@@ -274,11 +274,11 @@ router.get(
 
         const peranLabel =
           ({
-            pembimbing1: 'Sekretaris',
+            pembimbing1: 'Ketua',
             pembimbing2: 'Pembimbing 2',
-            penguji1: 'Ketua',
-            penguji2: 'Anggota I',
-            penguji3: 'Anggota II',
+            penguji1: 'Anggota 1',
+            penguji2: 'Anggota 2',
+            penguji3: 'Sekretaris',
           } as any)[peran.peran] || peran.peran;
 
         allResult.push({
@@ -427,10 +427,10 @@ router.get(
     const exportData = jadwalData.map((item) => {
       const mhs = item.sidang.tugasAkhir.mahasiswa;
       const peran = item.sidang.tugasAkhir.peranDosenTa;
-      const ketua = peran.find((p) => p.peran === 'penguji1');
-      const sekretaris = peran.find((p) => p.peran === 'pembimbing1');
-      const anggota1 = peran.find((p) => p.peran === 'penguji2');
-      const anggota2 = peran.find((p) => p.peran === 'penguji3');
+      const ketua = peran.find((p) => p.peran === 'pembimbing1');
+      const sekretaris = peran.find((p) => p.peran === 'penguji3');
+      const anggota1 = peran.find((p) => p.peran === 'penguji1');
+      const anggota2 = peran.find((p) => p.peran === 'penguji2');
 
       const tanggal = new Date(item.tanggal);
       const hariMap = [
@@ -532,11 +532,11 @@ router.get(
 
         const peranLabel =
           ({
-            pembimbing1: 'Sekretaris',
+            pembimbing1: 'Ketua',
             pembimbing2: 'Pembimbing 2',
-            penguji1: 'Ketua',
-            penguji2: 'Anggota I',
-            penguji3: 'Anggota II',
+            penguji1: 'Anggota 1',
+            penguji2: 'Anggota 2',
+            penguji3: 'Sekretaris',
           } as any)[peran.peran] || peran.peran;
 
         exportData.push({

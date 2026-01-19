@@ -191,10 +191,10 @@ router.get(
     const exportData = jadwal.map((item: any) => {
       const mhs = item.sidang.tugasAkhir.mahasiswa;
       const peran = item.sidang.tugasAkhir.peranDosenTa;
-      const ketua = peran.find((p: any) => p.peran === 'penguji1');
-      const sekretaris = peran.find((p: any) => p.peran === 'pembimbing1');
-      const anggota1 = peran.find((p: any) => p.peran === 'penguji2');
-      const anggota2 = peran.find((p: any) => p.peran === 'penguji3');
+      const ketua = peran.find((p: any) => p.peran === 'pembimbing1');
+      const sekretaris = peran.find((p: any) => p.peran === 'penguji3');
+      const anggota1 = peran.find((p: any) => p.peran === 'penguji1');
+      const anggota2 = peran.find((p: any) => p.peran === 'penguji2');
 
       const tanggal = new Date(item.tanggal);
       const hariMap = [
@@ -262,10 +262,10 @@ router.get(
     const exportData = jadwal.map((item: any) => {
       const mhs = item.sidang.tugasAkhir.mahasiswa;
       const peran = item.sidang.tugasAkhir.peranDosenTa;
-      const ketua = peran.find((p: any) => p.peran === 'penguji1');
-      const sekretaris = peran.find((p: any) => p.peran === 'pembimbing1');
-      const anggota1 = peran.find((p: any) => p.peran === 'penguji2');
-      const anggota2 = peran.find((p: any) => p.peran === 'penguji3');
+      const ketua = peran.find((p: any) => p.peran === 'pembimbing1');
+      const sekretaris = peran.find((p: any) => p.peran === 'penguji3');
+      const anggota1 = peran.find((p: any) => p.peran === 'penguji1');
+      const anggota2 = peran.find((p: any) => p.peran === 'penguji2');
 
       const tanggal = new Date(item.tanggal);
       const hariMap = [

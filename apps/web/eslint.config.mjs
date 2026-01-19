@@ -1,66 +1,101 @@
-import { nextJsConfig } from "@repo/eslint-config/next-js";
+import js from "@eslint/js";
+import eslintConfigPrettier from "eslint-config-prettier";
+import tseslint from "typescript-eslint";
+import pluginReactHooks from "eslint-plugin-react-hooks";
+import pluginReact from "eslint-plugin-react";
+import globals from "globals";
+import pluginNext from "@next/eslint-plugin-next";
 import sonarjs from "eslint-plugin-sonarjs";
 import promisePlugin from "eslint-plugin-promise";
 
 /** @type {import("eslint").Linter.Config[]} */
 export default [
-  ...nextJsConfig,
+  js.configs.recommended,
+  eslintConfigPrettier,
+  ...tseslint.configs.recommended,
+  {
+    ...pluginReact.configs.flat.recommended,
+    languageOptions: {
+      ...pluginReact.configs.flat.recommended.languageOptions,
+      globals: {
+        ...globals.serviceworker,
+      },
+    },
+  },
+  {
+    plugins: {
+      "@next/next": pluginNext,
+    },
+    rules: {
+      ...pluginNext.configs.recommended.rules,
+      ...pluginNext.configs["core-web-vitals"].rules,
+    },
+  },
+  {
+    plugins: {
+      "react-hooks": pluginReactHooks,
+    },
+    settings: { react: { version: "detect" } },
+    rules: {
+      ...pluginReactHooks.configs.recommended.rules,
+      "react/react-in-jsx-scope": "off",
+    },
+  },
   sonarjs.configs.recommended,
   promisePlugin.configs['flat/recommended'],
   {
     rules: {
       // SonarJS - Code Quality & Best Practices (relaxed)
-      "sonarjs/cognitive-complexity": "off", // Too strict for complex business logic
-      "sonarjs/no-duplicate-string": "off", // Allow string duplication for readability
-      "sonarjs/no-identical-functions": "off", // Allow similar functions
-      "sonarjs/no-unused-collection": "error", // Keep this as error
-      "sonarjs/prefer-immediate-return": "off", // Allow intermediate variables
-      "sonarjs/no-nested-conditional": "off", // Allow nested ternary for readability
-      "sonarjs/no-ignored-exceptions": "off", // Allow empty catch blocks
-      "sonarjs/no-dead-store": "off", // Allow unused assignments
-      "sonarjs/unused-import": "off", // Allow unused imports temporarily
-      "sonarjs/no-unused-vars": "off", // Handled by TypeScript
-      "sonarjs/no-nested-functions": "off", // Allow nested functions
-      "sonarjs/code-eval": "off", // Allow dynamic code execution
-      "sonarjs/regex-complexity": "off", // Allow complex regex
-      "sonarjs/no-commented-code": "off", // Allow commented code
-      "sonarjs/no-duplicated-branches": "off", // Allow duplicate branches
-      "sonarjs/no-require-imports": "off", // Allow require imports
-      
+      "sonarjs/cognitive-complexity": "off",
+      "sonarjs/no-duplicate-string": "off",
+      "sonarjs/no-identical-functions": "off",
+      "sonarjs/no-unused-collection": "error",
+      "sonarjs/prefer-immediate-return": "off",
+      "sonarjs/no-nested-conditional": "off",
+      "sonarjs/no-ignored-exceptions": "off",
+      "sonarjs/no-dead-store": "off",
+      "sonarjs/unused-import": "off",
+      "sonarjs/no-unused-vars": "off",
+      "sonarjs/no-nested-functions": "off",
+      "sonarjs/code-eval": "off",
+      "sonarjs/regex-complexity": "off",
+      "sonarjs/no-commented-code": "off",
+      "sonarjs/no-duplicated-branches": "off",
+      "sonarjs/no-require-imports": "off",
+
       // Promise - Error Handling (relaxed)
-      "promise/catch-or-return": "off", // Allow promises without catch
-      "promise/always-return": "off", // Allow promises without return
-      "promise/no-nesting": "off", // Allow nested promises
-      
+      "promise/catch-or-return": "off",
+      "promise/always-return": "off",
+      "promise/no-nesting": "off",
+
       // Next.js Performance (keep important ones)
-      "@next/next/no-img-element": "warn", // Downgrade to warning
-      "@next/next/no-html-link-for-pages": "warn", // Downgrade to warning
-      "@next/next/no-sync-scripts": "error", // Keep as error
-      "@next/next/google-font-display": "off", // Turn off
-      "@next/next/google-font-preconnect": "off", // Turn off
-      
+      "@next/next/no-img-element": "warn",
+      "@next/next/no-html-link-for-pages": "warn",
+      "@next/next/no-sync-scripts": "error",
+      "@next/next/google-font-display": "off",
+      "@next/next/google-font-preconnect": "off",
+
       // React specific rules (relaxed)
-      "react/react-in-jsx-scope": "off", // Not needed for Next.js 13+
-      "react/prop-types": "off", // Use TypeScript instead
+      "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off",
       "react/jsx-uses-react": "off",
-      "react/jsx-no-leaked-render": "off", // Allow potential leaked renders
-      "react/no-unescaped-entities": "off", // Allow unescaped entities
+      "react/jsx-no-leaked-render": "off",
+      "react/no-unescaped-entities": "off",
 
       // React Hooks specific rules (relaxed)
-      "react-hooks/rules-of-hooks": "error", // Keep this as error
-      "react-hooks/exhaustive-deps": "off", // Turn off dependency warnings
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "off",
 
       // General code quality rules (relaxed)
-      "no-console": "off", // Allow all console statements
-      "no-debugger": "error", // Keep debugger as error
-      "no-unused-vars": "off", // Turn off, handled by TypeScript
-      "@typescript-eslint/no-unused-vars": "off", // Turn off TypeScript unused vars
-      "@typescript-eslint/no-explicit-any": "off", // Allow any type
-      "@typescript-eslint/no-require-imports": "off", // Allow require imports
-      "prefer-const": "off", // Allow let instead of const
-      "no-undef": "off", // Turn off undefined variable warnings
-      "turbo/no-undeclared-env-vars": "off", // Turn off turbo env var warnings
-      "no-empty-pattern": "off", // Allow empty destructuring patterns
+      "no-console": "off",
+      "no-debugger": "error",
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-require-imports": "off",
+      "prefer-const": "off",
+      "no-undef": "off",
+      "no-empty-pattern": "off",
     },
   },
   {

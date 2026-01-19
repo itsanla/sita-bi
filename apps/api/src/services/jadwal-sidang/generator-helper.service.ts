@@ -134,7 +134,7 @@ export class GeneratorHelperService {
         data: { sidang_terjadwal: true },
       });
 
-      const [ketua, anggota1, anggota2] = await Promise.all([
+      const [anggota1, anggota2, sekretaris] = await Promise.all([
         tx.dosen.findUnique({
           where: { id: pengujiIds[0] },
           include: { user: true },
@@ -149,7 +149,7 @@ export class GeneratorHelperService {
         }),
       ]);
 
-      return { ketua, anggota1, anggota2, jadwal };
+      return { anggota1, anggota2, sekretaris, jadwal };
     });
   }
 
@@ -176,8 +176,8 @@ export class GeneratorHelperService {
     return {
       mahasiswa: sidang.tugasAkhir.mahasiswa.user.name,
       nim: sidang.tugasAkhir.mahasiswa.nim,
-      ketua: pengujiData.ketua?.user.name ?? '-',
-      sekretaris: pembimbing1?.dosen?.user?.name ?? '-',
+      ketua: pembimbing1?.dosen?.user?.name ?? '-',
+      sekretaris: pengujiData.sekretaris?.user.name ?? '-',
       anggota1: pengujiData.anggota1?.user.name ?? '-',
       anggota2: pengujiData.anggota2?.user.name ?? '-',
       hari_tanggal: `${hari}, ${tanggalStr}`,

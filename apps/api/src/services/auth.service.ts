@@ -6,7 +6,7 @@ import type {
   ResetPasswordDto,
 } from '../dto/auth.dto';
 import bcrypt from 'bcrypt';
-import crypto from 'crypto';
+import { randomHexAsync } from '../utils/crypto.utils';
 import jwt from 'jsonwebtoken';
 import { HttpError } from '../middlewares/error.middleware';
 import { EmailService } from './email.service';
@@ -155,16 +155,16 @@ export class AuthService {
         roles: user.roles.map(r => ({ name: r.name })),
         dosen: user.dosen
           ? {
-              id: user.dosen.id,
-              nip: user.dosen.nip,
-              prodi: user.dosen.prodi,
-            }
+            id: user.dosen.id,
+            nip: user.dosen.nip,
+            prodi: user.dosen.prodi,
+          }
           : null,
         mahasiswa: user.mahasiswa
           ? {
-              id: user.mahasiswa.id,
-              nim: user.mahasiswa.nim,
-            }
+            id: user.mahasiswa.id,
+            nim: user.mahasiswa.nim,
+          }
           : null,
       },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -200,7 +200,7 @@ export class AuthService {
         existingUser.email_verified_at === null &&
         existingUser.email === email
       ) {
-        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const verificationToken = await randomHexAsync(32);
         await prisma.emailVerificationToken.upsert({
           where: { email: existingUser.email },
           update: { token: verificationToken, created_at: new Date() },
@@ -240,7 +240,7 @@ export class AuthService {
       },
     });
 
-    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationToken = await randomHexAsync(32);
     await prisma.emailVerificationToken.upsert({
       where: { email: user.email },
       update: { token: verificationToken, created_at: new Date() },
@@ -299,7 +299,7 @@ export class AuthService {
       throw new HttpError(404, 'Email tidak terdaftar dalam sistem.');
     }
 
-    const token = crypto.randomBytes(32).toString('hex');
+    const token = await randomHexAsync(32);
 
     const existingToken = await prisma.passwordResetToken.findFirst({
       where: { email },
@@ -357,15 +357,15 @@ export class AuthService {
         roles: Role[];
         mahasiswa: Mahasiswa | null;
         dosen:
-          | (Dosen & {
-              assignedMahasiswa?: {
-                id: number;
-                nim: string;
-                name: string;
-                prodi: string;
-              }[];
-            })
-          | null;
+        | (Dosen & {
+          assignedMahasiswa?: {
+            id: number;
+            nim: string;
+            name: string;
+            prodi: string;
+          }[];
+        })
+        | null;
       },
       'password'
     >

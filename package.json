@@ -1,39 +1,35 @@
 {
-  "name": "my-turborepo",
-  "version": "0.0.0",
+  "name": "sita-bi",
+  "version": "1.0.0",
   "private": true,
-  "description": "",
+  "description": "Sistem Informasi Tugas Akhir - Bisnis Informatika",
   "author": "",
   "license": "UNLICENSED",
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "start:backend": "pnpm --filter api start",
-    "start:frontend": "pnpm --filter web start -- -p 3001",
+    "dev": "concurrently \"pnpm dev:backend\" \"pnpm dev:frontend\"",
+    "dev:backend": "cd apps/api && pnpm dev",
+    "dev:frontend": "cd apps/web && pnpm dev",
+    "build": "pnpm build:backend && pnpm build:frontend",
+    "build:backend": "cd apps/api && pnpm build",
+    "build:frontend": "cd apps/web && pnpm build",
     "start": "pnpm start:backend",
-    "test": "turbo run test",
-    "test:e2e": "turbo run test:e2e",
-    "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "dev:frontend": "pnpm --filter web dev",
-    "dev:backend": "pnpm --filter api dev",
-    "check:backend": "pnpm --filter api lint && pnpm --filter api format",
-    "check:frontend": "pnpm --filter web lint && pnpm --filter web format",
-    "check": "pnpm check:backend && pnpm check:frontend"
+    "start:backend": "cd apps/api && pnpm start",
+    "start:frontend": "cd apps/web && pnpm start",
+    "lint": "pnpm lint:backend && pnpm lint:frontend",
+    "lint:backend": "cd apps/api && pnpm lint",
+    "lint:frontend": "cd apps/web && pnpm lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "dependencies": {
     "tsx": "^4.16.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
-    "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*",
     "concurrently": "^9.2.1",
     "eslint-plugin-promise": "^7.2.1",
     "eslint-plugin-sonarjs": "^3.0.5",
     "knip": "^5.73.3",
-    "prettier": "^3.7.3",
-    "turbo": "^2.6.1"
+    "prettier": "^3.7.3"
   },
   "packageManager": "pnpm@8.15.5",
   "engines": {

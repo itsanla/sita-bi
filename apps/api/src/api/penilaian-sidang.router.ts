@@ -9,7 +9,7 @@ const router: Router = Router();
 
 router.use(asyncHandler(authMiddleware));
 
-// Get sidang yang bisa dinilai (hanya untuk pembimbing1/sekretaris)
+// Get sidang yang bisa dinilai (hanya untuk penguji3/sekretaris)
 router.get(
   '/my-sidang',
   periodeGuard(),
@@ -30,7 +30,7 @@ router.get(
       where: { status: 'AKTIF' },
     });
 
-    // Cari sidang dimana dosen ini adalah pembimbing1
+    // Cari sidang dimana dosen ini adalah penguji3
     const sidangList = await prisma.sidang.findMany({
       where: {
         is_active: true,
@@ -42,7 +42,7 @@ router.get(
           peranDosenTa: {
             some: {
               dosen_id: dosenId,
-              peran: 'pembimbing1', // Hanya pembimbing1
+              peran: 'penguji3', // Hanya penguji3
             },
           },
         },
@@ -182,7 +182,7 @@ router.get(
   }),
 );
 
-// Submit nilai sidang (hanya pembimbing1)
+// Submit nilai sidang (hanya penguji3)
 router.post(
   '/submit',
   periodeGuard(),
@@ -200,7 +200,7 @@ router.post(
       return;
     }
 
-    // Validasi: pastikan dosen ini adalah pembimbing1 dari sidang ini
+    // Validasi: pastikan dosen ini adalah penguji3 dari sidang ini
     const sidang = await prisma.sidang.findFirst({
       where: {
         id: sidang_id,
@@ -208,7 +208,7 @@ router.post(
           peranDosenTa: {
             some: {
               dosen_id: dosenId,
-              peran: 'pembimbing1',
+              peran: 'penguji3',
             },
           },
         },
@@ -232,7 +232,7 @@ router.post(
       res.status(403).json({
         status: 'gagal',
         message:
-          'Akses ditolak: Anda bukan sekretaris (pembimbing 1) dari sidang ini',
+          'Akses ditolak: Anda bukan sekretaris (penguji 3) dari sidang ini',
       });
       return;
     }

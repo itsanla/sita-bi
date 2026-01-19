@@ -1,6 +1,6 @@
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
+import fs from 'fs/promises';
 import type { Request, Response } from 'express';
 import { BadRequestError } from '../errors/AppError';
 
@@ -73,9 +73,8 @@ export class UploadService {
     }
 
     const uploadDir = path.join(process.cwd(), config.destination);
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+    // fs.mkdir with recursive:true is idempotent - creates if not exists, no error if exists
+    await fs.mkdir(uploadDir, { recursive: true });
 
     const storage = multer.diskStorage({
       destination: (_req, _file, cb) => {
@@ -110,8 +109,8 @@ export class UploadService {
         if (err !== null && err !== undefined) {
           const msg =
             typeof err === 'object' &&
-            'message' in err &&
-            typeof err.message === 'string'
+              'message' in err &&
+              typeof err.message === 'string'
               ? err.message
               : 'Upload error';
           reject(new BadRequestError(msg));

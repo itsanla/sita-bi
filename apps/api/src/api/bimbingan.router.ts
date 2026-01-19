@@ -20,7 +20,7 @@ import {
 import { BadRequestError } from '../errors/AppError';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
+import fs from 'fs/promises';
 import { periodeGuard } from '../middlewares/periode.middleware';
 
 const router: Router = Router();
@@ -28,13 +28,22 @@ const bimbinganService = new BimbinganService();
 
 // Configure Multer for file uploads
 const uploadDir = path.join(process.cwd(), 'uploads/bimbingan');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+
+// Lazy async directory initialization
+let dirInitialized = false;
+const ensureUploadDir = async (): Promise<void> => {
+  if (!dirInitialized) {
+    await fs.mkdir(uploadDir, { recursive: true });
+    dirInitialized = true;
+  }
+};
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    cb(null, uploadDir);
+    // Ensure directory exists before proceeding (async but we call cb after)
+    ensureUploadDir()
+      .then(() => cb(null, uploadDir))
+      .catch((err) => cb(err, uploadDir));
   },
   filename: (_req, file, cb) => {
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
