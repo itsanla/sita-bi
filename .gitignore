@@ -76,7 +76,7 @@ pnpm-debug.log*
 .DS_Store
 *.pem
 
-# Uploads (keep structure but ignore files)
+# Uploads (previous structure - consider removing if fully migrating to volumes/)
 apps/api/uploads/*
 !apps/api/uploads/.gitkeep
 !apps/api/uploads/arsip/
@@ -84,3 +84,9 @@ apps/api/uploads/*
 apps/api/uploads/bimbingan/*
 !apps/api/uploads/bimbingan/.gitkeep
 data/
+
+# Docker Volumes (Local Development)
+# Ignore everything inside volumes/
+volumes/**/*
+# But do not ignore the .gitkeep files (so the folder structure is preserved)
+!volumes/**/.gitkeep

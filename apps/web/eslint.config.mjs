@@ -62,6 +62,8 @@ export default [
       "sonarjs/no-commented-code": "off",
       "sonarjs/no-duplicated-branches": "off",
       "sonarjs/no-require-imports": "off",
+      "sonarjs/no-global-this": "off",
+      "sonarjs/no-nested-template-literals": "off",
 
       // Promise - Error Handling (relaxed)
       "promise/catch-or-return": "off",

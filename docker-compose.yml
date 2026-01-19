@@ -1,16 +1,65 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:17-bookworm
+    container_name: sita_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sitabi
+      POSTGRES_PASSWORD: sitabi2025_secure
+      POSTGRES_DB: sitabi
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data
+    networks:
+      - sita-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sitabi -d sitabi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  waha:
+    image: devlikeapro/waha:noweb-2025.12.1
+    container_name: sita_waha
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      WHATSAPP_API_KEY: ${WAHA_API_KEY:-mysecret}
+      WHATSAPP_START_SESSION: default
+    volumes:
+      - ./volumes/waha:/app/.sessions
+      - ./volumes/waha/files:/app/files
+    networks:
+      - sita-network
+
+  tei:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8
+    container_name: sita_tei
+    restart: unless-stopped
+    command: --model-id sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 --port 80
+    volumes:
+      - ./volumes/tei:/data
+    networks:
+      - sita-network
+
   api:
     image: itsanla/sita-api:latest
-    container_name: sita-bi-api
-    depends_on:
-      - waha
+    container_name: sita_api
+    restart: unless-stopped
     ports:
       - "3002:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      waha:
+        condition: service_started
+      tei:
+        condition: service_started
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=file:/app/data/sita_bi.db
+      - DATABASE_URL=postgresql://sitabi:sitabi2025_secure@postgres:5432/sitabi?schema=public
       - JWT_SECRET=${JWT_SECRET:-change-this-secret-in-production}
       - PORT=3002
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3001}
@@ -26,8 +75,9 @@ services:
       - GEMINI_API_KEY_10=${GEMINI_API_KEY_10}
       - GEMINI_PRIMARY_MODELS=${GEMINI_PRIMARY_MODELS:-gemini-1.5-flash}
       - GEMINI_FALLBACK_MODEL=${GEMINI_FALLBACK_MODEL:-gemini-1.5-flash-8b}
-      - WAHA_URL=${WAHA_URL:-http://waha:3000}
+      - WAHA_URL=http://waha:3000
       - WAHA_API_KEY=${WAHA_API_KEY:-mysecret}
+      - ML_SIMILARITY_URL=http://tei:80
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASS=${EMAIL_PASS}
       - APP_NAME=${APP_NAME:-SITA BI}
@@ -35,88 +85,41 @@ services:
       - MAX_FILE_SIZE=${MAX_FILE_SIZE:-5242880}
       - ALLOWED_FILE_TYPES=${ALLOWED_FILE_TYPES:-jpeg,jpg,png,gif,pdf,doc,docx}
     volumes:
-      - ~/sitabi/database:/app/data
-      - ~/sitabi/uploads:/app/uploads
-      - ~/sitabi/documentation:/app/documentation
-    restart: unless-stopped
+      - ./volumes/uploads:/app/uploads
+      - ./volumes/documentation:/app/documentation
+    networks:
+      - sita-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3002/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 256M
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
-        window: 120s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    networks:
-      - sita-network
 
   web:
     image: itsanla/sita-web:latest
-    container_name: sita-bi-web
+    container_name: sita_web
+    restart: unless-stopped
     ports:
       - "3001:3001"
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3002}
-    restart: unless-stopped
     depends_on:
       api:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+    networks:
+      - sita-network
     deploy:
       resources:
         limits:
           cpus: '1'
           memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 128M
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    networks:
-      - sita-network
-
-  waha:
-    image: devlikeapro/waha:noweb-2025.12.1
-    container_name: waha
-    ports:
-      - "3000:3000"
-    environment:
-      - WHATSAPP_API_KEY=${WAHA_API_KEY:-mysecret}
-      - WHATSAPP_START_SESSION=default
-    volumes:
-      - ~/waha-sessions:/app/.sessions
-    restart: unless-stopped
-    networks:
-      - sita-network
 
 networks:
   sita-network:
